@@ -1,5 +1,5 @@
 <template>
-    <v-card class="my-1 ml-1">
+    <v-card class="my-1 mr-1">
         <v-card-title style="font-family: Raleway; color: #888888">
             DRUG SCORES
         </v-card-title>

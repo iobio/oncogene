@@ -7,6 +7,9 @@
         >
             <!--Static main page-->
             <v-layout>
+                <v-flex xs5 md4>
+                    <PatientTimeline/>
+                </v-flex>
                 <v-flex xs7 md8>
                     <PatientMetaData/>
                     <DrugScores style="overflow-x: scroll"
@@ -14,9 +17,6 @@
                             :drugList="DRUGS"
                             @drugClick="onDrugClick">
                     </DrugScores>
-                </v-flex>
-                <v-flex xs5 md4>
-                    <PatientTimeline/>
                 </v-flex>
             </v-layout>
 

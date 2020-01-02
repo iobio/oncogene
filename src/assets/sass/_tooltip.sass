@@ -1,0 +1,578 @@
+.link-icon
+  font-size: 14px
+  color: #153d52
+
+#af-svg
+  float: left
+
+  rect
+    &.alt-count
+      stroke: black !important
+
+    &.ref-count
+      stroke: black !important
+      fill: none !important
+
+    &.alt-count
+      fill: $app-color-light !important
+
+    &.other-count
+      stroke: black !important
+      fill: rgb(132, 132, 132) !important
+
+  text
+    font-size: 12px !important
+
+    &.alt-count
+      fill: white !important
+
+    &.alt-count-under
+      fill: $text-color !important
+
+    &.other-count
+      fill: white !important
+      font-style: italic !important
+
+    &.other-count-under
+      fill: $text-color !important
+      font-style: italic !important
+
+    &.ref-count
+      fill: $text-color !important
+
+  .header-small
+    overflow: hidden
+    text-align: left
+    width: 100px
+    float: left
+    color: #9c9a9a
+    fill: #9c9a9a
+    font-style: italic
+    padding-left: 0
+    font-size: 13px !important
+    line-height: 14px
+
+  #allele-count-legend
+    padding-top: 0px
+    padding-bottom: 5px
+
+  .affected-symbol
+    font-size: 14px
+    color: $danger-color !important
+    float: right
+    padding-right: 2px
+
+  .allele-count-bar
+    overflow-wrap: break-word
+    //float: left
+    width: 300px
+    min-height: 25px
+    text
+      font-size: 11px !important
+      fill: $text-color
+
+  .ped-info
+    width: 500px
+    clear: both
+    line-height: 13px !important
+    display: inline-block
+
+  .ped-label
+    padding-top: 0px
+    vertical-align: top
+    text-align: left
+    width: 75px
+    float: left
+    font-size: 13px
+    color: #9c9a9a
+    fill: #9c9a9a
+
+  .ped-zygosity
+    width: 75px
+    float: left
+
+  .zygosity
+    float: left
+    font-size: 10px
+    font-weight: bold !important
+    padding-top: 1px !important
+    padding-bottom: 0px !important
+    padding-right: 0px !important
+    padding-left: 0px !important
+    background-color: #D3D5D8 !important
+    margin-right: 2px
+    margin-top: 0px !important
+    width: 39px !important
+    color: black
+    cursor: none
+    pointer-events: none
+    height: 13px
+
+  .zygosity
+    &.hom
+      background-color: $hom-color !important
+      color: white
+      width: 29px !important
+      margin-right: 10px
+
+    &.het
+      background-color: $het-color !important
+      color: white
+      width: 29px !important
+      margin-right: 10px
+
+    &.homref
+      background-color: $homref-color !important
+      color: $text-color !important
+
+    &.unknown
+      background-color: $info-color !important
+
+    &.none
+      background-color: transparent !important
+      border: solid thin $info-color !important
+
+.click-af-field
+  text-align: left
+  font-size: 14px
+
+.click-label
+  font-size: 12px
+  color: #8D8D8D
+  fill: #8D8D8D
+  padding-left: 5px
+  padding-right: 0
+  padding-top: 2px
+
+.click-value
+  font-size: 14px
+  color: #7f7f7f
+  padding-left: 5px
+  word-wrap: normal
+  padding-top: 2px
+
+.click-svg-label
+  font-size: 12px
+  padding: 2px 0 0 5px
+  color: #8D8D8D
+
+.click-svg-value
+  padding-left: 0
+
+.click-tip-header
+  font-size: 18px
+  padding-top: 5px
+  padding-left: 4px
+
+.click-tip-divider
+  margin-top: 35px
+  margin-bottom: 5px
+  border-color: $app-color
+
+.click-tip-btn
+  float: right
+  font-size: 12px
+  margin-top: 10px
+
+.click-tip-close-btn
+  float: right
+  margin: 0
+
+.click-tip-icon
+  padding-top: 1px
+  padding-left: 3px
+
+.tooltip-title
+  font-size: 14px
+  word-break: break-word
+
+  &.danger
+    text-align: center
+    font-size: 12px
+    font-weight: bold
+    color: $danger-color
+
+.tooltip-header
+  overflow-wrap: break-all
+  text-align: right
+  width: 100px
+  float: left
+  color: $tooltip-text-color
+  vertical-align: top
+
+.tooltip-section-header
+  fill:  $tooltip-text-color !important
+  font-size: 12px !important
+
+.tooltip-label
+  color: $tooltip-label-color
+  fill:  $tooltip-label-color
+
+.tooltip-row
+  width: 330px
+  clear: both
+  line-height: 13px !important
+
+.tooltip-value
+  overflow-wrap: break-word
+  float: left
+  width: 220px
+  margin-right: 0px
+  margin-left: 10px
+
+.tooltip-svg-value
+  padding: 0
+
+.tooltip-clinvar-link
+  padding-top: 1px
+
+.tooltip-header
+  overflow-wrap: break-all
+  text-align: right
+  width: 100px
+  float: left
+  fill:  $tooltip-label-color
+  color: $tooltip-label-color
+
+.tooltip-header-small
+  overflow-wrap: break-word
+  text-align: left
+  width: 75px
+  float: left
+  color: $tooltip-label-color
+  fill:  $tooltip-label-color
+
+.tooltip-allele-count-bar
+  overflow-wrap: break-word
+  float: left
+  width: 180px
+  min-height: 25px
+
+.tooltip-affected-symbol
+  font-size: 14px
+  color: $danger-color !important
+  float: right
+  padding-right: 2px
+
+.tooltip-ped-label
+  padding-top: 0px
+  vertical-align: top
+  text-align: left
+  width: 49px
+  float: left
+  font-size: 12px
+  color: $text-color
+
+.ped-zygosity
+  width: 75px
+  float: left
+
+.tooltip-zygosity
+  float: left
+  font-size: 9px
+  font-weight: normal !important
+  padding-top: 1px !important
+  padding-bottom: 0px !important
+  padding-right: 0px !important
+  padding-left: 0px !important
+  background-color: #D3D5D8 !important
+  margin-right: 2px
+  margin-top: 0px !important
+  width: 39px !important
+  color: black
+  border: solid thin rgba(0, 0, 0, 0.22)
+  cursor: none
+  pointer-events: none
+
+.tooltip-zygosity
+  &.hom
+    background-color: rgba(165, 48, 48, 0.76) !important
+    color: white
+
+
+  &.homref
+    background-color: #5D809D !important
+    color: rgba(255,255,255,1)
+
+  &.unknown
+    background-color: #b9edf3 !important
+
+  &.none
+    background-color: transparent !important
+    border: solid thin #5D809D !important
+
+.tooltip-subtitle
+  font-size: 12px
+  text-align: center
+  color: $text-color
+  padding-top: 4px
+  padding-bottom: 1px
+
+  &.selected
+    font-weight: bold
+    color: $current-color
+
+
+.tooltip-footer
+  color: $link-color !important
+  margin-bottom: -2px
+  margin-top: 25px !important
+  font-size: 12px
+
+
+
+.app-tooltip a
+  color: $link-color !important
+  font-size: 14px !important
+
+  &:hover, &:focus
+    color: $link-color !important
+    font-size: 14px !important
+
+
+.app-tooltip a
+  &:hover, &:focus
+    color: $link-color !important
+    font-size: 14px !important
+
+.app-tooltip .row
+  line-height: 14px !important
+
+.app-tooltip
+  position: absolute
+  z-index: 20
+  background-color: white
+  color: $tooltip-text-color
+  padding: 4px 6px 4px 6px
+  font-size: 14px
+  border-radius: 4px
+  pointer-events: none
+  text-align: left
+  top: 371px
+  border: 1px outset rgb(213, 213, 213) !important
+  opacity: 1
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.23), 0 3px 10px rgba(0, 0, 0, 0.16) !important
+
+.app-tooltip
+  font-family: $app-font, sans-serif !important
+
+  g.bookmark
+    fill: $bookmark-color
+    color: $bookmark-color
+    opacity: .7
+    font-size: 14px
+
+
+.app-tooltip.chevron
+  &:before
+    border-top: 12px solid rgba(0,0,0,.33)
+    border-left: 12px solid transparent
+    border-right: 12px solid transparent
+    position: absolute
+    display: inline-block
+    content: ""
+
+  &:after
+    border-top: 9px solid $current-color
+    border-left: 9px solid transparent
+    border-right: 9px solid transparent
+    position: absolute
+    display: inline-block
+    content: ""
+
+  &.chevron-vertical
+
+    &.chevron-top
+      &:before
+        bottom: -12px
+      &:after
+        bottom: -9px
+
+    &.chevron-bottom
+      &:before
+        -webkit-transform: rotate(180deg)
+        transform: rotate(180deg)
+        top: -12px
+      &:after
+        -webkit-transform: rotate(180deg)
+        transform: rotate(180deg)
+        top: -9px
+
+    &.chevron-right
+      &:before
+        left: 8px
+      &:after
+        left: 11px
+
+    &.chevron-left
+      &:before
+        right: 8px
+      &:after
+        right: 11px
+
+    &.chevron-center
+      &:before
+        right: var(--tooltip-center-before)
+      &:after
+        right: var(--tooltip-center)
+
+  &.chevron-horizontal
+
+    &.chevron-right
+      &:before
+        -webkit-transform: rotate(90deg)
+        transform: rotate(90deg)
+        left: -15px
+      &:after
+        -webkit-transform: rotate(90deg)
+        transform: rotate(90deg)
+        left: -13px
+
+    &.chevron-left
+      &:before
+        -webkit-transform: rotate(-90deg)
+        transform: rotate(-90deg)
+        right: -16px
+      &:after
+        -webkit-transform: rotate(-90deg)
+        transform: rotate(-90deg)
+        right: -14px
+
+    &.chevron-top
+      &:before
+        bottom: 11px
+      &:after
+        bottom: 12px
+
+    &.chevron-bottom
+      &:before
+        top: 11px
+      &:after
+        top: 12px
+
+    &.chevron-middle
+      &:before
+        top: var(--tooltip-middle-before)
+      &:after
+        top: var(--tooltip-middle)
+
+
+.app-tooltip.left-arrow
+  &:before
+    position: absolute
+    display: inline-block
+    border-top: 12px solid transparent
+    border-right: 8px solid #8D8D8D
+    border-bottom: 12px solid transparent
+    left: -5px
+    bottom: -11px
+    -webkit-transform: rotate(202deg)
+    transform: rotate(202deg)
+    content: ""
+
+  &:after
+    position: absolute
+    display: inline-block
+    border-top: 12px solid transparent
+    border-right: 8px solid #FFFFFF
+    border-bottom: 12px solid transparent
+    left: -5px
+    bottom: -10px
+    -webkit-transform: rotate(202deg)
+    transform: rotate(202deg)
+    content: ""
+
+.app-tooltip.right-arrow
+  &:before
+    position: absolute
+    display: inline-block
+    border-top: 12px solid transparent
+    border-left: 8px solid #8D8D8D
+    border-bottom: 12px solid transparent
+    right: -3px
+    bottom: -10px
+    -webkit-transform: rotate(160deg)
+    transform: rotate(160deg)
+    content: ""
+
+  &:after
+    position: absolute
+    display: inline-block
+    border-top: 12px solid transparent
+    border-left: 8px solid #FFFFFF
+    border-bottom: 12px solid transparent
+    right: -3px
+    bottom: -9px
+    -webkit-transform: rotate(160deg)
+    transform: rotate(160deg)
+    content: ""
+
+
+
+.app-tooltip.black-arrow-left
+  &:after
+    position: absolute
+    display: inline-block
+    border-top: 8px solid transparent
+    border-right: 8px solid rgb(80,80,80)
+    border-bottom: 8px solid transparent
+    left: -3px
+    bottom: -5px
+    -webkit-transform: rotate(209deg)
+    transform: rotate(209deg)
+    content: ""
+
+.app-tooltip.black-arrow-right
+  &:after
+    position: absolute
+    display: inline-block
+    border-top: 8px solid transparent
+    border-left: 8px solid rgb(80,80,80)
+    border-bottom: 8px solid transparent
+    right: -3px
+    bottom: -5px
+    -webkit-transform: rotate(152deg)
+    transform: rotate(152deg)
+    content: ""
+
+.tooltip-inheritance-mode-label
+  display: inline-block
+  vertical-align: top
+  padding-top: 0px
+
+.app-tooltip.tooltip-wide
+  width: 680px !important
+
+
+
+.tooltip-footer
+  margin-left: 0px
+  margin-right: 0px
+  margin-top: 0px !important
+  padding-top: 5px !important
+  padding-bottom: 0px
+  clear: both
+
+  .pin-message
+    font-style: italic
+    color: $app-color-light
+    font-size: 14px
+
+
+#exon-tooltip
+  background: rgb(80,80,80)
+  color: white
+  font-size: 12px
+  line-height: normal
+  .danger
+    color: $coverage-problem-tooltip-color
+  a.danger
+    color: $coverage-problem-tooltip-color !important
+  #exon-tooltip-close
+    float: right
+    color: white !important
+    font-weight: bold
+    font-size: 14px !important
+  #exon-tooltip-title
+    display: inline-block
+    float: left

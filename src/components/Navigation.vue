@@ -16,7 +16,7 @@
         props: {},
         data() {
             return {
-                title: 'oncologist.iobio',
+                title: 'oncogene.iobio',
                 betaTitle: 'beta',
             }
         }

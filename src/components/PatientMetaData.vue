@@ -1,5 +1,5 @@
 <template>
-    <div id="patient-data-card" class="my-1 ml-1">
+    <div id="patient-data-card" class="my-1 mr-1">
         <v-card height="180" style="font-family: Raleway; color: #888888">
             <v-card-title>PATIENT INFORMATION</v-card-title>
                 <v-card-text>
