@@ -9,6 +9,7 @@
             </v-toolbar-title>
             <v-spacer></v-spacer>
             <files-menu
+                    v-if="cohortModel"
                     ref="fileMenuRef"
                     :cohortModel="cohortModel"
                     @update-samples="onUpdateSamples"
@@ -248,14 +249,10 @@
 
                     self.cohortModel = new CohortModel(
                         self.globalApp,
-                        self.isEduMode,
-                        self.isBasicMode,
                         endpoint,
                         genericAnnotation,
                         translator,
                         self.geneModel,
-                        // self.variantExporter,
-                        self.cacheHelper,
                         self.genomeBuildHelper,
                         new FreebayesSettings());
 

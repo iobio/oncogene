@@ -5,12 +5,12 @@ import CmmlUrls from '../data/cmml_urls.json'
 
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
-    constructor(globalApp, isEduMode, isBasicMode, endpoint, genericAnnotation, translator, geneModel,
+    constructor(globalApp, endpoint, genericAnnotation, translator, geneModel,
                 genomeBuildHelper, freebayesSettings) {
 
         this.globalApp = globalApp;
-        this.isEduMode = isEduMode;
-        this.isBasicMode = isBasicMode;
+        this.isEduMode = false;
+        this.isBasicMode = false;
         this.defaultingToDemoData = false;
 
         this.endpoint = endpoint;

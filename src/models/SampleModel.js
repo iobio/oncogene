@@ -2,7 +2,6 @@ import CacheHelper from './CacheHelper.js';
 import Bam from './Bam.iobio.js';
 import vcfiobio from './Vcf.iobio.js';
 
-
 /* One per normal or tumor sample */
 class SampleModel {
     constructor(globalApp) {

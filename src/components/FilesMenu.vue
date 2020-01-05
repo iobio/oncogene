@@ -1,8 +1,16 @@
-<style lang="sass">
+<style lang="sass" scoped>
     @import ../assets/sass/variables
     #files-menu
         .btn
             border: 1px solid #965757
+    .dropdown-button
+        color: #888888
+        font-family: Roboto !important
+        font-size: 1rem
+        font-weight: 500
+        text-transform: uppercase
+        letter-spacing: 0.0892857143em
+        justify-content: start
 
     .menuable__content__active
         > form
@@ -62,6 +70,8 @@
     .file-select > .select-button {
         text-align: left;
         padding-left: 15px;
+        padding-top: 6px;
+        padding-botton: 6px;
         cursor: pointer;
         font-weight: 500;
     }
@@ -77,6 +87,7 @@
             id="files-menu"
             offset-y
             :close-on-content-click="false"
+            :close-on-click="false"
             :max-width="800"
             :nudge-width="500"
             :max-height="550"
@@ -122,7 +133,7 @@
                         <v-list>
                             <v-list-item>
                                 <v-list-item-content>
-                                    <v-btn text color="appGray"
+                                    <v-btn text color="appGray" class="dropdown-button"
                                            @click="loadDuoDemo">
                                         {{ dualAutofill.display }}
                                     </v-btn>
@@ -130,7 +141,7 @@
                             </v-list-item>
                             <v-list-item>
                                 <v-list-item-content>
-                                    <v-btn text color="appGray"
+                                    <v-btn text color="appGray" class="dropdown-button"
                                            @click="loadTimeDemo">
                                         {{ timeAutofill.display }}
                                     </v-btn>
@@ -140,7 +151,7 @@
                                 <label class="file-select">
                                     <!-- We can't use a normal button element here, it would become t he target of the label. -->
                                     <div id="uploadButton" class="select-button">
-                                        <span style="color: #888888">Upload Config</span>
+                                        <span class="dropdown-button">Upload Config</span>
                                     </div>
                                     <!-- Hidden file input -->
                                     <input type="file" @change="onUploadCustomFile"/>
@@ -149,6 +160,7 @@
                             <v-list-item>
                                 <v-list-item-content>
                                     <v-btn text color="appGray" :disabled="!isValid"
+                                           class="dropdown-button"
                                            @click="onDownloadCustomFile">
                                         Download Config
                                     </v-btn>
@@ -199,10 +211,11 @@
                             :class="clazzAttention"
                             :disabled="!isValid"
                             :style="'margin: 5px; width: 94px'"
+                            color="appColor"
                             outlined>
                         Load
                     </v-btn>
-                    <v-btn outlined @click="onCancel" :style="'margin: 5px width: 94px'">
+                    <v-btn outlined @click="onCancel" :style="'margin: 5px width: 94px'" color="appColor">
                         Cancel
                     </v-btn>
                 </v-flex>
@@ -835,7 +848,7 @@
         },
         computed: {
             buildList: function () {
-                if (this.speciesName && this.cohortModel.genomeBuildHelper) {
+                if (this.speciesName && this.cohortModel && this.cohortModel.genomeBuildHelper) {
                     return this.cohortModel.genomeBuildHelper.speciesToBuilds[this.speciesName].map(function (gb) {
                         return gb.name;
                     })
