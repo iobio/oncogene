@@ -24,13 +24,13 @@
                     right
                     :width="overlayWidth"
             >
-                <EvidenceDrawer
-                    :drug="selectedDrug"
-                    :screenWidth="screenWidth"
-                    :screenHeight="screenHeight"
-                    :screenFile="SCREEN_FILE"
-                    :pdxIds="PDX_IDS">
-                </EvidenceDrawer>
+                <!--<EvidenceDrawer-->
+                    <!--:drug="selectedDrug"-->
+                    <!--:screenWidth="screenWidth"-->
+                    <!--:screenHeight="screenHeight"-->
+                    <!--:screenFile="SCREEN_FILE"-->
+                    <!--:pdxIds="PDX_IDS">-->
+                <!--</EvidenceDrawer>-->
             </v-navigation-drawer>
         </v-sheet>
     </div>

@@ -177,7 +177,6 @@
                                     :arrIndex=sampleIds.indexOf(sample)
                                     :separateUrlForIndex="separateUrlForIndex"
                                     @sample-data-changed="validate"
-                                    @samples-available="onSamplesAvailable"
                                     @remove-sample="removeSample">
                             </sample-data>
                         </v-flex>
@@ -262,7 +261,7 @@
         },
         methods: {
             promiseAddSample: function (isTumor = true, stateChanged = true, scrollToSample = false) {
-                let self = this;
+                const self = this;
                 if (stateChanged) {
                     self.stateUnchanged = false;
                 }
@@ -671,6 +670,9 @@
                                             })
                                     }
                                 });
+                        })
+                        .catch((error) => {
+                            console.log('Problem adding samples while initializing files menu: ' + error);
                         });
                 }
             },

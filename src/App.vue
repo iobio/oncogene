@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-app-bar app dark color=darkPrimary>
+        <v-app-bar app dark color=appColor>
             <v-toolbar-title class="headline text-uppercase">
                 <span id="title">Oncogene.iobio</span>
             </v-toolbar-title>
@@ -25,7 +25,7 @@
             </v-btn>
         </v-app-bar>
         <v-content>
-            <Home :d3="d3"></Home>
+            <Home :d3="globalApp.d3"></Home>
         </v-content>
     </v-app>
 </template>
@@ -321,7 +321,7 @@
                     console.log(error);
                 })
         },
-    };
+    }
 </script>
 <style scoped lang="sass">
     #title

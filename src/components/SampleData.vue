@@ -86,7 +86,7 @@
                 <v-flex d-flex xs6 v-else-if="freezeSampleSwitch === true">
                     <v-container>
                         <div>
-                            <v-chip small outline color="appColor">
+                            <v-chip small outlined color="appColor">
                                 {{chipLabel}}
                             </v-chip>
                         </div>
@@ -96,10 +96,10 @@
                     <!--space holder-->
                 </v-flex>
                 <v-flex d-flex xs2 v-if="!isStaticSlot && !timeSeriesMode" style="padding-left: 30px">
-                    <v-btn small flat icon style="margin: 0 !important" class="drag-handle">
+                    <v-btn small text icon style="margin: 0 !important" class="drag-handle">
                         <v-icon color="appColor">reorder</v-icon>
                     </v-btn>
-                    <v-btn small flat icon style="margin: 0 !important"
+                    <v-btn small text icon style="margin: 0 !important"
                            @click="openConfirmationDialog">
                         <v-icon color="appColor">
                             clear
@@ -107,12 +107,12 @@
                     </v-btn>
                 </v-flex>
                 <v-flex d-flex xs2 v-else-if="!timeSeriesMode" style="padding-left: 70px">
-                    <v-btn small flat icon style="margin: 0 !important" class="drag-handle">
+                    <v-btn small text icon style="margin: 0 !important" class="drag-handle">
                         <v-icon color="appColor">reorder</v-icon>
                     </v-btn>
                 </v-flex>
                 <v-flex d-flex xs2 v-else-if="!isStaticSlot" style="padding-left: 70px">
-                    <v-btn small flat icon style="margin: 0 !important"
+                    <v-btn small text icon style="margin: 0 !important"
                            @click="openConfirmationDialog">
                         <v-icon color="appColor">clear</v-icon>
                     </v-btn>

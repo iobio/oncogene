@@ -1,6 +1,5 @@
 // import CacheHelper from './CacheHelper.js'
 // import VariantImporter from './VariantImporter.js'
-import d3 from '@/assets/d3';
 import SampleModel from './SampleModel.js'
 import CmmlUrls from '../data/cmml_urls.json'
 
@@ -421,8 +420,6 @@ class CohortModel {
             vm.order = modelInfo.order;
             vm.displayName = modelInfo.displayName;
             vm.isTumor = modelInfo.isTumor;
-            vm.isBasicMode = self.isBasicMode;
-            vm.isEduMode = self.isEduMode;
 
             let vcfPromise = null;
             if (modelInfo.vcf) {
@@ -903,12 +900,12 @@ class CohortModel {
     }
 
     _promiseLoadKnownVariantCounts(theGene, theTranscript) {
-        let self = this;
+        const self = this;
         return new Promise(function (resolve, reject) {
             self.getModel('known-variants').inProgress.loadingVariants = true;
             let binLength = null;
             if (self.knownVariantViz === 'histo') {
-                binLength = Math.floor(((+theGene.end - +theGene.start) / d3.select('#gene-viz').innerWidth()) * 8);
+                binLength = Math.floor(((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
             }
             let annotationMode = 'vep';
             self.sampleMap['known-variants'].model.promiseGetKnownVariantHistoData(theGene, theTranscript, binLength, annotationMode)
@@ -971,7 +968,7 @@ class CohortModel {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
             var binLength = null;
             if (self.cosmicVariantViz === 'histo') {
-                binLength = Math.floor( ((+theGene.end - +theGene.start) / d3.select('#gene-viz').innerWidth()) * 8);
+                binLength = Math.floor( ((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
             }
             let annotationMode = 'vep';
             self.sampleMap['cosmic-variants'].model.promiseGetCosmicVariantHistoData(theGene, theTranscript, binLength, annotationMode)
@@ -1193,7 +1190,7 @@ class CohortModel {
     }
 
     setCoverage(regionStart, regionEnd) {
-        let self = this;
+        const self = this;
         self.getCanonicalModels().forEach(function (model) {
             if (model.bamData) {
                 if (regionStart && regionEnd) {
@@ -1205,7 +1202,7 @@ class CohortModel {
                 }
 
                 if (model.coverage) {
-                    var max = d3.max(model.coverage, function (d) {
+                    var max = self.globalApp.d3.max(model.coverage, function (d) {
                         return d[1]
                     });
                     if (max > self.maxDepth) {

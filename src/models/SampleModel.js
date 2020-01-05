@@ -41,9 +41,9 @@ class SampleModel {
         this.entryDataChanged = true;       // True if something in the filesMenu has changed for this sample, and the track needs to be udpated upon clicking 'Load'
         this.lastGeneLoaded = null;         // The most recent gene analyzed for this sample
         this.noMatchingSamples = false;     // True if active filters leave no variants applicable from this sample
-
-        this.lastVcfAlertify = null;
-        this.lastBamAlertify = null;
+        //
+        // this.lastVcfthis.alertify = null;
+        // this.lastBamthis.alertify = null;
 
         this.cohort = null;
 
@@ -54,16 +54,17 @@ class SampleModel {
         this.coverage = [[]];
         this.somaticVarCoverage = [[]]; // List of [start site, read depth] corresponding to sites in tumor samples but not in normal samples - aka this is only used in normal SampleModel
 
-        this.inProgress = {
+        this.iProgress = {
             'loadingVariants': false,
             'callingVariants': false,
             'loadingCoverage': false
         };
 
+        this.alertify = null;   // TODO: figure out how to fix this
     }
 
     getSampleIdentifier(theSampleName) {
-        var id = this.relationship + "&&" + this.sampleName + "&&" + theSampleName;
+        return this.id + "&&" + this.sampleName + "&&" + theSampleName;
     }
 
     promiseSetLoadState(theVcfData, taskName) {
@@ -240,7 +241,7 @@ class SampleModel {
                                     .then(function (theFbData) {
                                             // If no variants are loaded, create a dummy vcfData with 0 features
                                             if (theFbData && theFbData.features) {
-                                                theVcfData = $.extend({}, theFbData);
+                                                theVcfData = me.globalApp.$.extend({}, theFbData);
                                                 theVcfData.features = [];
                                                 me.promiseSetLoadState(theVcfData, 'clinvar')
                                                     .then(function () {
@@ -288,8 +289,8 @@ class SampleModel {
                                 me.promiseGetVcfData(geneObject, selectedTranscript, false)
                                     .then(function (data) {
                                             var theVcfData = data.vcfData;
-                                            var dangerSummary = me.promiseGetDangerSummary(geneObject.gene_name)
-                                                .then(function (dangerSummary) {
+                                            me.promiseGetDangerSummary(geneObject.gene_name)
+                                                .then(function () {
                                                         if (theVcfData && theVcfData.features) {
                                                             theFbData = me.reconstituteFbData(theVcfData);
                                                             resolve({fbData: theFbData, model: me});
@@ -331,7 +332,7 @@ class SampleModel {
 
     reconstituteFbData(theVcfData) {
         var me = this;
-        var theFbData = $.extend({}, theVcfData);
+        var theFbData = me.globalApp.$.extend({}, theVcfData);
         theFbData.features = [];
         theFbData.loadState = {clinvar: true, coverage: true, inheritance: true};
         // Add the unique freebayes variants to vcf data to include
@@ -341,7 +342,7 @@ class SampleModel {
                 console.log("empty variant!")
             } else {
                 if (v.hasOwnProperty('fbCalled') && v.fbCalled == 'Y') {
-                    var variantObject = $.extend({}, v);
+                    var variantObject = me.globalApp.$.extend({}, v);
                     theFbData.features.push(variantObject);
                     variantObject.source = v;
                 }
@@ -437,7 +438,7 @@ class SampleModel {
 
 
     promiseGetGeneCoverage(geneObject, transcript) {
-        var me = this;
+        const me = this;
 
         return new Promise(function (resolve, reject) {
             me.promiseGetCachedGeneCoverage(geneObject, transcript)
@@ -486,7 +487,6 @@ class SampleModel {
     }
 
     _setGeneCoverageExonNumbers(transcript, geneCoverageObjects) {
-        var me = this;
         transcript.features.forEach(function (feature) {
             var gc = null;
             var matchingFeatureCoverage = geneCoverageObjects.filter(function (gc) {
@@ -592,36 +592,27 @@ class SampleModel {
     }
 
     promiseGetVariantCount(data) {
-        var me = this;
+        const me = this;
 
-        var resolveIt = function (resolve, theVcfData) {
+        let resolveIt = function (resolve, theVcfData) {
             var loadedVariantCount = 0;
             if (theVcfData && theVcfData.features) {
-                theVcfData.features.forEach(function (variant) {
-                    if (variant.fbCalled == 'Y') {
-
-                    } else if (variant.zygosity && variant.zygosity.toLowerCase() == "homref") {
-
-                    } else {
-                        loadedVariantCount++;
-                    }
+                theVcfData.features.forEach(function () {
+                    loadedVariantCount++;
                 });
             }
             resolve(loadedVariantCount);
-
-        }
+        };
         return new Promise(function (resolve, reject) {
-            var theVcfData = null;
             if (data != null && data.features != null) {
                 resolveIt(resolve, data);
             } else {
                 me.promiseGetVcfData(window.gene, window.selectedTranscript)
                     .then(function (theData) {
-                            theVcfData = theData.vcfData;
                             resolveIt(resolve, theData.vcfData);
                         },
                         function (error) {
-                            var msg = "Problem in SampleModel.promiseGetVariantCount(): " + error;
+                            let msg = "Problem in SampleModel.promiseGetVariantCount(): " + error;
                             console.log(msg);
                             reject(msg);
                         })
@@ -665,7 +656,7 @@ class SampleModel {
     }
 
     reduceBamData(coverageData, numberOfPoints) {
-        var factor = d3.round(coverageData.length / numberOfPoints);
+        var factor = this.globalApp.d3.round(coverageData.length / numberOfPoints);
         var xValue = function (d) {
             return d[0];
         };
@@ -823,8 +814,6 @@ class SampleModel {
     }
 
     init(cohort) {
-        var me = this;
-
         // init vcf.iobio
         this.cohort = cohort;
         this.vcf = vcfiobio(this.globalApp);
@@ -832,10 +821,10 @@ class SampleModel {
         this.vcf.setGenericAnnotation(this.cohort.genericAnnotation);
         this.vcf.setGenomeBuildHelper(this.cohort.genomeBuildHelper);
         this.vcf.setIsEduMode(this.cohort.isEduMode);
-    };
+    }
 
     promiseBamFilesSelected(fileSelection) {
-        var me = this;
+        const me = this;
         return new Promise(function (resolve, reject) {
             me.bamData = null;
             me.fbData = null;
@@ -848,8 +837,8 @@ class SampleModel {
             } else {
                 me.bam = new Bam(me.globalApp, me.cohort.endpoint);
                 me.bam.openBamFile(fileSelection, function (success, message) {
-                    if (me.lastBamAlertify) {
-                        me.lastBamAlertify.dismiss();
+                    if (me.lastBamthis.alertify) {
+                        me.lastBamthis.alertify.dismiss();
                     }
                     if (success) {
                         me.bamFileOpened = true;
@@ -857,12 +846,12 @@ class SampleModel {
                         resolve(me.bam.bamFile.name);
 
                     } else {
-                        if (me.lastBamAlertify) {
-                            me.lastBamAlertify.dismiss();
+                        if (me.lastBamthis.alertify) {
+                            me.lastBamthis.alertify.dismiss();
                         }
                         var msg = "<span style='font-size:18px'>" + message + "</span>";
-                        alertify.set('notifier', 'position', 'top-right');
-                        me.lastBamAlertify = alertify.error(msg, 15);
+                        this.alertify.set('notifier', 'position', 'top-right');
+                        me.lastBamthis.alertify = this.alertify.error(msg, 15);
 
                         reject(message);
 
@@ -892,15 +881,15 @@ class SampleModel {
             this.bam = new Bam(this.globalApp, this.cohort.endpoint, bamUrl, baiUrl);
 
             this.bam.checkBamUrl(bamUrl, baiUrl, function (success, errorMsg) {
-                if (me.lastBamAlertify) {
-                    me.lastBamAlertify.dismiss();
+                if (me.lastBamthis.alertify) {
+                    me.lastBamthis.alertify.dismiss();
                 }
                 if (!success) {
                     me.bamUrlEntered = false;
                     me.bam = null;
                     var msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + bamUrl + "</span>";
-                    alertify.set('notifier', 'position', 'top-right');
-                    me.lastBamAlertify = alertify.error(msg, 15);
+                    this.alertify.set('notifier', 'position', 'top-right');
+                    me.lastBamthis.alertify = this.alertify.error(msg, 15);
                 }
                 if (callback) {
 
@@ -930,8 +919,8 @@ class SampleModel {
             } else {
                 me.vcf.openVcfFile(fileSelection,
                     function (success, message) {
-                        if (me.lastVcfAlertify) {
-                            me.lastVcfAlertify.dismiss();
+                        if (me.lastVcfthis.alertify) {
+                            me.lastVcfthis.alertify.dismiss();
                         }
                         if (success) {
                             me.vcfFileOpened = true;
@@ -947,8 +936,8 @@ class SampleModel {
                         } else {
 
                             var msg = "<span style='font-size:18px'>" + message + "</span>";
-                            alertify.set('notifier', 'position', 'top-right');
-                            me.lastVcfAlertify = alertify.error(msg, 15);
+                            this.alertify.set('notifier', 'position', 'top-right');
+                            me.lastVcfthis.alertify = this.alertify.error(msg, 15);
 
                             reject(message);
                         }
@@ -983,7 +972,7 @@ class SampleModel {
     }
 
     onVcfUrlEntered(vcfUrl, tbiUrl, callback) {
-        let me = this;
+        const me = this;
         this.vcfData = null;
         let success = true;
         this.sampleName = null;
@@ -1003,8 +992,8 @@ class SampleModel {
             me.isMultiSample = false;
 
             this.vcf.openVcfUrl(vcfUrl, tbiUrl, function (success, errorMsg) {
-                if (me.lastVcfAlertify) {
-                    me.lastVcfAlertify.dismiss();
+                if (me.lastVcfthis.alertify) {
+                    me.lastVcfthis.alertify.dismiss();
                 }
                 if (success) {
                     me.vcfUrlEntered = true;
@@ -1018,8 +1007,8 @@ class SampleModel {
                 } else {
                     me.vcfUrlEntered = false;
                     let msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + vcfUrl + "</span>";
-                    alertify.set('notifier', 'position', 'top-right');
-                    me.lastVcfAlertify = alertify.error(msg, 15);
+                    this.alertify.set('notifier', 'position', 'top-right');
+                    me.lastVcfthis.alertify = this.alertify.error(msg, 15);
                     callback(success);
                 }
             });
@@ -1097,7 +1086,7 @@ class SampleModel {
     promiseGetMatchingVariant(variant) {
         var me = this;
         return new Promise(function (resolve, reject) {
-            var theVcfData = me.promiseGetVcfData(window.gene, window.selectedTranscript)
+            me.promiseGetVcfData(window.gene, window.selectedTranscript)
                 .then(function (data) {
                         var theVcfData = data.vcfData;
                         var matchingVariant = null;
@@ -1128,7 +1117,6 @@ class SampleModel {
   * in preparation for getting data.
   */
     wipeGeneData() {
-        var me = this;
         this.vcfData = null;
         this.fbData = null;
         this.bamData = null;
@@ -1265,7 +1253,6 @@ class SampleModel {
 
 
     promiseAnnotated(theVcfData) {
-        var me = this;
         return new Promise(function (resolve, reject) {
             if (theVcfData != null &&
                 theVcfData.features != null &&
@@ -1289,12 +1276,10 @@ class SampleModel {
             if (theVcfData != null &&
                 theVcfData.features != null &&
                 theVcfData.loadState != null &&
-                (dataCard.mode == 'single' || theVcfData.loadState['inheritance'] == true) &&
-                theVcfData.loadState['clinvar'] == true &&
-                (!me.isBamLoaded() || theVcfData.loadState['coverage'] == true)) {
-
-                resolve();
-
+                (theVcfData.loadState['inheritance'] === true) &&
+                theVcfData.loadState['clinvar'] === true &&
+                (!me.isBamLoaded() || theVcfData.loadState['coverage'] === true)) {
+                    resolve();
             } else {
                 reject();
             }
@@ -1303,14 +1288,14 @@ class SampleModel {
 
     }
 
-    promiseGetVariantExtraAnnotations(theGene, theTranscript, variant, format, getHeader = false, sampleNames) {
+    promiseGetVariantExtraAnnotations(theGene, theTranscript, variant, format, getHeader = false) {
         var me = this;
 
         return new Promise(function (resolve, reject) {
 
 
             // Create a gene object with start and end reduced to the variants coordinates.
-            var fakeGeneObject = $().extend({}, theGene);
+            var fakeGeneObject = me.globalApp.$().extend({}, theGene);
             fakeGeneObject.start = variant.start;
             fakeGeneObject.end = variant.end;
 
@@ -1401,6 +1386,7 @@ class SampleModel {
                                     me.promiseGetVcfData(theGene, theTranscript)
                                         .then(function (data) {
                                             var cachedVcfData = data.vcfData;
+                                            var msg = '';
                                             if (cachedVcfData) {
                                                 var theVariants = cachedVcfData.features.filter(function (d) {
                                                     if (d.start == v.start &&
@@ -1435,7 +1421,7 @@ class SampleModel {
                                                     ];
                                                     vepAnnots.forEach(function (vepAnnot) {
                                                         theVariant[vepAnnot] = v[vepAnnot];
-                                                    })
+                                                    });
 
                                                     // re-cache the data
                                                     me._promiseCacheData(cachedVcfData, CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
@@ -1443,18 +1429,18 @@ class SampleModel {
                                                             // return the annotated variant
                                                             resolve(theVariant);
                                                         }, function (error) {
-                                                            var msg = "Problem caching data in SampleModel.promiseGetVariantExtraAnnotations(): " + error;
+                                                            msg = "Problem caching data in SampleModel.promiseGetVariantExtraAnnotations(): " + error;
                                                             console.log(msg);
                                                             reject(msg);
                                                         });
 
                                                 } else {
-                                                    var msg = "Cannot find corresponding variant to update HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
+                                                    msg = "Cannot find corresponding variant to update HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
                                                     console.log(msg);
                                                     reject(msg);
                                                 }
                                             } else {
-                                                var msg = "Unable to update gene vcfData cache with updated HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
+                                                msg = "Unable to update gene vcfData cache with updated HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
                                                 console.log(msg);
                                                 reject(msg);
 
@@ -1628,7 +1614,6 @@ class SampleModel {
             // it.  (No need to retrieve the variants from the iobio service.)
             let resultMap = {};
             let promises = [];
-            let bookmarkPromises = [];
             variantModels.forEach(function (model) {
                 let p = model._promiseGetData(CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
                     .then(function (vcfData) {
@@ -1678,7 +1663,6 @@ class SampleModel {
                                     );
                                 })
                                 .then(function(data) {
-                                        let annotatedRecs = data[0];
                                         let results = data[1];
 
                                         if (!isMultiSample) {
@@ -1758,7 +1742,7 @@ class SampleModel {
 
                                     },
                                     function (error) {
-                                        reject("missing reference")
+                                        reject("missing reference: " + error);
                                     });
                         }
                     },
@@ -1772,11 +1756,9 @@ class SampleModel {
 
     determineAffectedStatus(data, theGene, theTranscript, affectedInfo, callback) {
         var me = this;
-
-
         var promise = null;
         if (data != null) {
-            promise = new Promise(function (resolve, reject) {
+            promise = new Promise(function (resolve) {
                 resolve(data);
             })
         } else {
@@ -1910,27 +1892,27 @@ class SampleModel {
         // Find the highest value (the least rare AF) betweem exac and 1000g to evaluate
         // as 'lowest' af for all variants in gene
         var afHighest = null;
-        if ($.isNumeric(variant.afExAC) && $.isNumeric(variant.af1000G)) {
+        if (me.globalApp.$.isNumeric(variant.afExAC) && me.globalApp.$.isNumeric(variant.af1000G)) {
             // Ignore exac n/a.  If exac is higher than 1000g, evaluate exac
             if (variant.afExAC > -100 && variant.afExAC >= variant.af1000G) {
                 variant.afFieldHighest = 'afExAC';
             } else {
                 variant.afFieldHighest = 'af1000G';
             }
-        } else if ($.isNumeric(variant.afExAC)) {
+        } else if (me.globalApp.$.isNumeric(variant.afExAC)) {
             variant.afFieldHighest = 'afExAC';
 
-        } else if ($.isNumeric(variant.af1000G)) {
+        } else if (me.globalApp.$.isNumeric(variant.af1000G)) {
             variant.afFieldHighest = 'af1000G';
         }
         afHighest = me.getHighestAf(variant);
 
         if (me.globalApp.vepAF) {
-            if ($.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
+            if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
                 if (variant.vepAf.gnomAD.AF >= afHighest) {
                     variant.afFieldHighest = 'afgnomAD';
                 }
-            } else if ($.isNumeric(variant.vepAf.gnomAD.AF)) {
+            } else if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF)) {
                 variant.afFieldHighest = 'afgnomAD';
             }
         }
@@ -1938,7 +1920,6 @@ class SampleModel {
     }
 
     getHighestAf(variant) {
-        var me = this;
         if (variant.afFieldHighest) {
             var subfields = variant.afFieldHighest.split(".");
             var current = variant;
@@ -1953,7 +1934,6 @@ class SampleModel {
 
 
     _determineAffectedStatusImpl(theVcfData, affectedStatus, affectedInfo) {
-        var me = this;
         theVcfData.features.forEach(function (variant) {
             SampleModel._determineAffectedStatusForVariant(variant, affectedStatus, affectedInfo);
         });
@@ -1984,7 +1964,7 @@ class SampleModel {
                         me.promiseGetFbData(geneObject, transcript, true)
                             .then(function (data) {
                                 var theFbData = data.fbData;
-                                var vcfDataCached = theVcfData && theVcfData.loadState != null && (dataCard.mode == 'single' || theVcfData.loadState['inheritance']);
+                                var vcfDataCached = theVcfData && theVcfData.loadState != null && (theVcfData.loadState['inheritance']);
                                 resolve(vcfDataCached && (!checkForCalledVariants || (theFbData && theFbData.features)));
                             })
                     },
@@ -2004,7 +1984,7 @@ class SampleModel {
             {
                 id: this.getId(),
                 sample: (this.selectedSample != null ? this.selectedSample : "null"),
-                gene: (geneName != null ? geneName : gene.gene_name),
+                gene: (geneName),
                 transcript: (transcript != null ? transcript.transcript_id : "null"),
                 annotationScheme: (me.getAnnotationScheme().toLowerCase()),
                 dataKind: dataKind
@@ -2044,7 +2024,7 @@ class SampleModel {
             });
 
             // Include all of the sample names for the proband
-            me.getAffectedInfo().forEach(function(info, index) {
+            me.getAffectedInfo().forEach(function(info) {
                 if (info.model == me) {
                     // ignore the affected info for this sample.  We already added it
                     // to the list of samples to retrieve
@@ -2163,8 +2143,6 @@ class SampleModel {
 
     _refreshVariantsWithCoverage(theVcfData, coverage, callback) {
         var me = this;
-        var vcfIter = 0;
-        var covIter = 0;
         if (theVcfData == null || coverage == null) {
             callback();
         }
@@ -2178,9 +2156,7 @@ class SampleModel {
                 recs[vcfIter].bamDepth = recs[vcfIter - 1].bamDepth;
                 vcfIter++;
             }
-            if (vcfIter >= recs.length) {
-
-            } else {
+            if (vcfIter < recs.length) {
                 if (covIter >= coverage.length) {
                     recs[vcfIter].bamDepth = "";
                     vcfIter++;
@@ -2216,7 +2192,6 @@ class SampleModel {
     }
 
     _refreshVariantsWithVariantIds(theVcfData, annotatedVcfData) {
-        var me = this;
         if (theVcfData == null) {
             return;
         }
@@ -2423,10 +2398,10 @@ class SampleModel {
 
         var phTokens = clinvar.trait_set.map(function (d) {
             return d.trait_name;
-        }).join('; ')
-        if (phTokens != "") {
+        }).join('; ');
+        if (phTokens !== "") {
             var tokens = phTokens.split("; ");
-            var idx = 0;
+            idx = 0;
             tokens.forEach(function (phToken) {
                 // Replace space with underlink
                 phToken = phToken.split(" ").join("_");
@@ -2507,7 +2482,7 @@ class SampleModel {
    *  variants
    */
     addCalledVariantsToVcfData(theVcfData, theFbData) {
-        var me = this;
+        const me = this;
 
         // Exit if there are no cached called variants
         if (theFbData == null || theFbData.features.length == 0) {
@@ -2521,7 +2496,7 @@ class SampleModel {
 
         // We will call this multiple times, so clear out any called variants from the
         // vcf data to start fresh
-        theVcfData.features = theVcfData.features.filter(function (d, i) {
+        theVcfData.features = theVcfData.features.filter(function (d) {
             return !d.hasOwnProperty("fbCalled") || d.fbCalled != 'Y';
         })
 
@@ -2542,7 +2517,7 @@ class SampleModel {
         // Add the unique freebayes variants to vcf data to include
         // in feature matrix
         theFbData.features.forEach(function (v) {
-            var variantObject = $.extend({}, v);
+            var variantObject = me.globalApp.$.extend({}, v);
             theVcfData.features.push(variantObject);
             v.source = variantObject;
         });
@@ -2583,7 +2558,7 @@ class SampleModel {
         // Add the unique freebayes variants to vcf data to include
         // in feature matrix
         theFbData.features.forEach(function (v) {
-            var variantObject = $.extend({}, v);
+            var variantObject = me.globalApp.$.extend({}, v);
             theVcfData.features.push(variantObject);
             v.source = variantObject;
         });
@@ -2656,7 +2631,7 @@ class SampleModel {
             // Allele frequency Exac - Treat null and blank af as 0
             let variantAf = d.afHighest && d.afHighest !== "." ? d.afHighest : 0;
             let meetsAf = true;
-            if ($.isNumeric(filterObject.afMin) && $.isNumeric(filterObject.afMax)) {
+            if (me.globalApp.$.isNumeric(filterObject.afMin) && me.globalApp.$.isNumeric(filterObject.afMax)) {
                 meetsAf = (variantAf >= filterObject.afMin && variantAf <= filterObject.afMax);
             }
 
@@ -2683,8 +2658,8 @@ class SampleModel {
                     }
                 }
                 if (!meetsExonic) {
-                    for (var key in d[effectField]) {
-                        if (key.toLowerCase() !== 'intron_variant' && key.toLowerCase() !== 'intron variant' && key.toLowerCase() !== "intron") {
+                    for (var keyE in d[effectField]) {
+                        if (keyE.toLowerCase() !== 'intron_variant' && keyE.toLowerCase() !== 'intron variant' && keyE.toLowerCase() !== "intron") {
                             meetsExonic = true;
                         }
                     }
@@ -2700,9 +2675,9 @@ class SampleModel {
             // Evaluate the coverage for the variant to see if it meets min.
             let meetsCoverage = true;
             if (coverageMin && coverageMin > 0) {
-                if ($.isNumeric(d.bamDepth)) {
+                if (me.globalApp.$.isNumeric(d.bamDepth)) {
                     meetsCoverage = d.bamDepth >= coverageMin;
-                } else if ($.isNumeric(d.genotypeDepth)) {
+                } else if (me.globalApp.$.isNumeric(d.genotypeDepth)) {
                     meetsCoverage = d.genotypeDepth >= coverageMin;
                 }
             }
@@ -2716,8 +2691,8 @@ class SampleModel {
             // at least one of the selected values (e.g. HIGH or MODERATE for IMPACT)
             // for each annotation (e.g. IMPACT and ZYGOSITY) to be included.
             let evaluations = {};
-            for (var key in filterObject.annotsToInclude) {
-                var annot = filterObject.annotsToInclude[key];
+            for (var keyA in filterObject.annotsToInclude) {
+                var annot = filterObject.annotsToInclude[keyA];
                 if (annot.state) {
                     var evalObject = evaluations[annot.key];
                     if (!evalObject) {
@@ -2756,13 +2731,14 @@ class SampleModel {
                     if (!evalObject.hasOwnProperty(evalKey)) {
                         evalObject[evalKey] = {matchCount: 0, notMatchCount: 0};
                     }
-                    if ($.isPlainObject(annotValue)) {
-                        for (avKey in annotValue) {
-                            var doesMatch = avKey.toLowerCase() == annot.value.toLowerCase();
+                    var doesMatch = false;
+                    if (me.globalApp.$.isPlainObject(annotValue)) {
+                        for (var avKey in annotValue) {
+                            doesMatch = avKey.toLowerCase() == annot.value.toLowerCase();
                             incrementEqualityCount(doesMatch, evalObject[evalKey])
                         }
                     } else {
-                        var doesMatch = annotValue.toLowerCase() == annot.value.toLowerCase();
+                        doesMatch = annotValue.toLowerCase() == annot.value.toLowerCase();
                         incrementEqualityCount(doesMatch, evalObject[evalKey])
                     }
                 }
@@ -2772,8 +2748,8 @@ class SampleModel {
             // If annots are to be evaluated, the variant must match
             // at least one value for each annot to meet criteria
             let meetsAnnot = true;
-            for (var key in evaluations) {
-                var evalObject = evaluations[key];
+            for (key in evaluations) {
+                let evalObject = evaluations[key];
 
                 // Bypass evaluation for non-proband on inheritance mode.  This only
                 // applied to proband.
@@ -2790,13 +2766,13 @@ class SampleModel {
             // we set that the annotation critera was not met.  Example:  When filter is
             // clinvar 'not equal' pathogenic, and variant.clinvar == 'pathogenic' matchCount > 0,
             // so the variants does not meet the annotation criteria
-            let meetsNotEqualAnnot = true
-            for (var key in evaluations) {
-                var evalObject = evaluations[key];
+            let meetsNotEqualAnnot = true;
+            for (key in evaluations) {
+                let evalObject = evaluations[key];
 
                 // Bypass evaluation for non-proband on inheritance mode.  This only
                 // applied to proband.
-                if (key == 'inheritance' && me.getRelationship() != 'proband') {
+                if (key === 'inheritance' && me.getRelationship() !== 'proband') {
                     continue;
                 }
                 // Any case where the variant attribute matches value on a 'not equal' filter,
@@ -2826,8 +2802,6 @@ class SampleModel {
     }
 
     filterKnownVariants(data, start, end, bypassRangeFilter, filterModel) {
-        var me = this;
-
         var theFilters = filterModel.getModelSpecificFilters('known-variants').filter(function (theFilter) {
             return theFilter.value == true;
         })
@@ -2841,11 +2815,11 @@ class SampleModel {
                 }
             }
 
-            var meetsFilter = true;
+            let meetsFilter = true;
             if (theFilters.length > 0) {
-                var meetsFilter = false;
+                meetsFilter = false;
                 theFilters.forEach(function (theFilter) {
-                    if (d[theFilter.key] == theFilter.clazz) {
+                    if (d[theFilter.key] === theFilter.clazz) {
                         meetsFilter = true;
                     }
                 });
@@ -2899,7 +2873,7 @@ class SampleModel {
             }
         }
         var impactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToFilter]);
-        for (var key in impactList) {
+        for (key in impactList) {
             impacts += " " + key;
         }
 
@@ -2907,7 +2881,7 @@ class SampleModel {
             colorimpacts += " " + "impact_SOMATIC";
         } else {
         var colorImpactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToColor]);
-        for (var key in colorImpactList) {
+        for (key in colorImpactList) {
             colorimpacts += " " + 'impact_' + key;
             }
         }
@@ -2953,7 +2927,6 @@ class SampleModel {
                         .then(function (data) {
 
                             if (data != null && data.features != null) {
-                                var annotatedRecs = data[0];
                                 me.vcfData = data[1];
 
                                 me.vcfData.features = me.vcfData.features.sort(SampleModel.orderVariantsByPosition);
@@ -2973,8 +2946,7 @@ class SampleModel {
                             reject(message);
                         });
                 }, function (error) {
-                    console.log("missing reference");
-                    reject("missing reference");
+                    reject("missing reference: " + error);
                 });
 
             } else {
@@ -3043,8 +3015,8 @@ class SampleModel {
                     },
                     function (error) {
                         CacheHelper.showError(key, error);
-                        alertify.set('notifier', 'position', 'top-right');
-                        alertify.error("Error occurred when compressing analyzed data before caching.", 15);
+                        this.alertify.set('notifier', 'position', 'top-right');
+                        this.alertify.error("Error occurred when compressing analyzed data before caching.", 15);
                         reject(error);
                     })
         })
@@ -3064,8 +3036,9 @@ class SampleModel {
 }
 
 
-SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, geneCoverageAll, filterModel, translator, annotationScheme) {
-    var dangerCounts = $().extend({}, options);
+SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, geneCoverageAll, filterModel, translator) {
+    const me = this;
+    var dangerCounts = me.globalApp.$().extend({}, options);
     dangerCounts.CONSEQUENCE = {};
     dangerCounts.IMPACT = {};
     dangerCounts.CLINVAR = {};
@@ -3091,9 +3064,6 @@ SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, gen
         return dangerCounts;
     }
 
-
-    var siftClasses = {};
-    var polyphenClasses = {};
     var clinvarClasses = {};
     var impactClasses = {};
     var inheritanceClasses = {};
@@ -3123,7 +3093,7 @@ SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, gen
 
         for (key in variant.highestPolyphen) {
             if (translator.polyphenMap.hasOwnProperty(key) && translator.polyphenMap[key].badge) {
-                var clazz = translator.polyphenMap[key].clazz;
+                clazz = translator.polyphenMap[key].clazz;
                 dangerCounts.POLYPHEN = {};
                 dangerCounts.POLYPHEN[clazz] = {};
                 dangerCounts.POLYPHEN[clazz][key] = variant.highestPolyphen[key];
@@ -3131,14 +3101,12 @@ SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, gen
         }
 
         if (variant.hasOwnProperty('clinvar')) {
-            var clinvarEntry = null;
-            var clinvarDisplay = null;
-            var clinvarKey = null;
+            let clinvarEntry = null;
+            let clinvarKey = null;
             for (var key in translator.clinvarMap) {
                 var me = translator.clinvarMap[key];
                 if (clinvarEntry == null && me.clazz == variant.clinvar) {
                     clinvarEntry = me;
-                    clinvarDisplay = key;
                     clinvarKey = key;
                 }
             }
@@ -3148,7 +3116,7 @@ SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, gen
         }
 
         if (variant.inheritance && variant.inheritance !== 'none') {
-            var clazz = translator.inheritanceMap[variant.inheritance].clazz;
+            clazz = translator.inheritanceMap[variant.inheritance].clazz;
             inheritanceClasses[clazz] = variant.inheritance;
         }
 
@@ -3257,7 +3225,7 @@ SampleModel._determineAffectedStatusForVariant = function (variant, affectedStat
                 matchesCount++;
             }
         }
-    })
+    });
 
     if (matchesCount > 0 && matchesCount == affectedInfo.length) {
         variant[summaryField] = "present_all";
@@ -3266,7 +3234,7 @@ SampleModel._determineAffectedStatusForVariant = function (variant, affectedStat
     } else {
         variant[summaryField] = "present_none";
     }
-}
+};
 
 
 SampleModel.summarizeDangerForGeneCoverage = function (dangerObject, geneCoverageAll, filterModel, clearOtherDanger = false, refreshOnly = false) {
@@ -3338,7 +3306,7 @@ SampleModel.summarizeError = function (theError) {
     summaryObject.featureCount = 0;
 
     return summaryObject;
-}
+};
 
 
 SampleModel.calcMaxAlleleCount = function (theVcfData, maxAlleleCount = 0) {
@@ -3352,23 +3320,22 @@ SampleModel.calcMaxAlleleCount = function (theVcfData, maxAlleleCount = 0) {
         })
     }
     return maxAlleleCount;
-}
+};
 
 
 SampleModel.orderVariantsByPosition = function (a, b) {
+    const me = this;
     var refAltA = a.ref + "->" + a.alt;
     var refAltB = b.ref + "->" + b.alt;
 
     var chromA = a.chrom.indexOf("chr") == 0 ? a.chrom.split("chr")[1] : a.chrom;
     var chromB = b.chrom.indexOf("chr") == 0 ? b.chrom.split("chr")[1] : b.chrom;
-    if (!$.isNumeric(chromA)) {
+    if (!me.globalApp.$.isNumeric(chromA)) {
         chromA = chromA.charCodeAt(0);
     }
-    ;
-    if (!$.isNumeric(chromB)) {
+    if (!me.globalApp.$.isNumeric(chromB)) {
         chromB = chromB.charCodeAt(0);
     }
-    ;
 
     if (+chromA == +chromB) {
         if (a.start == b.start) {
@@ -3391,26 +3358,22 @@ SampleModel.orderVariantsByPosition = function (a, b) {
             return 1;
         }
     }
-
-
-}
+};
 
 SampleModel.orderVcfRecords = function (rec1, rec2) {
-
+    const me = this;
 
     var fields1 = rec1.split("\t");
     var fields2 = rec2.split("\t");
 
     var chrom1 = fields1[0].indexOf("chr") == 0 ? fields1[0].split("chr")[1] : fields1[0];
     var chrom2 = fields2[0].indexOf("chr") == 0 ? fields2[0].split("chr")[1] : fields2[0];
-    if (!$.isNumeric(chrom1)) {
+    if (!me.globalApp.$.isNumeric(chrom1)) {
         chrom1 = chrom1.charCodeAt(0);
     }
-    ;
-    if (!$.isNumeric(chrom2)) {
+    if (!me.globalApp.$.isNumeric(chrom2)) {
         chrom2 = chrom2.charCodeAt(0);
     }
-    ;
 
     var start1 = +fields1[1];
     var start2 = +fields2[1];
