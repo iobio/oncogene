@@ -1,4 +1,3 @@
-import iobio from '../plugins/iobio.js';
 import { Client } from 'iobio-api-client';
 
 export default class EndpointCmd {
@@ -13,7 +12,8 @@ export default class EndpointCmd {
 
         // talk to gru
         this.api = new Client('dev.backend.iobio.io:9002', {secure: false});
-        this.gruBackend = false;
+        this.gruBackend = true;
+        this.iobio = {};  // TODO: making this null to circumvent linter for now
 
         // iobio services
         this.IOBIO = {};
@@ -46,7 +46,7 @@ export default class EndpointCmd {
             if (tbiUrl) {
                 args.push('"' + tbiUrl + '"');
             }
-            let cmd = new iobio.cmd(
+            let cmd = this.iobio.cmd(
                 me.IOBIO.tabix,
                 args,
                 {ssl: me.globalApp.useSSL}
@@ -71,7 +71,7 @@ export default class EndpointCmd {
                 args.push('"' + vcfUrl + '.tbi' + '"');
             }
 
-            let cmd = new iobio.cmd(
+            let cmd = this.iobio.cmd(
                 me.IOBIO.vcfReadDepther,
                 args,
                 {ssl: me.globalApp.useSSL}
@@ -104,10 +104,10 @@ export default class EndpointCmd {
             // Form iobio command based on type of vcf input
             if (vcfSource.hasOwnProperty('vcfUrl')) {
                 let view_args = ['view', '-r', regionParam, '"' + vcfSource.vcfUrl + '"'];
-                cmd = new iobio.cmd(me.IOBIO.bcftools, view_args, {ssl: me.globalApp.useSSL});
+                cmd = this.iobio.cmd(me.IOBIO.bcftools, view_args, {ssl: me.globalApp.useSSL});
             } else if (vcfSource.hasOwnProperty('writeStream')) {
                 // If we have a local vcf file, use the writeStream function to stream in the vcf records
-                cmd = new iobio.cmd(me.IOBIO.bcftools, ['view', '-r', regionParam, vcfSource.writeStream], {ssl: me.globalApp.useSSL})
+                cmd = this.iobio.cmd(me.IOBIO.bcftools, ['view', '-r', regionParam, vcfSource.writeStream], {ssl: me.globalApp.useSSL})
             } else {
                 console.log("EndpointCmd.annotateVariants() vcfSource arg is not invalid.");
                 return null;
@@ -170,12 +170,12 @@ export default class EndpointCmd {
                 if (vcfSource.tbiUrl) {
                     args.push('"' + vcfSource.tbiUrl + '"');
                 }
-                cmd = new iobio.cmd(me.IOBIO.tabix, args, {ssl: me.globalApp.useSSL})
+                cmd = this.iobio.cmd(me.IOBIO.tabix, args, {ssl: me.globalApp.useSSL})
                     .pipe(me.IOBIO.bcftools, ['annotate', '-h', contigNameFile, '-'], {ssl: me.globalApp.useSSL})
 
             } else if (vcfSource.hasOwnProperty('writeStream')) {
                 // If we have a local vcf file, use the writeStream function to stream in the vcf records
-                cmd = new iobio.cmd(me.IOBIO.bcftools, ['annotate', '-h', contigNameFile, vcfSource.writeStream], {ssl: me.globalApp.useSSL})
+                cmd = this.iobio.cmd(me.IOBIO.bcftools, ['annotate', '-h', contigNameFile, vcfSource.writeStream], {ssl: me.globalApp.useSSL})
             } else {
                 console.log("EndpointCmd.annotateVariants() vcfSource arg is not invalid.");
                 return null;
@@ -294,7 +294,7 @@ export default class EndpointCmd {
                 contigStr += "##contig=<ID=" + ref + ">\n";
             });
             let contigNameFile = new Blob([contigStr]);
-            let cmd = new iobio.cmd(me.IOBIO.tabix, args, {ssl: me.globalApp.useSSL})
+            let cmd = this.iobio.cmd(me.IOBIO.tabix, args, {ssl: me.globalApp.useSSL})
                 .pipe(me.IOBIO.bcftools, ['annotate', '-h', contigNameFile, '-'], {ssl: me.globalApp.useSSL})
 
             // normalize variants
@@ -359,7 +359,7 @@ export default class EndpointCmd {
 
             // Create an iobio command get get the variants and add any header recs.
             let tabixArgs = ['-h', url, regionParm];
-            let cmd = new iobio.cmd(me.IOBIO.tabix, tabixArgs, {ssl: me.globalApp.useSSL});
+            let cmd = this.iobio.cmd(me.IOBIO.tabix, tabixArgs, {ssl: me.globalApp.useSSL});
 
             if (requiresVepService) {
                 let vepArgs = [];
@@ -384,7 +384,7 @@ export default class EndpointCmd {
             if (baiUrl) {
                 args.push('"' + baiUrl + '"');
             }
-            let cmd = new iobio.cmd(
+            let cmd = this.iobio.cmd(
                 me.IOBIO.samtoolsOnDemand,
                 args,
                 {ssl: me.globalApp.useSSL}
@@ -446,14 +446,14 @@ export default class EndpointCmd {
                 if (bamSource.baiUrl) {
                     args.push('"' + bamSource.baiUrl + '"');
                 }
-                cmd = new iobio.cmd(samtools, args,
+                cmd = this.iobio.cmd(samtools, args,
                     {
                         'urlparams': {'encoding': 'binary'},
                         ssl: me.globalApp.useSSL
                     });
                 cmd = cmd.pipe(samtools, ["mpileup", "-"], {ssl: me.globalApp.useSSL});
             } else {
-                cmd = new iobio.cmd(samtools, ['mpileup', bamSource.writeStream],
+                cmd = this.iobio.cmd(samtools, ['mpileup', bamSource.writeStream],
                     {
                         'urlparams': {'encoding': 'utf8'},
                         ssl: me.globalApp.useSSL
@@ -545,7 +545,7 @@ export default class EndpointCmd {
                 }
 
             }
-            let cmd = new iobio.cmd(me.IOBIO.freebayes, freebayesArgs, {ssl: me.globalApp.useSSL});
+            let cmd = this.iobio.cmd(me.IOBIO.freebayes, freebayesArgs, {ssl: me.globalApp.useSSL});
 
             // Normalize variants
             cmd = cmd.pipe(me.IOBIO.vt, ['normalize', '-r', refFastaFile, '-'], {ssl: me.globalApp.useSSL});
@@ -634,7 +634,7 @@ export default class EndpointCmd {
             args.push("-r");
             args.push(regionFile);
 
-            let cmd = new iobio.cmd(me.IOBIO.geneCoverage, args, {ssl: me.globalApp.useSSL});
+            let cmd = this.iobio.cmd(me.IOBIO.geneCoverage, args, {ssl: me.globalApp.useSSL});
             return cmd;
         }
     }
@@ -654,7 +654,7 @@ export default class EndpointCmd {
                 if (bamSource.baiUrl) {
                     args.push('"' + bamSource.baiUrl + '"');
                 }
-                let bamCmd = new iobio.cmd(samtools, args, {
+                let bamCmd = this.iobio.cmd(samtools, args, {
                     'urlparams': {'encoding': 'binary'},
                     ssl: me.globalApp.useSSL
                 });
@@ -662,7 +662,7 @@ export default class EndpointCmd {
 
             } else {
                 let args = ['view', '-b', bamSource.bamBlob];
-                let bamCmd = new iobio.cmd(samtools, args, {
+                let bamCmd = this.iobio.cmd(samtools, args, {
                     'urlparams': {'encoding': 'binary'},
                     ssl: me.globalApp.useSSL
                 });
@@ -685,7 +685,7 @@ export default class EndpointCmd {
         let clinvarUrl = me.globalApp.getClinvarUrl(me.genomeBuildHelper.getCurrentBuildName());
 
         let tabixArgs = ['-h', clinvarUrl, regionParm];
-        let cmd = new iobio.cmd(me.IOBIO.tabix, tabixArgs, {ssl: me.globalApp.useSSL});
+        let cmd = this.iobio.cmd(me.IOBIO.tabix, tabixArgs, {ssl: me.globalApp.useSSL});
 
         cmd = cmd.pipe(me.IOBIO.vt, ['view', '-f', '\"INFO.CLNSIG=~\'5|4\'\"', '-'], {ssl: me.globalApp.useSSL});
         return cmd;

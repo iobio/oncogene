@@ -91,9 +91,9 @@
             <v-layout wrap class="mt-2 ml-4">
                 <v-flex xs6 class="mt-2">
                     <v-container>
-                        <v-switch label="Time Series" hide-details style="margin:0" v-model="timeSeriesMode">
+                        <v-switch label="Time Series" color="#7f1010" hide-details style="margin:0" v-model="timeSeriesMode">
                         </v-switch>
-                        <v-switch label="Separate index URL" hide-details style="margin:0" v-model="separateUrlForIndex">
+                        <v-switch label="Separate index URL" color="#7f1010" hide-details style="margin:0" v-model="separateUrlForIndex">
                         </v-switch>
                     </v-container>
                 </v-flex>

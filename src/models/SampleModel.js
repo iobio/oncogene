@@ -837,21 +837,22 @@ class SampleModel {
             } else {
                 me.bam = new Bam(me.globalApp, me.cohort.endpoint);
                 me.bam.openBamFile(fileSelection, function (success, message) {
-                    if (me.lastBamthis.alertify) {
-                        me.lastBamthis.alertify.dismiss();
-                    }
+                    // if (me.lastBamthis.alertify) {
+                    //     me.lastBamthis.alertify.dismiss();
+                    // }
                     if (success) {
                         me.bamFileOpened = true;
                         me.getBamRefName = me._stripRefName;
                         resolve(me.bam.bamFile.name);
 
                     } else {
-                        if (me.lastBamthis.alertify) {
-                            me.lastBamthis.alertify.dismiss();
-                        }
-                        var msg = "<span style='font-size:18px'>" + message + "</span>";
-                        this.alertify.set('notifier', 'position', 'top-right');
-                        me.lastBamthis.alertify = this.alertify.error(msg, 15);
+                        // if (me.lastBamthis.alertify) {
+                        //     me.lastBamthis.alertify.dismiss();
+                        // }
+                        // var msg = "<span style='font-size:18px'>" + message + "</span>";
+                        // this.alertify.set('notifier', 'position', 'top-right');
+                        // me.lastBamthis.alertify = this.alertify.error(msg, 15);
+                        alert('Problem loading bam file');
 
                         reject(message);
 
@@ -881,15 +882,16 @@ class SampleModel {
             this.bam = new Bam(this.globalApp, this.cohort.endpoint, bamUrl, baiUrl);
 
             this.bam.checkBamUrl(bamUrl, baiUrl, function (success, errorMsg) {
-                if (me.lastBamthis.alertify) {
-                    me.lastBamthis.alertify.dismiss();
-                }
+                // if (me.lastBamthis.alertify) {
+                //     me.lastBamthis.alertify.dismiss();
+                // }
                 if (!success) {
                     me.bamUrlEntered = false;
                     me.bam = null;
-                    var msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + bamUrl + "</span>";
-                    this.alertify.set('notifier', 'position', 'top-right');
-                    me.lastBamthis.alertify = this.alertify.error(msg, 15);
+                    // var msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + bamUrl + "</span>";
+                    // this.alertify.set('notifier', 'position', 'top-right');
+                    // me.lastBamthis.alertify = this.alertify.error(msg, 15);
+                    alert('Problem opening remote bam: ' + errorMsg);
                 }
                 if (callback) {
 
@@ -992,9 +994,9 @@ class SampleModel {
             me.isMultiSample = false;
 
             this.vcf.openVcfUrl(vcfUrl, tbiUrl, function (success, errorMsg) {
-                if (me.lastVcfthis.alertify) {
-                    me.lastVcfthis.alertify.dismiss();
-                }
+            //     if (me.lastVcfthis.alertify) {
+            //         me.lastVcfthis.alertify.dismiss();
+            //     }
                 if (success) {
                     me.vcfUrlEntered = true;
                     me.vcfFileOpened = false;
@@ -1006,9 +1008,10 @@ class SampleModel {
                     });
                 } else {
                     me.vcfUrlEntered = false;
-                    let msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + vcfUrl + "</span>";
-                    this.alertify.set('notifier', 'position', 'top-right');
-                    me.lastVcfthis.alertify = this.alertify.error(msg, 15);
+                    // let msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + vcfUrl + "</span>";
+                    // this.alertify.set('notifier', 'position', 'top-right');
+                    // me.lastVcfthis.alertify = this.alertify.error(msg, 15);
+                    alert('Problem opening vcf: ' + errorMsg);
                     callback(success);
                 }
             });
