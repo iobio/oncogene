@@ -7,16 +7,12 @@
         >
             <!--Static main page-->
             <v-layout>
-                <v-flex xs5 md4>
-                    <PatientTimeline/>
+                <v-flex xs5 md3>
+                    <GlobalSidebar/>
                 </v-flex>
-                <v-flex xs7 md8>
-                    <PatientMetaData/>
-                    <DrugScores style="overflow-x: scroll"
-                            :fileName="SCORE_FILE"
-                            :drugList="DRUGS"
-                            @drugClick="onDrugClick">
-                    </DrugScores>
+                <v-flex xs7 md9>
+                    <GlobalGenome :d3="d3">
+                    </GlobalGenome>
                 </v-flex>
             </v-layout>
 
@@ -41,18 +37,20 @@
 </template>
 
 <script>
-    import PatientMetaData from './PatientMetaData.vue'
-    import PatientTimeline from './PatientTimeline.vue'
-    import DrugScores from './DrugScores.vue'
-    import EvidenceDrawer from './EvidenceDrawer.vue'
+    import GlobalSidebar from './GlobalSidebar.vue'
+    import GlobalGenome from './GlobalGenome.vue'
 
     export default {
         name: "Home.vue",
         components: {
-            PatientMetaData,
-            PatientTimeline,
-            DrugScores,
-            EvidenceDrawer
+            GlobalSidebar,
+            GlobalGenome
+        },
+        props: {
+            d3: {
+                type: Object,
+                default: null
+            }
         },
         data: () => {
             return {

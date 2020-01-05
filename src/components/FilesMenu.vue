@@ -77,141 +77,150 @@
             id="files-menu"
             offset-y
             :close-on-content-click="false"
+            :max-width="800"
             :nudge-width="500"
-            :max-height="500"
+            :max-height="550"
             v-model="showFilesMenu">
-        <v-btn flat outline slot="activator">
-            Files
-        </v-btn>
-        <v-layout wrap class="mt-2 ml-4">
-            <v-flex xs6 class="mt-2">
-                <v-container>
-                    <v-switch label="Time Series" hide-details v-model="timeSeriesMode">
-                    </v-switch>
-                    <v-switch label="Separate index URL" hide-details v-model="separateUrlForIndex">
-                    </v-switch>
-                </v-container>
-            </v-flex>
-            <v-flex xs3 class="pl-2 pr-0">
-                <v-select
-                        label="Genome Build"
-                        hide-details
-                        v-model="buildName"
-                        :disabled="launchedFromHub"
-                        :items="buildList"
-                        color="appColor"
-                        @change="updateBuildAndValidate"
-                ></v-select>
-            </v-flex>
+        <template v-slot:activator="{ on }">
+            <v-btn text outlined v-on="on">
+                Files
+            </v-btn>
+        </template>
 
-            <v-flex xs3 class="pr-0 pt-2">
-                <v-menu>
-                    <v-btn outline
-                           color="appColor"
-                           slot="activator">
-                        Auto-Fill
-                        <v-icon small>keyboard_arrow_down</v-icon>
-                    </v-btn>
-                    <v-list>
-                        <v-list-tile>
-                            <v-list-tile-action>
-                                <v-btn flat color="appGray"
-                                       @click="loadDuoDemo">
-                                    {{ dualAutofill.display }}
-                                </v-btn>
-                            </v-list-tile-action>
-                        </v-list-tile>
-                        <v-list-tile>
-                            <v-list-tile-action>
-                                <v-btn flat color="appGray"
-                                       @click="loadTimeDemo">
-                                    {{ timeAutofill.display }}
-                                </v-btn>
-                            </v-list-tile-action>
-                        </v-list-tile>
-                        <v-list-tile>
-                            <label class="file-select">
-                                <!-- We can't use a normal button element here, it would become t he target of the label. -->
-                                <div id="uploadButton" class="select-button">
-                                    <span style="color: #888888">Upload Config</span>
-                                </div>
-                                <!-- Hidden file input -->
-                                <input type="file" @change="onUploadCustomFile"/>
-                            </label>
-                        </v-list-tile>
-                        <v-list-tile>
-                            <v-list-tile-action>
-                                <v-btn flat color="appGray" :disabled="!isValid"
-                                       @click="onDownloadCustomFile">
-                                    Download Config
-                                </v-btn>
-                            </v-list-tile-action>
-                        </v-list-tile>
-                    </v-list>
-                </v-menu>
-            </v-flex>
-        </v-layout>
-        <v-form id="files-form" style="padding: 10px; overflow-y: scroll; max-height: 350px; margin-left: 15px; margin-right: 15px; border: dotted #888888 1px">
-            <v-layout wrap class="mt-2">
-                <draggable
-                        :options="{handle: 'drag-handle'}"
-                        @end="onDragEnd">
-                    <v-flex xs12
-                            v-for="sample in sampleIds"
-                            :key="sample"
-                            :id="sample">
-                            <!--v-if="modelInfoMap && modelInfoMap[sample] && Object.keys(modelInfoMap[sample]).length > 0">-->
-                        <sample-data
-                                ref="sampleDataRef"
-                                v-if="modelInfoMap && modelInfoMap[sample] && Object.keys(modelInfoMap[sample]).length > 0"
-                                :modelInfo="modelInfoMap[sample]"
-                                :timeSeriesMode="timeSeriesMode"
-                                :dragId="sample"
-                                :arrIndex=sampleIds.indexOf(sample)
-                                :separateUrlForIndex="separateUrlForIndex"
-                                :launchedFromHub="launchedFromHub"
-                                @sample-data-changed="validate"
-                                @samples-available="onSamplesAvailable"
-                                @remove-sample="removeSample">
-                        </sample-data>
-                    </v-flex>
-                </draggable>
+        <v-card>
+            <v-layout wrap class="mt-2 ml-4">
+                <v-flex xs6 class="mt-2">
+                    <v-container>
+                        <v-switch label="Time Series" hide-details style="margin:0" v-model="timeSeriesMode">
+                        </v-switch>
+                        <v-switch label="Separate index URL" hide-details style="margin:0" v-model="separateUrlForIndex">
+                        </v-switch>
+                    </v-container>
+                </v-flex>
+                <v-flex xs3 class="pl-2 pr-0">
+                    <v-select
+                            label="Genome Build"
+                            hide-details
+                            v-model="buildName"
+                            :items="buildList"
+                            color="appColor"
+                            @change="updateBuildAndValidate"
+                    ></v-select>
+                </v-flex>
+
+                <v-flex xs3 class="pr-0 pt-2">
+                    <v-menu>
+                        <template v-slot:activator="{ on }">
+                            <v-btn outlined
+                                   color="appColor"
+                                   style="margin: 5px"
+                                   v-on="on">
+                                Auto-Fill
+                                <v-icon small>keyboard_arrow_down</v-icon>
+                            </v-btn>
+                        </template>
+                        <v-list>
+                            <v-list-item>
+                                <v-list-item-content>
+                                    <v-btn text color="appGray"
+                                           @click="loadDuoDemo">
+                                        {{ dualAutofill.display }}
+                                    </v-btn>
+                                </v-list-item-content>
+                            </v-list-item>
+                            <v-list-item>
+                                <v-list-item-content>
+                                    <v-btn text color="appGray"
+                                           @click="loadTimeDemo">
+                                        {{ timeAutofill.display }}
+                                    </v-btn>
+                                </v-list-item-content>
+                            </v-list-item>
+                            <v-list-item>
+                                <label class="file-select">
+                                    <!-- We can't use a normal button element here, it would become t he target of the label. -->
+                                    <div id="uploadButton" class="select-button">
+                                        <span style="color: #888888">Upload Config</span>
+                                    </div>
+                                    <!-- Hidden file input -->
+                                    <input type="file" @change="onUploadCustomFile"/>
+                                </label>
+                            </v-list-item>
+                            <v-list-item>
+                                <v-list-item-content>
+                                    <v-btn text color="appGray" :disabled="!isValid"
+                                           @click="onDownloadCustomFile">
+                                        Download Config
+                                    </v-btn>
+                                </v-list-item-content>
+                            </v-list-item>
+                        </v-list>
+                    </v-menu>
+                </v-flex>
             </v-layout>
-        </v-form>
-        <v-layout style="padding:0 20px 5px 20px">
-            <v-flex xs6 class="mt-2 text-xs-left">
-                <v-btn small outline fab color="appColor"
-                       @click="promiseAddSample(true, true, true)">
-                    <v-icon>add</v-icon>
-                </v-btn>
-            </v-flex>
-            <v-flex xs6 class="mt-2 text-xs-right">
-                <div v-show="inProgress" style="display: inline-block; width: 50px">
-                    <img src="../assets/images/wheel.gif">
-                </div>
-                <v-btn
-                        @click="onLoad"
-                        :disabled="!isValid"
-                        :class="clazzAttention">
-                    Load
-                </v-btn>
-                <v-btn @click="onCancel">
-                    Cancel
-                </v-btn>
-            </v-flex>
-        </v-layout>
+            <v-form id="files-form" style="padding: 10px; overflow-y: scroll; max-height: 350px; margin-left: 15px; margin-right: 15px; border: dotted #888888 1px">
+                <v-layout wrap class="mt-2">
+                    <!--<draggable-->
+                            <!--:options="{handle: 'drag-handle'}"-->
+                            <!--@end="onDragEnd">-->
+                        <v-flex xs12
+                                v-for="sample in sampleIds"
+                                :key="sample"
+                                :id="sample">
+                            <!--v-if="modelInfoMap && modelInfoMap[sample] && Object.keys(modelInfoMap[sample]).length > 0">-->
+                            <sample-data
+                                    ref="sampleDataRef"
+                                    v-if="modelInfoMap && modelInfoMap[sample] && Object.keys(modelInfoMap[sample]).length > 0"
+                                    :modelInfo="modelInfoMap[sample]"
+                                    :timeSeriesMode="timeSeriesMode"
+                                    :dragId="sample"
+                                    :arrIndex=sampleIds.indexOf(sample)
+                                    :separateUrlForIndex="separateUrlForIndex"
+                                    @sample-data-changed="validate"
+                                    @samples-available="onSamplesAvailable"
+                                    @remove-sample="removeSample">
+                            </sample-data>
+                        </v-flex>
+                    <!--</draggable>-->
+                </v-layout>
+            </v-form>
+            <v-layout style="padding:0 20px 5px 20px">
+                <v-flex xs6 class="mt-2 text-left">
+                    <v-btn small outlined fab color="appColor"
+                           @click="promiseAddSample(true, true, true)">
+                        <v-icon>add</v-icon>
+                    </v-btn>
+                </v-flex>
+                <v-flex xs6 class="mt-2 text-right">
+                    <div v-show="inProgress" style="display: inline-block; width: 50px">
+                        <img src="../assets/images/wheel.gif">
+                    </div>
+                    <v-btn
+                            @click="onLoad"
+                            :class="clazzAttention"
+                            :disabled="!isValid"
+                            :style="'margin: 5px; width: 94px'"
+                            outlined>
+                        Load
+                    </v-btn>
+                    <v-btn outlined @click="onCancel" :style="'margin: 5px width: 94px'">
+                        Cancel
+                    </v-btn>
+                </v-flex>
+            </v-layout>
+        </v-card>
     </v-menu>
 </template>
 <script>
 
-    import SampleData from '../partials/SampleData.vue'
-    import draggable from 'vuedraggable'
+    import SampleData from './SampleData.vue'
+    // import draggable from 'vuedraggable'
 
     export default {
         name: 'files-menu',
         components: {
             SampleData,
-            draggable
+            // draggable
         },
         props: {
             cohortModel: null
@@ -450,7 +459,7 @@
                     self.cohortModel.genomeBuildHelper.setCurrentBuild(newVal);
                     if (self.$refs.entryDataRef) {
                         self.$refs.entryDataRef.forEach((entryRef) => {
-                            if (!(self.launchedFromHub && entryRef.dragId === 's0')) {
+                            if (!(entryRef.dragId === 's0')) {
                                 entryRef.retryEnteredUrls()
                                     .catch((errObj) => {
                                         console.log('There was a problem with retryEnteredUrls: ' + errObj);
@@ -551,7 +560,7 @@
                     Promise.all(addPromises)
                         .then(() => {
                             // Turn on loading spinners
-                            for (let i = self.launchedFromHub ? 1 : 0; i < self.$refs.sampleDataRef.length; i++) {
+                            for (let i = 0; i < self.$refs.sampleDataRef.length; i++) {
                                 self.$refs.sampleDataRef[i].setLoadingFlags(true);
                             }
 
@@ -843,7 +852,7 @@
         created: function () {
         },
         mounted: function () {
-            if (this.cohortModel && !this.workingOffline) {
+            if (this.cohortModel) {
                 this.speciesName = this.cohortModel.genomeBuildHelper.getCurrentSpeciesName();
                 this.buildName = this.cohortModel.genomeBuildHelper.getCurrentBuildName();
                 this.speciesList = this.cohortModel.genomeBuildHelper.speciesList.map(function (sp) {
