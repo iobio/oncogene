@@ -158,6 +158,8 @@
                         options['loadFromFlag'] = loadingFromFlagEvent;
                         options['loadFeatureMatrix'] = loadFeatureMatrix;
 
+                        // TODO: promiseloadallsomatic
+
                         self.cohortModel.promiseLoadData(self.selectedGene,
                             self.selectedTranscript,
                             options)

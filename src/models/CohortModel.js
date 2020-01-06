@@ -44,6 +44,7 @@ class CohortModel {
             'loadingDataSources': false
         };
 
+        this.allSomaticVcfData = null;
         this.allSomaticFeaturesLookup = {};     // Contains the IDs corresponding to variants from all tumor tracks classified as somatic
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
 
@@ -857,6 +858,18 @@ class CohortModel {
             }
 
         })
+    }
+
+    /* Returns all somatic variants for entire genome according to somatic and quality criteria.
+     * NOTE: Only works for single joint vcf containing all normal & tumor samples */
+    promiseLoadAllSomaticVariants() {
+        // TODO: pull back all somatic variants
+        const self = this;
+        self.getNormalModel().vcf.getSomaticVariants();
+
+
+        // promise get all variants with counts approp for quality, normal, tumor
+        // see how many vars this gets us....
     }
 
     startGeneProgress(geneName) {

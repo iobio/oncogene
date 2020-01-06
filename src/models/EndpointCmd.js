@@ -117,6 +117,17 @@ export default class EndpointCmd {
         return cmd;
     }
 
+    getSomaticVariants(vcfSource, normalSampleIds, tumorSampleIds, somaticCriteria) {
+        const me = this;
+        let cmd = null;
+        if (this.gruBackend) {
+            cmd = me.api.streamCommand('getSomaticVariants', {vcfUrl: vcfSource.vcfUrl, normalSampleIds, tumorSampleIds, somaticCriteria});
+        } else {
+            console.log('getSomaticVariants is not implemented for old backend yet');
+        }
+        return cmd;
+    }
+
     annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
         if (this.gruBackend) {
             const refNames = this.getHumanRefNames(refName).split(" ");
