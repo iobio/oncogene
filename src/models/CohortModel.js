@@ -861,15 +861,21 @@ class CohortModel {
     }
 
     /* Returns all somatic variants for entire genome according to somatic and quality criteria.
-     * NOTE: Only works for single joint vcf containing all normal & tumor samples */
-    promiseLoadAllSomaticVariants() {
+     * NOTE: Only works for single joint vcf containing a single normal sample & 1+ tumor samples */
+    promiseLoadSomaticVariants() {
         // TODO: pull back all somatic variants
         const self = this;
-        self.getNormalModel().vcf.getSomaticVariants();
 
-
-        // promise get all variants with counts approp for quality, normal, tumor
-        // see how many vars this gets us....
+        return new Promise((resolve, reject) => {
+            const somaticCriteria = self.filterModel.getSomaticCallingCriteria();
+            self.getNormalModel().vcf.promiseGetSomaticVariants(somaticCriteria)
+                .then(() => {
+                    // TODO: return somaticVars here make lookup to store this in
+                    resolve();
+                }).catch((error) => {
+                    reject('Problem pulling back somatic variants: ' + error);
+            });
+        });
     }
 
     startGeneProgress(geneName) {

@@ -30,6 +30,9 @@ class FilterModel {
             'qual': this.DEFAULT_QUALITY_FILTERING_CRITERIA.qualScoreCutoff
         };
 
+        /* Any fields we want to send to the server to call somatic variants with */
+        //this.SOMATIC_CALLING_FIELDS = ['somatic', 'quality'];
+
         // The categories by which the filters are grouped
         this.filterCategories =
             [
@@ -233,7 +236,7 @@ class FilterModel {
             // Classify samples
             for (i = 0; i < Object.keys(resultMap).length; i++) {
                 let sampleId = Object.keys(resultMap)[i];
-                let currData = $.extend({}, Object.values(resultMap)[i].model.vcfData);
+                let currData = Object.extend({}, Object.values(resultMap)[i].model.vcfData);
                 let sampleObj = {'currData': currData, 'model': Object.values(resultMap)[i].model};
                 if (!(resultMap[sampleId].isTumor) && sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
                     normalSamples.push(sampleObj);
@@ -597,6 +600,18 @@ class FilterModel {
             }
         }
     }
+
+    getSomaticCallingCriteria() {
+        //const self = this;
+
+        // TODO: just put in values for now - logic should be hardcoded anyways...
+        // self.SOMATIC_CALLING_FIELDS.forEach((field) => {
+        //
+        // })
+
+        return { 'totalReadCutoff': 15, 'qualCutoff': 20, 'normalCountCutoff': 2, 'normalAfCutoff': 0.01, 'tumorCountCutoff': 5, 'tumorAfCutoff': 0.10, 'normalSampleIdx': 0, 'totalSampleNum': 4 };
+    }
+
 //
 //     populateEffectFilters(resultMap) {
 //         let self = this;

@@ -658,9 +658,12 @@ export default function vcfiobio(theGlobalApp) {
     exports.promiseGetSomaticVariants = function (somaticCriteria) {
         const self = this;
         return new Promise((resolve, reject) => {
+                if (!vcfURL) {
+                    reject('No vcf url to pull somatic variants from');
+                }
                 if (sourceType === SOURCE_TYPE_URL) {
-                    let cmd = self.getEndpoint.getSomaticVariants({
-                        'vcfUrl': vcfUrl,
+                    let cmd = self.getEndpoint().getSomaticVariants({
+                        'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl
                     }, somaticCriteria);
 
@@ -672,6 +675,7 @@ export default function vcfiobio(theGlobalApp) {
                         annotatedData += data;
                     });
                     cmd.on('end', function () {
+                        console.log('RETURNED FROM GETSOMATIC');
                         let annotatedRecs = annotatedData.split("\n");
                         let vcfObjects = [];
 
@@ -706,9 +710,20 @@ export default function vcfiobio(theGlobalApp) {
                                 vcfObjects.push(vcfObject);
                             }
                         });
-                        let results = self._parseSomaticVcfRecords(vcfObjects);
-                        resolve(annotatedRecs, results);
+
+                        // TODO: left off at needing to implement new parsing fxn that works w/ multi-allelics
+                        // TODO: then need to filter by depth on a per sample/allele basis 
+                        // let results = self._parseSomaticVcfRecords(vcfObjects);
+                        // resolve(annotatedRecs, results);
+
+                        resolve(annotatedRecs);
                     });
+
+                    cmd.on('error', function (error) {
+                        console.log('Problem getting somatic variants: ' + error);
+                    });
+
+                    cmd.run();
                 } else {
                     reject('Retrieving somatic variants from local file not yet supported.');
                 }

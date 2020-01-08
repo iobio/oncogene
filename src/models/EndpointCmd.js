@@ -117,11 +117,22 @@ export default class EndpointCmd {
         return cmd;
     }
 
-    getSomaticVariants(vcfSource, normalSampleIds, tumorSampleIds, somaticCriteria) {
+    getSomaticVariants(vcfSource, somaticCriteria) {
         const me = this;
         let cmd = null;
         if (this.gruBackend) {
-            cmd = me.api.streamCommand('getSomaticVariants', {vcfUrl: vcfSource.vcfUrl, normalSampleIds, tumorSampleIds, somaticCriteria});
+            cmd = me.api.streamCommand('getSomaticVariants',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    qualCutoff: somaticCriteria.qualCutoff,
+                    totalReadCutoff: somaticCriteria.totalReadCutoff,
+                    normalCountCutoff: somaticCriteria.normalCountCutoff,
+                    tumorCountCutoff: somaticCriteria.tumorCountCutoff,
+                    normalAfCutoff: somaticCriteria.normalAfCutoff,
+                    tumorAfCutoff: somaticCriteria.tumorAfCutoff,
+                    normalSampleIdx: somaticCriteria.normalSampleIdx,
+                    totalSampleNum: somaticCriteria.totalSampleNum
+                });
         } else {
             console.log('getSomaticVariants is not implemented for old backend yet');
         }

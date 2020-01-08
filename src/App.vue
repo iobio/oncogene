@@ -88,8 +88,8 @@
             onLoadDemoData: function (loadAction) {
                 this.$emit("load-demo-data", loadAction);
             },
-            onFilesLoaded: function (analyzeAll) {
-                this.$emit("on-files-loaded", analyzeAll);
+            onFilesLoaded: function () {
+                this.promiseLoadData();
             },
             onUpdateSamples: function () {
                 this.$emit('update-samples');
@@ -142,7 +142,7 @@
                 })
 
             },
-            promiseLoadData: function (loadingFromFlagEvent = false, loadFeatureMatrix = true) {
+            promiseLoadData: function () {
                 let self = this;
 
                 // TODO: this is how we get rolling for new setup...
@@ -150,51 +150,61 @@
 
                 return new Promise(function (resolve, reject) {
 
-                    if (self.models && self.models.length > 0) {
-                        // let cardWidthScale = self.isLeftDrawerOpen ? 1.0 : 0.65;
-                        self.cardWidth = self.$('#genes-card').innerWidth();
-                        var options = {'getKnownVariants': self.showKnownVariantsCard};
-                        options['getCosmicVariants'] = self.showCosmicVariantsCard;
-                        options['loadFromFlag'] = loadingFromFlagEvent;
-                        options['loadFeatureMatrix'] = loadFeatureMatrix;
-
-                        // TODO: promiseloadallsomatic
-
-                        self.cohortModel.promiseLoadData(self.selectedGene,
-                            self.selectedTranscript,
-                            options)
-                            .then(function() {
-                                self.onUpdateSamples(); // TODO: do we still need to call this?
-
-                                // Draw feature matrix after somatic field filled
-                                self.calcFeatureMatrixWidthPercent();
-                                let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
-                                self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
-                                    self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
-
-                                // TODO: should I populate somatic filters here?
-                                // self.filterModel.populateEffectFilters(resultMap);
-                                // self.filterModel.populateRecFilters(resultMap);
-
-                                // TODO: doesn't work w/ intervals not even in 1
-                                const nodeRange = 0.10;
-                                self.cohortModel.varAfNodes = self.cohortModel.getVariantAFNodes(nodeRange);
-                                self.cohortModel.varAfLinks = self.cohortModel.getVariantAFLinks(self.cohortModel.varAfNodes, nodeRange);
-
-                                self.cohortModel.promiseMarkCodingRegions(self.selectedGene, self.selectedTranscript)
-                                    .then(function (data) {
-                                        self.analyzedTranscript = data.transcript;
-                                        self.coverageDangerRegions = data.dangerRegions;
-                                        self.$refs.genesCardRef.determineFlaggedGenes();
-                                        resolve();
-                                    });
+                    if (self.cohortModel) {
+                        self.cohortModel.promiseLoadSomaticVariants()
+                            .then(() => {
+                                resolve();
                             })
-                            .catch(function (error) {
+                            .catch((error) => {
                                 reject(error);
                             })
-                    } else {
-                        Promise.resolve();
                     }
+
+                    // if (self.models && self.models.length > 0) {
+                    //     // let cardWidthScale = self.isLeftDrawerOpen ? 1.0 : 0.65;
+                    //     self.cardWidth = self.$('#genes-card').innerWidth();
+                    //     var options = {'getKnownVariants': self.showKnownVariantsCard};
+                    //     options['getCosmicVariants'] = self.showCosmicVariantsCard;
+                    //     options['loadFromFlag'] = loadingFromFlagEvent;
+                    //     options['loadFeatureMatrix'] = loadFeatureMatrix;
+                    //
+                    //     // TODO: promiseloadallsomatic
+                    //
+                    //     self.cohortModel.promiseLoadData(self.selectedGene,
+                    //         self.selectedTranscript,
+                    //         options)
+                    //         .then(function() {
+                    //             self.onUpdateSamples(); // TODO: do we still need to call this?
+                    //
+                    //             // Draw feature matrix after somatic field filled
+                    //             self.calcFeatureMatrixWidthPercent();
+                    //             let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
+                    //             self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
+                    //                 self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
+                    //
+                    //             // TODO: should I populate somatic filters here?
+                    //             // self.filterModel.populateEffectFilters(resultMap);
+                    //             // self.filterModel.populateRecFilters(resultMap);
+                    //
+                    //             // TODO: doesn't work w/ intervals not even in 1
+                    //             const nodeRange = 0.10;
+                    //             self.cohortModel.varAfNodes = self.cohortModel.getVariantAFNodes(nodeRange);
+                    //             self.cohortModel.varAfLinks = self.cohortModel.getVariantAFLinks(self.cohortModel.varAfNodes, nodeRange);
+                    //
+                    //             self.cohortModel.promiseMarkCodingRegions(self.selectedGene, self.selectedTranscript)
+                    //                 .then(function (data) {
+                    //                     self.analyzedTranscript = data.transcript;
+                    //                     self.coverageDangerRegions = data.dangerRegions;
+                    //                     self.$refs.genesCardRef.determineFlaggedGenes();
+                    //                     resolve();
+                    //                 });
+                    //         })
+                    //         .catch(function (error) {
+                    //             reject(error);
+                    //         })
+                    // } else {
+                    //     Promise.resolve();
+                    // }
                 })
             },
         },
