@@ -83,6 +83,7 @@
 </style>
 
 <template>
+    <!--TODO: put in tabs here for genomic/transcriptomic/chromatin-->
     <v-menu
             id="files-menu"
             offset-y

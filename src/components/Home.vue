@@ -7,13 +7,19 @@
         >
             <!--Static main page-->
             <v-layout>
-                <v-flex xs5 md3>
-                    <GlobalSidebar/>
-                </v-flex>
-                <v-flex xs7 md9>
-                    <GlobalGenome :d3="d3">
-                    </GlobalGenome>
-                </v-flex>
+                <Welcome v-if="!dataEntered"
+                     :d3="d3"
+                     @onLoad="onFilesUploaded">
+                </Welcome>
+                <div v-else>
+                    <v-flex xs5 md3>
+                        <GlobalSidebar/>
+                    </v-flex>
+                    <v-flex xs7 md9>
+                        <GlobalGenome :d3="d3">
+                        </GlobalGenome>
+                    </v-flex>
+                </div>
             </v-layout>
 
             <!--Dynamic drawer-->
@@ -39,12 +45,14 @@
 <script>
     import GlobalSidebar from './GlobalSidebar.vue'
     import GlobalGenome from './GlobalGenome.vue'
+    import Welcome from './Welcome.vue'
 
     export default {
         name: "Home.vue",
         components: {
             GlobalSidebar,
-            GlobalGenome
+            GlobalGenome,
+            Welcome
         },
         props: {
             d3: {
@@ -54,6 +62,7 @@
         },
         data: () => {
             return {
+                // TODO: get ridof unused variables
                 SCORE_FILE: 'http://localhost:8000/tow19example.tsv',
                 SCREEN_FILE: 'http://localhost:8000/drugScreenExample.tsv',
                 DRUGS: ['Eribulin', 'Bevacizumab', 'Trastuzumab', 'Palbociclib', 'Ribociclib', 'Olaparib', 'Neratinib', 'Pertuzumab'],
@@ -62,7 +71,9 @@
                 screenWidth: window.innerWidth,
                 screenHeight: window.innerHeight,
                 displayDrawerWidth: 0,
-                selectedDrug: ''
+                selectedDrug: '',
+
+                dataEntered: false
             };
         },
         watch: {
@@ -75,10 +86,10 @@
             }
         },
         methods: {
-          onDrugClick: function(drug) {
-              this.displayEvidenceDrawer = true;
-              this.selectedDrug = drug;
-          }
+            onFilesUploaded: function() {
+                // TODO:implement
+                console.log('onFilesUploaded');
+            }
         },
         computed: {
             overlayWidth: function() {
