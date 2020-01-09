@@ -81,7 +81,6 @@
 
                 // static data
                 allGenes: allGenesData
-
             }
         },
         methods: {

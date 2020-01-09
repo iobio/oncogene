@@ -8,7 +8,6 @@
 
 <script>
     import variantRainD3 from '../d3/VariantRain.d3.js'
-
     export default {
         name: "Welcome",
         props: {
@@ -23,6 +22,10 @@
             welcomeHeight: {
                 type: Number,
                 default: 0
+            },
+            amVisible: {
+                type: Boolean,
+                default: false
             }
         },
         data: function () {
@@ -37,13 +40,11 @@
         },
         methods: {
             makeItRain: function () {
-                new Promise((resolve) => {
-                    variantRainD3(this.d3, this.divId);
-                    resolve();
-                })
+                variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight);
             }
         },
         mounted: function () {
+            this.amVisible = true;
             this.makeItRain();
         }
     }
