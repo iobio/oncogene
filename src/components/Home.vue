@@ -8,7 +8,9 @@
             <!--Static main page-->
             <v-layout>
                 <Welcome v-if="!dataEntered"
-                     :d3="d3"
+                         :d3="d3"
+                         :welcomeWidth="screenWidth"
+                         :welcomeHeight="screenHeight"
                      @onLoad="onFilesUploaded">
                 </Welcome>
                 <div v-else>
