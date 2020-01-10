@@ -9,6 +9,10 @@ import {
     scaleOrdinal
 } from 'd3-scale';
 
+import {
+    active
+} from 'd3-transition';
+
 import { axisBottom } from 'd3-axis';
 
 import { easeBounce } from 'd3-ease';
@@ -33,5 +37,6 @@ export default {
     max, min,
     format,
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
-    easeBounce
+    easeBounce,
+    active
 };

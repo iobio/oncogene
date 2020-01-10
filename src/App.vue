@@ -26,7 +26,9 @@
             </v-btn>
         </v-app-bar>
         <v-content>
-            <Home :d3="globalApp.d3"></Home>
+            <Home v-if="cohortModel"
+                :d3="globalApp.d3"
+                :navbarHeight="navBarHeight"></Home>
         </v-content>
     </v-app>
 </template>
@@ -78,6 +80,7 @@
 
                 // view props
                 mainContentWidth: 0,
+                navBarHeight: 0,
 
                 // static data
                 allGenes: allGenesData

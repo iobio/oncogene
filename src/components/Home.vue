@@ -11,6 +11,7 @@
                          :d3="d3"
                          :welcomeWidth="screenWidth"
                          :welcomeHeight="screenHeight"
+                         :navBarHeight="navBarHeight"
                      @onLoad="onFilesUploaded">
                 </Welcome>
                 <div v-else>
@@ -60,6 +61,10 @@
             d3: {
                 type: Object,
                 default: null
+            },
+            navBarHeight: {
+                type: Number,
+                default: 0
             }
         },
         data: () => {

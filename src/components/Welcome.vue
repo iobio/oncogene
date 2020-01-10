@@ -23,14 +23,14 @@
                 type: Number,
                 default: 0
             },
-            amVisible: {
-                type: Boolean,
-                default: false
+            navBarHeight: {
+                type: Number,
+                default: 0
             }
         },
         data: function () {
             return {
-                divId: 'variantRainDiv',
+                divId: 'variantRainDiv'
             }
         },
         computed: {
@@ -40,11 +40,10 @@
         },
         methods: {
             makeItRain: function () {
-                variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight);
+                variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight, this.navBarHeight);
             }
         },
         mounted: function () {
-            this.amVisible = true;
             this.makeItRain();
         }
     }

@@ -1,11 +1,12 @@
 export default function variantD3(d3, divId, vizWidth, vizHeight) {
     // constants
-    const symbolSize = 300;
-    const numSymbolsPerLine = 20;
+    const symbolSize = 500;
+    const numSymbolsPerLine = 40;
     const types = ['symbolCircle', 'symbolDiamond', 'symbolSquare', 'symbolTriangle'];
     const colors = ['#E0292B', '#F49A73', '#f9e4b5', 'rgba(181, 207, 107, 0.65)'];
     const symbolGenerator = d3.symbol().size(symbolSize);
     const xScale = d3.scaleLinear().domain([0, 1]).range([0, vizWidth]);
+    const yScale = d3.scaleLinear().domain([0, 100]).range([0, vizHeight]);
 
     // helpers
     function getRandomInt(min, max) {
@@ -14,28 +15,9 @@ export default function variantD3(d3, divId, vizWidth, vizHeight) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    function repeat() {
-        d3.selectAll('.rain-var')
-            .transition()
-            .duration(15000)
-            .delay(function (d, i) {
-                return i * 500;
-            })
-            .attr('transform', function (d) {
-                return 'translate(' + xScale(d.x) + ',' + (vizHeight + 500) + ')';
-            })
-            .transition()
-            .duration(0)
-            .delay(16000)
-            .attr('transform', function (d) {
-                return 'translate(' + xScale(d.x) + ',' + (100) + ')';
-            })
-            .on('end', repeat);
-    }
-
     function chart() {
         // Generate some random variant symbols
-        let symbols = [];
+        let wave = [];
         for (let i = 0; i < numSymbolsPerLine; i++) {
             let currVar = {};
 
@@ -50,29 +32,40 @@ export default function variantD3(d3, divId, vizWidth, vizHeight) {
             randIdx = getRandomInt(1, 4) - 1;
             currVar.color = colors[randIdx];
 
-            symbols.push(currVar);
+            wave.push(currVar);
         }
 
-        d3.select('#' + divId).selectAll('svg').selectAll('g').selectAll('path')
-            .data(symbols)
-            .enter()
-            .append('path')
+        const navBarHeight = d3.select('.v-sheet.v-toolbar').node().getBoundingClientRect().height;
+        let g = d3.select('#' + divId).selectAll('svg').select('g').selectAll('path');
+        g.data(wave)
+            .enter().append('path')
             .attr('transform', function (d) {
-                return 'translate(' + xScale(d.x) + ',' + 100 + ')';
+                return 'translate(' + xScale(d.x) + ',' + (yScale(0) - navBarHeight - 10) + ')';
             })
-            .attr('class', 'rain-var')
-            .attr('fill', function (d) {
+            .style('fill', function (d) {
                 return d.color;
             })
             .attr('d', function (d) {
                 symbolGenerator.type(d3[d.type]);
                 return symbolGenerator();
+            })
+            .transition()
+            .duration(3000)
+            .delay(function(d, i) { return i * 400; })
+            .on("start", function rain() {
+                d3.active(this)
+                    .attr('transform', function (d) {
+                        return 'translate(' + xScale(d.x) + ',' + (yScale(0) - navBarHeight - 10) + ')';
+                    })
+                    .transition()
+                    .attr('transform', function (d) {
+                        return 'translate(' + xScale(d.x) + ',' + yScale(100) + ')';
+                    })
+                    .transition()
+                    .on("start", rain);
             });
-
-        repeat();
     }
     // Do actual drawing
     chart();
-
     return chart;
 }
