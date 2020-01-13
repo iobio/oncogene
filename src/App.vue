@@ -28,7 +28,11 @@
         <v-content>
             <Home v-if="cohortModel"
                 :d3="globalApp.d3"
-                :navbarHeight="navBarHeight"></Home>
+                :navbarHeight="navBarHeight"
+                @upload-config="onUploadConfig"
+            >
+
+            </Home>
         </v-content>
     </v-app>
 </template>
@@ -105,6 +109,9 @@
                 } else {
                     self.globalApp.$('main.content .container').addClass("small");
                 }
+            },
+            onUploadConfig: function() {
+                console.log('made it')
             },
             promiseInitFromUrl: function () {
                 const self = this;

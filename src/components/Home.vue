@@ -12,7 +12,8 @@
                          :welcomeWidth="screenWidth"
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
-                     @onLoad="onFilesUploaded">
+                         @upload-config="$emit('upload-config')"
+                         @onLoad="onFilesUploaded">
                 </Welcome>
                 <div v-else>
                     <v-flex xs5 md3>
