@@ -10,8 +10,6 @@ class CohortModel {
 
         this.globalApp = globalApp;
         this.isEduMode = false;
-        this.isBasicMode = false;
-        this.defaultingToDemoData = false;
 
         this.endpoint = endpoint;
         this.genericAnnotation = genericAnnotation;
@@ -58,6 +56,9 @@ class CohortModel {
         this.demoBams = this.getDemoBams();
         this.demoModelInfos = this.getDemoModelInfos();
         this.demoGenes = ['KRAS', 'APC', 'BRCA2', 'TGFB1', 'RB1'];
+
+        this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
+        this.sampleModelUtil.init(this);
     }
 
     getDemoVcfs() {
@@ -343,46 +344,62 @@ class CohortModel {
         })
     }
 
-    promiseInit(modelInfos) {
-        let self = this;
+    // promiseInit(modelInfos) {
+    //     let self = this;
+    //
+    //     return new Promise(function (resolve, reject) {
+    //         self.isLoaded = false;
+    //         self.inProgress.loadingDataSources = true;
+    //         self.sampleModels = [];
+    //         self.flaggedVariants = [];
+    //         self.genesInProgress = [];
+    //         self.sampleMap = {};
+    //         self.clearLoadedData();
+    //
+    //         // Increment orders of all sample model infos, to accomodate clinvar & cosmic tracks first
+    //         modelInfos.forEach((modelInfo) => {
+    //             modelInfo.order += 2;
+    //         });
+    //
+    //         let promises = [];
+    //         promises.push(self.promiseAddClinvarSample());
+    //         promises.push(self.promiseAddCosmicSample());
+    //         modelInfos.forEach(function (modelInfo) {
+    //             promises.push(self.promiseAddSample(modelInfo));
+    //         });
+    //
+    //         Promise.all(promises)
+    //             .then(function () {
+    //                 // Enforce cosmic & clinvar tracks being on top
+    //                 self.sampleModels = self.sortSampleModels(self.getCanonicalModels(), self.sampleMap);
+    //
+    //                 // Flip status flags
+    //                 self.setTumorInfo(true);
+    //                 self.inProgress.loadingDataSources = false;
+    //                 self.isLoaded = true;
+    //                 resolve();
+    //             })
+    //             .catch(function (error) {
+    //                 reject(error);
+    //             })
+    //     })
+    // }
 
-        return new Promise(function (resolve, reject) {
-            self.isLoaded = false;
-            self.inProgress.loadingDataSources = true;
-            self.sampleModels = [];
-            self.flaggedVariants = [];
-            self.genesInProgress = [];
-            self.sampleMap = {};
-            self.clearLoadedData();
-
-            // Increment orders of all sample model infos, to accomodate clinvar & cosmic tracks first
-            modelInfos.forEach((modelInfo) => {
-                modelInfo.order += 2;
-            });
-
-            let promises = [];
-            promises.push(self.promiseAddClinvarSample());
-            promises.push(self.promiseAddCosmicSample());
-            modelInfos.forEach(function (modelInfo) {
-                promises.push(self.promiseAddSample(modelInfo));
-            });
-
-            Promise.all(promises)
-                .then(function () {
-                    // Enforce cosmic & clinvar tracks being on top
-                    self.sampleModels = self.sortSampleModels(self.getCanonicalModels(), self.sampleMap);
-
-                    // Flip status flags
-                    self.setTumorInfo(true);
-                    self.inProgress.loadingDataSources = false;
-                    self.isLoaded = true;
-                    resolve();
-                })
-                .catch(function (error) {
-                    reject(error);
-                })
-        })
-    }
+    // Creates two sampleModels to house normal and tumor tracks
+    // promiseInit() {
+    //     return new Promise((resolve) => {
+    //         let normal = new SampleModel(this.globalApp);
+    //         let tumor = new SampleModel(this.globalApp);
+    //         this.sampleModels.push(normal);
+    //         this.sampleModels.push(tumor);
+    //
+    //         // TODO: do I really need sampleMap?
+    //         this.sampleMap['s0'] = normal;
+    //         this.sampleMap['s1'] = tumor;
+    //
+    //         resolve();
+    //     });
+    // }
 
     assignCategoryOrders() {
         var samples = this.getCanonicalModels();

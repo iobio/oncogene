@@ -28,8 +28,10 @@
         <v-content>
             <Home v-if="cohortModel"
                 :d3="globalApp.d3"
+                :cohortModel="cohortModel"
                 :navbarHeight="navBarHeight"
                 @upload-config="onUploadConfig"
+                @load-demo="onLoadDemo"
             >
 
             </Home>
@@ -111,7 +113,10 @@
                 }
             },
             onUploadConfig: function() {
-                console.log('made it')
+                alert('Upload config not implemented in app yet');
+            },
+            onLoadDemo: function() {
+                alert('Load demo not implemented in app yet');
             },
             promiseInitFromUrl: function () {
                 const self = this;

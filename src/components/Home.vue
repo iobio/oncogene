@@ -9,10 +9,12 @@
             <v-layout>
                 <Welcome v-if="!dataEntered"
                          :d3="d3"
+                         :cohortModel="cohortModel"
                          :welcomeWidth="screenWidth"
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
                          @upload-config="$emit('upload-config')"
+                         @load-demo="$emit('load-demo')"
                          @onLoad="onFilesUploaded">
                 </Welcome>
                 <div v-else>
@@ -66,6 +68,10 @@
             navBarHeight: {
                 type: Number,
                 default: 0
+            },
+            cohortModel: {
+                type: Object,
+                default: null
             }
         },
         data: () => {

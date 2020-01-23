@@ -11,9 +11,11 @@
             <v-card
                     elevation="24"
                     width="800"
+                    height="550"
                     class="mx-auto"
             >
                 <v-carousel light class="start-carousel"
+                            height="100%"
                             v-model="carouselModel"
                             :continuous="continuous"
                             :cycle="cycle"
@@ -29,8 +31,14 @@
                             <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
                                 <v-col md="auto">
                                     <v-row justify="center" class="pa-3">
-                                        <v-btn x-large color="#965757" class="carousel-btn" @click="advanceSlide">Start
-                                            New Analysis
+                                        <v-btn x-large color="#965757" class="carousel-btn" @click="advanceSlide">
+                                            Start New Analysis
+                                        </v-btn>
+                                    </v-row>
+                                    <v-row justify="center" class="pa-3">
+                                        <v-btn x-large color="#965757" class="carousel-btn"
+                                               @click="$emit('load-demo')">
+                                            Try Demo Analysis
                                         </v-btn>
                                     </v-row>
                                     <v-row justify="center" class="pa-3">
@@ -49,22 +57,24 @@
                                 :color="slideBackground"
                                 tile
                         >
-                            <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
+                            <v-row justify="center" align="start" class="mb-auto" style="height: 10%">
                                 <v-col md="auto">
-                                    <v-row justify="center">
-                                        What types of data do you have?
+                                    <v-row justify="center" style="padding-top: 10px">
+                                        <h2>What types of data do you have?</h2>
                                     </v-row>
-                                    <v-row justify="center">
+                                    <v-row justify="center" style="padding-bottom: 10px">
                                         (Select all that apply)
                                     </v-row>
-                                    <v-divider></v-divider>
+                                    <v-divider style="width: 700px;"></v-divider>
                                     <v-row v-for="i in dataModels.length"
                                            :key="dataModels[i]"
-                                           style="height: 10%">
-                                        <v-checkbox dense v-model="userData" color="appColor" class="my-1"
-                                                  :label="dataDescriptors[i-1] + ' (.' + fileDescriptors[i-1] + ')'"
-                                                  :value="dataModels[i-1]"
-                                                  @mouseup="onDataChecked(dataModels[i-1])">
+                                           justify="start"
+                                           style="height: 10%;">
+                                        <v-checkbox dense v-model="userData" color="appColor"
+                                                    style="padding-left: 250px"
+                                                    :label="dataDescriptors[i-1] + ' (.' + fileDescriptors[i-1] + ')'"
+                                                    :value="dataModels[i-1]"
+                                                    @mouseup="onDataChecked(dataModels[i-1])">
                                         </v-checkbox>
                                     </v-row>
                                 </v-col>
@@ -78,12 +88,16 @@
                                 :color="slideBackground"
                                 tile
                         >
-                            <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
+                            <v-row justify="center" align="start" class="mb-auto" style="height: 10%">
                                 <v-col md="auto">
-                                    <v-row justify="center">
-                                        Does your VCF file contain somatic variants only?
+                                    <v-row justify="center" style="padding-top: 10px">
+                                        <h2>Does your VCF file contain somatic variants only?</h2>
                                     </v-row>
                                     <v-divider></v-divider>
+                                </v-col>
+                            </v-row>
+                            <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
+                                <v-col md="auto">
                                     <v-row justify="center">
                                         <v-radio-group v-model="somaticCallsOnly">
                                             <v-radio color="appColor"
@@ -102,12 +116,57 @@
                             </v-row>
                         </v-sheet>
                     </v-carousel-item>
+                    <v-carousel-item>
+                        <v-sheet
+                                height="100%"
+                                width="100%"
+                                :color="slideBackground"
+                                tile
+                        >
+                            <v-row justify="center" align="top" class="mb-auto" style="height: 10%">
+                                <v-col md="auto">
+                                    <v-row justify="center">
+                                        <h2>What type of cancer are you examining?</h2>
+                                    </v-row>
+                                    <v-row justify="center">
+                                        <i>(If you're not sure, select UCSF500)</i>
+                                    </v-row>
+                                    <v-divider style="width: 700px"></v-divider>
+                                    <v-row justify="center">
+                                        <v-container style="width: 650px">
+                                            <v-select
+                                                    :items="geneListNames"
+                                                    color="appColor"
+                                                    background-color="white"
+                                                    label="Cancer Type (Panel Name)"
+                                                    outlined
+                                                    v-model="selectedList"
+                                                    @change="populateListInput"
+                                            ></v-select>
+                                            <v-textarea
+                                                    color="appColor"
+                                                    background-color="white"
+                                                    rows="10"
+                                                    label="Genes"
+                                                    :value="listInput"
+                                            ></v-textarea>
+                                        </v-container>
+                                        <!--// TODO: text area that gets filled and can be added to-->
+                                    </v-row>
+                                </v-col>
+                            </v-row>
+                        </v-sheet>
+                    </v-carousel-item>
                     <v-carousel-item v-for="i in userData.length" :key="'form-' + i">
-                        <file-upload-form
-                            :dataType="getDataType(userData[i-1])"
-                            :fileType="getFileType(userData[i-1])"
-                            :slideBackground="slideBackground">
-                        </file-upload-form>
+                        <single-sample-upload-form
+                                v-if="getFileType(i) == 'vcf'"
+                                :cohortModel="cohortModel"
+                                :dataType="getDataType(userData[i-1])"
+                                :fileType="getFileType(userData[i-1])"
+                                :slideBackground="slideBackground"
+                                :modelInfoMap="modelInfoMap">
+                        </single-sample-upload-form>
+                        <!--TODO: else put multi-sample for bams-->
                     </v-carousel-item>
                     <!--TODO: either have last item here with status or bottom bar and disable load-->
                 </v-carousel>
@@ -136,16 +195,21 @@
 
 <script>
     import variantRainD3 from '../d3/VariantRain.d3.js'
-    import FileUploadForm from './FileUploadForm.vue'
+    import SingleSampleUploadForm from './SingleSourceUploadForm.vue'
+    import geneListsByType from '../data/gene_lists.json'
     import _ from 'lodash'
 
     export default {
         name: "Welcome",
         components: {
-          FileUploadForm
+            SingleSampleUploadForm
         },
         props: {
             d3: {
+                type: Object,
+                default: null
+            },
+            cohortModel: {
                 type: Object,
                 default: null
             },
@@ -164,7 +228,10 @@
         },
         data: function () {
             return {
+                // animation data
                 divId: 'variantRainDiv',
+
+                // view state
                 cycle: false,
                 continuous: false,
                 absolute: false,
@@ -186,7 +253,7 @@
                     'rnaSeq',
                     'atacSeq'
                 ],
-                userData: ['vcf', 'coverageBam'],   // NOT GUARANTEED TO BE IN SAME ORDER AS DATAMODELS
+                userData: ['vcf', 'coverageBam'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
                 lockedData: {
                     'vcf': true,
                     'coverageBam': true,
@@ -201,7 +268,14 @@
                     'bam',
                     'bam'
                 ],
-                somaticCallsOnly: false
+                geneListNames: [],
+                selectedList: null,
+
+                // retained (model) state
+                somaticCallsOnly: false,
+                listInput: 'Select a type to populate gene list or enter your own',
+                modelInfoMap: {},
+                sampleIds: [],
             }
         },
         computed: {
@@ -217,30 +291,36 @@
                 this.carouselModel += 1;
             },
             // NOTE: not sure why, but clicking prepend checkbox icon caused this to fire twice (hence, debounce)
-            onDataChecked: _.debounce(function(model) {
+            onDataChecked: _.debounce(function (model) {
                 if (this.lockedData[model]) {
-
-                    // TODO: make this prettier
+                    // TODO: make this prettier & create anonymous logging system to track if people want another entry vector
                     alert('Oncogene is currently configured to require this data type.');
-
-                    // TODO: create anonymous logging system to track if people want another entry vector
-
                     this.userData.push(model);
-
-                    // TODO: add slides here programmatically? Or just go to
                 }
             }, 100),
-            getFileType: function(type) {
+            getFileType: function (type) {
                 let idx = this.dataModels.indexOf(type);
                 return this.fileDescriptors[idx];
             },
-            getDataType: function(type) {
+            getDataType: function (type) {
                 let idx = this.dataModels.indexOf(type);
                 return this.dataDescriptors[idx];
+            },
+            populateGeneLists: function () {
+                for (var listName in geneListsByType) {
+                    this.geneListNames.push(listName);
+                }
+            },
+            populateListInput: function () {
+                this.listInput = '';
+                geneListsByType[this.selectedList].forEach((gene) => {
+                    this.listInput += gene + '\n';
+                });
             }
         },
         mounted: function () {
             this.makeItRain();
+            this.populateGeneLists();
         }
     }
 </script>
