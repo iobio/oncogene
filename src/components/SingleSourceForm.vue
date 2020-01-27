@@ -139,11 +139,10 @@
             }
         },
         methods: {
+            /* Can add more data types here as need be */
             onUrlChange: function () {
                 if (this.fileType === 'vcf' && this.url !== '' && this.indexUrl !== '') {
                     this.onVcfUrlEntered(this.url, this.indexUrl);
-                } else if (this.fileType === 'bam') {
-                    this.onBamUrlEntered(this.url, this.indexUrl);
                 } else {
                     // Check facets file
 
@@ -178,28 +177,6 @@
                     })
                 })
             },
-            onBamUrlEntered: function (bamUrl, baiUrl, dataCategory) {
-                const self = this;
-                return new Promise((resolve, reject) => {
-                    self.displayLoader = true;
-                    let numSamples = self.modelInfoList.length;
-                    for (let i = 0; i < numSamples; i++) {
-                        self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success, sampleNames) {
-                            self.displayLoader = false;
-                            if (sampleNames.length < modelInfoList.length) {
-                                alert('Oncogene is currently configured to work with coverage information for each sample.')
-                            }
-                        })
-                    }
-                })
-
-                // Update modelInfos per
-
-                // depending on dataCategory coverage, rnaseq, or atacseq
-            },
-            // onFacetsUrlEntered: function (facetsUrl) {
-            //
-            // },
             getIndexFileType: function () {
                 if (this.fileType.toLowerCase() === 'vcf') {
                     return 'tbi';
