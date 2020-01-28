@@ -13,13 +13,14 @@
                 </v-row>
             </v-container>
             <v-container fluid v-else>
-                <v-col md="auto" style="padding-left: 0; padding-right: 0" v-if="urlsVerified">
+                <v-col md="auto" class="px-10">
                     <v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">
                         <v-col md="2" style="padding-left: 0" class="text-sm-center">
-                            <v-chip label outlined small color="appColor" style="margin-top: 7px;">{{getTumorStatus(i-1)}}</v-chip>
+                            <v-chip outlined color="appColor" style="margin-top: 20px;">{{i}}</v-chip>
+                            <!--<v-chip label outlined small color="appColor" style="margin-top: 20px;">{{getTumorStatus(i-1)}}</v-chip>-->
                         </v-col>
                         <v-col md="4">
-                            <v-text-field class="top-url"
+                            <v-text-field
                                           :label="'Enter .' + fileType +  ' URL'"
                                           hide-details
                                           v-model="url"
@@ -28,13 +29,16 @@
                             ></v-text-field>
                         </v-col>
                         <v-col md="4" style="padding-right: 0">
-                            <v-text-field class="bot-url"
+                            <v-text-field
                                           :label="'Enter .' + getIndexFileType() +  ' URL'"
                                           hide-details
                                           v-model="indexUrl"
                                           color="appColor"
                                           @change="onUrlChange()"
                             ></v-text-field>
+                        </v-col>
+                        <v-col md="2">
+                            <!--TODO: symbol-->
                         </v-col>
                     </v-row>
                 </v-col>

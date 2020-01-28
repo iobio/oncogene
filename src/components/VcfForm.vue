@@ -5,7 +5,7 @@
         </v-card-title>
         <v-divider class="mx-12"></v-divider>
         <v-card-actions>
-            <v-container fluid v-if="urlsVerified">
+            <v-container fluid v-if="!urlsVerified">
                 <v-text-field class="top-url"
                               :label="'Enter .' + fileType +  ' URL'"
                               hide-details
@@ -21,47 +21,83 @@
                               @change="onUrlChange()"
                 ></v-text-field>
             </v-container>
-            <v-container v-if="urlsVerified" class="align-center px-0">
-                <v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">
-                    <v-col md="2" style="padding-left: 0" class="text-sm-center">
-                        <v-chip label outlined small color="appColor" style="margin-top: 7px;">{{getTumorStatus(i-1)}}</v-chip>
-                    </v-col>
-                    <v-col md="4">
-                        <v-text-field dense
-                                      v-model="modelInfoList[i-1].displayName"
-                                      label="Nickname"
-                        ></v-text-field>
-                    </v-col>
-                    <v-col md="4" style="padding-right: 0">
-                        <v-select
-                                label="Sample"
-                                v-model="modelInfoList[i-1].selectedSample"
-                                :items="vcfSampleNames"
-                                color="appColor"
-                                autocomplete
-                                dense
-                                hide-details
-                        ></v-select>
-                    </v-col>
-                    <v-col v-if="i > 2" md="2">
-                        <div class="text-xs-center">
-                            <v-btn text icon color="appColor" @click="deleteTrack(i-1)">
-                                <v-icon>close</v-icon>
-                            </v-btn>
-                        </div>
+            <v-container v-if="urlsVerified" fluid>
+                <v-row justify=center align="start">
+                    <v-col md="auto" dense>
+                        <v-btn dark small color="darkPrimary" @click="urlsVerified = false">Edit Urls</v-btn>
                     </v-col>
                 </v-row>
-                <v-btn
-                        color="darkPrimary"
-                        absolute
-                        dark
-                        small
-                        right
-                        fab
-                        style="margin-right: 20px; margin-bottom: 20px"
-                >
-                    <v-icon>add</v-icon>
-                </v-btn>
+                <v-list dense>
+                    <v-list-group-item v-model="listInfo">
+                        <v-list-item v-for="(listInfo, i) in modelInfoList"
+                        :key="'listInfo-' + i">
+                            <v-list-item-icon style="padding-top:25px">
+                                <v-icon large color="appColor">filter_{{i+1}}</v-icon>
+                            </v-list-item-icon>
+                            <v-list-item-content style="padding-bottom: 0">
+                                <v-row dense>
+                                    <v-col md="6">
+                                        <v-select
+                                                label="Sample"
+                                                v-model="listInfo.selectedSample"
+                                                :items="vcfSampleNames"
+                                                color="appColor"
+                                                autocomplete
+                                                dense
+                                                hide-details
+                                        ></v-select>
+                                    </v-col>
+                                    <v-col md="4">
+                                        <v-chip small color="appHighlight" dark>{{ isTumorTrack(listInfo) }}</v-chip>
+                                    </v-col>
+                                </v-row>
+                            </v-list-item-content>
+                        </v-list-item>
+                    </v-list-group-item>
+                </v-list>
+
+
+                <!--<v-row justify="center" align="center" class="mb-auto">-->
+                    <!--<v-col md="auto" style="padding-left: 0; padding-right: 0" v-if="urlsVerified">-->
+                        <!--<v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">-->
+                            <!--<v-col md="2" class="text-sm-center mt-1">-->
+                                <!--<v-chip outlined color="appColor">{{i}}</v-chip>-->
+                            <!--</v-col>-->
+                            <!--<v-col md="3" class="mt-2 justify-center">-->
+                                <!--<v-chip small color="appHighlight" dark label>{{ isTumorTrack(modelInfoList[i-1]) }}</v-chip>-->
+                            <!--</v-col>-->
+                            <!--<v-col md="4" style="padding-right: 0">-->
+                                <!--<v-select-->
+                                        <!--label="Sample"-->
+                                        <!--v-model="modelInfoList[i-1].selectedSample"-->
+                                        <!--:items="vcfSampleNames"-->
+                                        <!--color="appColor"-->
+                                        <!--autocomplete-->
+                                        <!--dense-->
+                                        <!--hide-details-->
+                                <!--&gt;</v-select>-->
+                            <!--</v-col>-->
+                            <!--<v-col v-if="i > 2" md="2">-->
+                                <!--<div class="text-xs-center">-->
+                                    <!--<v-btn text icon color="appColor" @click="deleteTrack(i-1)">-->
+                                        <!--<v-icon>close</v-icon>-->
+                                    <!--</v-btn>-->
+                                <!--</div>-->
+                            <!--</v-col>-->
+                        <!--</v-row>-->
+                        <!--<v-btn-->
+                                <!--color="darkPrimary"-->
+                                <!--absolute-->
+                                <!--dark-->
+                                <!--small-->
+                                <!--right-->
+                                <!--fab-->
+                                <!--style="margin-right: 20px; margin-bottom: 20px"-->
+                        <!--&gt;-->
+                            <!--<v-icon>add</v-icon>-->
+                        <!--</v-btn>-->
+                    <!--</v-col>-->
+                <!--</v-row>-->
             </v-container>
         </v-card-actions>
         <v-overlay :value="displayLoader">
@@ -108,7 +144,8 @@
                 sampleNicknames: [],
                 displayLoader: false,
                 displayBuild: false,
-                urlsVerified: false
+                urlsVerified: false,
+                listInfo: 0
             }
         },
         computed: {
@@ -119,12 +156,8 @@
         methods: {
             /* Can add more data types here as need be */
             onUrlChange: function () {
-                if (this.fileType === 'vcf' && this.url !== '' && this.indexUrl !== '') {
+                if (this.url !== '' && this.indexUrl !== '') {
                     this.onVcfUrlEntered(this.url, this.indexUrl);
-                } else {
-                    // Check facets file
-
-                    // Populate sampleIds?
                 }
             },
             /* Asks cohort model to check vcf and returns number of samples in vcf
@@ -145,7 +178,7 @@
                             // Create modelInfo per sample, tell parent to set
                             let infoList = [];
                             for (let i = 0; i < sampleNames.length; i++) {
-                                let modelInfo = self.getModelInfo(sampleNames[i], i === 0);
+                                let modelInfo = self.getModelInfo(sampleNames[i], i !== 0);
                                 infoList.push(modelInfo);
                                 self.$emit('set-model-info', infoList);
                                 self.vcfSampleNames.push(sampleNames[i]);
@@ -174,15 +207,15 @@
                 modelInfo.isTumor = isTumor;
                 return modelInfo;
             },
-            getTumorStatus: function (i) {
-                if (i === 0) {
-                    return 'NORMAL';
-                } else {
-                    return 'TUMOR';
-                }
-            },
             deleteTrack: function(modelInfoIdx) {
-                this.modelInfoList.splice(modelInfoIdx, 1);
+                this.$emit('remove-model-info', modelInfoIdx);
+            },
+            isTumorTrack: function(modelInfo) {
+                if (modelInfo.isTumor) {
+                    return 'Tumor';
+                } else {
+                    return 'Normal';
+                }
             }
         }
     }

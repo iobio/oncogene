@@ -193,7 +193,8 @@
                                                 :modelInfoList="modelInfoList"
                                                 :disabled="disableNonVcfSlides || getFileType(userData[i-1]) === 'vcf'"
                                                 @clear-model-info="setModelInfo"
-                                                @set-model-info="setModelInfo">
+                                                @set-model-info="setModelInfo"
+                                                @remove-model-info="removeModelInfo">
                             </vcf-form>
                             <multi-source-form v-else
                                                :cohortModel="cohortModel"
@@ -378,6 +379,13 @@
                 } else {
                     this.modelInfoList = info;
                 }
+
+                // Trick vue into update
+                this.modelInfoList.push('foo');
+                this.modelInfoList.pop();
+            },
+            removeModelInfo: function(modelInfoIdx) {
+                this.modelInfoList.splice(modelInfoIdx, 1);
             }
         },
         mounted: function () {
