@@ -21,7 +21,7 @@
                             :cycle="cycle"
                             :opactiy="1"
                 >
-                    <v-carousel-item style="background-color: #ededed">
+                    <v-carousel-item :style="'background-color: ' + slideBackground">
                         <v-row class="flex-child mx-12 align-stretch" style="height: 90%">
                             <v-col class="d-flex align-stretch"
                                    cols="12" height="100">
@@ -53,20 +53,24 @@
                         </v-row>
                     </v-carousel-item>
 
-                    <v-carousel-item style="background-color: #ededed">
+                    <v-carousel-item :style="'background-color: ' + slideBackground">
                         <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped :color="slideBackground" class="pa-2 mx-1 justify-center about-card" width="30%">
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
                                 <v-card-title>
-                                    About Inputs
+                                    Required Inputs
                                 </v-card-title>
+                                <v-card-text class="about-text">
+                                    {{ aboutText }}
+                                </v-card-text>
                             </v-card>
-                            <v-card light flat :color="slideBackground" class="pa-2 function-card" width="70%">
+                            <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
                                 <v-card-title class="justify-center">
                                     What types of data do you have?
                                 </v-card-title>
                                 <v-card-subtitle class="about-subtitle">
                                     (Select all that apply)
                                 </v-card-subtitle>
+                                <v-divider class="mx-12"></v-divider>
                                 <v-card-actions>
                                     <v-container fluid>
                                         <v-row v-for="i in dataModels.length"
@@ -87,30 +91,26 @@
                             </v-card>
                         </v-card>
                     </v-carousel-item>
-                    <v-carousel-item style="background-color: #ededed">
-                        <v-row class="flex-child mx-12 align-stretch" style="height: 90%">
-                            <v-col class="d-flex align-stretch"
-                                   cols="3" height="100">
-                                <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
-                                         :color="slideBackground">
-                                    <h1>About</h1>
-                                </v-sheet>
-                            </v-col>
-                            <v-col class="d-flex"
-                                   cols="9">
-                                <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
-                                         :color="slideBackground">
-                                    <v-row justify="center" align="start" class="mb-auto" style="height: 10%">
-                                        <v-col md="auto">
-                                            <v-row justify="center" style="padding-top: 10px">
-                                                <h2>Does your VCF file contain somatic variants only?</h2>
-                                            </v-row>
-                                            <v-divider></v-divider>
-                                        </v-col>
-                                    </v-row>
-                                    <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
-                                        <v-col md="auto">
-                                            <v-row justify="center">
+                    <v-carousel-item :style="'background-color: ' + slideBackground">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                                <v-card-title>
+                                    Somatic Calling
+                                </v-card-title>
+                                <v-card-text class="about-text">
+                                    {{ aboutText }}
+                                </v-card-text>
+                            </v-card>
+                            <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
+                                <v-card-title class="justify-center">
+                                    Does your VCF file contain somatic variants only?
+                                </v-card-title>
+                                <v-divider class="mx-12"></v-divider>
+                                <v-card-actions>
+                                    <v-container fluid class="align-stretch">
+                                        <v-row align="center">
+                                            <v-col cols="4"></v-col>
+                                            <v-col cols="6">
                                                 <v-radio-group v-model="somaticCallsOnly">
                                                     <v-radio color="appColor"
                                                              key="som-false"
@@ -123,80 +123,87 @@
                                                              :value="true"
                                                     ></v-radio>
                                                 </v-radio-group>
-                                            </v-row>
-                                        </v-col>
-                                    </v-row>
-                                </v-sheet>
-                            </v-col>
-                        </v-row>
+                                            </v-col>
+                                        </v-row>
+                                    </v-container>
+                                </v-card-actions>
+                            </v-card>
+                        </v-card>
                     </v-carousel-item>
-                    <v-carousel-item style="background-color: #ededed">
-                        <v-row class="flex-child mx-12 align-stretch" style="height: 90%">
-                            <v-col class="d-flex align-stretch"
-                                   cols="3" height="100">
-                                <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
-                                         :color="slideBackground">
-                                    <h1>About</h1>
-                                </v-sheet>
-                            </v-col>
-                            <v-col class="d-flex"
-                                   cols="9">
-                                <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
-                                         :color="slideBackground">
-                                    <v-row justify="center" align="top" class="mb-auto" style="height: 10%">
-                                        <v-col md="auto">
-                                            <v-row justify="center">
-                                                <h2>What type of cancer are you examining?</h2>
-                                            </v-row>
-                                            <v-row justify="center">
-                                                <i>(If you're not sure, select UCSF500)</i>
-                                            </v-row>
-                                            <v-divider style="width: 700px"></v-divider>
-                                            <v-row justify="center">
-                                                <v-container style="width: 650px">
-                                                    <v-select
-                                                            :items="geneListNames"
-                                                            color="appColor"
-                                                            background-color="white"
-                                                            label="Cancer Type (Panel Name)"
-                                                            outlined
-                                                            v-model="selectedList"
-                                                            @change="populateListInput"
-                                                    ></v-select>
-                                                    <!--TODO: put validator on this data-->
-                                                    <!--TODO: do we still want to show this if only somatic variants in file-->
-                                                    <v-textarea
-                                                            color="appColor"
-                                                            background-color="white"
-                                                            rows="10"
-                                                            label="Genes"
-                                                            :value="listInput"
-                                                    ></v-textarea>
-                                                </v-container>
-                                            </v-row>
-                                        </v-col>
-                                    </v-row>
-                                </v-sheet>
-                            </v-col>
-                        </v-row>
+                    <v-carousel-item :style="'background-color: ' + slideBackground">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                                <v-card-title>
+                                    Gene Loci Selections
+                                </v-card-title>
+                                <v-card-text class="about-text">
+                                    {{ aboutText }}
+                                </v-card-text>
+                            </v-card>
+                            <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
+                                <v-card-title class="justify-center">
+                                    What type of cancer are you examining?
+                                </v-card-title>
+                                <v-card-subtitle class="about-subtitle">
+                                    (If you're not sure, select UCSF500)
+                                </v-card-subtitle>
+                                <v-divider class="mx-12"></v-divider>
+                                <v-card-actions>
+                                    <v-container class="px-11">
+                                        <v-select
+                                                :items="geneListNames"
+                                                color="appColor"
+                                                background-color="white"
+                                                label="Cancer Type (Panel Name)"
+                                                outlined
+                                                v-model="selectedList"
+                                                @change="populateListInput"
+                                        ></v-select>
+                                        <!--TODO: put validator on this data-->
+                                        <!--TODO: do we still want to show this if only somatic variants in file-->
+                                        <v-textarea
+                                                color="appColor"
+                                                background-color="white"
+                                                outlined
+                                                rows="10"
+                                                label="Genes"
+                                                :value="listInput"
+                                        ></v-textarea>
+                                    </v-container>
+                                </v-card-actions>
+                            </v-card>
+                        </v-card>
                     </v-carousel-item>
-
-                    <v-carousel-item v-for="i in userData.length" :key="'form-' + i">
-                        <single-source-form v-if="isSingleSource(userData[i])"
-                                :cohortModel="cohortModel"
-                                :dataType="getDataType(userData[i-1])"
-                                :fileType="getFileType(userData[i-1])"
-                                :slideBackground="slideBackground"
-                                :modelInfoMap="modelInfoMap">
-                        </single-source-form>
-                        <multi-source-form v-else
-                                :cohortModel="cohortModel"
-                                :dataType="getDataType(userData[i-1])"
-                                :fileType="getFileType(userData[i-1])"
-                                :slideBackground="slideBackground"
-                                :modelInfoMap="modelInfoMap">
-                        </multi-source-form>
-                        <!--TODO: else put multi-sample for bams-->
+                    <v-carousel-item v-for="i in userData.length" :key="'form-' + i"
+                            :style="'background-color: ' + slideBackground">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                                <v-card-title>
+                                    {{ (getFileType(userData[i-1])).toUpperCase() }} Input
+                                </v-card-title>
+                                <v-card-text class="about-text">
+                                    {{ aboutText }}
+                                </v-card-text>
+                            </v-card>
+                            <vcf-form v-if="isSingleSource(userData[i-1])"
+                                                :cohortModel="cohortModel"
+                                                :dataType="getDataType(userData[i-1])"
+                                                :fileType="getFileType(userData[i-1])"
+                                                :slideBackground="slideBackground"
+                                                :modelInfoList="modelInfoList"
+                                                :disabled="disableNonVcfSlides || getFileType(userData[i-1]) === 'vcf'"
+                                                @clear-model-info="setModelInfo"
+                                                @set-model-info="setModelInfo">
+                            </vcf-form>
+                            <multi-source-form v-else
+                                               :cohortModel="cohortModel"
+                                               :dataType="getDataType(userData[i-1])"
+                                               :fileType="getFileType(userData[i-1])"
+                                               :slideBackground="slideBackground"
+                                               :disabled="disableNonVcfSlides"
+                                               :modelInfoList="modelInfoList">
+                            </multi-source-form>
+                        </v-card>
                     </v-carousel-item>
                     <!--TODO: either have last item here with status or bottom bar and disable load-->
                 </v-carousel>
@@ -225,7 +232,7 @@
 
 <script>
     import variantRainD3 from '../d3/VariantRain.d3.js'
-    import SingleSourceForm from './SingleSourceForm.vue'
+    import VcfForm from './VcfForm.vue'
     import MultiSourceForm from './MultiSourceForm.vue'
     import geneListsByType from '../data/gene_lists.json'
     import _ from 'lodash'
@@ -233,7 +240,7 @@
     export default {
         name: "Welcome",
         components: {
-            SingleSourceForm,
+            VcfForm,
             MultiSourceForm
         },
         props: {
@@ -269,7 +276,9 @@
                 absolute: false,
                 opacity: 0.1,
                 overlay: true,
-                slideBackground: '#ededed',
+                disableNonVcfSlides: true,
+                slideBackground: 'white',
+                aboutElevation: 4,
                 carouselModel: 0,
                 dataDescriptors: [
                     'Variant Calls',
@@ -306,8 +315,19 @@
                 // retained (model) state
                 somaticCallsOnly: false,
                 listInput: 'Select a type to populate gene list or enter your own',
-                modelInfoMap: {},
+                modelInfoList: [],
                 sampleIds: [],
+                aboutText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, ' +
+                'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
+                'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
+                'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
+                'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
+                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' +
+                ' sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
+                    'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
+                'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
+                'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
+                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
             }
         },
         computed: {
@@ -331,7 +351,7 @@
                 }
             }, 100),
             isSingleSource: function(dataModel) {
-                return dataModel === 'vcf' || dataModel === 'cnv';
+                return dataModel === 'vcf';
             },
             getFileType: function (type) {
                 let idx = this.dataModels.indexOf(type);
@@ -351,6 +371,13 @@
                 geneListsByType[this.selectedList].forEach((gene) => {
                     this.listInput += gene + '\n';
                 });
+            },
+            setModelInfo: function(info) {
+                if (!info) {
+                    this.modelInfoList = [];
+                } else {
+                    this.modelInfoList = info;
+                }
             }
         },
         mounted: function () {
@@ -398,9 +425,14 @@
             margin-top: 10px
 
         .about-card
-            /*outline: solid 1px #4a4a4a*/
-            background-color: #965757
+            background-color: white
             color: #4a4a4a
+            .v-card__title
+                font-size: 16px
+
+        .about-text
+            height: 375px
+            overflow: scroll
 
         .about-subtitle
             color: #888888 !important

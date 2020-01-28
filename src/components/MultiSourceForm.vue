@@ -1,104 +1,54 @@
 <template>
-    <v-sheet
-            height="100%"
-            width="100%"
-            :color="slideBackground"
-            tile
-    >
-        <v-row justify="center" align="top" class="mb-auto" style="height: 10%">
-            <v-col md="auto">
-                <v-row justify="center" style="padding-top: 10px">
-                    <h2>{{ dataType }} Data</h2>
-                </v-row>
-                <v-divider style="width: 700px"></v-divider>
-            </v-col>
-            <v-text-field
-                    v-if="fileType === 'url'"
-                    v-bind:label="'Enter ' + label +  ' URL'"
-                    hide-details
-                    v-model="url"
-                    color="appColor"
-                    @change="onUrlChange"
-            ></v-text-field>
-        </v-row>
-        <v-row justify=center align="start" v-if="urlsVerified" style="padding-top: 10px">
-            <v-col md="auto">
-                <v-btn dark small color="darkPrimary" @click="urlsVerified = false">Edit Urls</v-btn>
-            </v-col>
-        </v-row>
-        <v-row justify="center" align="center" class="mb-auto" style="height: 70%">
-            <v-col md="auto" v-if="!urlsVerified">
-                <v-row justify="center">
-                    <v-text-field style="width: 500px;"
-                                  :label="'Enter .' + fileType +  ' URL'"
-                                  hide-details
-                                  v-model="url"
-                                  color="appColor"
-                                  @change="onUrlChange()"
-                    ></v-text-field>
-                </v-row>
-                <v-row v-if="hasIndexFile" justify="center">
-                    <v-text-field style="width: 500px;"
-                                  :label="'Enter .' + getIndexFileType() +  ' URL'"
-                                  hide-details
-                                  v-model="indexUrl"
-                                  color="appColor"
-                                  @change="onUrlChange()"
-                    ></v-text-field>
-                </v-row>
-            </v-col>
-            <v-col md="auto" style="padding-left: 0; padding-right: 0" v-if="urlsVerified">
-                <v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">
-                    <v-col md="2" style="padding-left: 0" class="text-sm-center">
-                        <v-chip label outlined small color="appColor" style="margin-top: 7px;">{{getTumorStatus(i-1)}}</v-chip>
-                    </v-col>
-                    <v-col md="4">
-                        <v-text-field dense
-                                v-model="modelInfoList[i-1].displayName"
-                                label="Nickname"
-                        ></v-text-field>
-                    </v-col>
-                    <v-col md="4" style="padding-right: 0">
-                        <v-select
-                                label="Sample"
-                                v-model="modelInfoList[i-1].selectedSample"
-                                :items="vcfSampleNames"
-                                color="appColor"
-                                autocomplete
-                                dense
-                                hide-details
-                        ></v-select>
-                    </v-col>
-                    <v-col v-if="i > 2" md="2">
-                        <div class="text-xs-center">
-                            <v-btn text icon color="appColor" @click="deleteTrack(i-1)">
-                                <v-icon>close</v-icon>
-                            </v-btn>
-                        </div>
+    <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
+        <v-card-title class="justify-center">
+            {{ dataType }} Data
+        </v-card-title>
+        <v-divider class="mx-12"></v-divider>
+        <v-card-actions>
+            <v-container v-if="modelInfoList.length < 2" class="info-blurb">
+                <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
+                    <v-col class="d-flex align-center" cols="12">
+                        Please enter a valid VCF url and select at least two samples to enter {{dataType.toLowerCase()}} data
                     </v-col>
                 </v-row>
-                    <v-btn
-                            color="darkPrimary"
-                            absolute
-                            dark
-                            small
-                            right
-                            fab
-                            style="margin-right: 20px; margin-bottom: 20px"
-                    >
-                        <v-icon>add</v-icon>
-                    </v-btn>
-            </v-col>
-        </v-row>
+            </v-container>
+            <v-container fluid v-else>
+                <v-col md="auto" style="padding-left: 0; padding-right: 0" v-if="urlsVerified">
+                    <v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">
+                        <v-col md="2" style="padding-left: 0" class="text-sm-center">
+                            <v-chip label outlined small color="appColor" style="margin-top: 7px;">{{getTumorStatus(i-1)}}</v-chip>
+                        </v-col>
+                        <v-col md="4">
+                            <v-text-field class="top-url"
+                                          :label="'Enter .' + fileType +  ' URL'"
+                                          hide-details
+                                          v-model="url"
+                                          color="appColor"
+                                          @change="onUrlChange()"
+                            ></v-text-field>
+                        </v-col>
+                        <v-col md="4" style="padding-right: 0">
+                            <v-text-field class="bot-url"
+                                          :label="'Enter .' + getIndexFileType() +  ' URL'"
+                                          hide-details
+                                          v-model="indexUrl"
+                                          color="appColor"
+                                          @change="onUrlChange()"
+                            ></v-text-field>
+                        </v-col>
+                    </v-row>
+                </v-col>
+            </v-container>
+        </v-card-actions>
         <v-overlay :value="displayLoader">
             <v-progress-circular indeterminate size="64"></v-progress-circular>
         </v-overlay>
-    </v-sheet>
+    </v-card>
 </template>
 
 <script>
     export default {
-        name: "VcfForm",
+        name: "MultiSourceForm",
         props: {
             dataType: {
                 type: String,
@@ -119,6 +69,10 @@
             modelInfoList: {
                 type: Array,
                 default: function () { return []; }
+            },
+            disabled: {
+                type: Boolean,
+                default: false
             }
         },
         data: function () {
@@ -205,4 +159,27 @@
 <style lang="sass">
     .dense-row
         height: 50px
+
+    .function-card
+        font-family: "Open Sans"
+        font-size: 14px
+        color: #4a4a4a
+
+    .top-url
+        padding-top: 100px
+        padding-bottom: 10px
+        padding-left: 20px
+        padding-right: 20px
+
+    .bot-url
+        padding-bottom: 10px
+        padding-left: 20px
+        padding-right: 20px
+
+    .info-blurb
+        color: #888888
+        font-style: italic
+        font-size: 18px
+        height: 300px
+        text-align: center
 </style>
