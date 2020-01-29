@@ -21,7 +21,7 @@
                               @change="onUrlChange()"
                 ></v-text-field>
             </v-container>
-            <v-container v-if="urlsVerified" fluid>
+            <v-container v-if="urlsVerified" fluid style="padding-top: 0">
                 <v-row justify=center align="start">
                     <v-col md="auto" dense>
                         <v-btn dark small color="darkPrimary" @click="urlsVerified = false">Edit Urls</v-btn>
@@ -48,12 +48,27 @@
                                         ></v-select>
                                     </v-col>
                                     <v-col md="4">
-                                        <v-chip small color="appHighlight" dark>{{ isTumorTrack(listInfo) }}</v-chip>
+                                        <v-chip small outlined color="appHighlight" dark class="mt-3"
+                                                :close="isCloseable(i)"
+                                                @click:close="deleteTrack(i)">
+                                            {{ isTumorTrack(listInfo) }}
+                                        </v-chip>
                                     </v-col>
                                 </v-row>
                             </v-list-item-content>
                         </v-list-item>
                     </v-list-group-item>
+                    <v-btn  v-if="modelInfoList.length < MAX_SAMPLES"
+                            color="darkPrimary"
+                            absolute
+                            dark
+                            small
+                            right
+                            fab
+                            style="margin-right: 20px; margin-bottom: 20px"
+                            @click="addTrack">
+                        <v-icon>add</v-icon>
+                    </v-btn>
                 </v-list>
 
 
@@ -137,6 +152,7 @@
         },
         data: function () {
             return {
+                MAX_SAMPLES: 6,
                 url: '',
                 indexUrl: '',
                 vcfSampleNames: [],
@@ -202,20 +218,27 @@
             },
             getModelInfo: function (selectedSample, isTumor) {
                 let modelInfo = {};
-                modelInfo.displayName = selectedSample;
+                modelInfo.displayName = selectedSample; // Note: not using display name for now
                 modelInfo.selectedSample = selectedSample;
                 modelInfo.isTumor = isTumor;
                 return modelInfo;
             },
-            deleteTrack: function(modelInfoIdx) {
+            addTrack: function () {
+                let newInfo = this.getModelInfo(null, true);
+                this.modelInfoList.push(newInfo);
+            },
+            deleteTrack: function (modelInfoIdx) {
                 this.$emit('remove-model-info', modelInfoIdx);
             },
-            isTumorTrack: function(modelInfo) {
+            isTumorTrack: function (modelInfo) {
                 if (modelInfo.isTumor) {
                     return 'Tumor';
                 } else {
                     return 'Normal';
                 }
+            },
+            isCloseable: function(i) {
+                return i > 1;
             }
         }
     }
