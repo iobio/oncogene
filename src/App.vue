@@ -225,8 +225,11 @@
         mounted: function () {
             const self = this;
 
+            // TODO: can probably get rid of this
             self.selectedGene = 'fakeGene1';
             self.selectedTranscript = 'fakeTranscript1';
+
+
             self.cardWidth = window.innerWidth;
 
             // self.mainContentWidth = self.d3.select('main.content .container').outerWidth();

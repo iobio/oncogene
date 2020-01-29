@@ -820,6 +820,8 @@ class SampleModel {
         this.vcf.setGenericAnnotation(this.cohort.genericAnnotation);
         this.vcf.setGenomeBuildHelper(this.cohort.genomeBuildHelper);
         this.vcf.setIsEduMode(this.cohort.isEduMode);
+
+        // TODO: guessing I need to init bam.iobio here too
     }
 
     promiseBamFilesSelected(fileSelection) {
@@ -893,7 +895,6 @@ class SampleModel {
                     alert('Problem opening remote bam: ' + errorMsg);
                 }
                 if (callback) {
-
                     callback(success);
                 }
             });
@@ -1010,7 +1011,7 @@ class SampleModel {
                     // let msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + vcfUrl + "</span>";
                     // this.alertify.set('notifier', 'position', 'top-right');
                     // me.lastVcfthis.alertify = this.alertify.error(msg, 15);
-                    alert('Problem opening vcf: ' + errorMsg);
+                    alert('There was a problem opening the provided vcf/tbi files, please try again. Error: ' + errorMsg);
                     callback(success);
                 }
             });

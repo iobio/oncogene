@@ -60,7 +60,7 @@ export default function vcfiobio(theGlobalApp) {
         '6': 'drug_response',
         '7': 'other',
         '255': 'other'
-    }
+    };
 
 
 // var effectCategories = [
@@ -237,7 +237,7 @@ export default function vcfiobio(theGlobalApp) {
         var cmd = me.getEndpoint().getVcfHeader(url, tbiUrl);
 
         cmd.on('data', function (data) {
-            if (data != undefined) {
+            if (data != null && data !== '') {
                 success = true;
                 buffer += data;
             }

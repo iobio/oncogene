@@ -28,7 +28,7 @@
                     </v-col>
                 </v-row>
                 <v-list dense>
-                    <v-list-group-item v-model="listInfo">
+                    <v-list-item-group v-model="listInfo">
                         <v-list-item v-for="(listInfo, i) in modelInfoList"
                         :key="'listInfo-' + i">
                             <v-list-item-icon style="padding-top:25px">
@@ -57,8 +57,8 @@
                                 </v-row>
                             </v-list-item-content>
                         </v-list-item>
-                    </v-list-group-item>
-                    <v-btn  v-if="modelInfoList.length < MAX_SAMPLES"
+                    </v-list-item-group>
+                    <v-btn  v-if="modelInfoList.length < maxSamples"
                             color="darkPrimary"
                             absolute
                             dark
@@ -70,49 +70,6 @@
                         <v-icon>add</v-icon>
                     </v-btn>
                 </v-list>
-
-
-                <!--<v-row justify="center" align="center" class="mb-auto">-->
-                    <!--<v-col md="auto" style="padding-left: 0; padding-right: 0" v-if="urlsVerified">-->
-                        <!--<v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">-->
-                            <!--<v-col md="2" class="text-sm-center mt-1">-->
-                                <!--<v-chip outlined color="appColor">{{i}}</v-chip>-->
-                            <!--</v-col>-->
-                            <!--<v-col md="3" class="mt-2 justify-center">-->
-                                <!--<v-chip small color="appHighlight" dark label>{{ isTumorTrack(modelInfoList[i-1]) }}</v-chip>-->
-                            <!--</v-col>-->
-                            <!--<v-col md="4" style="padding-right: 0">-->
-                                <!--<v-select-->
-                                        <!--label="Sample"-->
-                                        <!--v-model="modelInfoList[i-1].selectedSample"-->
-                                        <!--:items="vcfSampleNames"-->
-                                        <!--color="appColor"-->
-                                        <!--autocomplete-->
-                                        <!--dense-->
-                                        <!--hide-details-->
-                                <!--&gt;</v-select>-->
-                            <!--</v-col>-->
-                            <!--<v-col v-if="i > 2" md="2">-->
-                                <!--<div class="text-xs-center">-->
-                                    <!--<v-btn text icon color="appColor" @click="deleteTrack(i-1)">-->
-                                        <!--<v-icon>close</v-icon>-->
-                                    <!--</v-btn>-->
-                                <!--</div>-->
-                            <!--</v-col>-->
-                        <!--</v-row>-->
-                        <!--<v-btn-->
-                                <!--color="darkPrimary"-->
-                                <!--absolute-->
-                                <!--dark-->
-                                <!--small-->
-                                <!--right-->
-                                <!--fab-->
-                                <!--style="margin-right: 20px; margin-bottom: 20px"-->
-                        <!--&gt;-->
-                            <!--<v-icon>add</v-icon>-->
-                        <!--</v-btn>-->
-                    <!--</v-col>-->
-                <!--</v-row>-->
             </v-container>
         </v-card-actions>
         <v-overlay :value="displayLoader">
@@ -145,14 +102,17 @@
                 type: Array,
                 default: function () { return []; }
             },
-            disabled: {
-                type: Boolean,
-                default: false
+            allDataModels: {
+                type: Array,
+                default: function () {return []; }
+            },
+            maxSamples: {
+                type: Number,
+                default: 0
             }
         },
         data: function () {
             return {
-                MAX_SAMPLES: 6,
                 url: '',
                 indexUrl: '',
                 vcfSampleNames: [],
@@ -161,7 +121,7 @@
                 displayLoader: false,
                 displayBuild: false,
                 urlsVerified: false,
-                listInfo: 0
+                listInfo: -1
             }
         },
         computed: {
@@ -182,27 +142,30 @@
              */
             onVcfUrlEntered: function (vcfUrl, tbiUrl) {
                 const self = this;
+                // TODO: do clear out warning/alert here
                 self.$emit('clear-model-info', null);
                 return new Promise((resolve, reject) => {
                     self.displayLoader = true;
                     self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames) {
                         self.displayLoader = false;
-                        if (sampleNames.length < 2) {
-                            alert('Oncogene is currently configured to work with at least one normal and one tumor sample');
-                            reject();
-                        } else {
-                            // Create modelInfo per sample, tell parent to set
-                            let infoList = [];
-                            for (let i = 0; i < sampleNames.length; i++) {
-                                let modelInfo = self.getModelInfo(sampleNames[i], i !== 0);
-                                infoList.push(modelInfo);
-                                self.$emit('set-model-info', infoList);
-                                self.vcfSampleNames.push(sampleNames[i]);
+                        if (success) {
+                            if (sampleNames.length < 2) {
+                                alert('Oncogene is currently configured to work with at least one normal and one tumor sample');
+                                reject();
+                            } else {
+                                // Create modelInfo per sample
+                                let infoList = [];
+                                for (let i = 0; i < sampleNames.length; i++) {
+                                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl);
+                                    infoList.push(modelInfo);
+                                    self.$emit('set-model-info', infoList);
+                                    self.vcfSampleNames.push(sampleNames[i]);
+                                }
+                                // Toggle display flags
+                                self.urlsVerified = true;
+                                self.displayBuild = true;
+                                resolve();
                             }
-                            // Toggle display flags
-                            self.urlsVerified = true;
-                            self.displayBuild = true;
-                            resolve();
                         }
                     })
                 })
@@ -216,15 +179,25 @@
                     return '';
                 }
             },
-            getModelInfo: function (selectedSample, isTumor) {
+            createModelInfo: function (selectedSample, isTumor, vcfUrl, tbiUrl) {
                 let modelInfo = {};
-                modelInfo.displayName = selectedSample; // Note: not using display name for now
                 modelInfo.selectedSample = selectedSample;
                 modelInfo.isTumor = isTumor;
+
+                modelInfo.vcfUrl = vcfUrl;
+                modelInfo.tbiUrl = tbiUrl;
+                modelInfo.coverageBamUrl = null;
+                modelInfo.coverageBaiUrl = null;
+                modelInfo.rnaSeqBamUrl = null;
+                modelInfo.rnaSeqBaiUrl = null;
+                modelInfo.atacSeqBamUrl = null;
+                modelInfo.atacSeqBaiUrl = null;
+                modelInfo.cnvUrl = null;
+
                 return modelInfo;
             },
             addTrack: function () {
-                let newInfo = this.getModelInfo(null, true);
+                let newInfo = this.createModelInfo(null, true);
                 this.modelInfoList.push(newInfo);
             },
             deleteTrack: function (modelInfoIdx) {

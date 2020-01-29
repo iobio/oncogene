@@ -73,16 +73,16 @@
                                 <v-divider class="mx-12"></v-divider>
                                 <v-card-actions>
                                     <v-container fluid>
-                                        <v-row v-for="i in dataModels.length"
+                                        <v-row v-for="i in DATA_MODELS.length"
                                                :key="'checkbox-' + i"
                                                 no-gutters dense>
                                             <v-col cols="4"></v-col>
                                             <v-col cols="6">
                                                 <v-checkbox
                                                         dense v-model="userData" color="appColor"
-                                                        :label="dataDescriptors[i-1] + ' (.' + fileDescriptors[i-1] + ')'"
-                                                        :value="dataModels[i-1]"
-                                                        @mouseup="onDataChecked(dataModels[i-1])">
+                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')'"
+                                                        :value="DATA_MODELS[i-1]"
+                                                        @mouseup="onDataChecked(DATA_MODELS[i-1])">
                                                 </v-checkbox>
                                             </v-col>
                                         </v-row>
@@ -191,7 +191,8 @@
                                                 :fileType="getFileType(userData[i-1])"
                                                 :slideBackground="slideBackground"
                                                 :modelInfoList="modelInfoList"
-                                                :disabled="disableNonVcfSlides || getFileType(userData[i-1]) === 'vcf'"
+                                                :allDataModels="DATA_MODELS"
+                                                :maxSamples="MAX_SAMPLES"
                                                 @clear-model-info="setModelInfo"
                                                 @set-model-info="setModelInfo"
                                                 @remove-model-info="removeModelInfo">
@@ -199,10 +200,11 @@
                             <multi-source-form v-else
                                                :cohortModel="cohortModel"
                                                :dataType="getDataType(userData[i-1])"
+                                               :modelType="userData[i-1]"
                                                :fileType="getFileType(userData[i-1])"
                                                :slideBackground="slideBackground"
-                                               :disabled="disableNonVcfSlides"
-                                               :modelInfoList="modelInfoList">
+                                               :modelInfoList="modelInfoList"
+                                               :maxSamples="MAX_SAMPLES">
                             </multi-source-form>
                         </v-card>
                     </v-carousel-item>
@@ -268,56 +270,47 @@
         },
         data: function () {
             return {
-                // animation data
-                divId: 'variantRainDiv',
-
                 // view state
+                divId: 'variantRainDiv',
                 cycle: false,
                 continuous: false,
                 absolute: false,
                 opacity: 0.1,
                 overlay: true,
-                disableNonVcfSlides: true,
                 slideBackground: 'white',
                 aboutElevation: 4,
                 carouselModel: 0,
-                dataDescriptors: [
+
+                // static data
+                DATA_DESCRIPTORS: [
                     'Variant Calls',
                     'Read Coverage',
                     'Copy Number',
                     'Raw RNAseq',
                     'Raw ATACseq'
                 ],
-                dataModels: [
+                DATA_MODELS: [
                     'vcf',
-                    'coverageBam',
+                    'coverage',
                     'cnv',
                     'rnaSeq',
                     'atacSeq'
                 ],
-                userData: ['vcf', 'coverageBam'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
-                lockedData: {
+                LOCKED_DATA: {
                     'vcf': true,
-                    'coverageBam': true,
+                    'coverage': true,
                     'cnv': false,
                     'rnaSeq': false,
                     'atacSeq': false
                 },
-                fileDescriptors: [
+                FILE_DESCRIPTORS: [
                     'vcf',
                     'bam',
                     'facets',
                     'bam',
                     'bam'
                 ],
-                geneListNames: [],
-                selectedList: null,
-
-                // retained (model) state
-                somaticCallsOnly: false,
-                listInput: 'Select a type to populate gene list or enter your own',
-                modelInfoList: [],
-                sampleIds: [],
+                MAX_SAMPLES: 6,
                 aboutText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, ' +
                 'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
                 'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
@@ -325,10 +318,19 @@
                 'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
                 ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' +
                 ' sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
-                    'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
+                'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
                 'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
                 'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
-                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+
+                // retained (model) state
+                userData: ['vcf', 'coverage'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
+                somaticCallsOnly: false,
+                geneListNames: [],
+                selectedList: null,
+                listInput: 'Select a type to populate gene list or enter your own',
+                modelInfoList: [],
+                sampleIds: []
             }
         },
         computed: {
@@ -345,7 +347,7 @@
             },
             // NOTE: not sure why, but clicking prepend checkbox icon caused this to fire twice (hence, debounce)
             onDataChecked: _.debounce(function (model) {
-                if (this.lockedData[model]) {
+                if (this.LOCKED_DATA[model]) {
                     // TODO: make this prettier & create anonymous logging system to track if people want another entry vector
                     alert('Oncogene is currently configured to require this data type.');
                     this.userData.push(model);
@@ -355,12 +357,12 @@
                 return dataModel === 'vcf';
             },
             getFileType: function (type) {
-                let idx = this.dataModels.indexOf(type);
-                return this.fileDescriptors[idx];
+                let idx = this.DATA_MODELS.indexOf(type);
+                return this.FILE_DESCRIPTORS[idx];
             },
             getDataType: function (type) {
-                let idx = this.dataModels.indexOf(type);
-                return this.dataDescriptors[idx];
+                let idx = this.DATA_MODELS.indexOf(type);
+                return this.DATA_DESCRIPTORS[idx];
             },
             populateGeneLists: function () {
                 for (var listName in geneListsByType) {

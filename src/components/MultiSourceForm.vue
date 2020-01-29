@@ -13,35 +13,45 @@
                 </v-row>
             </v-container>
             <v-container fluid v-else>
-                <v-col md="auto" class="px-10">
-                    <v-row v-for="i in modelInfoList.length" :key="'sample-row-' + i" class="dense-row">
-                        <v-col md="2" style="padding-left: 0" class="text-sm-center">
-                            <v-chip outlined color="appColor" style="margin-top: 20px;">{{i}}</v-chip>
-                            <!--<v-chip label outlined small color="appColor" style="margin-top: 20px;">{{getTumorStatus(i-1)}}</v-chip>-->
-                        </v-col>
-                        <v-col md="4">
-                            <v-text-field
-                                          :label="'Enter .' + fileType +  ' URL'"
-                                          hide-details
-                                          v-model="url"
-                                          color="appColor"
-                                          @change="onUrlChange()"
-                            ></v-text-field>
-                        </v-col>
-                        <v-col md="4" style="padding-right: 0">
-                            <v-text-field
-                                          :label="'Enter .' + getIndexFileType() +  ' URL'"
-                                          hide-details
-                                          v-model="indexUrl"
-                                          color="appColor"
-                                          @change="onUrlChange()"
-                            ></v-text-field>
-                        </v-col>
-                        <v-col md="2">
-                            <!--TODO: symbol-->
-                        </v-col>
-                    </v-row>
-                </v-col>
+                <v-list dense flat>
+                    <v-list-item-group v-model="listInfo">
+                        <v-list-item v-for="(listInfo, i) in modelInfoList"
+                                     :key="'listInfo-' + i">
+                            <v-list-item-icon style="padding-top:25px">
+                                <v-icon large color="appColor">filter_{{i+1}}</v-icon>
+                            </v-list-item-icon>
+                            <v-list-item-content style="padding-bottom: 0">
+                                <v-row dense>
+                                    <v-col :md="columnWidth">
+                                        <v-text-field
+                                                :label="'Enter .' + fileType +  ' URL'"
+                                                hide-details
+                                                dense
+                                                v-model="listInfo[key]"
+                                                color="appColor"
+                                                @change="onUrlChange(i)"
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col v-if="hasIndexFile" md="5" style="padding-right: 0">
+                                        <v-text-field
+                                                :label="'Enter .' + getIndexFileType() +  ' URL'"
+                                                hide-details
+                                                dense
+                                                v-model="listInfo[indexKey]"
+                                                color="appColor"
+                                                @change="onUrlChange(i)"
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col md="2">
+                                        <v-list-item-icon v-if="verifiedStatus[i]" class="pt-2">
+                                            <v-icon color="green">checkmark</v-icon>
+                                        </v-list-item-icon>
+                                    </v-col>
+                                </v-row>
+                            </v-list-item-content>
+                        </v-list-item>
+                    </v-list-item-group>
+                </v-list>
             </v-container>
         </v-card-actions>
         <v-overlay :value="displayLoader">
@@ -55,6 +65,10 @@
         name: "MultiSourceForm",
         props: {
             dataType: {
+                type: String,
+                default: ''
+            },
+            modelType: {
                 type: String,
                 default: ''
             },
@@ -74,60 +88,77 @@
                 type: Array,
                 default: function () { return []; }
             },
-            disabled: {
-                type: Boolean,
-                default: false
+            maxSamples: {
+                type: Number,
+                default: 0
             }
         },
         data: function () {
             return {
-                url: '',
-                indexUrl: '',
-                vcfSampleNames: [],
-                selectedSamples: [],
-                sampleNicknames: [],
                 displayLoader: false,
                 displayBuild: false,
-                urlsVerified: false
+                allUrlsVerified: false,
+                listInfo: -1,
+                verifiedStatus: []
             }
         },
         computed: {
             hasIndexFile: function () {
                 return this.getIndexFileType() !== '';
+            },
+            columnWidth: function () {
+                return this.hasIndexFile ? 5 : 10;
+            },
+            key: function () {
+                let key = '';
+                if (this.modelType === 'cnv') {
+                    key = this.modelType + 'Url';
+                } else {
+                    key = this.modelType + 'BamUrl';
+                }
+                return key;
+            },
+            indexKey: function () {
+                let key = '';
+                if (this.modelType === 'cnv') {
+                    key = this.modelType + 'Url';
+                } else {
+                    key = this.modelType + 'BaiUrl';
+                }
+                return key;
             }
         },
         methods: {
             /* Can add more data types here as need be */
-            onUrlChange: function () {
-                if (this.fileType === 'bam' && this.url !== '' && this.indexUrl !== '') {
-                    this.onBamUrlEntered(this.url, this.indexUrl);
+            onUrlChange: function (i) {
+                this.verifiedStatus[i] = false;
+                if (this.fileType === 'bam' && this.modelInfoList[i][this.key] != null && this.modelInfoList[i][this.indexKey] != null) {
+                    this.checkBam(i, this.modelInfoList[i][this.key], this.modelInfoList[i][this.indexKey]);
                 } else {
                     // Check facets file
-                    // Populate sampleIds?
+                    this.checkFacets(this.url);
                 }
             },
-            /* Asks cohort model to check vcf and returns number of samples in vcf
-             *
-             * NOTE: in the future, if allowing for single vcfs per sample, can cycle through each sampleModel and ask, then return this
-             */
-            // onBamUrlEntered: function (bamUrl, baiUrl, dataCategory) {
-            //     const self = this;
-            //     return new Promise((resolve, reject) => {
-            //         self.displayLoader = true;
-            //         let numSamples = self.modelInfoList.length;
-            //         for (let i = 0; i < numSamples; i++) {
-            //             self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success, sampleNames) {
-            //                 self.displayLoader = false;
-            //                 if (sampleNames.length < modelInfoList.length) {
-            //                     alert('Oncogene is currently configured to work with coverage information for each sample.')
-            //                 }
-            //             })
-            //         }
-            //     });
-            // },
-            // onFacetsUrlEntered: function (facetsUrl) {
-            //
-            // },
+            checkBam: function (modelInfoIdx, bamUrl, baiUrl) {
+                const self = this;
+                return new Promise((resolve, reject) => {
+                    self.displayLoader = true;
+                        self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
+                            self.displayLoader = false;
+                            // TODO: this is coming back successful incorrectly
+                            if (success) {
+                                self.verifiedStatus[modelInfoIdx] = true;
+                                resolve();
+                            } else {
+                                reject("There was a problem with the provided bam or bai file.");
+                            }
+                    });
+                });
+            },
+            checkFacets: function (facetsUrl) {
+                console.log(facetsUrl);
+                // TODO: add in backend check here to look for column headers
+            },
             getIndexFileType: function () {
                 if (this.fileType.toLowerCase() === 'vcf') {
                     return 'tbi';
@@ -137,15 +168,6 @@
                     return '';
                 }
             },
-            addModelInfo: function (selectedSample, isTumor) {
-                const self = this;
-                let modelInfo = {};
-                modelInfo.displayName = selectedSample;
-                modelInfo.selectedSample = selectedSample;
-                modelInfo.isTumor = isTumor;
-
-                self.modelInfoList.push(modelInfo);
-            },
             getTumorStatus: function (i) {
                 if (i === 0) {
                     return 'NORMAL';
@@ -153,8 +175,13 @@
                     return 'TUMOR';
                 }
             },
-            deleteTrack: function(modelInfoIdx) {
+            deleteTrack: function (modelInfoIdx) {
                 this.modelInfoList.splice(modelInfoIdx, 1);
+            }
+        },
+        mounted: function () {
+            for (let i = 0; i < this.maxSamples; i++) {
+                this.verifiedStatus[i] = false;
             }
         }
     }
