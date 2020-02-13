@@ -30,19 +30,19 @@
                                     <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
                                         <v-col md="auto">
                                             <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="#965757" class="carousel-btn"
+                                                <v-btn x-large color="secondary" class="carousel-btn"
                                                        @click="advanceSlide">
                                                     Start New Analysis
                                                 </v-btn>
                                             </v-row>
                                             <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="#965757" class="carousel-btn"
+                                                <v-btn x-large color="secondary" class="carousel-btn"
                                                        @click="$emit('load-demo')">
                                                     Try Demo Analysis
                                                 </v-btn>
                                             </v-row>
                                             <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="#965757" class="carousel-btn"
+                                                <v-btn x-large color="secondary" class="carousel-btn"
                                                        @click="$emit('upload-config')">Upload Analysis
                                                 </v-btn>
                                             </v-row>
@@ -82,7 +82,7 @@
                                                         dense v-model="userData" color="appColor"
                                                         :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')'"
                                                         :value="DATA_MODELS[i-1]"
-                                                        @mouseup="onDataChecked(DATA_MODELS[i-1])">
+                                                        @click="onDataChecked(DATA_MODELS[i-1])">
                                                 </v-checkbox>
                                             </v-col>
                                         </v-row>
@@ -106,7 +106,7 @@
                                     Does your VCF file contain somatic variants only?
                                 </v-card-title>
                                 <v-divider class="mx-12"></v-divider>
-                                <v-card-actions>
+                                <v-card-actions style="height: 80%">
                                     <v-container fluid class="align-stretch">
                                         <v-row align="center">
                                             <v-col cols="4"></v-col>
@@ -204,30 +204,68 @@
                                                :fileType="getFileType(userData[i-1])"
                                                :slideBackground="slideBackground"
                                                :modelInfoList="modelInfoList"
-                                               :maxSamples="MAX_SAMPLES">
+                                               :maxSamples="MAX_SAMPLES"
+                                                @update-status="updateMultiStatus">
                             </multi-source-form>
                         </v-card>
                     </v-carousel-item>
-                    <!--TODO: either have last item here with status or bottom bar and disable load-->
+                    <v-carousel-item :style="'background-color: ' + slideBackground">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                                <v-card-title>
+                                    Summary
+                                </v-card-title>
+                                <v-card-text class="about-text">
+                                    {{ aboutText }}
+                                </v-card-text>
+                            </v-card>
+                            <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
+                                <v-card-title class="justify-center">
+                                    Data Summary
+                                </v-card-title>
+                                <v-divider class="mx-12"></v-divider>
+                                <v-card-actions>
+                                    <v-stepper class="summary-stepper"
+                                        light
+                                        vertical
+                                        non-linear
+                                        value="1"
+                                        >
+                                        <v-stepper-step v-for="(s,i) in firstHalfSteps"
+                                                        :key="'step-' + i"
+                                                        :complete="s.complete"
+                                                        :rules="[() => (!s.optional ? s.complete : true)]"
+                                                        :step="s.index"
+                                                        class="summary-label">
+                                            {{s.text}}
+                                            <small v-if="s.optional">Optional</small>
+                                            <small v-if="!s.optional && !s.complete">Incomplete</small>
+                                        </v-stepper-step>
+                                    </v-stepper>
+                                    <v-stepper class="summary-stepper"
+                                               light
+                                               vertical
+                                               non-linear
+                                               :value="reqSteps.length">
+                                        <v-stepper-step v-for="(s,i) in secondHalfSteps" :key="'step-' + i"
+                                                        :complete="s.complete"
+                                                        :rules="[() => (!s.optional ? s.complete : true)]"
+                                                        :step="s.index"
+                                                        class="summary-label">
+                                            {{s.text}}
+                                            <small v-if="s.optional">Optional</small>
+                                            <small v-if="!s.optional && !s.complete">Incomplete</small>
+                                        </v-stepper-step>
+                                    </v-stepper>
+                                </v-card-actions>
+                                <v-card-actions style="justify-content: center">
+                                    <v-btn large class="config-btn" :disabled="!readyToLaunch">Download Config</v-btn>
+                                    <v-btn large color="secondary" class="launch-btn" :disabled="!readyToLaunch">Launch</v-btn>
+                                </v-card-actions>
+                            </v-card>
+                        </v-card>
+                    </v-carousel-item>
                 </v-carousel>
-                <!--<v-list two-line>-->
-                <!--<v-list-item>-->
-                <!--<v-list-item-avatar>-->
-                <!--<v-img src="https://cdn.vuetifyjs.com/images/john.png"></v-img>-->
-                <!--</v-list-item-avatar>-->
-                <!--<v-list-item-content>-->
-                <!--<v-list-item-title>John Leider</v-list-item-title>-->
-                <!--<v-list-item-subtitle>Author</v-list-item-subtitle>-->
-                <!--</v-list-item-content>-->
-                <!--<v-list-item-action>-->
-                <!--<v-switch-->
-                <!--v-model="cycle"-->
-                <!--label="Cycle Slides"-->
-                <!--inset-->
-                <!--&gt;</v-switch>-->
-                <!--</v-list-item-action>-->
-                <!--</v-list-item>-->
-                <!--</v-list>-->
             </v-card>
         </v-overlay>
     </div>
@@ -280,6 +318,7 @@
                 slideBackground: 'white',
                 aboutElevation: 4,
                 carouselModel: 0,
+                readyToLaunch: false,
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -322,6 +361,16 @@
                 'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
                 'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
                 ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+                reqSteps: [
+                    { step: 'variantType', active: true, complete: true, index: 1, optional: false, text: 'Enter Variant Type' },
+                    { step: 'geneList', active: true, complete: false, index: 2, optional: false, text: 'Enter Gene List' },
+                    { step: 'vcf', active: true, complete: false, index: 3, optional: false, text: 'Upload Variant Calls' },
+                    { step: 'coverage', active: true, complete: false, index: 4, optional: false, text: 'Upload Coverage Data' },
+                    { step: 'cnv', active: true, complete: false, index: 5, optional: true, text: 'Upload Copy Numbers' },
+                    { step: 'rnaSeq', active: true, complete: false, index: 6, optional: true, text: 'Upload RNAseq Data' },
+                    { step: 'atacSeq', active: true, complete: false, index: 7, optional: true, text: 'Upload ATACseq Data' },
+                    { step: 'review', active: true, complete: false, index: 8, optional: false, text: 'Review Data' },
+                ],
 
                 // retained (model) state
                 userData: ['vcf', 'coverage'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
@@ -336,6 +385,12 @@
         computed: {
             translation: function () {
                 return 'translate(20, 50)'
+            },
+            firstHalfSteps: function() {
+                return this.reqSteps.slice(0, (this.reqSteps.length / 2));
+            },
+            secondHalfSteps: function() {
+                return this.reqSteps.slice((this.reqSteps.length / 2));
             }
         },
         methods: {
@@ -347,10 +402,20 @@
             },
             // NOTE: not sure why, but clicking prepend checkbox icon caused this to fire twice (hence, debounce)
             onDataChecked: _.debounce(function (model) {
+                // Check to see if we're trying to uncheck required type
                 if (this.LOCKED_DATA[model]) {
                     // TODO: make this prettier & create anonymous logging system to track if people want another entry vector
                     alert('Oncogene is currently configured to require this data type.');
                     this.userData.push(model);
+                }
+
+                // Otherwise, remove if in list
+                let existIdx = this.userData.indexOf(model);
+                if (existIdx > -1) {
+                    this.userData.splice(existIdx, 1);
+                } else {
+                    // Or insert before summary slide
+                    this.userData.splice(this.userData.length - 2, 0, model);
                 }
             }, 100),
             isSingleSource: function(dataModel) {
@@ -377,17 +442,32 @@
             },
             setModelInfo: function(info) {
                 if (!info) {
+                    this.updateStepStatus('vcf', false);
                     this.modelInfoList = [];
                 } else {
+                    this.updateStepStatus('vcf', true);
                     this.modelInfoList = info;
                 }
-
                 // Trick vue into update
                 this.modelInfoList.push('foo');
                 this.modelInfoList.pop();
             },
             removeModelInfo: function(modelInfoIdx) {
                 this.modelInfoList.splice(modelInfoIdx, 1);
+            },
+            updateStepStatus(stepName, completeStatus) {
+                let matchingSteps = this.reqSteps.filter((step) => {
+                    return step.step === stepName;
+                });
+                if (matchingSteps.length < 0) {
+                    console.log("Couldn't find matching step to update completion status");
+                } else {
+                    matchingSteps[0].complete = completeStatus;
+                }
+            },
+            updateMultiStatus(allCompleteStatus) {
+                // TODO: left off sernd in which step here from multisource component
+                this.updateStepStatus()
             }
         },
         mounted: function () {
@@ -451,5 +531,23 @@
         .function-card
             color: #4a4a4a
 
+    .summary-stepper
+        width: 50%
+        box-shadow: none !important
+        -webkit-box-shadow: none !important
 
+        .summary-label
+            font-family: "Open Sans"
+            font-size: 16px
+
+            .v-stepper__label
+                text-shadow: none !important
+
+    .launch-btn
+        font-family: Quicksand !important
+        font-size: 20px !important
+        font-weight: 700 !important
+
+    .config-btn
+        font-size: 14px !important
 </style>

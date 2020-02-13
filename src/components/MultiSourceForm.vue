@@ -32,13 +32,14 @@
                                                 @change="onUrlChange(i)"
                                         ></v-text-field>
                                     </v-col>
-                                    <v-col v-if="hasIndexFile" md="5" style="padding-right: 0">
+                                    <v-col v-if="hasIndexFile" :md="columnWidth" style="padding-right: 0">
                                         <v-text-field
                                                 :label="'Enter .' + getIndexFileType() +  ' URL'"
                                                 hide-details
                                                 dense
                                                 v-model="listInfo[indexKey]"
                                                 color="appColor"
+                                                style="padding-left: 10px"
                                                 @change="onUrlChange(i)"
                                         ></v-text-field>
                                     </v-col>
@@ -126,14 +127,24 @@
                     key = this.modelType + 'BaiUrl';
                 }
                 return key;
-            }
+            },
+            allInputsVerified: function() {
+                let allVerified = true;
+                for (let i = 0; i < this.maxSamples; i++) {
+                    allVerified &= this.verifiedStatus[i];
+                }
+                return allVerified;
+            },
         },
         methods: {
             /* Can add more data types here as need be */
             onUrlChange: function (i) {
                 this.verifiedStatus[i] = false;
                 if (this.fileType === 'bam' && this.modelInfoList[i][this.key] != null && this.modelInfoList[i][this.indexKey] != null) {
-                    this.checkBam(i, this.modelInfoList[i][this.key], this.modelInfoList[i][this.indexKey]);
+                    this.checkBam(i, this.modelInfoList[i][this.key], this.modelInfoList[i][this.indexKey])
+                        .then(() => {
+                            this.$emit('update-status', this.allInputsVerified);
+                        })
                 } else {
                     // Check facets file
                     this.checkFacets(this.url);
@@ -141,17 +152,19 @@
             },
             checkBam: function (modelInfoIdx, bamUrl, baiUrl) {
                 const self = this;
-                return new Promise((resolve, reject) => {
+                return new Promise((resolve) => {
                     self.displayLoader = true;
                         self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
                             self.displayLoader = false;
-                            // TODO: this is coming back successful incorrectly
+                            // TODO: this will come back correctly regardless if bai file is valid url or not
+                            // TODO: this is b/c bam only checks bam file and not bai file
+                            // TODO: just check that can curl bai?
                             if (success) {
                                 self.verifiedStatus[modelInfoIdx] = true;
-                                resolve();
                             } else {
-                                reject("There was a problem with the provided bam or bai file.");
+                                // TODO: alert user here
                             }
+                            resolve();
                     });
                 });
             },

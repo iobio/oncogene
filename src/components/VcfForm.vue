@@ -24,7 +24,7 @@
             <v-container v-if="urlsVerified" fluid style="padding-top: 0">
                 <v-row justify=center align="start">
                     <v-col md="auto" dense>
-                        <v-btn dark small color="darkPrimary" @click="urlsVerified = false">Edit Urls</v-btn>
+                        <v-btn dark small color="secondary" @click="urlsVerified = false">Edit Urls</v-btn>
                     </v-col>
                 </v-row>
                 <v-list dense>
@@ -59,7 +59,7 @@
                         </v-list-item>
                     </v-list-item-group>
                     <v-btn  v-if="modelInfoList.length < maxSamples"
-                            color="darkPrimary"
+                            color="secondary"
                             absolute
                             dark
                             small
@@ -130,19 +130,20 @@
             }
         },
         methods: {
-            /* Can add more data types here as need be */
             onUrlChange: function () {
                 if (this.url !== '' && this.indexUrl !== '') {
                     this.onVcfUrlEntered(this.url, this.indexUrl);
+                } else if (this.url === '' || this.indexUrl  === '') {
+                    this.$emit('clear-model-info', null);
                 }
             },
             /* Asks cohort model to check vcf and returns number of samples in vcf
-             *
-             * NOTE: in the future, if allowing for single vcfs per sample, can cycle through each sampleModel and ask, then return this
+             * NOTE: in the future, if allowing for single vcfs per sample,
+             * can cycle through each sampleModel and ask, then return this
              */
             onVcfUrlEntered: function (vcfUrl, tbiUrl) {
                 const self = this;
-                // TODO: do clear out warning/alert here
+                // TODO: clear out warning/alert here
                 self.$emit('clear-model-info', null);
                 return new Promise((resolve, reject) => {
                     self.displayLoader = true;
