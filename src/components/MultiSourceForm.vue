@@ -8,7 +8,8 @@
             <v-container v-if="modelInfoList.length < 2" class="info-blurb">
                 <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
                     <v-col class="d-flex align-center" cols="12">
-                        Please enter a valid VCF url and select at least two samples to enter {{dataType.toLowerCase()}} data
+                        Please enter a valid VCF url and select at least two samples to enter {{dataType.toLowerCase()}}
+                        data
                     </v-col>
                 </v-row>
             </v-container>
@@ -44,7 +45,7 @@
                                         ></v-text-field>
                                     </v-col>
                                     <v-col md="2">
-                                        <v-list-item-icon v-if="verifiedStatus[i]" class="pt-2">
+                                        <v-list-item-icon v-if="listInfo[verifiedKey]" class="pt-2">
                                             <v-icon color="green">checkmark</v-icon>
                                         </v-list-item-icon>
                                     </v-col>
@@ -87,7 +88,9 @@
             },
             modelInfoList: {
                 type: Array,
-                default: function () { return []; }
+                default: function () {
+                    return [];
+                }
             },
             maxSamples: {
                 type: Number,
@@ -100,7 +103,6 @@
                 displayBuild: false,
                 allUrlsVerified: false,
                 listInfo: -1,
-                verifiedStatus: []
             }
         },
         computed: {
@@ -128,43 +130,40 @@
                 }
                 return key;
             },
-            allInputsVerified: function() {
-                let allVerified = true;
-                for (let i = 0; i < this.maxSamples; i++) {
-                    allVerified &= this.verifiedStatus[i];
-                }
-                return allVerified;
-            },
+            verifiedKey: function () {
+                return this.modelType + 'Verified';
+            }
         },
         methods: {
             /* Can add more data types here as need be */
             onUrlChange: function (i) {
-                this.verifiedStatus[i] = false;
-                if (this.fileType === 'bam' && this.modelInfoList[i][this.key] != null && this.modelInfoList[i][this.indexKey] != null) {
-                    this.checkBam(i, this.modelInfoList[i][this.key], this.modelInfoList[i][this.indexKey])
+                const self = this;
+                self.modelInfoList[i][self.verifiedKey] = false;
+                if (self.fileType === 'bam' && self.modelInfoList[i][self.key] != null && self.modelInfoList[i][self.indexKey] != null) {
+                    self.checkBam(i, self.modelInfoList[i][self.key], self.modelInfoList[i][self.indexKey])
                         .then(() => {
-                            this.$emit('update-status', this.allInputsVerified);
+                            self.$emit('update-status', self.modelType, self.getAllInputStatus());
                         })
                 } else {
                     // Check facets file
-                    this.checkFacets(this.url);
+                    self.checkFacets(self.url);
                 }
             },
             checkBam: function (modelInfoIdx, bamUrl, baiUrl) {
                 const self = this;
                 return new Promise((resolve) => {
                     self.displayLoader = true;
-                        self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
-                            self.displayLoader = false;
-                            // TODO: this will come back correctly regardless if bai file is valid url or not
-                            // TODO: this is b/c bam only checks bam file and not bai file
-                            // TODO: just check that can curl bai?
-                            if (success) {
-                                self.verifiedStatus[modelInfoIdx] = true;
-                            } else {
-                                // TODO: alert user here
-                            }
-                            resolve();
+                    self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
+                        self.displayLoader = false;
+                        // TODO: this will come back correctly regardless if bai file is valid url or not
+                        // TODO: this is b/c bam only checks bam file and not bai file
+                        // TODO: just check that can curl bai?
+                        if (success) {
+                            self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
+                        } else {
+                            // TODO: alert user here
+                        }
+                        resolve();
                     });
                 });
             },
@@ -190,11 +189,14 @@
             },
             deleteTrack: function (modelInfoIdx) {
                 this.modelInfoList.splice(modelInfoIdx, 1);
-            }
-        },
-        mounted: function () {
-            for (let i = 0; i < this.maxSamples; i++) {
-                this.verifiedStatus[i] = false;
+            },
+            getAllInputStatus: function () {
+                let allVerified = true;
+                // Only want to check slots that are active
+                this.modelInfoList.forEach((modelInfo) => {
+                    allVerified &= modelInfo[this.verifiedKey];
+                });
+                return allVerified;
             }
         }
     }
@@ -204,26 +206,26 @@
     .dense-row
         height: 50px
 
-    .function-card
-        font-family: "Open Sans"
-        font-size: 14px
-        color: #4a4a4a
+        .function-card
+            font-family: "Open Sans"
+            font-size: 14px
+            color: #4a4a4a
 
-    .top-url
-        padding-top: 100px
-        padding-bottom: 10px
-        padding-left: 20px
-        padding-right: 20px
+        .top-url
+            padding-top: 100px
+            padding-bottom: 10px
+            padding-left: 20px
+            padding-right: 20px
 
-    .bot-url
-        padding-bottom: 10px
-        padding-left: 20px
-        padding-right: 20px
+        .bot-url
+            padding-bottom: 10px
+            padding-left: 20px
+            padding-right: 20px
 
-    .info-blurb
-        color: #888888
-        font-style: italic
-        font-size: 18px
-        height: 300px
-        text-align: center
+        .info-blurb
+            color: #888888
+            font-style: italic
+            font-size: 18px
+            height: 300px
+            text-align: center
 </style>

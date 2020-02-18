@@ -198,6 +198,7 @@
                                                 @remove-model-info="removeModelInfo">
                             </vcf-form>
                             <multi-source-form v-else
+                                               ref="multiRef"
                                                :cohortModel="cohortModel"
                                                :dataType="getDataType(userData[i-1])"
                                                :modelType="userData[i-1]"
@@ -465,9 +466,8 @@
                     matchingSteps[0].complete = completeStatus;
                 }
             },
-            updateMultiStatus(allCompleteStatus) {
-                // TODO: left off sernd in which step here from multisource component
-                this.updateStepStatus()
+            updateMultiStatus(stepName, allCompleteStatus) {
+                this.updateStepStatus(stepName, allCompleteStatus === 1);
             }
         },
         mounted: function () {

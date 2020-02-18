@@ -189,11 +189,15 @@
                 modelInfo.tbiUrl = tbiUrl;
                 modelInfo.coverageBamUrl = null;
                 modelInfo.coverageBaiUrl = null;
+                modelInfo.coverageVerified = false;
                 modelInfo.rnaSeqBamUrl = null;
                 modelInfo.rnaSeqBaiUrl = null;
+                modelInfo.rnaSeqVerified = false;
                 modelInfo.atacSeqBamUrl = null;
                 modelInfo.atacSeqBaiUrl = null;
+                modelInfo.atacSeqVefified = false;
                 modelInfo.cnvUrl = null;
+                modelInfo.cnvVerified = false;
 
                 return modelInfo;
             },
