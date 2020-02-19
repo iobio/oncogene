@@ -54,8 +54,10 @@
                     </v-carousel-item>
 
                     <v-carousel-item :style="'background-color: ' + slideBackground">
-                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
+                                light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
+                                    :elevation="aboutElevation">
                                 <v-card-title>
                                     Required Inputs
                                 </v-card-title>
@@ -75,7 +77,7 @@
                                     <v-container fluid>
                                         <v-row v-for="i in DATA_MODELS.length"
                                                :key="'checkbox-' + i"
-                                                no-gutters dense>
+                                               no-gutters dense>
                                             <v-col cols="4"></v-col>
                                             <v-col cols="6">
                                                 <v-checkbox
@@ -92,8 +94,10 @@
                         </v-card>
                     </v-carousel-item>
                     <v-carousel-item :style="'background-color: ' + slideBackground">
-                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
+                                light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
+                                    :elevation="aboutElevation">
                                 <v-card-title>
                                     Somatic Calling
                                 </v-card-title>
@@ -131,8 +135,10 @@
                         </v-card>
                     </v-carousel-item>
                     <v-carousel-item :style="'background-color: ' + slideBackground">
-                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
+                                light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
+                                    :elevation="aboutElevation">
                                 <v-card-title>
                                     Gene Loci Selections
                                 </v-card-title>
@@ -156,6 +162,7 @@
                                                 background-color="white"
                                                 label="Cancer Type (Panel Name)"
                                                 outlined
+                                                clearable
                                                 v-model="selectedList"
                                                 @change="populateListInput"
                                         ></v-select>
@@ -167,7 +174,9 @@
                                                 outlined
                                                 rows="10"
                                                 label="Genes"
+                                                :rules="geneRules"
                                                 :value="listInput"
+                                                @click="checkFirstClick"
                                         ></v-textarea>
                                     </v-container>
                                 </v-card-actions>
@@ -175,9 +184,11 @@
                         </v-card>
                     </v-carousel-item>
                     <v-carousel-item v-for="i in userData.length" :key="'form-' + i"
-                            :style="'background-color: ' + slideBackground">
-                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
+                                     :style="'background-color: ' + slideBackground">
+                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
+                                light>
+                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
+                                    :elevation="aboutElevation">
                                 <v-card-title>
                                     {{ (getFileType(userData[i-1])).toUpperCase() }} Input
                                 </v-card-title>
@@ -185,19 +196,19 @@
                                     {{ aboutText }}
                                 </v-card-text>
                             </v-card>
-                            <vcf-form v-if="isSingleSource(userData[i-1])"
-                                                :cohortModel="cohortModel"
-                                                :dataType="getDataType(userData[i-1])"
-                                                :fileType="getFileType(userData[i-1])"
-                                                :slideBackground="slideBackground"
-                                                :modelInfoList="modelInfoList"
-                                                :allDataModels="DATA_MODELS"
-                                                :maxSamples="MAX_SAMPLES"
-                                                @clear-model-info="setModelInfo"
-                                                @set-model-info="setModelInfo"
-                                                @remove-model-info="removeModelInfo">
+                            <vcf-form v-if="userData[i-1] === 'vcf'"
+                                      :cohortModel="cohortModel"
+                                      :dataType="getDataType(userData[i-1])"
+                                      :fileType="getFileType(userData[i-1])"
+                                      :slideBackground="slideBackground"
+                                      :modelInfoList="modelInfoList"
+                                      :allDataModels="DATA_MODELS"
+                                      :maxSamples="MAX_SAMPLES"
+                                      @clear-model-info="setModelInfo"
+                                      @set-model-info="setModelInfo"
+                                      @remove-model-info="removeModelInfo">
                             </vcf-form>
-                            <multi-source-form v-else
+                            <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
                                                :cohortModel="cohortModel"
                                                :dataType="getDataType(userData[i-1])"
@@ -206,41 +217,30 @@
                                                :slideBackground="slideBackground"
                                                :modelInfoList="modelInfoList"
                                                :maxSamples="MAX_SAMPLES"
-                                                @update-status="updateMultiStatus">
+                                               @update-status="updateMultiStatus">
                             </multi-source-form>
-                        </v-card>
-                    </v-carousel-item>
-                    <v-carousel-item :style="'background-color: ' + slideBackground">
-                        <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat light>
-                            <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%" :elevation="aboutElevation">
-                                <v-card-title>
-                                    Summary
-                                </v-card-title>
-                                <v-card-text class="about-text">
-                                    {{ aboutText }}
-                                </v-card-text>
-                            </v-card>
-                            <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
+                            <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
+                                    width="70%">
                                 <v-card-title class="justify-center">
                                     Data Summary
                                 </v-card-title>
                                 <v-divider class="mx-12"></v-divider>
                                 <v-card-actions>
                                     <v-stepper class="summary-stepper"
-                                        light
-                                        vertical
-                                        non-linear
-                                        value="1"
-                                        >
+                                               light
+                                               vertical
+                                               non-linear
+                                               value="1"
+                                    >
                                         <v-stepper-step v-for="(s,i) in firstHalfSteps"
                                                         :key="'step-' + i"
                                                         :complete="s.complete"
-                                                        :rules="[() => (!s.optional ? s.complete : true)]"
+                                                        :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
                                                         :step="s.index"
                                                         class="summary-label">
                                             {{s.text}}
-                                            <small v-if="s.optional">Optional</small>
-                                            <small v-if="!s.optional && !s.complete">Incomplete</small>
+                                            <small v-if="s.optional && !s.active">Not Selected</small>
+                                            <small v-if="(!s.optional || (s.optional && s.active)) && !s.complete">Incomplete</small>
                                         </v-stepper-step>
                                     </v-stepper>
                                     <v-stepper class="summary-stepper"
@@ -250,18 +250,20 @@
                                                :value="reqSteps.length">
                                         <v-stepper-step v-for="(s,i) in secondHalfSteps" :key="'step-' + i"
                                                         :complete="s.complete"
-                                                        :rules="[() => (!s.optional ? s.complete : true)]"
+                                                        :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
                                                         :step="s.index"
                                                         class="summary-label">
                                             {{s.text}}
-                                            <small v-if="s.optional">Optional</small>
-                                            <small v-if="!s.optional && !s.complete">Incomplete</small>
+                                            <small v-if="s.optional && !s.active">Not Selected</small>
+                                            <small v-if="(!s.optional || (s.optional && s.active)) && !s.complete">Incomplete</small>
                                         </v-stepper-step>
                                     </v-stepper>
                                 </v-card-actions>
                                 <v-card-actions style="justify-content: center">
                                     <v-btn large class="config-btn" :disabled="!readyToLaunch">Download Config</v-btn>
-                                    <v-btn large color="secondary" class="launch-btn" :disabled="!readyToLaunch">Launch</v-btn>
+                                    <v-btn large color="secondary" class="launch-btn" :disabled="!readyToLaunch">
+                                        Launch
+                                    </v-btn>
                                 </v-card-actions>
                             </v-card>
                         </v-card>
@@ -277,6 +279,7 @@
     import VcfForm from './VcfForm.vue'
     import MultiSourceForm from './MultiSourceForm.vue'
     import geneListsByType from '../data/gene_lists.json'
+    import validGenes from '../data/genes.json'
     import _ from 'lodash'
 
     export default {
@@ -320,6 +323,7 @@
                 aboutElevation: 4,
                 carouselModel: 0,
                 readyToLaunch: false,
+                clearGeneListFlag: true,
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -352,33 +356,104 @@
                 ],
                 MAX_SAMPLES: 6,
                 aboutText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, ' +
-                'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
-                'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
-                'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
-                'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
-                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' +
-                ' sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
-                'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
-                'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
-                'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
-                ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+                    'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
+                    'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
+                    'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
+                    'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
+                    ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' +
+                    ' sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
+                    'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
+                    'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
+                    'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
+                    ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
                 reqSteps: [
-                    { step: 'variantType', active: true, complete: true, index: 1, optional: false, text: 'Enter Variant Type' },
-                    { step: 'geneList', active: true, complete: false, index: 2, optional: false, text: 'Enter Gene List' },
-                    { step: 'vcf', active: true, complete: false, index: 3, optional: false, text: 'Upload Variant Calls' },
-                    { step: 'coverage', active: true, complete: false, index: 4, optional: false, text: 'Upload Coverage Data' },
-                    { step: 'cnv', active: true, complete: false, index: 5, optional: true, text: 'Upload Copy Numbers' },
-                    { step: 'rnaSeq', active: true, complete: false, index: 6, optional: true, text: 'Upload RNAseq Data' },
-                    { step: 'atacSeq', active: true, complete: false, index: 7, optional: true, text: 'Upload ATACseq Data' },
-                    { step: 'review', active: true, complete: false, index: 8, optional: false, text: 'Review Data' },
+                    {
+                        step: 'variantType',
+                        active: true,
+                        complete: true,
+                        index: 1,
+                        optional: false,
+                        text: 'Enter Variant Type'
+                    },
+                    {
+                        step: 'geneList',
+                        active: true,
+                        complete: false,
+                        index: 2,
+                        optional: false,
+                        text: 'Enter Gene List'
+                    },
+                    {
+                        step: 'vcf',
+                        active: true,
+                        complete: false,
+                        index: 3,
+                        optional: false,
+                        text: 'Upload Variant Calls'
+                    },
+                    {
+                        step: 'coverage',
+                        active: true,
+                        complete: false,
+                        index: 4,
+                        optional: false,
+                        text: 'Upload Coverage Data'
+                    },
+                    {
+                        step: 'cnv',
+                        active: false,
+                        complete: false,
+                        index: 5,
+                        optional: true,
+                        text: 'Upload Copy Numbers'
+                    },
+                    {
+                        step: 'rnaSeq',
+                        active: false,
+                        complete: false,
+                        index: 6,
+                        optional: true,
+                        text: 'Upload RNAseq Data'
+                    },
+                    {
+                        step: 'atacSeq',
+                        active: false,
+                        complete: false,
+                        index: 7,
+                        optional: true,
+                        text: 'Upload ATACseq Data'
+                    },
+                    {
+                        step: 'review',
+                        active: true,
+                        complete: false,
+                        index: 8,
+                        optional: false,
+                        text: 'Review Data'
+                    },
                 ],
-
+                geneRules: [
+                    v => !!v || 'At least one gene is required',
+                    v => {
+                        const self = this;
+                        let invalids = [];
+                        v.split('\n').forEach((gene) => {
+                            if (!self.validGenesMap[gene.toUpperCase()] && gene !== '') {
+                                invalids.push(gene.toUpperCase());
+                            }
+                        });
+                        let isValid = invalids.length === 0;
+                        self.updateStepProp('geneList', 'complete', isValid);
+                        return isValid || 'Cannot process the following genes: ' + invalids.join();
+                    },
+                ],
                 // retained (model) state
-                userData: ['vcf', 'coverage'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
+                userData: ['vcf', 'coverage', 'summary'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
                 somaticCallsOnly: false,
                 geneListNames: [],
+                validGenesMap: {},
                 selectedList: null,
-                listInput: 'Select a type to populate gene list or enter your own',
+                listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
                 modelInfoList: [],
                 sampleIds: []
             }
@@ -387,10 +462,10 @@
             translation: function () {
                 return 'translate(20, 50)'
             },
-            firstHalfSteps: function() {
+            firstHalfSteps: function () {
                 return this.reqSteps.slice(0, (this.reqSteps.length / 2));
             },
-            secondHalfSteps: function() {
+            secondHalfSteps: function () {
                 return this.reqSteps.slice((this.reqSteps.length / 2));
             }
         },
@@ -412,18 +487,21 @@
 
                 // Otherwise, remove if in list
                 let existIdx = this.userData.indexOf(model);
+                let isActive = false;
                 if (existIdx > -1) {
                     this.userData.splice(existIdx, 1);
                 } else {
                     // Or insert before summary slide
-                    this.userData.splice(this.userData.length - 2, 0, model);
+                    isActive = true;
+                    this.userData.splice(this.userData.length - 1, 0, model);
                 }
+                this.updateStepProp(model, 'active', isActive);
             }, 100),
-            isSingleSource: function(dataModel) {
-                return dataModel === 'vcf';
-            },
             getFileType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);
+                if (idx < 0) {
+                    return 'summary';
+                }
                 return this.FILE_DESCRIPTORS[idx];
             },
             getDataType: function (type) {
@@ -435,43 +513,59 @@
                     this.geneListNames.push(listName);
                 }
             },
-            populateListInput: function () {
-                this.listInput = '';
-                geneListsByType[this.selectedList].forEach((gene) => {
-                    this.listInput += gene + '\n';
+            populateValidGenesMap: function () {
+                validGenes.forEach((gene) => {
+                    this.validGenesMap[gene['gene_name']] = true;
                 });
             },
-            setModelInfo: function(info) {
+            populateListInput: function () {
+                this.clearGeneListFlag = false;
+                this.listInput = '';
+                let geneList = geneListsByType[this.selectedList];
+                if (geneList) {
+                    geneList.forEach((gene) => {
+                        this.listInput += gene + '\n';
+                    });
+                }
+            },
+            setModelInfo: function (info) {
                 if (!info) {
-                    this.updateStepStatus('vcf', false);
+                    this.updateStepProp('vcf', false);
                     this.modelInfoList = [];
                 } else {
-                    this.updateStepStatus('vcf', true);
+                    this.updateStepProp('vcf', true);
                     this.modelInfoList = info;
                 }
                 // Trick vue into update
                 this.modelInfoList.push('foo');
                 this.modelInfoList.pop();
             },
-            removeModelInfo: function(modelInfoIdx) {
+            removeModelInfo: function (modelInfoIdx) {
                 this.modelInfoList.splice(modelInfoIdx, 1);
             },
-            updateStepStatus(stepName, completeStatus) {
+            updateStepProp: function (stepName, propName, propStatus) {
                 let matchingSteps = this.reqSteps.filter((step) => {
                     return step.step === stepName;
                 });
                 if (matchingSteps.length < 0) {
                     console.log("Couldn't find matching step to update completion status");
                 } else {
-                    matchingSteps[0].complete = completeStatus;
+                    matchingSteps[0][propName] = propStatus;
                 }
             },
-            updateMultiStatus(stepName, allCompleteStatus) {
-                this.updateStepStatus(stepName, allCompleteStatus === 1);
+            updateMultiStatus: function (stepName, allCompleteStatus) {
+                this.updateStepProp(stepName, 'complete', allCompleteStatus === 1);
+            },
+            checkFirstClick: function () {
+                if (this.clearGeneListFlag) {
+                    this.listInput = '';
+                    this.clearGeneListFlag = false;
+                }
             }
         },
         mounted: function () {
             this.makeItRain();
+            this.populateValidGenesMap();
             this.populateGeneLists();
         }
     }
@@ -484,30 +578,38 @@
 
         .v-carousel__controls
             background: #7f1010
+
             .v-item-group
                 .v-carousel__controls__item
                     color: #ededed !important
+
         .v-window__container
             .v-window__prev
                 .v-btn
                     background: #7f1010
+
                     .v-btn__content
                         .v-icon
                             color: #ededed
+
             .v-window__next
                 .v-btn
                     background: #7f1010
+
                     .v-btn__content
                         .v-icon
                             color: #ededed
+
         .start-carousel-card
             width: 75%
             height: 75%
             background: transparent
+
         .carousel-btn
             color: white
             font-weight: 500
             font-size: 18px
+
         .base-card
             height: 480px
             margin-left: 60px
@@ -517,6 +619,7 @@
         .about-card
             background-color: white
             color: #4a4a4a
+
             .v-card__title
                 font-size: 16px
 
@@ -531,23 +634,23 @@
         .function-card
             color: #4a4a4a
 
-    .summary-stepper
-        width: 50%
-        box-shadow: none !important
-        -webkit-box-shadow: none !important
+        .summary-stepper
+            width: 50%
+            box-shadow: none !important
+            -webkit-box-shadow: none !important
 
-        .summary-label
-            font-family: "Open Sans"
-            font-size: 16px
+            .summary-label
+                font-family: "Open Sans"
+                font-size: 16px
 
-            .v-stepper__label
-                text-shadow: none !important
+                .v-stepper__label
+                    text-shadow: none !important
 
-    .launch-btn
-        font-family: Quicksand !important
-        font-size: 20px !important
-        font-weight: 700 !important
+        .launch-btn
+            font-family: Quicksand !important
+            font-size: 20px !important
+            font-weight: 700 !important
 
-    .config-btn
-        font-size: 14px !important
+        .config-btn
+            font-size: 14px !important
 </style>
