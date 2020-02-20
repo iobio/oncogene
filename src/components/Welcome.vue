@@ -260,8 +260,8 @@
                                     </v-stepper>
                                 </v-card-actions>
                                 <v-card-actions style="justify-content: center">
-                                    <v-btn large class="config-btn" :disabled="!readyToLaunch">Download Config</v-btn>
-                                    <v-btn large color="secondary" class="launch-btn" :disabled="!readyToLaunch">
+                                    <v-btn large class="config-btn" :disabled="!isReadyToLaunch">Download Config</v-btn>
+                                    <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch">
                                         Launch
                                     </v-btn>
                                 </v-card-actions>
@@ -322,7 +322,6 @@
                 slideBackground: 'white',
                 aboutElevation: 4,
                 carouselModel: 0,
-                readyToLaunch: false,
                 clearGeneListFlag: true,
 
                 // static data
@@ -429,7 +428,7 @@
                         complete: false,
                         index: 8,
                         optional: false,
-                        text: 'Review Data'
+                        text: 'Complete Required Data'
                     },
                 ],
                 geneRules: [
@@ -530,10 +529,10 @@
             },
             setModelInfo: function (info) {
                 if (!info) {
-                    this.updateStepProp('vcf', false);
+                    this.updateStepProp('vcf', 'complete', false);
                     this.modelInfoList = [];
                 } else {
-                    this.updateStepProp('vcf', true);
+                    this.updateStepProp('vcf', 'complete', true);
                     this.modelInfoList = info;
                 }
                 // Trick vue into update
@@ -548,13 +547,24 @@
                     return step.step === stepName;
                 });
                 if (matchingSteps.length < 0) {
-                    console.log("Couldn't find matching step to update completion status");
+                    console.log("Couldn't find matching step to update prop status");
                 } else {
                     matchingSteps[0][propName] = propStatus;
+                }
+                // Every time we update a complete status, check to see if we're all done
+                if (propName === 'complete' && stepName !== 'review') {
+                    this.updateStepProp('review', 'complete', this.isReadyToLaunch());
                 }
             },
             updateMultiStatus: function (stepName, allCompleteStatus) {
                 this.updateStepProp(stepName, 'complete', allCompleteStatus === 1);
+            },
+            isReadyToLaunch: function() {
+                let ready = 1;
+                this.reqSteps.forEach((step) => {
+                    ready &= ((step.active && step.step !== 'review') ? step.complete : 1);
+                });
+                return ready === 1;
             },
             checkFirstClick: function () {
                 if (this.clearGeneListFlag) {
