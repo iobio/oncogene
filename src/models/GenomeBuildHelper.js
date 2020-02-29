@@ -461,6 +461,10 @@ export class GenomeBuildHelper {
     return message;
   }
 
+  isBuild37() {
+    return this.currentBuild === this.DEFAULT_BUILD;
+  }
+
 
 }
 

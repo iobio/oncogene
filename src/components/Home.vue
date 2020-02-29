@@ -14,8 +14,7 @@
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
                          @upload-config="$emit('upload-config')"
-                         @load-demo="$emit('load-demo')"
-                         @onLoad="onFilesUploaded">
+                         @load-demo="$emit('load-demo')">
                 </Welcome>
                 <div v-else>
                     <v-flex xs5 md3>
@@ -100,10 +99,10 @@
             }
         },
         methods: {
-            onFilesUploaded: function() {
-                // TODO:implement
-                console.log('onFilesUploaded');
-            }
+            // onFilesUploaded: function() {
+            //     // TODO:implement
+            //     console.log('onFilesUploaded');
+            // }
         },
         computed: {
             overlayWidth: function() {

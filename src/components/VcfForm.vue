@@ -49,7 +49,7 @@
                                     </v-col>
                                     <v-col md="4">
                                         <v-chip small outlined color="appHighlight" dark class="mt-3"
-                                                :close="isCloseable(i)"
+                                                :close="isRemovable(i)"
                                                 @click:close="deleteTrack(i)">
                                             {{ isTumorTrack(listInfo) }}
                                         </v-chip>
@@ -109,6 +109,18 @@
             maxSamples: {
                 type: Number,
                 default: 0
+            },
+            uploadedUrl: {
+                type: String,
+                default: null
+            },
+            uploadedIndexUrl: {
+                type: String,
+                default: null
+            },
+            uploadedSelectedSamples: {
+                type: Array,
+                default: () => { return []; }
             }
         },
         data: function () {
@@ -141,10 +153,12 @@
              * NOTE: in the future, if allowing for single vcfs per sample,
              * can cycle through each sampleModel and ask, then return this
              */
-            onVcfUrlEntered: function (vcfUrl, tbiUrl) {
+            onVcfUrlEntered: function (vcfUrl, tbiUrl, uploadedSelectedSamples) {
                 const self = this;
-                // TODO: clear out warning/alert here
-                self.$emit('clear-model-info', null);
+
+                if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
+                    self.$emit('clear-model-info', null);
+                }
                 return new Promise((resolve, reject) => {
                     self.displayLoader = true;
                     self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames) {
@@ -153,7 +167,23 @@
                             if (sampleNames.length < 2) {
                                 alert('Oncogene is currently configured to work with at least one normal and one tumor sample');
                                 reject();
+                            } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
+                                // Still populate drop-down lists
+                                for (let i = 0; i < sampleNames.length; i++) {
+                                    self.vcfSampleNames.push(sampleNames[i]);
+                                }
+                                // Update verified urls in model info objects
+                                self.$emit('update-model-info', 'vcfUrl', vcfUrl);
+                                self.$emit('update-model-info', 'tbiUrl', tbiUrl);
+
+                                // Flip front end flags
+                                self.urlsVerified = true;
+                                self.displayBuild = true;
+                                resolve();
                             } else {
+                                if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
+                                    alert('The selected samples used in previous analyses could not be found, please re-select your samples.');
+                                }
                                 // Create modelInfo per sample
                                 let infoList = [];
                                 for (let i = 0; i < sampleNames.length; i++) {
@@ -182,9 +212,9 @@
             },
             createModelInfo: function (selectedSample, isTumor, vcfUrl, tbiUrl) {
                 let modelInfo = {};
+
                 modelInfo.selectedSample = selectedSample;
                 modelInfo.isTumor = isTumor;
-
                 modelInfo.vcfUrl = vcfUrl;
                 modelInfo.tbiUrl = tbiUrl;
                 modelInfo.coverageBamUrl = null;
@@ -215,8 +245,17 @@
                     return 'Normal';
                 }
             },
-            isCloseable: function(i) {
+            isRemovable: function(i) {
                 return i > 1;
+            }
+        },
+        mounted: function() {
+            // Check to see if we have info uploaded
+            // NOTE: can't use $ref in Welcome component because of carousel mounting
+            if (this.uploadedUrl && this.uploadedIndexUrl) {
+                this.url = this.uploadedUrl;
+                this.indexUrl = this.uploadedIndexUrl;
+                this.onVcfUrlEntered(this.url, this.indexUrl, this.uploadedSelectedSamples);
             }
         }
     }

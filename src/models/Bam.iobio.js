@@ -79,10 +79,11 @@ export default class Bam {
     //   });
     // }
 
-    checkBamUrl(url, baiUrl, callback) {
+    // NOTE: this signature diverges from gene - uses ref parameter and calls diff endpoint
+    checkBamUrl(url, baiUrl, ref, callback) {
         var me = this;
 
-        var cmd = this.endpoint.getBamHeader(url, baiUrl);
+        var cmd = this.endpoint.checkBamBaiFiles(url, baiUrl, ref);
 
         var success = null;
         cmd.on('data', function (data) {

@@ -5,61 +5,64 @@ import vcfiobio from './Vcf.iobio.js';
 /* One per normal or tumor sample */
 class SampleModel {
     constructor(globalApp) {
+
+        // model references
         this.globalApp = globalApp;
         this.vcf = null;            // The vcf.iobio model backing this
         this.bam = null;            // The bam.iobio model backing this
+        this.cohort = null;
 
+        // file data
         this.vcfData = null;
         this.fbData = null;
         this.bamData = null;
 
+        // variant & coverage data
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
-
-        this.isBasicMode = null;
-        this.isEduMode = null;
-
-        this.vcfUrlEntered = false;
-        this.vcfFileOpened = false;
-        this.getVcfRefName = null;
-        this.isMultiSample = false;
-
-        this.bamUrlEntered = false;
-        this.bamFileOpened = false;
-        this.getBamRefName = null;
-
-        this.id = '';               // Must be unique, format s0, s1... used to coordinate order in FilesMenu
-        this.order = -1;            // The order in which the track is displayed vertically, relative to all other tracks, both normal and tumor
-        this.categoryOrder = -1;    // The order of this model relative to the other models in the same category e.g., if this is track s1 but the first tumor track, this val will be 0
-        this.displayName = '';      // Display name entered in filesMenu
-        this.selectedSample = '';   // The sample id corresponding to vcf column we're analyzing
-        this.vcfRefNamesMap = {};
-        this.isGeneratedSampleName = false;
-        this.defaultSampleName = null;
-        this.isTumor = true;
-        this.isCosmic = false;
-        this.entryDataChanged = true;       // True if something in the filesMenu has changed for this sample, and the track needs to be udpated upon clicking 'Load'
-        this.lastGeneLoaded = null;         // The most recent gene analyzed for this sample
-        this.noMatchingSamples = false;     // True if active filters leave no variants applicable from this sample
-        //
-        // this.lastVcfthis.alertify = null;
-        // this.lastBamthis.alertify = null;
-
-        this.cohort = null;
-
-        this.debugMe = false;
-
         this.loadedVariants = null;
         this.variantHistoData = null;
         this.coverage = [[]];
         this.somaticVarCoverage = [[]]; // List of [start site, read depth] corresponding to sites in tumor samples but not in normal samples - aka this is only used in normal SampleModel
 
+        // vcf data
+        this.vcfUrlEntered = false;
+        this.vcfFileOpened = false;
+        this.getVcfRefName = null;
+        this.isMultiSample = false;
+        this.vcfRefNamesMap = {};
+
+        // bam data
+        this.bamUrlEntered = false;
+        this.bamFileOpened = false;
+        this.getBamRefName = null;
+
+        // model properties
+        // TODO: I can get rid of some of these now
+        this.id = '';               // Must be unique, format s0, s1... used to coordinate order in Welcome menu
+        this.order = -1;            // The order in which the track is displayed vertically, relative to all other tracks, both normal and tumor
+        this.categoryOrder = -1;    // The order of this model relative to the other models in the same category e.g., if this is track s1 but the first tumor track, this val will be 0
+        this.displayName = '';      // Display name entered in filesMenu
+        this.selectedSample = '';   // The sample id corresponding to vcf column we're analyzing
+        this.isGeneratedSampleName = false;
+        this.defaultSampleName = null;
+        this.isTumor = true;
+        this.isCosmic = false;
+
+        // functional flags
+        this.isBasicMode = null;
+        this.isEduMode = null;
+        this.entryDataChanged = true;       // True if something in the filesMenu has changed for this sample, and the track needs to be updated upon clicking 'Load'
+        this.lastGeneLoaded = null;         // The most recent gene analyzed for this sample
+        this.noMatchingSamples = false;     // True if active filters leave no variants applicable from this sample
+        this.debugMe = false;
         this.iProgress = {
             'loadingVariants': false,
             'callingVariants': false,
             'loadingCoverage': false
         };
-
         this.alertify = null;   // TODO: figure out how to fix this
+        // this.lastVcfthis.alertify = null;
+        // this.lastBamthis.alertify = null;
     }
 
     getSampleIdentifier(theSampleName) {
@@ -882,7 +885,8 @@ class SampleModel {
             this.bamUrlEntered = true;
             this.bam = new Bam(this.globalApp, this.cohort.endpoint, bamUrl, baiUrl);
 
-            this.bam.checkBamUrl(bamUrl, baiUrl, function (success, errorMsg) {
+            const ref = !me.getGenomeBuildHelper().isBuild37() ? '1' : 'chr1';
+            this.bam.checkBamUrl(bamUrl, baiUrl, ref, function (success, errorMsg) {
                 // if (me.lastBamthis.alertify) {
                 //     me.lastBamthis.alertify.dismiss();
                 // }

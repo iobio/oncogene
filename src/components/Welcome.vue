@@ -22,7 +22,7 @@
                             :opactiy="1"
                 >
                     <v-carousel-item :style="'background-color: ' + slideBackground">
-                        <v-row class="flex-child mx-12 align-stretch" style="height: 90%">
+                        <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
                             <v-col class="d-flex align-stretch"
                                    cols="12" height="100">
                                 <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
@@ -43,8 +43,11 @@
                                             </v-row>
                                             <v-row justify="center" class="pa-3">
                                                 <v-btn x-large color="secondary" class="carousel-btn"
-                                                       @click="$emit('upload-config')">Upload Analysis
+                                                       @click="displayConfigUploadSlide">Upload Analysis
                                                 </v-btn>
+                                            </v-row>
+                                            <v-row :hidden="!showUploadEntry" justify="center" class="pa-3">
+                                                <v-file-input v-model="configFile" accept="text/json" label="Click to Select File" @change="checkAndUploadConfig"></v-file-input>
                                             </v-row>
                                         </v-col>
                                     </v-row>
@@ -204,9 +207,13 @@
                                       :modelInfoList="modelInfoList"
                                       :allDataModels="DATA_MODELS"
                                       :maxSamples="MAX_SAMPLES"
+                                      :uploadedUrl="uploadedVcfUrl"
+                                      :uploadedIndexUrl="uploadedTbiUrl"
+                                      :uploadedSelectedSamples="uploadedSelectedSamples"
                                       @clear-model-info="setModelInfo"
                                       @set-model-info="setModelInfo"
-                                      @remove-model-info="removeModelInfo">
+                                      @remove-model-info="removeModelInfo"
+                                      @update-model-info="updateModelInfo">
                             </vcf-form>
                             <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
@@ -260,8 +267,10 @@
                                     </v-stepper>
                                 </v-card-actions>
                                 <v-card-actions style="justify-content: center">
-                                    <v-btn large class="config-btn" :disabled="!isReadyToLaunch">Download Config</v-btn>
-                                    <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch">
+                                    <v-btn large class="config-btn" :disabled="!isReadyToLaunch()" @click="downloadConfig">
+                                        Download Config
+                                    </v-btn>
+                                    <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch()" @click="launch">
                                         Launch
                                     </v-btn>
                                 </v-card-actions>
@@ -323,6 +332,11 @@
                 aboutElevation: 4,
                 carouselModel: 0,
                 clearGeneListFlag: true,
+                showUploadEntry: false,
+                configFile: [],
+                uploadedVcfUrl: null,
+                uploadedTbiUrl: null,
+                uploadedSelectedSamples: [],
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -539,6 +553,13 @@
                 this.modelInfoList.push('foo');
                 this.modelInfoList.pop();
             },
+            updateModelInfo: function (propName, propVal) {
+                this.modelInfoList.forEach((modelInfo) => {
+                    modelInfo[propName] = propVal;
+                });
+                // Only updating with valid info, can set to complete
+                this.updateStepProp('vcf', 'complete', true);
+            },
             removeModelInfo: function (modelInfoIdx) {
                 this.modelInfoList.splice(modelInfoIdx, 1);
             },
@@ -571,7 +592,83 @@
                     this.listInput = '';
                     this.clearGeneListFlag = false;
                 }
-            }
+            },
+            displayConfigUploadSlide: function() {
+                this.showUploadEntry = true;
+            },
+            downloadConfig: function() {
+                const self = this;
+
+                // JSON.stringify
+                let exportObj = { 'dataTypes': self.userData };
+                exportObj['listInput'] = self.listInput;
+                exportObj['somaticCallsOnly'] = self.somaticCallsOnly;
+
+                let sampleArr = [];
+                self.modelInfoList.forEach((modelInfo) => {
+                    let newVal = {};
+                    // Don't add any verification parameters
+                    newVal.selectedSample = modelInfo.selectedSample;
+                    newVal.isTumor = modelInfo.isTumor;
+                    newVal.vcfUrl = modelInfo.vcfUrl;
+                    newVal.tbiUrl = modelInfo.tbiUrl;
+                    newVal.coverageBamUrl = modelInfo.coverageBamUrl;
+                    newVal.coverageBaiUrl = modelInfo.coverageBaiUrl;
+                    newVal.rnaSeqBamUrl = modelInfo.rnaSeqBamUrl;
+                    newVal.rnaSeqBaiUrl = modelInfo.rnaSeqBaiUrl;
+                    newVal.atacSeqBamUrl = modelInfo.atacSeqBamUrl;
+                    newVal.atacSeqBaiUrl = modelInfo.atacSeqBaiUrl;
+                    newVal.cnvUrl = modelInfo.cnvUrl;
+                    sampleArr.push(newVal);
+                });
+                exportObj['samples'] = sampleArr;
+
+                const exportFile = JSON.stringify(exportObj);
+                const blob = new Blob([exportFile], {type: 'text/plain'});
+                const e = document.createEvent('MouseEvents'),
+                    a = document.createElement('a');
+                a.download = "oncogene_iobio_config.json";
+                a.href = window.URL.createObjectURL(blob);
+                a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+                e.initEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                a.dispatchEvent(e);
+            },
+            checkAndUploadConfig: function () {
+                const self = this;
+                if (!self.configFile) {
+                    console.log("Problem uploading config file: nothing selected");
+                    // TODO: show alert couldn't upload file
+                }
+
+                let reader = new FileReader();
+                reader.readAsText(self.configFile);
+                reader.onload = () => {
+                    let result = reader.result;
+                    let infoObj = JSON.parse(result);
+                    self.modelInfoList = infoObj['samples'];
+                    // TODO: need to add valid checks here
+                    self.userData = infoObj['dataTypes'];
+                    self.listInput = infoObj['listInput'];
+                    self.somaticCallsOnly = infoObj['somaticCallsOnly'];
+
+                    // Little extra work to fill in fields for vcf/tbi form
+                    // Note: assumes single vcf
+                    let firstSample = self.modelInfoList[0];
+                    self.uploadedVcfUrl = firstSample.vcfUrl;
+                    self.uploadedTbiUrl = firstSample.tbiUrl;
+
+                    let selectedSamples = [];
+                    self.modelInfoList.forEach((modelInfo) => {
+                        selectedSamples.push(modelInfo.selectedSample);
+                    });
+                    self.uploadedSelectedSamples = selectedSamples;
+                };
+
+                // TODO: launch
+            },
+            launch: function() {
+                // TODO: take modelInfoList and send into launch function in cohortModel
+            },
         },
         mounted: function () {
             this.makeItRain();

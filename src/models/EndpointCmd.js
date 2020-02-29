@@ -9,7 +9,6 @@ export default class EndpointCmd {
         this.getHumanRefNames = getHumanRefNamesFunc;
         this.launchedFromUtah =  this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
-
         // talk to gru
         this.api = new Client('dev.backend.iobio.io:9002', {secure: false});
         this.gruBackend = true;
@@ -398,7 +397,17 @@ export default class EndpointCmd {
 
     getBamHeader(bamUrl, baiUrl) {
         if (this.gruBackend) {
-            return this.api.streamCommand('alignmentHeader', {url: bamUrl});
+            let params = {  url: bamUrl };
+            if (baiUrl && baiUrl !== '') {
+                params['indexUrl'] = baiUrl;
+
+                // NOTE: we have to add a dummy region here for the program to look at the .bai file
+                // Otherwise you can put garbage in here for .bai and it won't check it and return header just fine
+                // TODO: THIS IS HARDCODED FOR GRCH37 CHR FORMAT
+                // TODO: make this dynamic for grch38 also
+                params['samtoolsRegion'] = '1:10000-20000';
+            }
+            return this.api.streamCommand('alignmentHeader', params);
         }
         else {
             const me = this;
@@ -501,6 +510,21 @@ export default class EndpointCmd {
 
             }
             return cmd;
+        }
+    }
+
+    /* Does a small check on both the bam and bai file. Notably, getting the bam header does not check bai. */
+    checkBamBaiFiles(bamUrl, baiUrl, ref) {
+        if (this.gruBackend) {
+            const url = bamUrl;
+            const indexUrl = baiUrl;
+            const region = ref + ":1-2"; // TODO: THIS NEEDS TO BE DYNAMIC FOR GRCH38 CHR1 instead of 1
+
+            return this.api.streamCommand('checkBamBai', {
+                url,
+                indexUrl,
+                region
+            });
         }
     }
 

@@ -139,11 +139,13 @@
             onUrlChange: function (i) {
                 const self = this;
                 self.modelInfoList[i][self.verifiedKey] = false;
-                if (self.fileType === 'bam' && self.modelInfoList[i][self.key] != null && self.modelInfoList[i][self.indexKey] != null) {
-                    self.checkBam(i, self.modelInfoList[i][self.key], self.modelInfoList[i][self.indexKey])
+                let url = self.modelInfoList[i][self.key];
+                let indexUrl = self.modelInfoList[i][self.indexKey];
+                if (self.fileType === 'bam' && (url != null && url !== "") && (indexUrl != null && indexUrl !== "")) {
+                    self.checkBam(i, url, indexUrl)
                         .then(() => {
                             self.$emit('update-status', self.modelType, self.getAllInputStatus());
-                        })
+                        });
                 } else {
                     // Check facets file
                     self.checkFacets(self.url);
@@ -161,7 +163,7 @@
                         if (success) {
                             self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                         } else {
-                            // TODO: alert user here
+                            alert('There was a problem accessing the provided bam file, please try again.');
                         }
                         resolve();
                     });
