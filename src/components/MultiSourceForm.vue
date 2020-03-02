@@ -141,14 +141,19 @@
                 self.modelInfoList[i][self.verifiedKey] = false;
                 let url = self.modelInfoList[i][self.key];
                 let indexUrl = self.modelInfoList[i][self.indexKey];
-                if (self.fileType === 'bam' && (url != null && url !== "") && (indexUrl != null && indexUrl !== "")) {
+                if (self.fileType === 'bam' && url != null && url !== "" && indexUrl != null && indexUrl !== "") {
                     self.checkBam(i, url, indexUrl)
                         .then(() => {
                             self.$emit('update-status', self.modelType, self.getAllInputStatus());
                         });
-                } else {
+                } else if (self.fileType === 'facets' && url != null && url !== '') {
                     // Check facets file
-                    self.checkFacets(self.url);
+                    let bamUrl = self.modelInfoList[i]['coverageBamUrl'];
+
+                    self.checkFacets(i, url, bamUrl)
+                        .then(() => {
+                            self.$emit('update-status', self.modelType, self.getAllInputStatus());
+                        })
                 }
             },
             checkBam: function (modelInfoIdx, bamUrl, baiUrl) {
@@ -157,21 +162,34 @@
                     self.displayLoader = true;
                     self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
                         self.displayLoader = false;
-                        // TODO: this will come back correctly regardless if bai file is valid url or not
-                        // TODO: this is b/c bam only checks bam file and not bai file
-                        // TODO: just check that can curl bai?
                         if (success) {
                             self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                         } else {
                             alert('There was a problem accessing the provided bam file, please try again.');
-                        }
+                        } 
                         resolve();
                     });
                 });
             },
-            checkFacets: function (facetsUrl) {
-                console.log(facetsUrl);
-                // TODO: add in backend check here to look for column headers
+            checkFacets: function (modelInfoIdx, facetsUrl, bamUrl) {
+                const self = this;
+                return new Promise((resolve) => {
+                    // self.displayLoader = true;
+                    console.log(facetsUrl + bamUrl);    // get rid of build warning
+                    self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
+
+                    // TODO: left off changing this to not do check for now - need to talk to AP
+                    // self.cohortModel.sampleModelUtil.onFacetsUrlEntered(facetsUrl, bamUrl, function (success) {
+                    //     self.displayLoader = false;
+                    //     if (success) {
+                    //         self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
+                    //     } else {
+                    //         alert('There was a problem accessing the provided bam file, please try again.');
+                    //     }
+                    //     resolve();
+                    // });
+                    resolve();
+                });
             },
             getIndexFileType: function () {
                 if (this.fileType.toLowerCase() === 'vcf') {

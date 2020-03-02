@@ -1,5 +1,6 @@
 import CacheHelper from './CacheHelper.js';
 import Bam from './Bam.iobio.js';
+import Facets from './Facets.iobio.js';
 import vcfiobio from './Vcf.iobio.js';
 
 /* One per normal or tumor sample */
@@ -10,12 +11,14 @@ class SampleModel {
         this.globalApp = globalApp;
         this.vcf = null;            // The vcf.iobio model backing this
         this.bam = null;            // The bam.iobio model backing this
+        this.facets = null;         // The facets.iobio model backing this
         this.cohort = null;
 
         // file data
         this.vcfData = null;
         this.fbData = null;
         this.bamData = null;
+        this.facetsData = null;
 
         // variant & coverage data
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
@@ -35,6 +38,9 @@ class SampleModel {
         this.bamUrlEntered = false;
         this.bamFileOpened = false;
         this.getBamRefName = null;
+
+        // facets data
+        this.facetsUrlEntered = false;
 
         // model properties
         // TODO: I can get rid of some of these now
@@ -905,7 +911,33 @@ class SampleModel {
         }
 
         this.getBamRefName = this._stripRefName;
+    }
 
+    onFacetsUrlEntered(facetsUrl, bamUrl, callback) {
+        this.facetsData = null;
+
+        if (facetsUrl == null || facetsUrl === '') {
+            this.facetsUrlEntered = false;
+            this.facets = null;
+            if (callback) {
+                callback(false);
+            }
+        } else {
+            this.facetsUrlEntered = true;
+            this.facets = new Facets(this.cohort.endpoint);
+            const self = this;
+            this.facets.checkFacetsFormat(facetsUrl, bamUrl, function (success, errorMsg) {
+                if (!success) {
+                    self.facetsUrlEntered = false;
+                    self.facets = null;
+                    alert('Problems opening remote facets file: ' + errorMsg);
+                }
+                if (callback) {
+                    callback(success);
+                }
+            })
+
+        }
     }
 
     promiseVcfFilesSelected(fileSelection) {

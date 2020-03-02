@@ -20,6 +20,11 @@
                               color="appColor"
                               @change="onUrlChange()"
                 ></v-text-field>
+                <v-select v-model="selectedBuild"
+                          label="Genome Build"
+                          :items="genomeBuilds"
+                          style="padding-left: 19px; padding-right: 19px">
+                </v-select>
             </v-container>
             <v-container v-if="urlsVerified" fluid style="padding-top: 0">
                 <v-row justify=center align="start">
@@ -131,9 +136,10 @@
                 selectedSamples: [],
                 sampleNicknames: [],
                 displayLoader: false,
-                displayBuild: false,
+                selectedBuild: 'GRCh37',
                 urlsVerified: false,
-                listInfo: -1
+                listInfo: -1,
+                genomeBuilds: ['GRCh37', 'GRCh38']
             }
         },
         computed: {
@@ -178,7 +184,6 @@
 
                                 // Flip front end flags
                                 self.urlsVerified = true;
-                                self.displayBuild = true;
                                 resolve();
                             } else {
                                 if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
@@ -194,7 +199,6 @@
                                 }
                                 // Toggle display flags
                                 self.urlsVerified = true;
-                                self.displayBuild = true;
                                 resolve();
                             }
                         }
