@@ -102,7 +102,7 @@
                 displayLoader: false,
                 displayBuild: false,
                 allUrlsVerified: false,
-                listInfo: -1,
+                listInfo: null,
             }
         },
         computed: {
@@ -166,7 +166,8 @@
                             self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                         } else {
                             alert('There was a problem accessing the provided bam file, please try again.');
-                        } 
+                            self.$emit('upload-fail');
+                        }
                         resolve();
                     });
                 });
@@ -177,7 +178,6 @@
                     // self.displayLoader = true;
                     console.log(facetsUrl + bamUrl);    // get rid of build warning
                     self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
-
                     // TODO: left off changing this to not do check for now - need to talk to AP
                     // self.cohortModel.sampleModelUtil.onFacetsUrlEntered(facetsUrl, bamUrl, function (success) {
                     //     self.displayLoader = false;
@@ -217,6 +217,26 @@
                     allVerified &= modelInfo[this.verifiedKey];
                 });
                 return allVerified;
+            }
+        },
+        mounted: function() {
+            const self = this;
+            let allSamplesHaveUrls = true;
+            let allSamplesHaveIndexUrls = true;
+
+            self.modelInfoList.forEach((modelInfo) => {
+                if (modelInfo[self.key] != null && modelInfo[self.key] !== '') {
+                    allSamplesHaveUrls &= true;
+                    if (self.fileType !== 'bam' || (self.fileType === 'bam'
+                        && modelInfo[self.indexKey] != null && modelInfo[self.indexKey] !== '')) {
+                        allSamplesHaveIndexUrls &= true;
+                    }
+                }
+            });
+            if (allSamplesHaveUrls && allSamplesHaveIndexUrls) {
+                for (let i = 0; i < self.modelInfoList.length; i++) {
+                    self.onUrlChange(i);
+                }
             }
         }
     }

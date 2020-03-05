@@ -184,6 +184,7 @@
 
                                 // Flip front end flags
                                 self.urlsVerified = true;
+                                self.$emit('urls-verified');
                                 resolve();
                             } else {
                                 if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
@@ -201,6 +202,8 @@
                                 self.urlsVerified = true;
                                 resolve();
                             }
+                        } else {
+                            self.$emit('upload-fail');
                         }
                     })
                 })

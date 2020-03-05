@@ -47,7 +47,9 @@
                                                 </v-btn>
                                             </v-row>
                                             <v-row :hidden="!showUploadEntry" justify="center" class="pa-3">
-                                                <v-file-input v-model="configFile" accept="text/json" label="Click to Select File" @change="checkAndUploadConfig"></v-file-input>
+                                                <v-file-input v-model="configFile" accept="text/json"
+                                                              label="Click to Select File"
+                                                              @change="checkAndUploadConfig"></v-file-input>
                                             </v-row>
                                         </v-col>
                                     </v-row>
@@ -65,7 +67,7 @@
                                     Required Inputs
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ aboutText }}
+                                    {{ dataText }}
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
@@ -105,7 +107,7 @@
                                     Somatic Calling
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ aboutText }}
+                                    {{ somaticText }}
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
@@ -146,7 +148,7 @@
                                     Gene Loci Selections
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ aboutText }}
+                                    {{ geneListText }}
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
@@ -169,8 +171,6 @@
                                                 v-model="selectedList"
                                                 @change="populateListInput"
                                         ></v-select>
-                                        <!--TODO: put validator on this data-->
-                                        <!--TODO: do we still want to show this if only somatic variants in file-->
                                         <v-textarea
                                                 color="appColor"
                                                 background-color="white"
@@ -193,10 +193,10 @@
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
                                 <v-card-title>
-                                    {{ (getFileType(userData[i-1])).toUpperCase() }} Input
+                                    {{ getCardTitle(i) }}
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ aboutText }}
+                                    {{ getFileText(userData[i-1]) }}
                                 </v-card-text>
                             </v-card>
                             <vcf-form v-if="userData[i-1] === 'vcf'"
@@ -213,7 +213,9 @@
                                       @clear-model-info="setModelInfo"
                                       @set-model-info="setModelInfo"
                                       @remove-model-info="removeModelInfo"
-                                      @update-model-info="updateModelInfo">
+                                      @update-model-info="updateModelInfo"
+                                      @urls-verified="onUploadedUrlsVerified"
+                                      @upload-fail="onUploadFail">
                             </vcf-form>
                             <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
@@ -224,7 +226,8 @@
                                                :slideBackground="slideBackground"
                                                :modelInfoList="modelInfoList"
                                                :maxSamples="MAX_SAMPLES"
-                                               @update-status="updateMultiStatus">
+                                               @update-status="updateMultiStatus"
+                                               @upload-fail="onUploadFail">
                             </multi-source-form>
                             <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                                     width="70%">
@@ -267,10 +270,12 @@
                                     </v-stepper>
                                 </v-card-actions>
                                 <v-card-actions style="justify-content: center">
-                                    <v-btn large class="config-btn" :disabled="!isReadyToLaunch()" @click="downloadConfig">
+                                    <v-btn large class="config-btn" :disabled="!isReadyToLaunch()"
+                                           @click="downloadConfig">
                                         Download Config
                                     </v-btn>
-                                    <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch()" @click="launch">
+                                    <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch()"
+                                           @click="launch">
                                         Launch
                                     </v-btn>
                                 </v-card-actions>
@@ -337,6 +342,7 @@
                 uploadedVcfUrl: null,
                 uploadedTbiUrl: null,
                 uploadedSelectedSamples: [],
+                launchedFromConfig: false,
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -367,6 +373,28 @@
                     'bam',
                     'bam'
                 ],
+                FILE_TEXT: {
+                    vcf: 'Oncogene.iobio accepts a single, multi-sample vcf file and requires a corresponding ' +
+                            'index (tbi) file. One normal sample and one tumor sample is required to be selected ' +
+                        'from the provided vcf file. Up to four more tumor samples may also be selected. ' +
+                        'Oncogene.iobio supports genome builds GRCh37 and GRCh38. For other build or ' +
+                        'other input format requests, please email iobioproject@gmail.com.',
+
+                    bam: 'Oncogene.iobio requires one coverage (bam) file and one index (bai) file ' +
+                            'per sample. Bam and bai files may exist in the same, or different, directories. ' +
+                        'If you don\'t have an index file, please see \'samtools index\' to create one. ' +
+                        'Local files are not currently accepted. For other input format requests, please ' +
+                        'contact support at iobioproject@gmail.com.',
+
+                    facets: 'Oncogene.iobio requires one copy number file per sample. This file must be generated by ' +
+                        'the Facets (MSKCC) program and is a tab-delimited text file. Please retain all headers ' +
+                        'in the file for proper functionality.',
+
+                    summary: 'Please review the summary at left to confirm the type of data uploaded. Steps highlighted ' +
+                            'in red indicate the data is mandatory, or has been checked, and is not complete. Please complete ' +
+                        'or uncheck the data type as necessary to proceed. To save time upon launching this project for ' +
+                        'subsequent analyses, download the configuration file, and use it on the first screen.',
+                },
                 MAX_SAMPLES: 6,
                 aboutText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, ' +
                     'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
@@ -379,6 +407,23 @@
                     'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
                     'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
                     ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+                dataText: 'Oncogene.iobio consumes primary data including Variant Call Format (vcf), ' +
+                    'Binary Alignment/Map (bam) files. Both variant calls and read coverage data ' +
+                    'are required for the application to work. Optionally, copy number data ' +
+                    'may be provided in the form of a tab-delimited Facets output file ' +
+                    '(see https://www.ncbi.nlm.nih.gov/pubmed/27270079 for details), and raw ' +
+                    'RNAseq and ATACseq reads may be provided in bam file format.',
+                somaticText: 'Oncogene.iobio will perform somatic calling on your variant data for you ' +
+                    'if your file contains both somatic and inherited variants. This is ' +
+                    'performed by requiring each variant to pass a certain criteria of ' +
+                    'frequency and observation thresholds in both the tumor and normal samples, ' +
+                    'along with certain quality thresholds. If your file contains only somatic calls, ' +
+                    'select \'Yes\' so this criteria will not be applied.',
+                geneListText: 'Using the provided list, oncogene.iobio will find somatic variants ' +
+                    'and provide a ranked list of impactful loci for inspection. Each provided list contains ' +
+                    'genes implicated in the corresponding type of cancer. If the type of cancer is ' +
+                    'unknown, or not provided in the dropdown, UCSF500 is a good place to start. ' +
+                    'Uploading your own list, or adding to the provided ones is also an option.',
                 reqSteps: [
                     {
                         step: 'variantType',
@@ -493,7 +538,6 @@
             onDataChecked: _.debounce(function (model) {
                 // Check to see if we're trying to uncheck required type
                 if (this.LOCKED_DATA[model]) {
-                    // TODO: make this prettier & create anonymous logging system to track if people want another entry vector
                     alert('Oncogene is currently configured to require this data type.');
                     this.userData.push(model);
                 }
@@ -520,6 +564,22 @@
             getDataType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);
                 return this.DATA_DESCRIPTORS[idx];
+            },
+            getFileText: function(type) {
+                let idx = this.DATA_MODELS.indexOf(type);
+                if (idx < 0) {
+                    return this.FILE_TEXT['summary'];
+                }
+                let fileType = this.FILE_DESCRIPTORS[idx];
+                return this.FILE_TEXT[fileType];
+            },
+            getCardTitle: function(index) {
+                let fileType = this.getFileType(this.userData[index-1]);
+                if (fileType === 'summary') {
+                    return 'Input Summary';
+                } else {
+                    return fileType.toUpperCase() + ' Input';
+                }
             },
             populateGeneLists: function () {
                 for (var listName in geneListsByType) {
@@ -579,8 +639,11 @@
             },
             updateMultiStatus: function (stepName, allCompleteStatus) {
                 this.updateStepProp(stepName, 'complete', allCompleteStatus === 1);
+                if (allCompleteStatus && this.launchedFromConfig) {
+                    this.advanceSlide();
+                }
             },
-            isReadyToLaunch: function() {
+            isReadyToLaunch: function () {
                 let ready = 1;
                 this.reqSteps.forEach((step) => {
                     ready &= ((step.active && step.step !== 'review') ? step.complete : 1);
@@ -593,14 +656,14 @@
                     this.clearGeneListFlag = false;
                 }
             },
-            displayConfigUploadSlide: function() {
+            displayConfigUploadSlide: function () {
                 this.showUploadEntry = true;
             },
-            downloadConfig: function() {
+            downloadConfig: function () {
                 const self = this;
 
                 // JSON.stringify
-                let exportObj = { 'dataTypes': self.userData };
+                let exportObj = {'dataTypes': self.userData};
                 exportObj['listInput'] = self.listInput;
                 exportObj['somaticCallsOnly'] = self.somaticCallsOnly;
 
@@ -637,7 +700,7 @@
                 const self = this;
                 if (!self.configFile) {
                     console.log("Problem uploading config file: nothing selected");
-                    // TODO: show alert couldn't upload file
+                    alert('There was a problem uploading the configuration file: please try a different file or manually upload your information.');
                 }
 
                 let reader = new FileReader();
@@ -646,9 +709,9 @@
                     let result = reader.result;
                     let infoObj = JSON.parse(result);
                     self.modelInfoList = infoObj['samples'];
-                    // TODO: need to add valid checks here
                     self.userData = infoObj['dataTypes'];
                     self.listInput = infoObj['listInput'];
+                    self.updateStepProp('geneList', 'complete', true);
                     self.somaticCallsOnly = infoObj['somaticCallsOnly'];
 
                     // Little extra work to fill in fields for vcf/tbi form
@@ -662,12 +725,27 @@
                         selectedSamples.push(modelInfo.selectedSample);
                     });
                     self.uploadedSelectedSamples = selectedSamples;
-                };
+                    self.launchedFromConfig = true;
 
-                // TODO: launch
+                    // Have to mount vcf slide to do actual checks
+                    self.mountVcfSlide();
+                };
             },
-            launch: function() {
-                // TODO: take modelInfoList and send into launch function in cohortModel
+            onUploadedUrlsVerified: function () {
+                if (this.launchedFromConfig) {
+                    this.advanceSlide();
+                }
+            },
+            // If we have a config upload fail, we don't want to auto-advance when
+            // the user starts to change things/ enter new data
+            onUploadFail: function () {
+                this.launchedFromConfig = false;
+            },
+            mountVcfSlide: function () {
+                this.carouselModel = 4;
+            },
+            launch: function () {
+                self.cohortModel.promiseInit();
             },
         },
         mounted: function () {
@@ -733,6 +811,7 @@
         .about-text
             height: 375px
             overflow: scroll
+            justify-content: center
 
         .about-subtitle
             color: #888888 !important
