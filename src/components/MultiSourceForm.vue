@@ -165,7 +165,8 @@
                         if (success) {
                             self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                         } else {
-                            alert('There was a problem accessing the provided bam file, please try again.');
+                            let alertText = 'There was a problem accessing the provided bam or bai file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
+                            self.$emit('show-alert', 'error', alertText);
                             self.$emit('upload-fail');
                         }
                         resolve();
@@ -179,6 +180,7 @@
                     console.log(facetsUrl + bamUrl);    // get rid of build warning
                     self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                     // TODO: left off changing this to not do check for now - need to talk to AP
+                    // TODO: bringing in .bed file here w/ following columns: chrom, start, end, tcn, lcn
                     // self.cohortModel.sampleModelUtil.onFacetsUrlEntered(facetsUrl, bamUrl, function (success) {
                     //     self.displayLoader = false;
                     //     if (success) {

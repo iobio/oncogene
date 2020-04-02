@@ -181,8 +181,8 @@ export default function vcfiobio(theGlobalApp) {
         vcfURL = url;
         tbiUrl = theTbiUrl;
 
-        this.checkVcfUrl(url, tbiUrl, function (success, message) {
-            callback(success, message);
+        this.checkVcfUrl(url, tbiUrl, function (success, hdrBuild, message) {
+            callback(success, hdrBuild, message);
         });
     };
 
@@ -226,7 +226,38 @@ export default function vcfiobio(theGlobalApp) {
             callback(null);
         }
 
-    }
+    };
+
+    exports.getBuildFromChromosomes = function(url, tbiUrl, callback) {
+        const me = this;
+
+        var cmd = me.getEndpoint().getFirstVcfEntry(url, tbiUrl);
+        var buffer = "";
+        var success = false;
+
+        cmd.on('data', function (data) {
+            if (data != null) {
+                success = true;
+                buffer += data;
+            }
+        });
+
+        cmd.on('end', function () {
+            if (success == null) {
+                success = true;
+            }
+            if (success && buffer.length > 0) {
+                let build = me.getGenomeBuildHelper().getBuildFromChromosomes(buffer);
+                callback(success, build);
+            }
+        });
+
+        cmd.on('error', function (error) {
+            console.log(error);
+            callback(success);
+        });
+        cmd.run();
+    };
 
 
     exports.checkVcfUrl = function (url, tbiUrl, callback) {
@@ -249,11 +280,12 @@ export default function vcfiobio(theGlobalApp) {
             }
             if (success && buffer.length > 0) {
                 buffer.split("\n").forEach(function (rec) {
-                    if (rec.indexOf("#") == 0) {
+                    if (rec.indexOf("#") === 0) {
                         me._parseHeaderForInfoFields(rec);
                     }
                 });
-                callback(success);
+                let hdrBuildResult = me.getGenomeBuildHelper().getBuildFromVcfHeader(buffer);
+                callback(success, '', hdrBuildResult);
             }
         });
 

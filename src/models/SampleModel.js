@@ -833,6 +833,7 @@ class SampleModel {
         // TODO: guessing I need to init bam.iobio here too
     }
 
+    // todo: not allowing local file uploads atm
     promiseBamFilesSelected(fileSelection) {
         const me = this;
         return new Promise(function (resolve, reject) {
@@ -856,14 +857,7 @@ class SampleModel {
                         resolve(me.bam.bamFile.name);
 
                     } else {
-                        // if (me.lastBamthis.alertify) {
-                        //     me.lastBamthis.alertify.dismiss();
-                        // }
-                        // var msg = "<span style='font-size:18px'>" + message + "</span>";
-                        // this.alertify.set('notifier', 'position', 'top-right');
-                        // me.lastBamthis.alertify = this.alertify.error(msg, 15);
                         alert('Problem loading bam file');
-
                         reject(message);
 
                     }
@@ -890,19 +884,12 @@ class SampleModel {
         } else {
             this.bamUrlEntered = true;
             this.bam = new Bam(this.globalApp, this.cohort.endpoint, bamUrl, baiUrl);
-
             const ref = !me.getGenomeBuildHelper().isBuild37() ? '1' : 'chr1';
             this.bam.checkBamUrl(bamUrl, baiUrl, ref, function (success, errorMsg) {
-                // if (me.lastBamthis.alertify) {
-                //     me.lastBamthis.alertify.dismiss();
-                // }
                 if (!success) {
                     me.bamUrlEntered = false;
                     me.bam = null;
-                    // var msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + bamUrl + "</span>";
-                    // this.alertify.set('notifier', 'position', 'top-right');
-                    // me.lastBamthis.alertify = this.alertify.error(msg, 15);
-                    alert('Problem opening remote bam: ' + errorMsg);
+                    console.log("Problem opening bam/bai file: " + errorMsg);
                 }
                 if (callback) {
                     callback(success);
@@ -930,7 +917,7 @@ class SampleModel {
                 if (!success) {
                     self.facetsUrlEntered = false;
                     self.facets = null;
-                    alert('Problems opening remote facets file: ' + errorMsg);
+                    console.log('Problem opening .bed file: ' + errorMsg);
                 }
                 if (callback) {
                     callback(success);
@@ -1029,25 +1016,39 @@ class SampleModel {
             me.getVcfRefName = null;
             me.isMultiSample = false;
 
-            this.vcf.openVcfUrl(vcfUrl, tbiUrl, function (success, errorMsg) {
-            //     if (me.lastVcfthis.alertify) {
-            //         me.lastVcfthis.alertify.dismiss();
-            //     }
+            this.vcf.openVcfUrl(vcfUrl, tbiUrl, function (success, hdrBuild, errorMsg) {
                 if (success) {
                     me.vcfUrlEntered = true;
                     me.vcfFileOpened = false;
                     me.getVcfRefName = null;
-                    // Get the sample names from the vcf header
-                    me.vcf.getSampleNames(function (sampleNames) {
-                        me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
-                        callback(success, sampleNames);
-                    });
+                    let build = '';
+
+                    // if we couldn't determine build from header, try looking at chromosomes
+                    if ((hdrBuild != null) && ((!hdrBuild.build) || hdrBuild.build === '')) {
+                        me.vcf.getBuildFromChromosomes(vcfUrl, tbiUrl, function (success, chrBuild) {
+                            build = chrBuild;
+                            if (!success) {
+                                console.log('Warning could not get build information from chromosome formatting.');
+                            }
+
+                            // Get the sample names from the vcf header
+                            me.vcf.getSampleNames(function (sampleNames) {
+                                me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                                callback(success, sampleNames, build);
+                            });
+                        })
+                    } else {
+                        build = hdrBuild.build;
+
+                        // Get the sample names from the vcf header
+                        me.vcf.getSampleNames(function (sampleNames) {
+                            me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                            callback(success, sampleNames, build);
+                        });
+                    }
                 } else {
                     me.vcfUrlEntered = false;
-                    // let msg = "<span style='font-size:18px'>" + errorMsg + "</span><br><span style='font-size:12px'>" + vcfUrl + "</span>";
-                    // this.alertify.set('notifier', 'position', 'top-right');
-                    // me.lastVcfthis.alertify = this.alertify.error(msg, 15);
-                    alert('There was a problem opening the provided vcf/tbi files, please try again. Error: ' + errorMsg);
+                    console.log("Problem opening vcf/tbi: " + errorMsg);
                     callback(success);
                 }
             });

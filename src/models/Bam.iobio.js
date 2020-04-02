@@ -106,17 +106,13 @@ export default class Bam {
                 success = true;
                 callback(success)
             } else {
-                if (success == null) {
-                    success = false;
-                    me.bamUri = url;
-                    callback(success, me.translateErrorMessage(error));
-                }
+                success = false;
+                me.bamUri = url;
+                callback(success, me.translateErrorMessage(error));
             }
-
         });
 
         cmd.run();
-
     }
 
 

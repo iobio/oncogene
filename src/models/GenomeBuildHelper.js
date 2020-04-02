@@ -292,6 +292,23 @@ export class GenomeBuildHelper {
     return buildInfo;
   }
 
+  getBuildFromChromosomes(firstLine) {
+    if (!firstLine) {
+      return '';
+    }
+    let tokens = firstLine.split('\n');
+    if (tokens.length === 0) {
+      return '';
+    }
+
+    let firstToken = tokens[0];
+    if (firstToken.startsWith('chr')) {
+      return 'GRCh38';
+    } else {
+      return 'GRCh37';
+    }
+  }
+
 
   parseBuildInfo(buildInfo, relationship, type, theBuilds) {
     var me = this;

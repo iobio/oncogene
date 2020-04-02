@@ -23,6 +23,7 @@
                 <v-select v-model="selectedBuild"
                           label="Genome Build"
                           :items="genomeBuilds"
+                          @change="onUrlChange()"
                           style="padding-left: 19px; padding-right: 19px">
                 </v-select>
             </v-container>
@@ -126,6 +127,10 @@
             uploadedSelectedSamples: {
                 type: Array,
                 default: () => { return []; }
+            },
+            uploadedBuild: {
+                type: String,
+                default: null
             }
         },
         data: function () {
@@ -136,7 +141,7 @@
                 selectedSamples: [],
                 sampleNicknames: [],
                 displayLoader: false,
-                selectedBuild: 'GRCh37',
+                selectedBuild: '',
                 urlsVerified: false,
                 listInfo: -1,
                 genomeBuilds: ['GRCh37', 'GRCh38']
@@ -149,10 +154,13 @@
         },
         methods: {
             onUrlChange: function () {
-                if (this.url !== '' && this.indexUrl !== '') {
+                if (this.url !== '' && this.indexUrl !== '' && this.selectedBuild !== '') {
                     this.onVcfUrlEntered(this.url, this.indexUrl);
                 } else if (this.url === '' || this.indexUrl  === '') {
                     this.$emit('clear-model-info', null);
+                }
+                if (this.selectedBuild !== '') {
+                    this.$emit('on-build-change', this.selectedBuild);
                 }
             },
             /* Asks cohort model to check vcf and returns number of samples in vcf
@@ -167,13 +175,19 @@
                 }
                 return new Promise((resolve, reject) => {
                     self.displayLoader = true;
-                    self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames) {
+                    self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames, hdrBuild) {
                         self.displayLoader = false;
                         if (success) {
                             if (sampleNames.length < 2) {
-                                alert('Oncogene is currently configured to work with at least one normal and one tumor sample');
+                                let alertText = 'It looks like your file only contains one sample - Oncogene is currently configured to work with at least one normal and one tumor sample. Please try again.';
+                                self.$emit('show-alert', 'error', alertText);
                                 reject();
                             } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
+                                // Check for correct build
+                                if (hdrBuild !== self.selectedBuild) {
+                                    let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
+                                    self.$emit('show-alert', 'warning', warningText);
+                                }
                                 // Still populate drop-down lists
                                 for (let i = 0; i < sampleNames.length; i++) {
                                     self.vcfSampleNames.push(sampleNames[i]);
@@ -188,8 +202,16 @@
                                 resolve();
                             } else {
                                 if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
-                                    alert('The selected samples used in previous analyses could not be found, please re-select your samples.');
+                                    let alertText = 'The selected samples used in previous analyses could not be found, please re-select your samples.';
+                                    self.$emit('show-alert', 'error', alertText);
                                 }
+                                // Check that build is correct
+                                if (hdrBuild !== self.selectedBuild) {
+                                    let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
+                                    self.$emit('show-alert', 'warning', warningText);
+                                    resolve();
+                                }
+
                                 // Create modelInfo per sample
                                 let infoList = [];
                                 for (let i = 0; i < sampleNames.length; i++) {
@@ -203,6 +225,8 @@
                                 resolve();
                             }
                         } else {
+                            let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
+                            self.$emit('show-alert', 'error', alertText);
                             self.$emit('upload-fail');
                         }
                     })
@@ -259,9 +283,10 @@
         mounted: function() {
             // Check to see if we have info uploaded
             // NOTE: can't use $ref in Welcome component because of carousel mounting
-            if (this.uploadedUrl && this.uploadedIndexUrl) {
+            if (this.uploadedUrl && this.uploadedIndexUrl && this.uploadedBuild) {
                 this.url = this.uploadedUrl;
                 this.indexUrl = this.uploadedIndexUrl;
+                this.selectedBuild = this.uploadedBuild;
                 this.onVcfUrlEntered(this.url, this.indexUrl, this.uploadedSelectedSamples);
             }
         }

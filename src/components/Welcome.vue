@@ -13,7 +13,37 @@
                     width="1000"
                     height="550"
                     class="mx-auto"
+                    :style="'background: ' + slideBackground"
             >
+                <v-alert v-model="showError"
+                         prominent
+                         outlined
+                         dismissible
+                         color="warning"
+                         icon="error"
+                         class="caro-alert">
+                    <v-row align="center">
+                        <v-col class="grow">
+                            {{ errorText }}
+                        </v-col>
+                    </v-row>
+                </v-alert>
+                <v-alert v-model="showWarning"
+                         prominent
+                         outlined
+                         dismissible
+                         color="secondary"
+                         icon="warning"
+                         class="caro-alert">
+                    <v-row align="center">
+                        <v-col class="grow">
+                            {{ warningText }}
+                        </v-col>
+<!--                        <v-col class="shrink">-->
+<!--                            <v-btn>Proceed</v-btn>-->
+<!--                        </v-col>-->
+                    </v-row>
+                </v-alert>
                 <v-carousel light class="start-carousel"
                             height="100%"
                             v-model="carouselModel"
@@ -210,12 +240,15 @@
                                       :uploadedUrl="uploadedVcfUrl"
                                       :uploadedIndexUrl="uploadedTbiUrl"
                                       :uploadedSelectedSamples="uploadedSelectedSamples"
+                                      :uploadedBuild="selectedBuild"
                                       @clear-model-info="setModelInfo"
                                       @set-model-info="setModelInfo"
                                       @remove-model-info="removeModelInfo"
                                       @update-model-info="updateModelInfo"
                                       @urls-verified="onUploadedUrlsVerified"
-                                      @upload-fail="onUploadFail">
+                                      @upload-fail="onUploadFail"
+                                      @on-build-change="updateBuild"
+                                      @show-alert="displayAlert">
                             </vcf-form>
                             <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
@@ -227,7 +260,8 @@
                                                :modelInfoList="modelInfoList"
                                                :maxSamples="MAX_SAMPLES"
                                                @update-status="updateMultiStatus"
-                                               @upload-fail="onUploadFail">
+                                               @upload-fail="onUploadFail"
+                                               @show-alert="displayAlert">
                             </multi-source-form>
                             <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                                     width="70%">
@@ -343,6 +377,10 @@
                 uploadedTbiUrl: null,
                 uploadedSelectedSamples: [],
                 launchedFromConfig: false,
+                showError: false,
+                errorText: 'Some alert text',
+                showWarning: false,
+                warningText: 'Some warning text',
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -511,6 +549,7 @@
                 geneListNames: [],
                 validGenesMap: {},
                 selectedList: null,
+                selectedBuild: null,
                 listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
                 modelInfoList: [],
                 sampleIds: []
@@ -538,7 +577,8 @@
             onDataChecked: _.debounce(function (model) {
                 // Check to see if we're trying to uncheck required type
                 if (this.LOCKED_DATA[model]) {
-                    alert('Oncogene is currently configured to require this data type.');
+                    this.showError = true;
+                    this.errorText = 'Oncogene is currently configured to require this data type';
                     this.userData.push(model);
                 }
 
@@ -659,13 +699,24 @@
             displayConfigUploadSlide: function () {
                 this.showUploadEntry = true;
             },
+            displayAlert: function(whichAlert, alertText) {
+                if (whichAlert === 'error') {
+                    this.errorText = alertText;
+                    this.showError = true;
+                } else {
+                    this.warningText = alertText;
+                    this.showWarning = true;
+                }
+            },
             downloadConfig: function () {
                 const self = this;
 
                 // JSON.stringify
                 let exportObj = {'dataTypes': self.userData};
                 exportObj['listInput'] = self.listInput;
+                exportObj['selectedList'] = self.selectedList;
                 exportObj['somaticCallsOnly'] = self.somaticCallsOnly;
+                exportObj['build'] = self.selectedBuild;
 
                 let sampleArr = [];
                 self.modelInfoList.forEach((modelInfo) => {
@@ -698,37 +749,51 @@
             },
             checkAndUploadConfig: function () {
                 const self = this;
-                if (!self.configFile) {
-                    console.log("Problem uploading config file: nothing selected");
-                    alert('There was a problem uploading the configuration file: please try a different file or manually upload your information.');
-                }
-
                 let reader = new FileReader();
                 reader.readAsText(self.configFile);
                 reader.onload = () => {
                     let result = reader.result;
                     let infoObj = JSON.parse(result);
-                    self.modelInfoList = infoObj['samples'];
-                    self.userData = infoObj['dataTypes'];
-                    self.listInput = infoObj['listInput'];
-                    self.updateStepProp('geneList', 'complete', true);
-                    self.somaticCallsOnly = infoObj['somaticCallsOnly'];
+                    if (!(infoObj['samples'] && infoObj['listInput'] && infoObj['dataTypes'])) {
+                        self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+                        self.showError = true;
+                    } else {
+                        self.modelInfoList = infoObj['samples'];
+                        self.userData = infoObj['dataTypes'];
+                        // TODO: problem here is that if we have types other than base 2, not actually added to slide deck
+                        // need to call
+                        self.listInput = infoObj['listInput'];
+                        self.updateStepProp('geneList', 'complete', true);
+                        self.somaticCallsOnly = infoObj['somaticCallsOnly'];
+                        self.selectedList = infoObj['selectedList'];
+                        self.selectedBuild = infoObj['build'];
 
-                    // Little extra work to fill in fields for vcf/tbi form
-                    // Note: assumes single vcf
-                    let firstSample = self.modelInfoList[0];
-                    self.uploadedVcfUrl = firstSample.vcfUrl;
-                    self.uploadedTbiUrl = firstSample.tbiUrl;
+                        // Little extra work to fill in fields for vcf/tbi form
+                        // Note: assumes single vcf
+                        let firstSample = self.modelInfoList[0];
+                        self.uploadedVcfUrl = firstSample.vcfUrl;
+                        self.uploadedTbiUrl = firstSample.tbiUrl;
 
-                    let selectedSamples = [];
-                    self.modelInfoList.forEach((modelInfo) => {
-                        selectedSamples.push(modelInfo.selectedSample);
-                    });
-                    self.uploadedSelectedSamples = selectedSamples;
-                    self.launchedFromConfig = true;
+                        let selectedSamples = [];
+                        self.modelInfoList.forEach((modelInfo) => {
+                            selectedSamples.push(modelInfo.selectedSample);
+                        });
+                        self.uploadedSelectedSamples = selectedSamples;
+                        self.launchedFromConfig = true;
 
-                    // Have to mount vcf slide to do actual checks
-                    self.mountVcfSlide();
+                        if (!(self.uploadedSelectedSamples && self.userData && self.listInput &&
+                            self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
+                            self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+                            self.showError = true;
+                        }
+
+                        // Have to mount vcf slide to do actual checks
+                        self.mountVcfSlide();
+                    }
+                };
+                reader.onerror = () => {
+                    self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+                    self.showError = true;
                 };
             },
             onUploadedUrlsVerified: function () {
@@ -741,12 +806,15 @@
             onUploadFail: function () {
                 this.launchedFromConfig = false;
             },
+            updateBuild: function (build) {
+                this.selectedBuild = build;
+            },
             mountVcfSlide: function () {
                 this.carouselModel = 4;
             },
             launch: function () {
                 self.cohortModel.promiseInit();
-            },
+            }
         },
         mounted: function () {
             this.makeItRain();
@@ -839,4 +907,8 @@
 
         .config-btn
             font-size: 14px !important
+
+    .caro-alert
+        margin-bottom: 0 !important
+
 </style>

@@ -10,6 +10,7 @@ export default new Vuetify({
             primary: '#7f1010',
             lightPrimary: '#965757',
             secondary: '#194d81',
+            warning: '#d61b1b',
             gray: '#E9EAEC',
             appColor: "#7f1010",
             appHighlight: '#965757',

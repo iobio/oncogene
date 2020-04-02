@@ -10,7 +10,7 @@ export default class EndpointCmd {
         this.launchedFromUtah =  this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        this.api = new Client('dev.backend.iobio.io:9002', {secure: false});
+        this.api = new Client('backend.iobio.io', {secure: true});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
 
@@ -114,6 +114,17 @@ export default class EndpointCmd {
         }
         // Return command
         return cmd;
+    }
+
+    // Service only exists on gru backend - return first non-header/column label line from vcf
+    getFirstVcfEntry(vcfUrl, tbiUrl) {
+        if (this.gruBackend) {
+            const cmd = this.api.streamCommand('getChromosomes', { url: vcfUrl, indexUrl: tbiUrl });
+            return cmd;
+        } else {
+            console.log("getChromosomeFormat is not supported on minion backend.");
+            return null;
+        }
     }
 
     getSomaticVariants(vcfSource, somaticCriteria) {
