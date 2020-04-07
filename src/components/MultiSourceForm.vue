@@ -147,10 +147,8 @@
                             self.$emit('update-status', self.modelType, self.getAllInputStatus());
                         });
                 } else if (self.fileType === 'facets' && url != null && url !== '') {
-                    // Check facets file
-                    let bamUrl = self.modelInfoList[i]['coverageBamUrl'];
-
-                    self.checkFacets(i, url, bamUrl)
+                    // Check cnv file
+                    self.checkCnv(i, url)
                         .then(() => {
                             self.$emit('update-status', self.modelType, self.getAllInputStatus());
                         })
@@ -173,24 +171,27 @@
                     });
                 });
             },
-            checkFacets: function (modelInfoIdx, facetsUrl, bamUrl) {
+            checkCnv: function (modelInfoIdx, cnvUrl) {
                 const self = this;
                 return new Promise((resolve) => {
-                    // self.displayLoader = true;
-                    console.log(facetsUrl + bamUrl);    // get rid of build warning
+                    self.displayLoader = true;
                     self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
-                    // TODO: left off changing this to not do check for now - need to talk to AP
-                    // TODO: bringing in .bed file here w/ following columns: chrom, start, end, tcn, lcn
-                    // self.cohortModel.sampleModelUtil.onFacetsUrlEntered(facetsUrl, bamUrl, function (success) {
-                    //     self.displayLoader = false;
-                    //     if (success) {
-                    //         self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
-                    //     } else {
-                    //         alert('There was a problem accessing the provided bam file, please try again.');
-                    //     }
-                    //     resolve();
-                    // });
-                    resolve();
+                    self.cohortModel.sampleModelUtil.onCnvUrlEntered(cnvUrl, function (success, errType) {
+                        self.displayLoader = false;
+                        if (success) {
+                            self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
+                        } else {
+                            let alertText = '';
+                            if (errType === 'badHeaders') {
+                                alertText = 'The provided file did not contain the required data fields. Please make sure your file is tab-delimited with the required headers listed to the left.';
+                            } else {
+                                alertText = 'There was a problem accessing the provided CNV file, please ensure the path is correct and try again.';
+                            }
+                            self.$emit('show-alert', 'error', alertText);
+                            self.$emit('upload-fail');
+                        }
+                        resolve();
+                    });
                 });
             },
             getIndexFileType: function () {

@@ -1,4 +1,4 @@
-import { Client } from 'iobio-api-client';
+import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
 
@@ -7,10 +7,10 @@ export default class EndpointCmd {
         this.launchTimestamp = launchTimestamp;
         this.genomeBuildHelper = genomeBuildHelper;
         this.getHumanRefNames = getHumanRefNamesFunc;
-        this.launchedFromUtah =  this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
+        this.launchedFromUtah = this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        this.api = new Client('backend.iobio.io', {secure: true});
+        this.api = new Client('dev.backend.iobio.io:9002', {secure: false});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
 
@@ -31,15 +31,14 @@ export default class EndpointCmd {
         this.IOBIO.vcflib = this.globalApp.IOBIO_SERVICES + "vcflib/";
         this.IOBIO.geneCoverage = this.globalApp.IOBIO_SERVICES + "genecoverage/";
         //this.IOBIO.knownvariants           = this.globalApp.IOBIO_SERVICES  + "knownvariants/";
-        this.IOBIO.knownvariants = this.globalApp.DEV_IOBIO + "knownvariants/"; // ONCOGENE SPECIFIC CHANGE
+        this.IOBIO.knownvariants = this.globalApp.DEV_IOBIO + "knownvariants/"; // ONCOGENE SPECIFIC CHANGE - do not apply to other apps
     }
 
 
     getVcfHeader(vcfUrl, tbiUrl) {
         if (this.gruBackend) {
             return this.api.streamCommand('variantHeader', {url: vcfUrl, indexUrl: tbiUrl});
-        }
-        else {
+        } else {
             const me = this;
             let args = ['-H', '"' + vcfUrl + '"'];
             if (tbiUrl) {
@@ -60,8 +59,7 @@ export default class EndpointCmd {
                 tbiUrl = vcfUrl + '.tbi';
             }
             return this.api.streamCommand('vcfReadDepth', {url: tbiUrl});
-        }
-        else {
+        } else {
             const me = this;
             let args = ['-i'];
             if (tbiUrl) {
@@ -119,7 +117,7 @@ export default class EndpointCmd {
     // Service only exists on gru backend - return first non-header/column label line from vcf
     getFirstVcfEntry(vcfUrl, tbiUrl) {
         if (this.gruBackend) {
-            const cmd = this.api.streamCommand('getChromosomes', { url: vcfUrl, indexUrl: tbiUrl });
+            const cmd = this.api.streamCommand('getChromosomes', {url: vcfUrl, indexUrl: tbiUrl});
             return cmd;
         } else {
             console.log("getChromosomeFormat is not supported on minion backend.");
@@ -147,6 +145,26 @@ export default class EndpointCmd {
             console.log('getSomaticVariants is not implemented for old backend yet');
         }
         return cmd;
+    }
+
+    promiseGetCnvData(cnvUrl) {
+        return new Promise((resolve, reject) => {
+            cnvUrl = decodeURI(cnvUrl);
+            const https = require('https');
+            const req = https.get(cnvUrl, res => {
+                let buffer = '';
+                res.on('data', d => {
+                    buffer += d;
+                });
+                res.on('end', () => {
+                    resolve(buffer);
+                });
+            }).on('error', e => {
+                console.log(e);
+                reject(e);
+            });
+            req.end();
+        });
     }
 
     annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
@@ -408,7 +426,7 @@ export default class EndpointCmd {
 
     getBamHeader(bamUrl, baiUrl) {
         if (this.gruBackend) {
-            let params = {  url: bamUrl };
+            let params = {url: bamUrl};
             if (baiUrl && baiUrl !== '') {
                 params['indexUrl'] = baiUrl;
 
@@ -419,8 +437,7 @@ export default class EndpointCmd {
                 params['samtoolsRegion'] = '1:10000-20000';
             }
             return this.api.streamCommand('alignmentHeader', params);
-        }
-        else {
+        } else {
             const me = this;
             let args = ['view', '-H', '"' + bamUrl + '"'];
             if (baiUrl) {
@@ -543,7 +560,7 @@ export default class EndpointCmd {
     checkFacetsFile(facetsUrl, bamUrl) {
         if (this.gruBackend) {
             const url = facetsUrl;
-            return this.api.streamCommand('checkFacets', { url, bamUrl });
+            return this.api.streamCommand('checkFacets', {url, bamUrl});
         }
     }
 
@@ -573,8 +590,7 @@ export default class EndpointCmd {
                 clinvarUrl,
                 sampleNames,
             });
-        }
-        else {
+        } else {
             const me = this;
             let bamCmds = me._getBamRegions(bamSources, refName, regionStart, regionEnd);
             let refFastaFile = me.genomeBuildHelper.getFastaPath(refName);

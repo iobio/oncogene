@@ -1,6 +1,6 @@
 import CacheHelper from './CacheHelper.js';
 import Bam from './Bam.iobio.js';
-import Facets from './Facets.iobio.js';
+import cnviobio from './Facets.iobio.js';
 import vcfiobio from './Vcf.iobio.js';
 
 /* One per normal or tumor sample */
@@ -9,9 +9,9 @@ class SampleModel {
 
         // model references
         this.globalApp = globalApp;
-        this.vcf = null;            // The vcf.iobio model backing this
-        this.bam = null;            // The bam.iobio model backing this
-        this.facets = null;         // The facets.iobio model backing this
+        this.vcf = null;                    // The vcf.iobio model backing this
+        this.bam = null;                    // The bam.iobio model backing this
+        this.cnv = null;
         this.cohort = null;
 
         // file data
@@ -39,8 +39,8 @@ class SampleModel {
         this.bamFileOpened = false;
         this.getBamRefName = null;
 
-        // facets data
-        this.facetsUrlEntered = false;
+        // cnv data
+        this.cnvUrlEntered = false;
 
         // model properties
         // TODO: I can get rid of some of these now
@@ -830,7 +830,8 @@ class SampleModel {
         this.vcf.setGenomeBuildHelper(this.cohort.genomeBuildHelper);
         this.vcf.setIsEduMode(this.cohort.isEduMode);
 
-        // TODO: guessing I need to init bam.iobio here too
+        this.cnv = new cnviobio(this.cohort.endpoint);
+        this.cnv.init();
     }
 
     // todo: not allowing local file uploads atm
@@ -848,9 +849,6 @@ class SampleModel {
             } else {
                 me.bam = new Bam(me.globalApp, me.cohort.endpoint);
                 me.bam.openBamFile(fileSelection, function (success, message) {
-                    // if (me.lastBamthis.alertify) {
-                    //     me.lastBamthis.alertify.dismiss();
-                    // }
                     if (success) {
                         me.bamFileOpened = true;
                         me.getBamRefName = me._stripRefName;
@@ -900,26 +898,27 @@ class SampleModel {
         this.getBamRefName = this._stripRefName;
     }
 
-    onFacetsUrlEntered(facetsUrl, bamUrl, callback) {
+    onCnvUrlEntered(cnvUrl, callback) {
         this.facetsData = null;
 
-        if (facetsUrl == null || facetsUrl === '') {
-            this.facetsUrlEntered = false;
-            this.facets = null;
+        if (cnvUrl == null || cnvUrl === '') {
+            this.cnvUrlEntered = false;
+            this.cnv = null;
             if (callback) {
                 callback(false);
             }
         } else {
-            this.facetsUrlEntered = true;
-            this.facets = new Facets(this.cohort.endpoint);
+            this.cnvUrlEntered = true;
             const self = this;
-            this.facets.checkFacetsFormat(facetsUrl, bamUrl, function (success, errorMsg) {
+            this.cnv.checkCnvFormat(cnvUrl, function (success, buffer) {
                 if (!success) {
-                    self.facetsUrlEntered = false;
-                    self.facets = null;
-                    console.log('Problem opening .bed file: ' + errorMsg);
+                    self.cnvUrlEntered = false;
+                    self.cnv = null;
+                    console.log('Problem opening CNV file: ' + buffer);
                 }
                 if (callback) {
+                    // todo: parse out buffer into dictionary
+                    // todo: ensure header is valid
                     callback(success);
                 }
             })
