@@ -96,6 +96,49 @@ export default class Bam {
     }
 
     // todo: signature for this has changed (added bamType)
+    getHeaderStr(bamType, callback) {
+        const me = this;
+
+        let existingHeaderStr = null;
+        let bamUrl = null;
+        let baiUrl = null;
+
+        if (bamType === this.COVERAGE_TYPE) {
+            existingHeaderStr = this.coverageHeaderStr;
+            bamUrl = this.coverageBam;
+            baiUrl = this.coverageBai;
+        } else if (bamType === this.RNASEQ_TYPE) {
+            existingHeaderStr = this.rnaSeqHeaderStr;
+            bamUrl = this.rnaSeqBam;
+            baiUrl = this.rnaSeqBai;
+        } else {
+            existingHeaderStr = this.atacSeqHeaderStr;
+            bamUrl = this.atacSeqBam;
+            baiUrl = this.atacSeqBai;
+        }
+
+        if (existingHeaderStr) {
+            callback(existingHeaderStr);
+        } else {
+            const cmd = me.endpoint.getBamHeader(bamUrl, baiUrl);
+            let rawHeader = "";
+            cmd.on('data', function(data) {
+                if (data != null) {
+                    rawHeader += data;
+                }
+            });
+            cmd.on('end', function() {
+                me.setHeader(rawHeader);
+                callback(existingHeaderStr);
+            });
+            cmd.on('error', function(error) {
+                console.log(error);
+            });
+            cmd.run();
+        }
+    }
+
+    // todo: signature for this has changed (added bamType)
     getGeneCoverage(geneObject, transcript, bams, bamType, callback) {
         const me = this;
         const refName = geneObject.chr;
@@ -342,10 +385,18 @@ export default class Bam {
     clear() {
         this.coverageBam = null;
         this.coverageBai = null;
+        this.coverageHeaderStr = null;
+        this.coverageHeader = null;
+
         this.rnaSeqBam = null;
         this.rnaSeqBai = null;
+        this.rnaSeqHeaderStr = null;
+        this.rnaSeqHeader = null;
+
         this.atacSeqBam = null;
         this.atacSeqBai = null;
+        this.atacSeqHeaderStr = null;
+        this.atacSeqHeader= null;
     }
 
 
