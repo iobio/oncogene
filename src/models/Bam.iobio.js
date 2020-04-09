@@ -1,37 +1,33 @@
-//import BamFile  from '../third-party/bam.js'
-//import bin      from '../third-party/bin.js'
-//import inflate  from '../third-party/inflate.js'
-//import binary   from '../third-party/binary.js'
-
-
-// extending Thomas Down's original BAM js work
-
+/* Utility class to access bam files. Extends Thomas Down's bam.js work. */
 export default class Bam {
-    constructor(globalApp, endpoint, bamUri, baiUri, options) {
+    constructor(globalApp, endpoint) {
         this.globalApp = globalApp;
         this.endpoint = endpoint;
-        this.bamUri = bamUri;
-        this.baiUri = baiUri;
-        this.options = options; // *** add options mapper ***
-        // test if file or url
-        if (typeof(this.bamUri) == "object") {
-            this.sourceType = "file";
-            this.bamFile = this.bamUri;
-            this.baiFile = this.options.bai;
-            this.makeBamBlob();
-        } else {
-            this.sourceType = "url";
-            this.bamFile = null;
-            this.baiFile = null;
-        }
-        this.promises = [];
+        this.sourceType = 'url';    // current version of oncogene only accepts urls
 
+        this.COVERAGE_TYPE = 'coverage';
+        this.RNASEQ_TYPE = 'rnaSeq';
+        this.ATACSEQ_TYPE = 'atacSeq';
+
+        // We may have multiple bam sources for oncogene
+        this.coverageBam = null;
+        this.coverageBai = null;
+        this.coverageHeaderStr = '';
+        this.coverageHeader = null;
+
+        this.rnaSeqBam = null;
+        this.rnaSeqBai = null;
+        this.rnaSeqHeaderStr = '';
+        this.rnaSeqHeader = null;
+
+        this.atacSeqBam = null;
+        this.atacSeqBai = null;
+        this.atacSeqHeaderStr = '';
+        this.atacSeqHeader = null;
 
         this.ignoreMessages = [
             /samtools\sError:\s.*:\sstderr\s-\s\[M::test_and_fetch\]\sdownloading\sfile\s.*\sto\slocal\sdirectory/
         ];
-
-
         this.errorMessageMap = {
             "samtools Could not load .bai": {
                 regExp: /samtools\sError:\s.*:\sstderr\s-\sCould not load .bai.*/,
@@ -45,322 +41,95 @@ export default class Bam {
                 regExp: /samtools\sError:\s.*:\sstderr\s-\s\[E::hts_open_format\]\sfail\sto\sopen\sfile/,
                 message: "Unable to access the file. "
             }
-        }
-
-        this.headerStr = null;
-
-
+        };
         return this;
     }
 
-    clear() {
-        this.bamFile = null;
-        this.baiFile = null;
-        this.bamUri = null;
-        this.baiUri = null;
-        this.header = null;
-        this.headerStr = null;
-    }
+    /*
+     * GETTERS
+     */
+    getHeader(bamType, callback) {
+        const me = this;
+        let bamUrl = null;
+        let baiUrl = null;
 
-    isEmpty() {
-        return this.bamFile == null && this.bamUri == null;
-    }
-
-    // makeBamBlob(callback) {
-    //   var me = this;
-    //   this.bamBlob = new BlobFetchable(this.bamFile);
-    //   this.baiBlob = new BlobFetchable(this.baiFile); // *** add if statement if here ***
-    //   makeBam(this.bamBlob, this.baiBlob, function(bam) {
-    //      me.setHeader(bam.header);
-    //      me.provide(bam);
-    //      if (callback) {
-    //        callback();
-    //      }
-    //   });
-    // }
-
-    // NOTE: this signature diverges from gene - uses ref parameter and calls diff endpoint
-    checkBamUrl(url, baiUrl, ref, callback) {
-        var me = this;
-
-        var cmd = this.endpoint.checkBamBaiFiles(url, baiUrl, ref);
-
-        var success = null;
-        cmd.on('data', function (data) {
-            if (data != null && data !== '') {
-                success = true;
-            }
-        });
-
-        cmd.on('end', function () {
-            if (success == null) {
-                success = true;
-            }
-            if (success) {
-                callback(success);
-            }
-        });
-
-        cmd.on('error', function (error) {
-            if (me.ignoreErrorMessage(error)) {
-                success = true;
-                callback(success)
+        // Check if we have cached first
+        if (bamType === this.COVERAGE_TYPE) {
+            if (this.coverageHeader) {
+                callback(this.coverageHeader);
             } else {
-                success = false;
-                me.bamUri = url;
-                callback(success, me.translateErrorMessage(error));
+                bamUrl = this.coverageBam;
+                baiUrl = this.coverageBai;
+            }
+        } else if (bamType === this.RNASEQ_TYPE) {
+            if (this.rnaSeqHeader) {
+                callback(this.rnaSeqHeader);
+            } else {
+                bamUrl = this.rnaSeqBam;
+                baiUrl = this.rnaSeqBai;
+            }
+        } else if (bamType === this.ATACSEQ_TYPE) {
+            if (this.atacSeqHeader) {
+                callback(this.atacSeqHeader);
+            } else {
+                bamUrl = this.atacSeqBam;
+                baiUrl = this.atacSeqBai;
+            }
+        }
+
+        // Otherwise go fetch
+        const cmd = me.endpoint.getBamHeader(bamUrl, baiUrl);
+        let rawHeader = "";
+        cmd.on('data', function (data) {
+            if (data != null) {
+                rawHeader += data;
             }
         });
-
+        cmd.on('end', function () {
+            me.setHeader(rawHeader, bamType);
+            callback(me.header);
+        });
+        cmd.on('error', function (error) {
+            console.log(error);
+        });
         cmd.run();
     }
 
+    // todo: signature for this has changed (added bamType)
+    getGeneCoverage(geneObject, transcript, bams, bamType, callback) {
+        const me = this;
+        const refName = geneObject.chr;
+        const regionStart = geneObject.start;
+        const regionEnd = geneObject.end;
 
-    ignoreErrorMessage(error) {
-        var me = this;
-        var ignore = false;
-        me.ignoreMessages.forEach(function (regExp) {
-            if (error.match(regExp)) {
-                ignore = true;
+        // Capture all of the exon regions from the transcript
+        let regions = [];
+        transcript.features.forEach(function (feature) {
+            if (feature.feature_type.toUpperCase() === 'CDS') {
+                regions.push({start: feature.start, end: feature.end});
             }
         });
-        return ignore;
-
-    }
-
-    translateErrorMessage(error) {
-        var me = this;
-        var message = null;
-        for (var key in me.errorMessageMap) {
-            var errMsg = me.errorMessageMap[key];
-            if (message == null && error.match(errMsg.regExp)) {
-                message = errMsg.message;
-            }
-        }
-        return message ? message : error;
-    }
-
-    openBamFile(fileSelection, callback) {
-        var me = this;
-
-
-        if (fileSelection.files.length != 2) {
-            callback(false, 'must select 2 files, both a .bam and .bam.bai file');
-            return;
-        }
-
-        if (me.globalApp.utility.endsWith(fileSelection.files[0].name, ".sam") ||
-            me.globalApp.utility.endsWith(fileSelection.files[1].name, ".sam")) {
-            callback(false, 'You must select a bam file, not a sam file');
-            return;
-        }
-
-        var fileType0 = /([^.]*)\.(bam(\.bai)?)$/.exec(fileSelection.files[0].name);
-        var fileType1 = /([^.]*)\.(bam(\.bai)?)$/.exec(fileSelection.files[1].name);
-
-        var fileExt0 = fileType0 && fileType0.length > 1 ? fileType0[2] : null;
-        var fileExt1 = fileType1 && fileType1.length > 1 ? fileType1[2] : null;
-
-        var rootFileName0 = fileType0 && fileType0.length > 1 ? fileType0[1] : null;
-        var rootFileName1 = fileType1 && fileType1.length > 1 ? fileType1[1] : null;
-
-
-        if (fileType0 == null || fileType0.length < 3 || fileType1 == null || fileType1.length < 3) {
-            callback(false, 'You must select BOTH  a compressed bam file  and an index (.bai)  file');
-            return;
-        }
-
-
-        if (fileExt0 == 'bam' && fileExt1 == 'bam.bai') {
-            if (rootFileName0 != rootFileName1) {
-                callback(false, 'The index (.bam.bai) file must be named ' + rootFileName0 + ".bam.bai");
-                return;
-            } else {
-                me.bamFile = fileSelection.files[0];
-                me.baiFile = fileSelection.files[1];
-
-            }
-        } else if (fileExt1 == 'bam' && fileExt0 == 'bam.bai') {
-            if (rootFileName0 != rootFileName1) {
-                callback(false, 'The index (.bam.bai) file must be named ' + rootFileName1 + ".bam.bai");
-                return;
-            } else {
-                me.bamFile = fileSelection.files[1];
-                me.baiFile = fileSelection.files[0];
-            }
-        } else {
-            callback(false, 'You must select BOTH  a bam and an index (.bam.bai)  file');
-            return;
-        }
-        me.sourceType = "file";
-        me.makeBamBlob(function () {
-            callback(true);
+        this._transformRefName(refName, bamType,function (trRefName) {
+            let index = 0;
+            let bamSources = [];
+            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
+                const cmd = me.endpoint.getGeneCoverage(bamSources, trRefName, geneObject.gene_name, regionStart, regionEnd, regions);
+                let geneCoverageData = "";
+                cmd.on('data', function (data) {
+                    if (data == null) {
+                        return;
+                    }
+                    geneCoverageData += data;
+                });
+                cmd.on('end', function () {
+                    callback(geneCoverageData, trRefName, geneObject, transcript);
+                });
+                cmd.on('error', function (error) {
+                    console.log(error);
+                });
+                cmd.run();
+            });
         });
-        return;
-    }
-
-
-    fetch(name, start, end, callback, options) {
-        var me = this;
-        // handle bam has been created yet
-        if (this.bam == undefined) // **** TEST FOR BAD BAM ***
-            this.promise(function () {
-                me.fetch(name, start, end, callback, options);
-            });
-        else
-            this.bam.fetch(name, start, end, callback, options);
-    }
-
-    promise(callback) {
-        this.promises.push(callback);
-    }
-
-    provide(bam) {
-        this.bam = bam;
-        while (this.promises.length != 0)
-            this.promises.shift()();
-    }
-
-
-    // *** bamtools functionality ***
-    convert(format, name, start, end, callback, options) {
-        // Converts between BAM and a number of other formats
-        if (!format || !name || !start || !end)
-            return "Error: must supply format, sequenceid, start nucleotide and end nucleotide"
-
-        if (format.toLowerCase() != "sam")
-            return "Error: format + " + options.format + " is not supported"
-        var me = this;
-        this.fetch(name, start, end, function (data, e) {
-            if (options && options.noHeader)
-                callback(data, e);
-            else {
-                me.getHeader(function (h) {
-                    callback(h.toStr + data, e);
-                })
-            }
-        }, {'format': format})
-    }
-
-
-    getHeaderStr(callback) {
-        var me = this;
-
-        if (me.headerStr) {
-            callback(me.headerStr);
-        }
-        else if (me.sourceType == 'file') {
-            console.log('Error: header not set for local bam file');
-            callback(null);
-        } else {
-
-            var cmd = me.endpoint.getBamHeader(me.bamUri, me.baiUri);
-
-            var rawHeader = "";
-            cmd.on('data', function (data) {
-                if (data != null) {
-                    rawHeader += data;
-                }
-            });
-
-            cmd.on('end', function () {
-                me.setHeader(rawHeader);
-                callback(me.headerStr);
-            });
-
-            cmd.on('error', function (error) {
-                console.log(error);
-            });
-            cmd.run();
-
-
-        }
-    }
-
-    getHeader(callback) {
-        var me = this;
-
-        if (me.header) {
-            callback(me.header);
-        }
-        else if (me.sourceType == 'file') {
-            console.log('Error: header not set for local bam file');
-            callback(null);
-        } else {
-
-            var cmd = me.endpoint.getBamHeader(me.bamUri, me.baiUri);
-
-            var rawHeader = "";
-            cmd.on('data', function (data) {
-                if (data != undefined) {
-                    rawHeader += data;
-                }
-            });
-
-            cmd.on('end', function () {
-                me.setHeader(rawHeader);
-                callback(me.header);
-            });
-
-            cmd.on('error', function (error) {
-                console.log(error);
-            });
-            cmd.run();
-
-
-        }
-    }
-
-
-    setHeader(headerStr) {
-        this.headerStr = headerStr;
-        var header = {sq: [], toStr: headerStr};
-        var lines = headerStr.split("\n");
-        for (var i = 0; i < lines.length > 0; i++) {
-            var fields = lines[i].split("\t");
-            if (fields[0] == "@SQ") {
-                var fHash = {};
-                fields.forEach(function (field) {
-                    var values = field.split(':');
-                    fHash[values[0]] = values[1]
-                })
-                header.sq.push({name: fHash["SN"], end: 1 + parseInt(fHash["LN"])});
-                header.species = fHash["SP"];
-                header.assembly = fHash["AS"];
-            }
-        }
-        this.header = header;
-    }
-
-
-    transformRefName(refName, callback) {
-        var found = false;
-        this.getHeader(function (header) {
-            header.sq.forEach(function (seq) {
-                if (seq.name == refName || seq.name.split('chr')[1] == refName || seq.name == refName.split('chr')[1]) {
-                    found = true;
-                    callback(seq.name);
-                }
-            });
-            if (!found) callback(refName); // not found
-        })
-    }
-
-    _getServerCacheKey(service, refName, start, end, miscObject) {
-        var me = this;
-        var key = "backend.gene.iobio"
-        //+ "-" + cacheHelper.launchTimestamp
-        + "-" + me.bamUri ? me.bamUri : (me.bamFile ? me.bamFile.name : "?")
-            + "-" + service
-            + "-" + refName
-            + "-" + start.toString()
-            + "-" + end.toString();
-        if (miscObject) {
-            for (var miscKey in miscObject) {
-                key += "-" + miscKey + "=" + miscObject[miscKey];
-            }
-        }
-        return key;
     }
 
     /*
@@ -373,31 +142,24 @@ export default class Bam {
     *  the second for coverage of specific positions.  The latter can then be matched to vcf records
     *  , for example, to obtain the coverage for each variant.
     */
-    getCoverageForRegion(refName, regionStart, regionEnd, regions, maxPoints, useServerCache, callback) {
+    getCoverageForRegion(refName, bamType, regionStart, regionEnd, regions, maxPoints, useServerCache, callback) {
         const me = this;
 
-        this.transformRefName(refName, function (trRefName) {
-
+        this._transformRefName(refName, bamType, function (trRefName) {
             let bamSource = {};
-            if (me.sourceType === 'url') {
-                bamSource.bamUrl = me.bamUri;
-                bamSource.baiUrl = me.baiUri;
+            if (bamType === this.COVERAGE_TYPE) {
+                bamSource.bamUrl = me.coverageBam;
+                bamSource.baiUrl = me.coverageBai;
+            } else if (bamType === this.RNASEQ_TYPE) {
+                bamSource.bamUrl = me.rnaSeqBam;
+                bamSource.baiUrl = me.rnaSeqBai;
             } else {
-                bamSource.writeStream = function (stream) {
-                    stream.write(me.header.toStr);
-                    me.convert('sam', trRefName, regionStart, regionEnd, function (data, e) {
-                            console.log(e);
-                            stream.write(data);
-                            stream.end();
-                        },
-                        {noHeader: true});
-                }
+                bamSource.bamUrl = me.atacSeqBam;
+                bamSource.baiUrl = me.atacSeqBai;
             }
 
-            let serverCacheKey = me._getServerCacheKey("coverage", trRefName, regionStart, regionEnd, {maxPoints: maxPoints});
-
+            let serverCacheKey = me._getServerCacheKey("coverage", trRefName, regionStart, regionEnd, bamSource.bamUrl,{maxPoints: maxPoints});
             let cmd = me.endpoint.getBamCoverage(bamSource, trRefName, regionStart, regionEnd, regions, maxPoints, useServerCache, serverCacheKey);
-
             let samData = "";
             cmd.on('data', function (data) {
                 if (data == null) {
@@ -405,7 +167,6 @@ export default class Bam {
                 }
                 samData += data;
             });
-
             cmd.on('end', function () {
                 if (samData !== "") {
                     let coverage = null;
@@ -437,70 +198,205 @@ export default class Bam {
                     callback(coverageForRegion, coverageForPoints);
                 }
             });
-
             cmd.on('error', function (error) {
                 console.log(error);
 
             });
-
             cmd.run();
         });
     }
 
+    /*
+     * SETTERS
+     */
+    setCoverageBam(bamUrl, baiUrl) {
+        this.coverageBam = bamUrl;
+        this.coverageBai = baiUrl;
+    }
 
-    freebayesJointCall(geneObject, transcript, bams, isRefSeq, fbArgs, vepAF, callback) {
-        var me = this;
+    setRnaSeqBam(bamUrl, baiUrl) {
+        this.rnaSeqBam = bamUrl;
+        this.rnaSeqBai = baiUrl;
+    }
 
-        var refName = geneObject.chr;
-        var regionStart = geneObject.start;
-        var regionEnd = geneObject.end;
+    setAtacSeqBam(bamUrl, baiUrl) {
+        this.atacSeqBam = bamUrl;
+        this.atacSeqBai = baiUrl;
+    }
 
-        this.transformRefName(refName, function (trRefName) {
-
-
-            //  Once all bam sources have been established
-            var index = 0;
-            var bamSources = [];
-            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
-
-                var cmd = me.endpoint.freebayesJointCall(bamSources, trRefName, regionStart, regionEnd, isRefSeq, fbArgs, vepAF);
-
-                var variantData = "";
-                cmd.on('data', function (data) {
-                    if (data == undefined) {
-                        return;
-                    }
-
-                    variantData += data;
+    setHeader(headerStr, bamType) {
+        let header = {sq: [], toStr: headerStr};
+        const lines = headerStr.split("\n");
+        for (var i = 0; i < lines.length > 0; i++) {
+            const fields = lines[i].split("\t");
+            if (fields[0] === "@SQ") {
+                let fHash = {};
+                fields.forEach(function (field) {
+                    let values = field.split(':');
+                    fHash[values[0]] = values[1]
                 });
-
-                cmd.on('end', function () {
-                    callback(variantData, trRefName, geneObject, transcript);
-                });
-
-                cmd.on('error', function (error) {
-                    console.log(error);
-                });
-
-                cmd.run();
-            });
-
-
-        });
-
+                header.sq.push({name: fHash["SN"], end: 1 + parseInt(fHash["LN"])});
+                header.species = fHash["SP"];
+                header.assembly = fHash["AS"];
+            }
+        }
+        if (bamType === this.COVERAGE_TYPE) {
+            this.coverageHeaderStr = headerStr;
+            this.coverageHeader = header;
+        } else if (bamType === this.RNASEQ_TYPE) {
+            this.rnaSeqHeaderStr = headerStr;
+            this.rnaSeqHeader = header;
+        } else {
+            this.atacSeqHeaderStr = headerStr;
+            this.atacSeqHeader = header;
+        }
     }
 
     /*
-     * Sequentially examine each bam source, either specifying the bamUrl, or creating
-     * a blob (for local files)
+     * OTHERS
      */
+
+    /* Checks that both the bam and bai urls can be fetched. */
+    checkBamBaiUrls(url, baiUrl, ref, callback) {
+        const me = this;
+        const cmd = this.endpoint.checkBamBaiFiles(url, baiUrl, ref);
+        let success = null;
+        cmd.on('data', function (data) {
+            if (data != null && data !== '') {
+                success = true;
+            }
+        });
+        cmd.on('end', function () {
+            if (success == null) {
+                success = true;
+            }
+            if (success) {
+                callback(success);
+            }
+        });
+        cmd.on('error', function (error) {
+            if (me._ignoreErrorMessage(error)) {
+                success = true;
+                callback(success)
+            } else {
+                success = false;
+                callback(success, me._translateErrorMessage(error));
+            }
+        });
+        cmd.run();
+    }
+
+    // todo: signature for this has changed (added bamType)
+    freebayesJointCall(geneObject, transcript, bams, isRefSeq, fbArgs, vepAF, bamType, callback) {
+        const me = this;
+        const refName = geneObject.chr;
+        const regionStart = geneObject.start;
+        const regionEnd = geneObject.end;
+
+        this._transformRefName(refName, bamType,function (trRefName) {
+            //  Once all bam sources have been established
+            let index = 0;
+            let bamSources = [];
+            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
+                const cmd = me.endpoint.freebayesJointCall(bamSources, trRefName, regionStart, regionEnd, isRefSeq, fbArgs, vepAF);
+                let variantData = "";
+                cmd.on('data', function (data) {
+                    if (data == null) {
+                        return;
+                    }
+                    variantData += data;
+                });
+                cmd.on('end', function () {
+                    callback(variantData, trRefName, geneObject, transcript);
+                });
+                cmd.on('error', function (error) {
+                    console.log(error);
+                });
+                cmd.run();
+            });
+        });
+    }
+
+    reducePoints(data, factor, xvalue, yvalue) {
+        if (!factor || factor <= 1) {
+            return data;
+        }
+        let results = [];
+        // Create a sliding window of averages
+        for (var i = 0; i < data.length; i += factor) {
+            // Slice from i to factor
+            let avgWindow = data.slice(i, i + factor);
+            let sum = 0;
+            avgWindow.forEach(function (point) {
+                let y = yvalue(point);
+                if (y) {
+                    sum += Math.round(y);
+                }
+            });
+            let average = Math.round(sum / avgWindow.length);
+            results.push([xvalue(data[i]), average])
+        }
+        return results;
+    }
+
+    clear() {
+        this.coverageBam = null;
+        this.coverageBai = null;
+        this.rnaSeqBam = null;
+        this.rnaSeqBai = null;
+        this.atacSeqBam = null;
+        this.atacSeqBai = null;
+    }
+
+
+    /*
+     * HELPERS
+     */
+
+    _transformRefName(refName, bamType, callback) {
+        let found = false;
+        this.getHeader(bamType, function (header) {
+            header.sq.forEach(function (seq) {
+                if (seq.name === refName || seq.name.split('chr')[1] === refName || seq.name === refName.split('chr')[1]) {
+                    found = true;
+                    callback(seq.name);
+                }
+            });
+            if (!found) callback(refName); // not found
+        })
+    }
+
+    _ignoreErrorMessage(error) {
+        const me = this;
+        let ignore = false;
+        me.ignoreMessages.forEach(function (regExp) {
+            if (error.match(regExp)) {
+                ignore = true;
+            }
+        });
+        return ignore;
+    }
+
+    _translateErrorMessage(error) {
+        const me = this;
+        let message = null;
+        for (var key in me.errorMessageMap) {
+            let errMsg = me.errorMessageMap[key];
+            if (message == null && error.match(errMsg.regExp)) {
+                message = errMsg.message;
+            }
+        }
+        return message ? message : error;
+    }
+
+    // Sequentially examine each bam source, either specifying the bamUrl, or creating a blob (for local files)
     _initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, callback) {
         var me = this;
-        if (idx == bams.length) {
+        if (idx === bams.length) {
             callback();
         } else {
             var bam = bams[idx];
-            if (bam.sourceType == "url") {
+            if (bam.sourceType === "url") {
                 bamSources.push({'bamUrl': bam.bamUri, 'baiUrl': bam.baiUri});
                 idx++;
                 me._initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, callback);
@@ -519,77 +415,21 @@ export default class Bam {
         }
     }
 
-
-    getGeneCoverage(geneObject, transcript, bams, callback) {
-        var me = this;
-
-        var refName = geneObject.chr;
-        var regionStart = geneObject.start;
-        var regionEnd = geneObject.end;
-
-        // Capture all of the exon regions from the transcript
-        var regions = [];
-        transcript.features.forEach(function (feature) {
-            if (feature.feature_type.toUpperCase() == 'CDS') {
-                regions.push({start: feature.start, end: feature.end});
+    _getServerCacheKey(service, refName, start, end, bamUrl, miscObject) {
+        let key = "backend.gene.iobio"
+            //+ "-" + cacheHelper.launchTimestamp
+            + "-" + bamUrl
+            + "-" + service
+            + "-" + refName
+            + "-" + start.toString()
+            + "-" + end.toString();
+        if (miscObject) {
+            for (var miscKey in miscObject) {
+                key += "-" + miscKey + "=" + miscObject[miscKey];
             }
-        });
-
-        this.transformRefName(refName, function (trRefName) {
-
-            var index = 0;
-            var bamSources = [];
-            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
-                var cmd = me.endpoint.getGeneCoverage(bamSources, trRefName, geneObject.gene_name, regionStart, regionEnd, regions);
-
-                var geneCoverageData = "";
-                cmd.on('data', function (data) {
-                    if (data == undefined) {
-                        return;
-                    }
-                    geneCoverageData += data;
-                });
-
-                cmd.on('end', function () {
-                    callback(geneCoverageData, trRefName, geneObject, transcript);
-                });
-
-                cmd.on('error', function (error) {
-                    console.log(error);
-                });
-
-                cmd.run();
-            });
-
-
-        });
-
-
-    }
-
-
-    reducePoints(data, factor, xvalue, yvalue) {
-        if (!factor || factor <= 1) {
-            return data;
         }
-        var results = [];
-        // Create a sliding window of averages
-        for (var i = 0; i < data.length; i += factor) {
-            // Slice from i to factor
-            var avgWindow = data.slice(i, i + factor);
-            var sum = 0;
-            avgWindow.forEach(function (point) {
-                var y = yvalue(point);
-                if (y) {
-                    sum += Math.round(y);
-                }
-            });
-            var average = Math.round(sum / avgWindow.length);
-            results.push([xvalue(data[i]), average])
-        }
-        return results;
+        return key;
     }
-
 }
 
 
