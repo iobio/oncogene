@@ -2,6 +2,7 @@
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
 import CmmlUrls from '../data/cmml_urls.json'
+import Bam from "./Bam.iobio";
 
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
@@ -59,8 +60,22 @@ class CohortModel {
 
         this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
         this.sampleModelUtil.init(this);
-    }
 
+        // data types
+        this.hasVcfData = true;
+        this.hasCoverageData = true;
+        this.hasCnvData = false;
+        this.hasRnaSeqData = false;
+        this.hasAtacSeqData = false;
+
+        // new stuff - tb sorted
+        this.onlySomaticCalls = false;
+        this.rankedGeneObjs = [];
+    }
+    /*
+     * GETTERS
+     */
+    // todo: this needs to be updated with valid sample data
     getDemoVcfs() {
         let self = this;
         if (self.demoCmmlFiles) {
@@ -78,6 +93,7 @@ class CohortModel {
         }
     }
 
+    // todo: this needs to be updated with valid sample data
     getDemoBams() {
         let self = this;
         if (self.demoCmmlFiles) {
@@ -115,6 +131,7 @@ class CohortModel {
         }
     }
 
+    // todo: this needs to be updated with valid sample data
     getDemoModelInfos() {
         let self = this;
         if (self.demoCmmlFiles) {
@@ -266,52 +283,37 @@ class CohortModel {
         }
     }
 
-    promiseInitDemo(demoKind = 'exome') {
-        let self = this;
-
-        return new Promise(function (resolve, reject) {
-            let promise = null;
-            if (self.demoGenes) {
-                promise = self.geneModel.promiseCopyPasteGenes(self.demoGenes.join(","));
-            } else {
-                promise = Promise.resolve();
+    /*
+     * SETTERS
+     */
+    setInputDataTypes(userDataList) {
+        userDataList.forEach((dataType) => {
+            switch (dataType) {
+                case 'cnv':
+                    this.hasCnvData = true;
+                    break;
+                case 'rnaSeq':
+                    this.hasRnaSeqData = true;
+                    break;
+                case 'atacSeq':
+                    this.hasAtacSeqData = true;
+                    break;
+                default:
             }
-            promise
-                .then(function () {
-                    self.promiseInit(self.demoModelInfos[demoKind])
-                        .then(function () {
-                            resolve();
-                        })
-                        .catch(function (error) {
-                            reject(error);
-                        })
-                })
         })
     }
 
-    promiseInitEduTour(tourNumber, idx) {
-        let self = this;
-        return new Promise(function (resolve, reject) {
-            var promise = null;
-            if (self.eduTourGeneNames[tourNumber]) {
-                promise = self.geneModel.promiseCopyPasteGenes(self.eduTourGeneNames[tourNumber].join(","));
-            } else {
-                promise = Promise.resolve();
-            }
-            promise
-                .then(function () {
-                    self.promiseInit([self.eduTourModelInfos[tourNumber][idx]])
-                        .then(function () {
-                            resolve();
-                        })
-                        .catch(function (error) {
-                            reject(error)
-                        })
-                })
-
-        })
+    setBuild(build) {
+        this.genomeBuildHelper.setCurrentBuild(build);
     }
 
+    setCallType(somaticCallsOnly) {
+        this.onlySomaticCalls = somaticCallsOnly;
+    }
+
+    /*
+     * INITIALIZATION
+     */
     promiseInitCustomFile(customFile) {
         return new Promise((resolve, reject) => {
             let modelInfos = [];
@@ -343,6 +345,41 @@ class CohortModel {
             reader.readAsText(customFile);
         })
     }
+
+    /* Creates gene objects for user-uploaded list and creates all sample models. */
+    promiseInit(modelInfos, userGeneList) {
+        // add gene list and validate
+        return new Promise((resolve, reject) => {
+            this.geneModel.promiseCopyPasteGenes(userGeneList, { replace: true, warnOnDup: false })
+                .then(() => {
+                    // add all modelInfo to sample models
+                    // add cosmic sample model
+                    let samplePromises = [];
+                    modelInfos.forEach(modelInfo => {
+                        samplePromises.push(this.promiseAddSample(modelInfo));
+                    });
+                    samplePromises.push(this.promiseAddCosmicSample());
+                    Promise.all(samplePromises)
+                        .then(() => {
+                            resolve();
+                        }).catch(() => {
+                            reject('Problem adding sample models.');
+                    })
+                }).catch(() => {
+                    reject('Problem copying and pasting genes in.');
+            })
+        })
+    }
+
+    /*  */
+    promiseRankSomaticVariants() {
+        // if we only have somatic calls, just annotate
+
+        // otherwise pull back somatic variants, then annotate
+
+        // rank variants
+    }
+
 
     // promiseInit(modelInfos) {
     //     let self = this;
@@ -385,22 +422,6 @@ class CohortModel {
     //     })
     // }
 
-    // Creates two sampleModels to house normal and tumor tracks
-    // promiseInit() {
-    //     return new Promise((resolve) => {
-    //         let normal = new SampleModel(this.globalApp);
-    //         let tumor = new SampleModel(this.globalApp);
-    //         this.sampleModels.push(normal);
-    //         this.sampleModels.push(tumor);
-    //
-    //         // TODO: do I really need sampleMap?
-    //         this.sampleMap['s0'] = normal;
-    //         this.sampleMap['s1'] = tumor;
-    //
-    //         resolve();
-    //     });
-    // }
-
     assignCategoryOrders() {
         var samples = this.getCanonicalModels();
 
@@ -428,55 +449,45 @@ class CohortModel {
         })
     }
 
-
+    // todo: update to initialize cnv, rnaseq, and atacseq sub-models
     promiseAddSample(modelInfo, destIndex = -1) {
-        let self = this;
+        const self = this;
         return new Promise(function (resolve, reject) {
             let vm = new SampleModel(self.globalApp);
             vm.init(self);
-            vm.id = modelInfo.id;
             vm.order = modelInfo.order;
-            vm.displayName = modelInfo.displayName;
             vm.isTumor = modelInfo.isTumor;
 
-            let vcfPromise = null;
-            if (modelInfo.vcf) {
-                vcfPromise = new Promise(function (vcfResolve) {
-                        vm.onVcfUrlEntered(modelInfo.vcf, modelInfo.tbi, function () {
-                            if (modelInfo.displayName && modelInfo.displayName !== '') {
-                                vm.setDisplayName(modelInfo.displayName);
-                            } else if (modelInfo.selectedSample != null) {
-                                vm.setDisplayName(modelInfo.selectedSample);
-                            } else {
-                                vm.setDisplayName(modelInfo.id);
-                            }
+            let filePromises = [];
+            if (modelInfo.vcfUrl) {
+                let vcfPromise = new Promise(function (vcfResolve) {
+                        vm.onVcfUrlEntered(modelInfo.vcfUrl, modelInfo.tbiUrl, function () {
+                            vm.setDisplayName(modelInfo.selectedSample);
                             vcfResolve();
                         })
                     },
                     function (error) {
                         reject(error);
                     });
+                filePromises.push(vcfPromise);
             } else {
                 vm.selectedSample = null;
-                vcfPromise = Promise.resolve();
+                vm.vcf = null;
             }
 
-            let bamPromise = null;
-            if (modelInfo.bam) {
-                bamPromise = new Promise(function (bamResolve) {
-                        vm.onBamUrlEntered(modelInfo.bam, modelInfo.bai, function () {
-                            bamResolve();
-                        })
-                    },
-                    function (error) {
-                        reject(error);
-                    });
+            if (modelInfo.coverageBamUrl) {
+                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                filePromises.push(coveragePromise);
             } else {
                 vm.bam = null;
-                bamPromise = Promise.resolve();
             }
 
-            Promise.all([vcfPromise, bamPromise])
+            if (modelInfo.rnaSeqBamUrl) {
+                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                filePromises.push(coveragePromise);
+            }
+
+            Promise.all(filePromises)
                 .then(function () {
                     //let theModel = {'model': vm};
                     if (destIndex >= 0) {
@@ -488,6 +499,14 @@ class CohortModel {
                     resolve(vm);
                 });
         })
+    }
+
+    getBamPromise(sampleModel, bamUrl, baiUrl) {
+        return new Promise((resolve) => {
+                sampleModel.onBamUrlEntered(bamUrl, baiUrl, function () {
+                    resolve();
+                })
+            });
     }
 
     /* Removes a sample model corresponding to the given id */
@@ -1765,235 +1784,235 @@ class CohortModel {
         return trioVcfData;
     }
 
-
-    promiseJointCallVariants(geneObject, theTranscript, loadedTrioVcfData, options) {
-        var me = this;
-
-        return new Promise(function (resolve, reject) {
-
-            var showCallingProgress = function () {
-                if (!options.isBackground) {
-                    me.getCanonicalModels().forEach(function (model) {
-                        model.inProgress.callingVariants = true;
-                    })
-                }
-            }
-
-            var showCalledVariants = function () {
-                if (!options.isBackground) {
-                    me.endGeneProgress(geneObject.gene_name);
-                    me.setLoadedVariants(geneObject);
-                    me.getCanonicalModels().forEach(function (model) {
-                        model.inProgress.callingVariants = false;
-                    });
-                }
-            }
-
-            var endCallProgress = function () {
-                if (!options.isBackground) {
-                    me.getCanonicalModels().forEach(function (model) {
-                        model.inProgress.callingVariants = false;
-                    })
-
-                }
-            }
-            var refreshClinvarAnnots = function (trioFbData) {
-                for (var rel in trioFbData) {
-                    if (trioFbData) {
-                        if (trioFbData[rel]) {
-                            trioFbData[rel].features.forEach(function (fbVariant) {
-                                if (fbVariant.source) {
-                                    fbVariant.source.clinVarUid = fbVariant.clinVarUid;
-                                    fbVariant.source.clinVarClinicalSignificance = fbVariant.clinVarClinicalSignificance;
-                                    fbVariant.source.clinVarAccession = fbVariant.clinVarAccession;
-                                    fbVariant.source.clinvarRank = fbVariant.clinvarRank;
-                                    fbVariant.source.clinvar = fbVariant.clinvar;
-                                    fbVariant.source.clinVarPhenotype = fbVariant.clinVarPhenotype;
-                                    fbVariant.source.clinvarSubmissions = fbVariant.clinvarSubmissions;
-                                }
-                            });
-
-                        }
-                    }
-                }
-            }
-
-            var makeDummyVcfData = function () {
-                return {'loadState': {}, 'features': []}
-            }
-
-
-            var trioFbData = {'proband': null, 'mother': null, 'father': null};
-            var trioVcfData = loadedTrioVcfData ? loadedTrioVcfData : null;
-
-            me.startGeneProgress(geneObject.gene_name);
-
-            me.clearCalledVariants();
-
-            me.promiseHasCachedCalledVariants(geneObject, theTranscript)
-                .then(function (hasCalledVariants) {
-
-                    if (options.checkCache && hasCalledVariants) {
-                        showCallingProgress();
-                        var promises = [];
-
-                        me.getCanonicalModels().forEach(function (model) {
-
-
-                            var theFbData;
-                            var theVcfData = trioVcfData && trioVcfData[model.getRelationship()] ? trioVcfData[model.getRelationship()] : null;
-                            var theModel;
-
-
-                            var p = model.promiseGetFbData(geneObject, theTranscript)
-                                .then(function (data) {
-                                    theFbData = data.fbData;
-                                    theModel = data.model;
-                                    if (theVcfData) {
-                                        return Promise.resolve({'vcfData': theVcfData});
-                                    } else {
-                                        return theModel.promiseGetVcfData(geneObject, theTranscript);
-                                    }
-                                })
-                                .then(function (data) {
-                                        theVcfData = data.vcfData;
-                                        if (theVcfData == null) {
-                                            theVcfData = makeDummyVcfData();
-                                        }
-
-                                        // When only alignments provided, only the called variants were cached as "fbData".
-                                        // So initialize the vcfData to 0 features.
-                                        var promise = null;
-                                        if (theFbData && theFbData.features.length > 0 && theVcfData.features.length == 0) {
-                                            promise = theModel.promiseCacheDummyVcfDataAlignmentsOnly(theFbData, geneObject, theTranscript);
-                                        } else {
-                                            Promise.resolve();
-                                        }
-
-                                        promise.then(function () {
-                                            if (!options.isBackground) {
-                                                theModel.vcfData = theVcfData;
-                                                theModel.fbData = theFbData;
-                                            }
-                                            trioFbData[model.getRelationship()] = theFbData;
-                                            trioVcfData[model.getRelationship()] = theVcfData;
-                                        })
-
-                                    },
-                                    function (error) {
-                                        me.endGeneProgress(geneObject.gene_name);
-                                        var msg = "A problem occurred in jointCallVariantsImpl(): " + error;
-                                        console.log(msg);
-                                        reject(msg);
-                                    })
-
-                            promises.push(p);
-                        })
-                        Promise.all(promises).then(function () {
-                            showCalledVariants();
-                            resolve({
-                                'gene': geneObject,
-                                'transcript': theTranscript,
-                                'jointVcfRecs': [],
-                                'trioVcfData': trioVcfData,
-                                'trioFbData': trioFbData,
-                                'refName': geneObject.chr,
-                                'sourceVariant': null
-                            });
-                        })
-
-
-                    } else {
-                        var bams = [];
-                        me.getCanonicalModels().forEach(function (model) {
-                            bams.push(model.bam);
-                        });
-
-                        showCallingProgress();
-
-                        me.getProbandModel().bam.freebayesJointCall(
-                            geneObject,
-                            theTranscript,
-                            bams,
-                            me.geneModel.geneSource == 'refseq' ? true : false,
-                            me.freebayesSettings.arguments,
-                            me.globalApp.vepAF, // vep af
-                            function (theData, trRefName) {
-
-                                var jointVcfRecs = theData.split("\n");
-
-                                if (trioVcfData == null) {
-                                    trioVcfData = {
-                                        'proband': makeDummyVcfData(),
-                                        'mother': makeDummyVcfData(),
-                                        'father': makeDummyVcfData()
-                                    };
-                                }
-
-                                // Parse the joint called variants back to variant models
-                                var data = me._parseCalledVariants(geneObject, theTranscript, trRefName, jointVcfRecs, trioVcfData, options)
-
-                                if (data == null) {
-                                    endCallProgress();
-                                    trioFbData = data.trioFbData;
-                                } else {
-
-
-                                    // Annotate called variants with clinvar
-                                    me.promiseAnnotateWithClinvar(trioFbData, geneObject, theTranscript, true)
-                                        .then(function () {
-
-                                            refreshClinvarAnnots(trioFbData);
-
-                                            // Determine inheritance across union of loaded and called variants
-                                            me.promiseAnnotateInheritance(geneObject, theTranscript, trioVcfData, {
-                                                isBackground: options.isBackground,
-                                                cacheData: true
-                                            })
-                                                .then(function () {
-                                                    me.getCanonicalModels().forEach(function (model) {
-                                                        model.loadCalledTrioGenotypes(trioVcfData[model.getRelationship()], trioFbData[model.getRelationship()]);
-                                                    });
-                                                    // Summarize danger for gene
-                                                    return me.promiseSummarizeDanger(geneObject, theTranscript, trioVcfData.proband, {'CALLED': true});
-                                                })
-                                                .then(function () {
-                                                    showCalledVariants();
-
-                                                    var refreshedSourceVariant = null;
-                                                    if (options.sourceVariant) {
-                                                        trioVcfData.proband.features.forEach(function (variant) {
-                                                            if (!refreshedSourceVariant &&
-                                                                me.globalApp.utility.stripRefName(variant.chrom) == me.globalApp.utility.stripRefName(options.sourceVariant.chrom) &&
-                                                                variant.start == options.sourceVariant.start &&
-                                                                variant.ref == options.sourceVariant.ref &&
-                                                                variant.alt == options.sourceVariant.alt) {
-
-                                                                refreshedSourceVariant = variant;
-                                                            }
-                                                        })
-                                                    }
-                                                    resolve({
-                                                        'gene': geneObject,
-                                                        'transcript': theTranscript,
-                                                        'jointVcfRecs': jointVcfRecs,
-                                                        'trioVcfData': trioVcfData,
-                                                        'trioFbData': trioFbData,
-                                                        'refName': trRefName,
-                                                        'sourceVariant': refreshedSourceVariant
-                                                    });
-                                                })
-                                        });
-                                }
-
-                            }
-                        );
-
-                    }
-                })
-        })
-
-    }
+    // todo: not currently using
+    // promiseJointCallVariants(geneObject, theTranscript, loadedTrioVcfData, options) {
+    //     var me = this;
+    //
+    //     return new Promise(function (resolve, reject) {
+    //
+    //         var showCallingProgress = function () {
+    //             if (!options.isBackground) {
+    //                 me.getCanonicalModels().forEach(function (model) {
+    //                     model.inProgress.callingVariants = true;
+    //                 })
+    //             }
+    //         }
+    //
+    //         var showCalledVariants = function () {
+    //             if (!options.isBackground) {
+    //                 me.endGeneProgress(geneObject.gene_name);
+    //                 me.setLoadedVariants(geneObject);
+    //                 me.getCanonicalModels().forEach(function (model) {
+    //                     model.inProgress.callingVariants = false;
+    //                 });
+    //             }
+    //         }
+    //
+    //         var endCallProgress = function () {
+    //             if (!options.isBackground) {
+    //                 me.getCanonicalModels().forEach(function (model) {
+    //                     model.inProgress.callingVariants = false;
+    //                 })
+    //
+    //             }
+    //         }
+    //         var refreshClinvarAnnots = function (trioFbData) {
+    //             for (var rel in trioFbData) {
+    //                 if (trioFbData) {
+    //                     if (trioFbData[rel]) {
+    //                         trioFbData[rel].features.forEach(function (fbVariant) {
+    //                             if (fbVariant.source) {
+    //                                 fbVariant.source.clinVarUid = fbVariant.clinVarUid;
+    //                                 fbVariant.source.clinVarClinicalSignificance = fbVariant.clinVarClinicalSignificance;
+    //                                 fbVariant.source.clinVarAccession = fbVariant.clinVarAccession;
+    //                                 fbVariant.source.clinvarRank = fbVariant.clinvarRank;
+    //                                 fbVariant.source.clinvar = fbVariant.clinvar;
+    //                                 fbVariant.source.clinVarPhenotype = fbVariant.clinVarPhenotype;
+    //                                 fbVariant.source.clinvarSubmissions = fbVariant.clinvarSubmissions;
+    //                             }
+    //                         });
+    //
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //
+    //         var makeDummyVcfData = function () {
+    //             return {'loadState': {}, 'features': []}
+    //         }
+    //
+    //
+    //         var trioFbData = {'proband': null, 'mother': null, 'father': null};
+    //         var trioVcfData = loadedTrioVcfData ? loadedTrioVcfData : null;
+    //
+    //         me.startGeneProgress(geneObject.gene_name);
+    //
+    //         me.clearCalledVariants();
+    //
+    //         me.promiseHasCachedCalledVariants(geneObject, theTranscript)
+    //             .then(function (hasCalledVariants) {
+    //
+    //                 if (options.checkCache && hasCalledVariants) {
+    //                     showCallingProgress();
+    //                     var promises = [];
+    //
+    //                     me.getCanonicalModels().forEach(function (model) {
+    //
+    //
+    //                         var theFbData;
+    //                         var theVcfData = trioVcfData && trioVcfData[model.getRelationship()] ? trioVcfData[model.getRelationship()] : null;
+    //                         var theModel;
+    //
+    //
+    //                         var p = model.promiseGetFbData(geneObject, theTranscript)
+    //                             .then(function (data) {
+    //                                 theFbData = data.fbData;
+    //                                 theModel = data.model;
+    //                                 if (theVcfData) {
+    //                                     return Promise.resolve({'vcfData': theVcfData});
+    //                                 } else {
+    //                                     return theModel.promiseGetVcfData(geneObject, theTranscript);
+    //                                 }
+    //                             })
+    //                             .then(function (data) {
+    //                                     theVcfData = data.vcfData;
+    //                                     if (theVcfData == null) {
+    //                                         theVcfData = makeDummyVcfData();
+    //                                     }
+    //
+    //                                     // When only alignments provided, only the called variants were cached as "fbData".
+    //                                     // So initialize the vcfData to 0 features.
+    //                                     var promise = null;
+    //                                     if (theFbData && theFbData.features.length > 0 && theVcfData.features.length == 0) {
+    //                                         promise = theModel.promiseCacheDummyVcfDataAlignmentsOnly(theFbData, geneObject, theTranscript);
+    //                                     } else {
+    //                                         Promise.resolve();
+    //                                     }
+    //
+    //                                     promise.then(function () {
+    //                                         if (!options.isBackground) {
+    //                                             theModel.vcfData = theVcfData;
+    //                                             theModel.fbData = theFbData;
+    //                                         }
+    //                                         trioFbData[model.getRelationship()] = theFbData;
+    //                                         trioVcfData[model.getRelationship()] = theVcfData;
+    //                                     })
+    //
+    //                                 },
+    //                                 function (error) {
+    //                                     me.endGeneProgress(geneObject.gene_name);
+    //                                     var msg = "A problem occurred in jointCallVariantsImpl(): " + error;
+    //                                     console.log(msg);
+    //                                     reject(msg);
+    //                                 })
+    //
+    //                         promises.push(p);
+    //                     })
+    //                     Promise.all(promises).then(function () {
+    //                         showCalledVariants();
+    //                         resolve({
+    //                             'gene': geneObject,
+    //                             'transcript': theTranscript,
+    //                             'jointVcfRecs': [],
+    //                             'trioVcfData': trioVcfData,
+    //                             'trioFbData': trioFbData,
+    //                             'refName': geneObject.chr,
+    //                             'sourceVariant': null
+    //                         });
+    //                     })
+    //
+    //
+    //                 } else {
+    //                     var bams = [];
+    //                     me.getCanonicalModels().forEach(function (model) {
+    //                         bams.push(model.bam);
+    //                     });
+    //
+    //                     showCallingProgress();
+    //
+    //                     me.getProbandModel().bam.freebayesJointCall(
+    //                         geneObject,
+    //                         theTranscript,
+    //                         bams,
+    //                         me.geneModel.geneSource == 'refseq' ? true : false,
+    //                         me.freebayesSettings.arguments,
+    //                         me.globalApp.vepAF, // vep af
+    //                         function (theData, trRefName) {
+    //
+    //                             var jointVcfRecs = theData.split("\n");
+    //
+    //                             if (trioVcfData == null) {
+    //                                 trioVcfData = {
+    //                                     'proband': makeDummyVcfData(),
+    //                                     'mother': makeDummyVcfData(),
+    //                                     'father': makeDummyVcfData()
+    //                                 };
+    //                             }
+    //
+    //                             // Parse the joint called variants back to variant models
+    //                             var data = me._parseCalledVariants(geneObject, theTranscript, trRefName, jointVcfRecs, trioVcfData, options)
+    //
+    //                             if (data == null) {
+    //                                 endCallProgress();
+    //                                 trioFbData = data.trioFbData;
+    //                             } else {
+    //
+    //
+    //                                 // Annotate called variants with clinvar
+    //                                 me.promiseAnnotateWithClinvar(trioFbData, geneObject, theTranscript, true)
+    //                                     .then(function () {
+    //
+    //                                         refreshClinvarAnnots(trioFbData);
+    //
+    //                                         // Determine inheritance across union of loaded and called variants
+    //                                         me.promiseAnnotateInheritance(geneObject, theTranscript, trioVcfData, {
+    //                                             isBackground: options.isBackground,
+    //                                             cacheData: true
+    //                                         })
+    //                                             .then(function () {
+    //                                                 me.getCanonicalModels().forEach(function (model) {
+    //                                                     model.loadCalledTrioGenotypes(trioVcfData[model.getRelationship()], trioFbData[model.getRelationship()]);
+    //                                                 });
+    //                                                 // Summarize danger for gene
+    //                                                 return me.promiseSummarizeDanger(geneObject, theTranscript, trioVcfData.proband, {'CALLED': true});
+    //                                             })
+    //                                             .then(function () {
+    //                                                 showCalledVariants();
+    //
+    //                                                 var refreshedSourceVariant = null;
+    //                                                 if (options.sourceVariant) {
+    //                                                     trioVcfData.proband.features.forEach(function (variant) {
+    //                                                         if (!refreshedSourceVariant &&
+    //                                                             me.globalApp.utility.stripRefName(variant.chrom) == me.globalApp.utility.stripRefName(options.sourceVariant.chrom) &&
+    //                                                             variant.start == options.sourceVariant.start &&
+    //                                                             variant.ref == options.sourceVariant.ref &&
+    //                                                             variant.alt == options.sourceVariant.alt) {
+    //
+    //                                                             refreshedSourceVariant = variant;
+    //                                                         }
+    //                                                     })
+    //                                                 }
+    //                                                 resolve({
+    //                                                     'gene': geneObject,
+    //                                                     'transcript': theTranscript,
+    //                                                     'jointVcfRecs': jointVcfRecs,
+    //                                                     'trioVcfData': trioVcfData,
+    //                                                     'trioFbData': trioFbData,
+    //                                                     'refName': trRefName,
+    //                                                     'sourceVariant': refreshedSourceVariant
+    //                                                 });
+    //                                             })
+    //                                     });
+    //                             }
+    //
+    //                         }
+    //                     );
+    //
+    //                 }
+    //             })
+    //     })
+    //
+    // }
 
 
     _parseCalledVariants(geneObject, theTranscript, translatedRefName, jointVcfRecs, trioVcfData, options) {

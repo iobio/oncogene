@@ -1,13 +1,9 @@
 /* Utility class to access bam files. Extends Thomas Down's bam.js work. */
-export default class Bam {
+export default class bamiobio {
     constructor(globalApp, endpoint) {
         this.globalApp = globalApp;
         this.endpoint = endpoint;
         this.sourceType = 'url';    // current version of oncogene only accepts urls
-
-        this.COVERAGE_TYPE = 'coverage';
-        this.RNASEQ_TYPE = 'rnaSeq';
-        this.ATACSEQ_TYPE = 'atacSeq';
 
         // We may have multiple bam sources for oncogene
         this.coverageBam = null;
@@ -54,21 +50,21 @@ export default class Bam {
         let baiUrl = null;
 
         // Check if we have cached first
-        if (bamType === this.COVERAGE_TYPE) {
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
             if (this.coverageHeader) {
                 callback(this.coverageHeader);
             } else {
                 bamUrl = this.coverageBam;
                 baiUrl = this.coverageBai;
             }
-        } else if (bamType === this.RNASEQ_TYPE) {
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             if (this.rnaSeqHeader) {
                 callback(this.rnaSeqHeader);
             } else {
                 bamUrl = this.rnaSeqBam;
                 baiUrl = this.rnaSeqBai;
             }
-        } else if (bamType === this.ATACSEQ_TYPE) {
+        } else if (bamType === this.globalApp.ATACSEQ_TYPE) {
             if (this.atacSeqHeader) {
                 callback(this.atacSeqHeader);
             } else {
@@ -98,21 +94,20 @@ export default class Bam {
     // todo: signature for this has changed (added bamType)
     getHeaderStr(bamType, callback) {
         const me = this;
-
         let existingHeaderStr = null;
         let bamUrl = null;
         let baiUrl = null;
 
-        if (bamType === this.COVERAGE_TYPE) {
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
             existingHeaderStr = this.coverageHeaderStr;
             bamUrl = this.coverageBam;
             baiUrl = this.coverageBai;
-        } else if (bamType === this.RNASEQ_TYPE) {
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             existingHeaderStr = this.rnaSeqHeaderStr;
             bamUrl = this.rnaSeqBam;
             baiUrl = this.rnaSeqBai;
         } else {
-            existingHeaderStr = this.atacSeqHeaderStr;
+            existingHeaderStr = this.globalApp.atacSeqHeaderStr;
             bamUrl = this.atacSeqBam;
             baiUrl = this.atacSeqBai;
         }
@@ -190,10 +185,10 @@ export default class Bam {
 
         this._transformRefName(refName, bamType, function (trRefName) {
             let bamSource = {};
-            if (bamType === this.COVERAGE_TYPE) {
+            if (bamType === this.globalApp.COVERAGE_TYPE) {
                 bamSource.bamUrl = me.coverageBam;
                 bamSource.baiUrl = me.coverageBai;
-            } else if (bamType === this.RNASEQ_TYPE) {
+            } else if (bamType === this.globalApp.RNASEQ_TYPE) {
                 bamSource.bamUrl = me.rnaSeqBam;
                 bamSource.baiUrl = me.rnaSeqBai;
             } else {
@@ -283,10 +278,10 @@ export default class Bam {
                 header.assembly = fHash["AS"];
             }
         }
-        if (bamType === this.COVERAGE_TYPE) {
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
             this.coverageHeaderStr = headerStr;
             this.coverageHeader = header;
-        } else if (bamType === this.RNASEQ_TYPE) {
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             this.rnaSeqHeaderStr = headerStr;
             this.rnaSeqHeader = header;
         } else {
@@ -340,7 +335,7 @@ export default class Bam {
             //  Once all bam sources have been established
             let index = 0;
             let bamSources = [];
-            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
+            me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, bamType,function () {
                 const cmd = me.endpoint.freebayesJointCall(bamSources, trRefName, regionStart, regionEnd, isRefSeq, fbArgs, vepAF);
                 let variantData = "";
                 cmd.on('data', function (data) {
@@ -382,17 +377,27 @@ export default class Bam {
         return results;
     }
 
-    clear() {
+    clearAll() {
+        this.clearCoverage();
+        this.clearRnaSeq();
+        this.clearAtacSeq();
+    }
+
+    clearCoverage() {
         this.coverageBam = null;
         this.coverageBai = null;
         this.coverageHeaderStr = null;
         this.coverageHeader = null;
+    }
 
+    clearRnaSeq() {
         this.rnaSeqBam = null;
         this.rnaSeqBai = null;
         this.rnaSeqHeaderStr = null;
         this.rnaSeqHeader = null;
+    }
 
+    clearAtacSeq() {
         this.atacSeqBam = null;
         this.atacSeqBai = null;
         this.atacSeqHeaderStr = null;
@@ -441,14 +446,15 @@ export default class Bam {
     }
 
     // Sequentially examine each bam source, either specifying the bamUrl, or creating a blob (for local files)
-    _initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, callback) {
+    _initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, bamType, callback) {
         var me = this;
         if (idx === bams.length) {
             callback();
         } else {
-            var bam = bams[idx];
+            let bam = bams[idx];
+            let bamSource = me._getBamData(bamType);
             if (bam.sourceType === "url") {
-                bamSources.push({'bamUrl': bam.bamUri, 'baiUrl': bam.baiUri});
+                bamSources.push({'bamUrl': bamSource.bamUrl, 'baiUrl': bamSource.baiUrl});
                 idx++;
                 me._initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, callback);
             } else {
@@ -480,6 +486,21 @@ export default class Bam {
             }
         }
         return key;
+    }
+
+    _getBamData(bamType) {
+        let bamData = {};
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
+            bamData['bamUrl'] = this.coverageBam;
+            bamData['baiUrl'] = this.coverageBai;
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            bamData['bamUrl'] = this.rnaSeqBam;
+            bamData['baiUrl'] = this.rnaSeqBai;
+        } else {
+            bamData['bamUrl'] = this.atacSeqBam;
+            bamData['baiUrl'] = this.atacSeqBai;
+        }
+        return bamData;
     }
 }
 

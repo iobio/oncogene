@@ -556,14 +556,6 @@ export default class EndpointCmd {
         }
     }
 
-    /* Not actually using bam but workaround to use samtools view to check facets url */
-    checkFacetsFile(facetsUrl, bamUrl) {
-        if (this.gruBackend) {
-            const url = facetsUrl;
-            return this.api.streamCommand('checkFacets', {url, bamUrl});
-        }
-    }
-
     freebayesJointCall(bamSources, refName, regionStart, regionEnd, isRefSeq, fbArgs, vepAF, sampleNames) {
         if (this.gruBackend) {
 

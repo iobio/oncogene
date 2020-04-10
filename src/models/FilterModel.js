@@ -3,7 +3,6 @@
 
 class FilterModel {
     constructor(translator) {
-
         /* Somatic settings */
         this.DEFAULT_SOMATIC_CUTOFFS = {
             'normalAltFreq': 0.01,      // Must be between 0-1
@@ -326,8 +325,7 @@ class FilterModel {
             }
             //  Check to make sure there's enough coverage in normal to actually call somatic
             if (coverageCheckFeatures.length > 0) {
-                // TODO: think this is getting called per normal and tumor comparison - can consolidate into a single call grouped by sample ID?
-                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckFeatures)
+                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckFeatures, self.translator.globalApp.COVERAGE_TYPE)
                     .then((depthList) => {
                         for (let i = 0; i < depthList.length; i++) {
                             let depth = depthList[i][1];
