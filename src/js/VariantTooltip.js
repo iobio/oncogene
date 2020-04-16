@@ -20,14 +20,14 @@ export default class VariantTooltip {
     }
 
     addClickButtonListeners(variant) {
-        $('#click-tip-exit-btn').on('click', () => {
+        this.globalApp.$('#click-tip-exit-btn').on('click', () => {
             this.parent.onExitClickTooltip();
         });
-        $('#click-tip-flag-btn').on('click', () => {
+        this.globalApp.$('#click-tip-flag-btn').on('click', () => {
             this._toggleFlagButton(variant);
             this.parent.onFlagVariant(variant);
         });
-        $('#click-tip-pileup-btn').on('click', () => {
+        this.globalApp.$('#click-tip-pileup-btn').on('click', () => {
             this.parent.onShowPileupForVariant();
         });
     }
@@ -66,7 +66,7 @@ export default class VariantTooltip {
         }
 
         // let w = me.WIDTH;
-        let h = d3.round(tooltip[0][0].offsetHeight);
+        let h = this.globalApp.d3.round(tooltip[0][0].offsetHeight);
 
         // We use css variables to place the tooltip chevron in the middle, center of the tooltip
         let middlePos = (h / 2);
@@ -132,7 +132,7 @@ export default class VariantTooltip {
         }
         // If the tooltip sits below the elements, is the bottom of the tooltip
         // above the bottom of the window?
-        if ((y + coord.height + h) - yScroll < me.globalApp.utility.visibleHeight($('body'))) {
+        if ((y + coord.height + h) - yScroll < me.globalApp.utility.visibleHeight(this.globalApp.$('body'))) {
             availSpace.bottom.allowed = true;
             availSpace.bottom.tooltipTop = y + coord.height;
             availSpace.bottom.sideTooltipVertOffset = -1 * me.SIDE_TOOLTIP_VERT_OFFSET;
@@ -140,7 +140,7 @@ export default class VariantTooltip {
         // If the tooltip sits in the center (either to the left or right) of the element,
         // are both top and bottom edges within the window?
         if ((y + coord.height / 2) - (h / 2) - yScroll >= 0
-            && ((y + coord.height / 2) + (h / 2) - yScroll < me.globalApp.utility.visibleHeight($('body')))) {
+            && ((y + coord.height / 2) + (h / 2) - yScroll < me.globalApp.utility.visibleHeight(this.globalApp.$('body')))) {
             availSpace.middle.allowed = true;
             availSpace.middle.tooltipTop = y + (coord.height / 2);
             availSpace.middle.sideTooltipVertOffset = -1 * (h / 2);
@@ -223,7 +223,7 @@ export default class VariantTooltip {
 
     injectVariantGlyphs(tooltip, variant) {
         const me = this;
-        let tooltipNode = $(tooltip.node());
+        let tooltipNode = this.globalApp.$(tooltip.node());
         let info = me.globalApp.utility.formatDisplay(variant, me.translator, me.isEduMode);
 
         let injectClinvarBadge = function (clinsig, key, translate) {
@@ -235,8 +235,8 @@ export default class VariantTooltip {
                     var linkSelector = ".tooltip-clinsig-link" + key;
                     if (badge && tooltipNode.find(linkSelector).length > 0) {
                         var div = tooltipNode.find(linkSelector);
-                        $(div).prepend("<svg class=\"clinvar-badge\" style=\"float:left\"  height=\"12\" width=\"14\">");
-                        var svg = d3.select($(div).find("svg.clinvar-badge")[0]);
+                        this.globalApp.$(div).prepend("<svg class=\"clinvar-badge\" style=\"float:left\"  height=\"12\" width=\"14\">");
+                        var svg = this.globalApp.d3.select(this.globalApp.$(div).find("svg.clinvar-badge")[0]);
                         var selection = svg.data([{
                             width: 10,
                             height: 10,
@@ -254,7 +254,7 @@ export default class VariantTooltip {
                 if (me.translator.clinvarMap.hasOwnProperty(clinsigToken)) {
                     let clazz = me.translator.clinvarMap[clinsigToken].clazz;
 
-                    let outerDiv = d3.select('#' + divId);
+                    let outerDiv = this.globalApp.d3.select('#' + divId);
                     outerDiv.append('svg')
                         .attr('class', 'clinvar-badge')
                         .style('float', 'left')
@@ -277,7 +277,7 @@ export default class VariantTooltip {
             if (isInherited === true) {
                 return;
             }
-            let outerDiv = d3.select('#' + divId);
+            let outerDiv = this.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'somatic-badge')
                 .style('float', 'left')
@@ -301,7 +301,7 @@ export default class VariantTooltip {
             if (inCosmic == null || inCosmic === false) {
                 return;
             }
-            let outerDiv = d3.select('#' + divId);
+            let outerDiv = this.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'cosmic-badge')
                 .style('float', 'left')
@@ -320,7 +320,7 @@ export default class VariantTooltip {
         };
 
         let injectImpactBadge = function(variant, vepImpact, divId, translate1, translate2) {
-            let outerDiv = d3.select('#' + divId);
+            let outerDiv = this.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'impact-badge')
                 .style('float', 'left')
@@ -380,7 +380,7 @@ export default class VariantTooltip {
         const me = this;
 
         // Add header
-        let container = d3.select('#' + divId);
+        let container = this.globalApp.d3.select('#' + divId);
         let svg = container.append("div")
             .attr("id", "allele-count-legend")
             .append("svg")
@@ -497,7 +497,7 @@ export default class VariantTooltip {
             if (genotype == null) {
                 if (info.model.somaticVarCoverage) {
                     let matchingDepth = info.model.somaticVarCoverage.filter((coverageArr) => {
-                        return coverageArr[0] == variant.start;
+                        return coverageArr[0] === variant.start;
                     });
                     if (matchingDepth.length > 0) {
                         let depth = matchingDepth[0][1];
@@ -509,6 +509,7 @@ export default class VariantTooltip {
 
                 // If genotype is still null, have to check actual BAM
                 if (genotype == null) {
+                    // todo: if model.info is a SampleModel, we need to update this PoC to include bamType
                     let p = info.model.promiseGetBamDepthForVariants([{'chrom': variant.chrom, 'start': variant.start, 'end': variant.end}])
                         .then((depthArr) => {
                             let depth = depthArr[0][1];
@@ -531,7 +532,7 @@ export default class VariantTooltip {
         // Then do actual drawing
         Promise.all(depthPromises).then(() => {
             // Hide loader glyph
-            d3.select('#af-svg-loader').style('display', 'none');
+            this.globalApp.d3.select('#af-svg-loader').style('display', 'none');
 
             // Sort in model order to sync with affectedInfo order
             genotypeInfo.sort((a, b) => {
@@ -544,7 +545,7 @@ export default class VariantTooltip {
 
                 // We always want to show this bar, even if the variant isn't in a track
                 let selectedClazz = info.model.id === id ? 'selected' : '';
-                let displayName = info.model.displayName ? info.model.displayName : sampleName;
+                let displayName = info.model.selectedSample;
                 let row = container.append("div")
                     .attr("class", "ped-info");
 
@@ -599,7 +600,7 @@ export default class VariantTooltip {
         }
 
         if (genotypeAltCount == null || genotypeAltCount.indexOf(",") >= 0) {
-            BAR_WIDTH = d3.round(MAX_BAR_WIDTH * (genotypeDepth / maxAlleleCount));
+            BAR_WIDTH = this.globalApp.d3.round(MAX_BAR_WIDTH * (genotypeDepth / maxAlleleCount));
             container.select("svg").remove();
             let svg = container
                 .append("svg")
@@ -632,7 +633,7 @@ export default class VariantTooltip {
         let otherCount = totalCount - (+genotypeRefCount + +genotypeAltCount);
 
         // proportion the widths of alt, other (for multi-allelic), and ref
-        BAR_WIDTH = d3.round((MAX_BAR_WIDTH) * (totalCount / maxAlleleCount));
+        BAR_WIDTH = this.globalApp.d3.round((MAX_BAR_WIDTH) * (totalCount / maxAlleleCount));
         if (BAR_WIDTH < 10) {
             BAR_WIDTH = 10;
         }
@@ -640,9 +641,9 @@ export default class VariantTooltip {
             BAR_WIDTH = BAR_WIDTH - PADDING;
         }
         let altPercent = +genotypeAltCount / totalCount;
-        let altWidth = d3.round(altPercent * BAR_WIDTH);
+        let altWidth = this.globalApp.d3.round(altPercent * BAR_WIDTH);
         let refPercent = +genotypeRefCount / totalCount;
-        let refWidth = d3.round(refPercent * BAR_WIDTH);
+        let refWidth = this.globalApp.d3.round(refPercent * BAR_WIDTH);
         let otherWidth = BAR_WIDTH - (altWidth + refWidth);
 
         // Force a separate line if the bar width is too narrow for count to fit inside or
@@ -692,7 +693,7 @@ export default class VariantTooltip {
         let g = svg.append("g")
             .attr("transform", (separateLineForLabel ? "translate(-6,11)" : "translate(0,0)"));
         if (altWidth > 0) {
-            let altX = d3.round(altWidth / 2);
+            let altX = this.globalApp.d3.round(altWidth / 2);
             if (altX < 6) {
                 altX = 6;
             }
@@ -706,7 +707,7 @@ export default class VariantTooltip {
         }
 
         if (otherCount > 0) {
-            otherX = altWidth + d3.round(otherWidth / 2);
+            otherX = altWidth + this.globalApp.d3.round(otherWidth / 2);
             // Nudge the multi-allelic "other" count over to the right if it is
             // too close to the alt count.
             if (otherX - 11 < altX) {
@@ -730,7 +731,7 @@ export default class VariantTooltip {
                 .text("(multi-allelic)");
         }
         if (genotypeRefCount > 0 && (altWidth > 0 || otherWidth > 0)) {
-            refX = altWidth + otherWidth + d3.round(refWidth / 2);
+            refX = altWidth + otherWidth + this.globalApp.d3.round(refWidth / 2);
             if (refX - 11 < otherX || refX - 11 < altX) {
                 refX = refX + 10;
             }
@@ -872,8 +873,8 @@ export default class VariantTooltip {
 
     _toggleFlagButton(variant) {
         if (!variant.isFlagged) {
-            d3.select('#click-tip-flag-btn').text('Remove Flag');
-            let svg = d3.select('#click-tip-flag-btn').append('svg')
+            this.globalApp.d3.select('#click-tip-flag-btn').text('Remove Flag');
+            let svg = this.globalApp.d3.select('#click-tip-flag-btn').append('svg')
                 .attr('id', 'user-flagged-symbol')
                 .attr('viewBox', '0 0 24 24')
                 .attr('width', 18)
@@ -885,8 +886,8 @@ export default class VariantTooltip {
             svg.append('path')
                 .attr('d', 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z');
         } else {
-            d3.select('#click-tip-flag-btn').text('Flag Variant');
-            let svg = d3.select('#click-tip-flag-btn').append('svg')
+            this.globalApp.d3.select('#click-tip-flag-btn').text('Flag Variant');
+            let svg = this.globalApp.d3.select('#click-tip-flag-btn').append('svg')
                 .attr('id', 'user-flagged-symbol')
                 .attr('viewBox', '0 0 24 24')
                 .attr('width', 18)

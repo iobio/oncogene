@@ -14,11 +14,18 @@
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
                          @upload-config="$emit('upload-config')"
-                         @load-demo="$emit('load-demo')">
+                         @load-demo="$emit('load-demo')"
+                         @launched="onLaunch">
                 </Welcome>
+                <div v-else-if="!globalMode">
+<!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
+
+                </div>
+
                 <div v-else>
                     <v-flex xs5 md3>
                         <GlobalSidebar/>
+                    <!--todo: only want to show filters tab if we don't have somatic only calls;-->
                     </v-flex>
                     <v-flex xs7 md9>
                         <GlobalGenome :d3="d3">
@@ -44,6 +51,9 @@
                 <!--</EvidenceDrawer>-->
             </v-navigation-drawer>
         </v-sheet>
+        <v-overlay :value="displayLoader">
+            <v-progress-circular indeterminate size="64"></v-progress-circular>
+        </v-overlay>
     </div>
 </template>
 
@@ -75,18 +85,16 @@
         },
         data: () => {
             return {
-                // TODO: get ridof unused variables
-                SCORE_FILE: 'http://localhost:8000/tow19example.tsv',
-                SCREEN_FILE: 'http://localhost:8000/drugScreenExample.tsv',
-                DRUGS: ['Eribulin', 'Bevacizumab', 'Trastuzumab', 'Palbociclib', 'Ribociclib', 'Olaparib', 'Neratinib', 'Pertuzumab'],
-                PDX_IDS: ['BCM5471', 'BCM4888', 'HCI-032', 'HCI-005', 'TOW19', 'HCI-019', 'HCI-003', 'HCI-012', 'HCI-016', 'HCI-001', 'TOW26', 'HCI-017', 'HCI-023', 'HCI-027', 'HCI-002', 'HCI-025', 'HCI-010', 'HCI-011', 'HCI-015'],
+                // todo: get rid of unused vars
                 displayEvidenceDrawer: false,
                 screenWidth: window.innerWidth,
                 screenHeight: window.innerHeight,
                 displayDrawerWidth: 0,
-                selectedDrug: '',
 
-                dataEntered: false
+                // view variables
+                dataEntered: false,
+                displayLoader: false,
+                globalMode: false
             };
         },
         watch: {
@@ -99,10 +107,21 @@
             }
         },
         methods: {
-            // onFilesUploaded: function() {
-            //     // TODO:implement
-            //     console.log('onFilesUploaded');
-            // }
+            onLaunch: function(modelInfos, userGeneList) {
+                this.dataEntered = true;
+                this.displayLoader = true;
+                this.cohortModel.promiseInit(modelInfos, userGeneList)
+                    .then(() => {
+                        let promises = [];
+                        promises.push(this.cohortModel.promiseAnnotateGlobalSomatics());
+                        // todo: then load top gene from list
+                        // todo: return all promises
+                    })
+                    .catch(error => {
+                        console.log('There was a problem initializing cohort model: ' + error);
+                    })
+                // todo: then hide loader and display list
+            }
         },
         computed: {
             overlayWidth: function() {

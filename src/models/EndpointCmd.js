@@ -125,13 +125,20 @@ export default class EndpointCmd {
         }
     }
 
-    getSomaticVariants(vcfSource, somaticCriteria) {
+    /* Returns somatic variants for the given selectedSamples and regions.
+     * The somaticCriteria object contains filters for defining 'somaticness'/
+     */
+    annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticCriteria) {
         const me = this;
         let cmd = null;
+        const selectedSamplesStr = selectedSamples.join();
+        const geneRegionsStr = geneRegions.join();
         if (this.gruBackend) {
-            cmd = me.api.streamCommand('getSomaticVariants',
+            cmd = me.api.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr: selectedSamplesStr,
+                    geneRegionsStr: geneRegionsStr,
                     qualCutoff: somaticCriteria.qualCutoff,
                     totalReadCutoff: somaticCriteria.totalReadCutoff,
                     normalCountCutoff: somaticCriteria.normalCountCutoff,
@@ -558,9 +565,7 @@ export default class EndpointCmd {
 
     freebayesJointCall(bamSources, refName, regionStart, regionEnd, isRefSeq, fbArgs, vepAF, sampleNames) {
         if (this.gruBackend) {
-
             const refFastaFile = this.genomeBuildHelper.getFastaPath(refName);
-
             const refNames = this.getHumanRefNames(refName).split(" ");
             const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
             const clinvarUrl = this.globalApp.getClinvarUrl(genomeBuildName);

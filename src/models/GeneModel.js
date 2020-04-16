@@ -9,7 +9,10 @@ class GeneModel {
         this.phenolyzerOnlyServer = this.globalApp.HTTP_SERVICES + "phenolyzer/";
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
+        // this.NCBI_GENE_SEARCH_URL = "http://localhost:8080/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
+
         this.NCBI_GENE_SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
+        // this.NCBI_GENE_SUMMARY_URL = "http://localhost:8080/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
 
 
         this.linkTemplates = {
@@ -45,12 +48,10 @@ class GeneModel {
         this.geneDangerSummaries = {};
         this.sortedGeneNames = [];
 
-
         this.geneNCBISummaries = {};
         this.genePhenotypes = {};
         this.geneObjects = {};
         this.geneToLatestTranscript = {};
-
 
         this.allKnownGenes = [];
         this.allKnownGeneNames = {};
@@ -66,6 +67,8 @@ class GeneModel {
         this.phenolyzerGenes = [];
 
         this.rankedGenes = {};
+
+        this.geneRegions = [];
 
         // this.dispatch = d3.dispatch("geneDangerSummarized");
         // d3.rebind(this, this.dispatch, "on");
@@ -90,7 +93,6 @@ class GeneModel {
             } else {
                 resolve();
             }
-
         })
     }
 
@@ -126,20 +128,16 @@ class GeneModel {
 
 
     promiseCopyPasteGenes(genesString, options = {replace: true, warnOnDup: true}) {
-        var me = this;
-
+        const me = this;
         return new Promise(function (resolve, reject) {
 
-            var promises = [];
-
+            let promises = [];
             me.copyPasteGenes(genesString, options);
-
             me.geneNames.forEach(function (geneName) {
                 promises.push(me.promiseGetGeneObject(geneName));
                 promises.push(me.promiseGetGenePhenotypes(geneName));
-                promises.push(me.promiseGetNCBIGeneSummary(geneName));
-            })
-
+                // promises.push(me.promiseGetNCBIGeneSummary(geneName));  //todo: if we want to reincorporate this, need to get ncbi api key
+            });
             Promise.all(promises)
                 .then(function () {
                     resolve();
@@ -147,11 +145,7 @@ class GeneModel {
                 .catch(function (error) {
                     reject(error);
                 })
-
-
         })
-
-
     }
 
     getCopyPasteGeneCount(genesString) {
@@ -164,7 +158,6 @@ class GeneModel {
         var me = this;
         genesString = genesString.replace(/\s*$/, "");
         var geneNameList = genesString.split(/(?:\s+|,\s+|,|^W|\n)/g);
-
 
         var genesToAdd = [];
         var unknownGeneNames = {};
@@ -185,22 +178,18 @@ class GeneModel {
                 }
             }
         });
-
         if (options.replace) {
             me.geneNames = [];
             me.sortedGeneNames = [];
         }
-
         genesToAdd.forEach(function (geneName) {
             me.geneNames.push(geneName);
             me.sortedGeneNames.push(geneName);
-        })
-
+        });
 
         var message = "";
         if (Object.keys(unknownGeneNames).length > 0) {
             message = "Bypassing unknown genes: " + Object.keys(unknownGeneNames).join(", ") + ".";
-            // alertify.alert("Warning", message);
             alert('Warning: ' + message);
         }
         if (Object.keys(duplicateGeneNames).length > 0 && options.warnOnDup) {
@@ -210,10 +199,8 @@ class GeneModel {
             message += "Bypassing duplicate gene name(s): " + Object.keys(duplicateGeneNames).join(", ") + ".";
         }
         if (message.length > 0) {
-            //alertify.alert("Warning", message);
             alert('Warning: ' + message);
         }
-
         if (me.limitGenes) {
             if (me.globalApp.maxGeneCount && me.geneNames.length > me.globalApp.maxGeneCount) {
                 var bypassedCount = me.geneNames.length - me.globalApp.maxGeneCount;
@@ -222,12 +209,10 @@ class GeneModel {
                     + " genes were added. "
                     + bypassedCount.toString()
                     + " "
-                    + (bypassedCount == 1 ? "gene" : "genes")
+                    + (bypassedCount === 1 ? "gene" : "genes")
                     + " bypassed.");
             }
-
         }
-
     }
 
 
@@ -283,7 +268,6 @@ class GeneModel {
             });
 
         });
-
     }
 
 
@@ -304,18 +288,18 @@ class GeneModel {
 
 
             var nextGene = sortedGenes[i + 1];
-            if (i == 0) {
+            if (i === 0) {
                 gene.dup = false;
             }
             nextGene.dup = false;
 
-            if (gene.gene_name == nextGene.gene_name && gene.refseq == nextGene.refseq && gene.gencode == nextGene.gencode) {
+            if (gene.gene_name === nextGene.gene_name && gene.refseq === nextGene.refseq && gene.gencode === nextGene.gencode) {
                 nextGene.dup = true;
             }
 
             // Some more processing to gather unique gene sets and add field 'name'
             gene.name = gene.gene_name;
-            if (gene.refseq != gene.gencode) {
+            if (gene.refseq !== gene.gencode) {
                 if (gene.refseq) {
                     me.refseqOnly[gene.gene_name] = gene;
                 } else {
@@ -324,7 +308,7 @@ class GeneModel {
             }
         }
         return sortedGenes.filter(function (gene) {
-            return gene.dup == false;
+            return gene.dup === false;
         });
     }
 
@@ -550,19 +534,26 @@ class GeneModel {
             } else {
                 // Search NCBI based on the gene name to obtain the gene ID
                 var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
-                me.globalApp.$.ajax(url)
-                    .done(function (data) {
-
+                me.globalApp.$.ajax({
+                    url: url,
+                    type: "GET",
+                    dataType: "json",
+                    crossDomain: true}
+                    ).done(function (data) {
                         // Now that we have the gene ID, get the NCBI gene summary
                         var webenv = data["esearchresult"]["webenv"];
                         var queryKey = data["esearchresult"]["querykey"];
                         var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
-                        me.globalApp.$.ajax(summaryUrl)
-                            .done(function (sumData) {
-                                if (sumData.result == null || sumData.result.uids.length == 0) {
+                        me.globalApp.$.ajax({
+                            url: summaryUrl,
+                            type: 'GET',
+                            dataType: 'json',
+                            crossDomain: true}
+                            ).done(function (sumData) {
+                                if (sumData.result == null || sumData.result.uids.length === 0) {
                                     if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
                                         sumData.esummaryresult.forEach(function (message) {
-                                            console.log("Unable to get NCBI gene summary from eutils esummary")
+                                            console.log("Unable to get NCBI gene summary from eutils esummary");
                                             console.log(message);
                                         });
                                     }
@@ -652,7 +643,7 @@ class GeneModel {
                 resolve([phenotypes, geneName]);
             } else {
                 var url = me.geneToPhenoServer + "api/gene/" + geneName;
-                me.globallApp.$.ajax({
+                me.globalApp.$.ajax({
                     url: url,
                     jsonp: "callback",
                     type: "GET",
@@ -724,6 +715,7 @@ class GeneModel {
                 jsonp: "callback",
                 type: "GET",
                 dataType: "jsonp",
+                crossDomain: true,
                 success: function (response) {
                     if (response.length > 0 && response[0].hasOwnProperty('gene_name')) {
                         var theGeneObject = response[0];
@@ -741,7 +733,6 @@ class GeneModel {
                     console.log("Status: " + status);
                     console.log(xhr);
                     reject("Error " + errorThrown + " occurred when attempting to get gene model for gene " + geneName);
-
                 }
             });
 
@@ -1221,7 +1212,6 @@ class GeneModel {
         let geneCoverageProblem1 = danger1.geneCoverageProblem ? danger1.geneCoverageProblem : false;
         let geneCoverageProblem2 = danger2.geneCoverageProblem ? danger2.geneCoverageProblem : false;
 
-
         if (geneCoverageProblem1 === geneCoverageProblem2) {
             if (geneName1 < geneName2) {
                 return -1;
@@ -1235,7 +1225,24 @@ class GeneModel {
         } else if (geneCoverageProblem2) {
             return 1;
         }
+    }
 
+
+
+    /* Returns an array of gene regions strings found in geneObjects formatted for bcftools calls
+     * ex: ['chrA:startA-endA', 'chrB:startB-endB', ...]
+     * NOTE: positions inclusive */
+    getFormattedGeneRegions() {
+        let regions = [];
+        for (var geneName in this.geneObjects) {
+            let obj = this.geneObjects[geneName];
+            let chr = obj.chr;
+            if (chr.startsWith('chr')) {
+                chr = chr.substring(3);
+            }
+            regions.push(chr + ':' + obj.start + '-' + obj.end);
+        }
+        return regions;
     }
 
 }

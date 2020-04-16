@@ -146,7 +146,7 @@
                         .then(() => {
                             self.$emit('update-status', self.modelType, self.getAllInputStatus());
                         });
-                } else if (self.fileType === 'facets' && url != null && url !== '') {
+                } else if (self.fileType === 'cnv' && url != null && url !== '') {
                     // Check cnv file
                     self.checkCnv(i, url)
                         .then(() => {
@@ -158,7 +158,7 @@
                 const self = this;
                 return new Promise((resolve) => {
                     self.displayLoader = true;
-                    self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, function (success) {
+                    self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, self.dataType, function (success) {
                         self.displayLoader = false;
                         if (success) {
                             self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;

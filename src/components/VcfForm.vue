@@ -144,6 +144,7 @@
                 selectedBuild: '',
                 urlsVerified: false,
                 listInfo: -1,
+                modelInfoIdx: 0,
                 genomeBuilds: ['GRCh37', 'GRCh38']
             }
         },
@@ -215,10 +216,11 @@
                                 // Create modelInfo per sample
                                 let infoList = [];
                                 for (let i = 0; i < sampleNames.length; i++) {
-                                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl);
+                                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
                                     infoList.push(modelInfo);
                                     self.$emit('set-model-info', infoList);
                                     self.vcfSampleNames.push(sampleNames[i]);
+                                    self.modelInfoIdx++;
                                 }
                                 // Toggle display flags
                                 self.urlsVerified = true;
@@ -241,9 +243,11 @@
                     return '';
                 }
             },
-            createModelInfo: function (selectedSample, isTumor, vcfUrl, tbiUrl) {
+            createModelInfo: function (selectedSample, isTumor, vcfUrl, tbiUrl, modelInfoIdx) {
                 let modelInfo = {};
 
+                modelInfo.id = 's' + modelInfoIdx;
+                modelInfo.order = modelInfoIdx;
                 modelInfo.selectedSample = selectedSample;
                 modelInfo.isTumor = isTumor;
                 modelInfo.vcfUrl = vcfUrl;
@@ -263,11 +267,13 @@
                 return modelInfo;
             },
             addTrack: function () {
-                let newInfo = this.createModelInfo(null, true);
+                let newInfo = this.createModelInfo(null, true, null, null, this.modelInfoIdx);
                 this.modelInfoList.push(newInfo);
+                this.modelInfoIdx++;
             },
             deleteTrack: function (modelInfoIdx) {
                 this.$emit('remove-model-info', modelInfoIdx);
+                this.modelInfoIdx--;
             },
             isTumorTrack: function (modelInfo) {
                 if (modelInfo.isTumor) {

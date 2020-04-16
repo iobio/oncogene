@@ -2,7 +2,6 @@
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
 import CmmlUrls from '../data/cmml_urls.json'
-import Bam from "./Bam.iobio";
 
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
@@ -30,6 +29,8 @@ class CohortModel {
 
         this.sampleModels = [];                 // List of sample models correlated with this cohort
         this.sampleMap = {};                    // Relates IDs to model objects
+        this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
+        this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
         this.cosmicVariantIdHash = null;        // Contains the current gene's cosmic IDs
 
@@ -70,7 +71,7 @@ class CohortModel {
 
         // new stuff - tb sorted
         this.onlySomaticCalls = false;
-        this.rankedGeneObjs = [];
+        this.rankedSomaticGeneList = [];    // A ranked list of somatic gene objects for entire genome (ordered most pathogenic/relevant -> least)
     }
     /*
      * GETTERS
@@ -355,8 +356,9 @@ class CohortModel {
                     // add all modelInfo to sample models
                     // add cosmic sample model
                     let samplePromises = [];
+                    // todo: here do a check to see if we have all samples or subset
                     modelInfos.forEach(modelInfo => {
-                        samplePromises.push(this.promiseAddSample(modelInfo));
+                        samplePromises.push(this.promiseAddSample(modelInfo, modelInfo.order));
                     });
                     samplePromises.push(this.promiseAddCosmicSample());
                     Promise.all(samplePromises)
@@ -371,13 +373,18 @@ class CohortModel {
         })
     }
 
-    /*  */
-    promiseRankSomaticVariants() {
-        // if we only have somatic calls, just annotate
+    /* Group somatic variants by gene. */
+    groupSomaticVarsByGene(somaticVariants) {
+        // todo: implement
 
-        // otherwise pull back somatic variants, then annotate
+        console.log(somaticVariants);   // todo: appease linter
+    }
 
+    /* Ranks the gene objects with their respective somatic variants. */
+    promiseRankSomaticObjs(somaticGeneObjs) {
         // rank variants
+        console.log(somaticGeneObjs);   // todo: appease linter
+        // todo: implement
     }
 
 
@@ -449,14 +456,15 @@ class CohortModel {
         })
     }
 
-    // todo: update to initialize cnv, rnaseq, and atacseq sub-models
     promiseAddSample(modelInfo, destIndex = -1) {
         const self = this;
         return new Promise(function (resolve, reject) {
             let vm = new SampleModel(self.globalApp);
             vm.init(self);
+            modelInfo.model = vm;
             vm.order = modelInfo.order;
             vm.isTumor = modelInfo.isTumor;
+            vm.selectedSample = modelInfo.selectedSample;
 
             let filePromises = [];
             if (modelInfo.vcfUrl) {
@@ -476,15 +484,32 @@ class CohortModel {
             }
 
             if (modelInfo.coverageBamUrl) {
-                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl, self.globalApp.COVERAGE_TYPE);
                 filePromises.push(coveragePromise);
             } else {
                 vm.bam = null;
             }
-
             if (modelInfo.rnaSeqBamUrl) {
-                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
-                filePromises.push(coveragePromise);
+                let rnaseqPromise = self.getBamPromise(vm, modelInfo.rnaSeqBamUrl, modelInfo.rnaSeqBaiUrl, self.globalApp.RNASEQ_TYPE);
+                filePromises.push(rnaseqPromise);
+            }
+            if (modelInfo.atacSeqBamUrl) {
+                let atacSeqPromise = self.getBamPromise(vm, modelInfo.atacSeqBamUrl, modelInfo.atacSeqBaiUrl, self.globalApp.ATACSEQ_TYPE);
+                filePromises.push(atacSeqPromise);
+            }
+
+            if (modelInfo.cnvUrl) {
+                let cnvPromise = new Promise(function(cnvResolve) {
+                    vm.onCnvUrlEntered(modelInfo.cnvUrl, function() {
+                        cnvResolve();
+                    },
+                    function(error) {
+                        reject(error)
+                    })
+                });
+                filePromises.push(cnvPromise);
+            } else {
+                vm.cnv = null;
             }
 
             Promise.all(filePromises)
@@ -501,9 +526,9 @@ class CohortModel {
         })
     }
 
-    getBamPromise(sampleModel, bamUrl, baiUrl) {
+    getBamPromise(sampleModel, bamUrl, baiUrl, bamType) {
         return new Promise((resolve) => {
-                sampleModel.onBamUrlEntered(bamUrl, baiUrl, function () {
+                sampleModel.onBamUrlEntered(bamUrl, baiUrl, bamType, function () {
                     resolve();
                 })
             });
@@ -833,8 +858,24 @@ class CohortModel {
         return Object.keys(theVcfs).length === 1;
     }
 
+    /* Loads global somatic list */
+    promiseAnnotateGlobalSomatics() {
+        return new Promise((resolve, reject) => {
+           this.promiseAnnotateSomaticVariants()
+                .then((somaticVariants) => {
+                    let somaticGeneObjs = this.groupSomaticVarsByGene(somaticVariants);
+                    this.rankedSomaticGeneList = this.promiseRankSomaticObjs(somaticGeneObjs);
+                })
+                .catch(error => {
+                   reject('Problem loading somatic variants: ' + error);
+                });
+        });
+    }
+
+    /* Loads data for all samples for a single gene */
+    // todo: update this to include loading cnv, rnaseq, atacseq data if available
     promiseLoadData(theGene, theTranscript, options) {
-        let self = this;
+        const self = this;
         let promises = [];
 
         return new Promise(function (resolve, reject) {
@@ -898,15 +939,19 @@ class CohortModel {
 
     /* Returns all somatic variants for entire genome according to somatic and quality criteria.
      * NOTE: Only works for single joint vcf containing a single normal sample & 1+ tumor samples */
-    promiseLoadSomaticVariants() {
-        // TODO: pull back all somatic variants
+    promiseAnnotateSomaticVariants() {
         const self = this;
-
         return new Promise((resolve, reject) => {
             const somaticCriteria = self.filterModel.getSomaticCallingCriteria();
-            self.getNormalModel().vcf.promiseGetSomaticVariants(somaticCriteria)
-                .then(() => {
-                    // TODO: return somaticVars here make lookup to store this in
+            let selectedSamples = [];
+            self.getCanonicalModels().forEach(model => {
+                selectedSamples.push(model.selectedSample);
+            });
+            let regions = self.geneModel.getFormattedGeneRegions();
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticCriteria, selectedSamples, regions)
+                .then((somaticVariants) => {
+                    console.log(somaticVariants);
+                    // TODO: return somaticVars here make lookup to store this in - ensure returning data first
                     resolve();
                 }).catch((error) => {
                     reject('Problem pulling back somatic variants: ' + error);

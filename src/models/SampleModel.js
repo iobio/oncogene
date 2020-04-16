@@ -1,6 +1,6 @@
 import CacheHelper from './CacheHelper.js';
 import bamiobio from './Bam.iobio.js';
-import cnviobio from './Facets.iobio.js';
+import cnviobio from './Cnv.iobio.js';
 import vcfiobio from './Vcf.iobio.js';
 
 /* One per normal or tumor sample */
@@ -19,7 +19,6 @@ class SampleModel {
         this.coverageData = null;
         this.rnaSeqData = null;
         this.atacSeqData = null;
-        this.cnvData = null;
 
         // variant & coverage data
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
@@ -40,8 +39,8 @@ class SampleModel {
         this.rnaSeqUrlEntered = false;
         this.atacSeqUrlEntered = false;
 
-        this.bamUrlEntered = false;
-        this.bamFileOpened = false;
+        // this.bamUrlEntered = false;
+        // this.bamFileOpened = false;
         this.getBamRefName = null;
 
         // cnv data
@@ -846,26 +845,26 @@ class SampleModel {
     //     });
     // }
 
-    onBamUrlEntered(bamUrl, baiUrl, callback) {
-        const me = this;
-        this.coverageData = null;
-        this.rnaSeqData = null;
-        this.atacSeqData= null;
-        this.fbData = null;
+    onBamUrlEntered(bamUrl, baiUrl, bamType, callback) {
+        const self = this;
+        // self.coverageData = null; todo: do I really need to clear data
+        // self.rnaSeqData = null;
+        // self.atacSeqData= null;
+        // self.fbData = null;
 
         if (bamUrl == null || bamUrl === "") {
-            this.bamUrlEntered = false;
-            this.bam = null;
+            self._markBamUrlEntered(bamType, false);
+            self.bam = null;
             if (callback) {
                 callback(false)
             }
         } else {
-            this.bamUrlEntered = true;
-            const ref = !me.getGenomeBuildHelper().isBuild37() ? '1' : 'chr1';
-            this.bam.checkBamBaiUrls(bamUrl, baiUrl, ref, function (success, errorMsg) {
+            self._markBamUrlEntered(bamType, true);
+            const ref = !this.getGenomeBuildHelper().isBuild37() ? '1' : 'chr1';
+            self.bam.checkBamBaiUrls(bamUrl, baiUrl, ref, function (success, errorMsg) {
                 if (!success) {
-                    me.bamUrlEntered = false;
-                    me.bam = null;
+                    self._markBamUrlEntered(bamType, false);
+                    self.bam = null;
                     console.log("Problem opening bam/bai file: " + errorMsg);
                 }
                 if (callback) {
@@ -873,12 +872,20 @@ class SampleModel {
                 }
             });
         }
-        this.getBamRefName = this._stripRefName;
+        self.getBamRefName = this._stripRefName;
+    }
+
+    _markBamUrlEntered(type, isEntered) {
+        if (type === this.globalApp.COVERAGE_TYPE) {
+            this.coverageUrlEntered = isEntered;
+        } else if (type === this.globalApp.RNASEQ_TYPE) {
+            this.rnaSeqUrlEntered = isEntered;
+        } else if (type === this.globalApp.ATACSEQ_TYPE) {
+            this.atacSeqUrlEntered = isEntered;
+        }
     }
 
     onCnvUrlEntered(cnvUrl, callback) {
-        this.cnvData = null;
-
         if (cnvUrl == null || cnvUrl === '') {
             this.cnvUrlEntered = false;
             this.cnv = null;
@@ -895,9 +902,6 @@ class SampleModel {
                     console.log('Problem opening CNV file: ' + buffer);
                 }
                 if (callback) {
-                    // todo: set this.cnvData
-                    // todo: parse out buffer into dictionary
-                    // todo: ensure header is valid
                     callback(success);
                 }
             })

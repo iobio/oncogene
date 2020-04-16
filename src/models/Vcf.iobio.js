@@ -687,17 +687,18 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    exports.promiseGetSomaticVariants = function (somaticCriteria) {
+
+    exports.promiseAnnotateSomaticVariants = function (somaticCriteria, selectedSamples, regions) {
         const self = this;
         return new Promise((resolve, reject) => {
                 if (!vcfURL) {
                     reject('No vcf url to pull somatic variants from');
                 }
                 if (sourceType === SOURCE_TYPE_URL) {
-                    let cmd = self.getEndpoint().getSomaticVariants({
+                    let cmd = self.getEndpoint().annotateSomaticVariants({
                         'vcfUrl': vcfURL,
-                        'tbiUrl': tbiUrl
-                    }, somaticCriteria);
+                        'tbiUrl': tbiUrl,
+                    }, selectedSamples, regions, somaticCriteria);
 
                     let annotatedData = '';
                     cmd.on('data', function (data) {
@@ -708,8 +709,11 @@ export default function vcfiobio(theGlobalApp) {
                     });
                     cmd.on('end', function () {
                         let annotatedRecs = annotatedData.split("\n");
-                        let vcfObjects = [];
 
+                        // trim off last empty line
+                        annotatedRecs.pop();
+
+                        let vcfObjects = [];
                         annotatedRecs.forEach(function (record) {
                             if (record.charAt(0) !== "#") {
                                 // Parse the vcf record into its fields

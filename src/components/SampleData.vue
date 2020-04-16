@@ -1,3 +1,5 @@
+<!--todo: can get rid of this component?-->
+
 <style lang="sass">
     @import ../assets/sass/variables
     #sample-data-form
