@@ -133,6 +133,8 @@ export default class EndpointCmd {
         let cmd = null;
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
+        const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
+
         if (this.gruBackend) {
             cmd = me.api.streamCommand('annotateSomaticVariants',
                 {
@@ -146,7 +148,8 @@ export default class EndpointCmd {
                     normalAfCutoff: somaticCriteria.normalAfCutoff,
                     tumorAfCutoff: somaticCriteria.tumorAfCutoff,
                     normalSampleIdx: somaticCriteria.normalSampleIdx,
-                    totalSampleNum: somaticCriteria.totalSampleNum
+                    totalSampleNum: somaticCriteria.totalSampleNum,
+                    genomeBuildName: genomeBuildName
                 });
         } else {
             console.log('getSomaticVariants is not implemented for old backend yet');

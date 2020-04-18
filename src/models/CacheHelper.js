@@ -1,6 +1,6 @@
 
 // import CacheHelperWorker from './CacheHelperWorker.js'
-// import CacheIndexStore from './CacheIndexStore.js'
+import CacheIndexStore from './CacheIndexStore.js'
 
 function CacheHelper(globalApp, forceLocalStorage) {
 
@@ -20,8 +20,8 @@ function CacheHelper(globalApp, forceLocalStorage) {
   this.analyzeAllInProgress = false;
   this.callAllInProgress    = false;
 
-  this.dispatch = d3.dispatch("geneAnalyzed", "analyzeAllCompleted");
-  d3.rebind(this, this.dispatch, "on");
+  this.dispatch = globalApp.d3.dispatch("geneAnalyzed", "analyzeAllCompleted");
+  // globalApp.d3.rebind(this, this.dispatch, "on"); todo: add this rebind to global d3 var or use alt method
 }
 
 CacheHelper.recordedCacheErrors = {};
@@ -33,8 +33,6 @@ CacheHelper.BAM_DATA            = "bamData";
 CacheHelper.FB_DATA             = "fbData";
 CacheHelper.DANGER_SUMMARY_DATA = "dangerSummary";
 CacheHelper.GENE_COVERAGE_DATA  = "geneCoverage";
-
-
 
 CacheHelper.prototype.analyzeAll = function(cohort, analyzeCalledVariants = false) {
   var me = this;
@@ -62,7 +60,7 @@ CacheHelper.prototype.promiseAnalyzeSubset = function(cohort, theGeneNames, gene
   me.cohort = cohort;
   me.geneToAltTranscript = geneToAltTranscript;
 
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     theGeneNames.forEach(function(geneName) {
       me.genesToCache.push(geneName);
     });
@@ -245,14 +243,14 @@ CacheHelper.prototype.cacheGenes = function(analyzeCalledVariants, callback) {
     me.queueGene(me.genesToCache[i]);
   }
   // Remove this batch of genes from the list of all genes to be cached
-  for (var i = 0; i < sizeToQueue; i++) {
+  for (var j = 0; j < sizeToQueue; j++) {
     me.genesToCache.shift();
   }
 
 
   // Invoke method to cache each of the genes in the queue
   var count = 0;
-  for (var i = startingPos; i < me.globalApp.DEFAULT_BATCH_SIZE && count < sizeToQueue; i++) {
+  for (var k = startingPos; k < me.globalApp.DEFAULT_BATCH_SIZE && count < sizeToQueue; k++) {
     me.promiseCacheGene(me.cacheQueue[i], analyzeCalledVariants)
     .then(function(theGeneObject) {
       me.cacheNextGene(theGeneObject.gene_name, analyzeCalledVariants, callback);
@@ -265,7 +263,7 @@ CacheHelper.prototype.cacheGenes = function(analyzeCalledVariants, callback) {
       //genesCard._geneBadgeLoading(error.geneName, false);
 
       me.cohort.promiseSummarizeError(error.geneName, error.message)
-      .then(function(dangerObject) {
+      .then(function() {
         // take this gene off of the queue and see
         // if next batch of genes should be analyzed
         me.cacheNextGene(error.geneName, analyzeCalledVariants, callback);
@@ -284,18 +282,18 @@ CacheHelper.prototype.cacheGenes = function(analyzeCalledVariants, callback) {
 
 
 
-CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariants, callback) {
+CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariants) {
   var me = this;
 
   return new Promise(function(cacheResolve, cacheReject) {
     var theGeneName = geneName;
     var geneObject = null;
     var transcript = null;
-    var geneCoverageAll = null;
+    // var geneCoverageAll = null;
     var isCached = false;
     var trioVcfData = null;
     var trioFbData = null;
-    var shouldCallVariants = analyzeCalledVariants;
+    // var shouldCallVariants = analyzeCalledVariants;
 
     me.cohort.geneModel.promiseGetGeneObject(geneName)
     .then( function(data) {
@@ -324,9 +322,9 @@ CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariant
         return me.cohort.promiseGetCachedGeneCoverage(geneObject, transcript, false);
       }
     })
-    .then(function(data) {
+    .then(function() {
       // Load and annotate the variants
-      geneCoverageAll = data.geneCoverage;
+      // var geneCoverageAll = data.geneCoverage;
 
       // Show that we are working on this gene
       //genesCard._geneBadgeLoading(geneObject.gene_name, true);
@@ -357,7 +355,7 @@ CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariant
       return me.cohort.promiseAnnotateInheritance(geneObject, transcript, trioVcfData, {isBackground: true, cacheData: true})
 
     })
-    .then(function(data) {
+    .then(function() {
 
       // Now summarize the danger for the  gene
       return me.cohort.promiseSummarizeDanger(geneObject, transcript, trioVcfData.proband, {'CALLED': analyzeCalledVariants})
@@ -410,7 +408,7 @@ CacheHelper.prototype.cacheNextGene = function(geneName, analyzeCalledVariants, 
 
 CacheHelper.prototype.promiseIsCachedForNormal = function(geneObject, transcript, checkForCalledVariants) {
   var me = this;
-  return new Promise(function(resolve, reject) {
+  return new Promise(function(resolve) {
     me.cohort.getNormalModel().promiseGetDangerSummary(geneObject.gene_name)
     .then(function(dangerSummary) {
       var isCached = dangerSummary == null ? false : (checkForCalledVariants ? dangerSummary.CALLED : true);
@@ -510,7 +508,6 @@ CacheHelper.prototype.refreshNextGeneBadge = function(keys, callback) {
 }
 
 CacheHelper.prototype.getCacheKey = function(cacheObject) {
-  var me = this;
   var key =  "gene.iobio"
     + CacheHelper.KEY_DELIM + this.launchTimestamp
     + CacheHelper.KEY_DELIM + cacheObject.id
@@ -626,21 +623,22 @@ CacheHelper.prototype._promiseClearCache = function(launchTimestampToClear) {
 }
 
 CacheHelper.prototype.clearAll = function() {
-  var me = this;
-  // confirm dialog
-  alertify.confirm("Clear all cached data for this session?", function (e) {
-      if (e) {
-      // user clicked "ok"
-      me._promiseClearCache(me.launchTimestampToClear)
-       .then(function() {
-          me.refreshDialog();
-       });
-
-      }
-  }, function() {
-    // user clicked "cancel"
-  })
-  .set('labels', {ok:'OK', cancel:'Cancel'});       ;
+  // todo: switch this to vuetify alert style
+  // var me = this;
+  // // confirm dialog
+  // alertify.confirm("Clear all cached data for this session?", function (e) {
+  //     if (e) {
+  //     // user clicked "ok"
+  //     me._promiseClearCache(me.launchTimestampToClear)
+  //      .then(function() {
+  //         me.refreshDialog();
+  //      });
+  //
+  //     }
+  // }, function() {
+  //   // user clicked "cancel"
+  // })
+  // .set('labels', {ok:'OK', cancel:'Cancel'});
 }
 
 
@@ -771,13 +769,13 @@ CacheHelper.showError = function(key, cacheError) {
         // If we have shown this kind of cache error 2 times already, just show in right hand corner instead
         // of showning dialog with ok/cancel.
       if (errorCount < 3) {
-        alertify.alert(message, function() {
-          CacheHelper.recordedCacheErrors[errorKey] = null;
-        });
+        // // alertify.alert(message, function() {
+        //   CacheHelper.recordedCacheErrors[errorKey] = null;
+        // });
       } else if (errorCount < 8) {
-          var msg = "<span style='font-size:12px'>" + message + "</span>";
-          alertify.set('notifier','position', 'top-right');
-          alertify.error(msg,  5);
+          // let msg = "<span style='font-size:12px'>" + message + "</span>";
+          // alertify.set('notifier','position', 'top-right');
+          // alertify.error(msg,  5);
         CacheHelper.recordedCacheErrors[errorKey] = null;
       }
       }
@@ -804,7 +802,9 @@ CacheHelper.promiseCompressData = function(data) {
       cache = null;
       var dataStringCompressed = null;
       try {
-        dataStringCompressed = LZString.compressToUTF16(dataString);
+        console.log(dataString);
+        // todo: import this compression obj
+        // dataStringCompressed = LZString.compressToUTF16(dataString);
         resolve(dataStringCompressed);
       }   catch(error) {
         reject("Unable to compress data: " + error);
@@ -822,7 +822,7 @@ CacheHelper.promiseDecompressData = function(dataCompressed, decompressIt) {
       var dataString = null;
       var data = null;
       try {
-         dataString = LZString.decompressFromUTF16(dataCompressed);
+         // dataString = LZString.decompressFromUTF16(dataCompressed);
          data =  JSON.parse(dataString);
          resolve(data);
       } catch(e) {
@@ -887,7 +887,7 @@ CacheHelper.prototype.promiseGetData = function(key, decompressIt=true) {
             CacheHelper.promiseDecompressData(dataCompressed, decompressIt).then(function(data) {
               resolve(data);
             },
-            function(error) {
+            function() {
               var errorMsg = "an error occurred when uncompressing data for key " + key;
               console.log(errorMsg);
               reject(errorMsg);
@@ -901,7 +901,7 @@ CacheHelper.prototype.promiseGetData = function(key, decompressIt=true) {
              .then(function(data) {
               resolve(data);
              },
-             function(error) {
+             function() {
           var errorMsg = "an error occurred when uncompressing data for key " + key;
           console.log(errorMsg);
           reject(errorMsg);

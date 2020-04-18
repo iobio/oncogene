@@ -131,6 +131,10 @@
             uploadedBuild: {
                 type: String,
                 default: null
+            },
+            parentModelInfoIdx: {
+                type: Number,
+                default: 0
             }
         },
         data: function () {
@@ -284,6 +288,11 @@
             },
             isRemovable: function(i) {
                 return i > 1;
+            }
+        },
+        watch: {
+            parentModelInfoIdx: function() {
+                this.modelInfoIdx = this.parentModelInfoIdx;
             }
         },
         mounted: function() {

@@ -9,10 +9,7 @@ class GeneModel {
         this.phenolyzerOnlyServer = this.globalApp.HTTP_SERVICES + "phenolyzer/";
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
-        // this.NCBI_GENE_SEARCH_URL = "http://localhost:8080/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
-
         this.NCBI_GENE_SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
-        // this.NCBI_GENE_SUMMARY_URL = "http://localhost:8080/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
 
 
         this.linkTemplates = {
@@ -135,7 +132,7 @@ class GeneModel {
             me.copyPasteGenes(genesString, options);
             me.geneNames.forEach(function (geneName) {
                 promises.push(me.promiseGetGeneObject(geneName));
-                promises.push(me.promiseGetGenePhenotypes(geneName));
+                // promises.push(me.promiseGetGenePhenotypes(geneName));
                 // promises.push(me.promiseGetNCBIGeneSummary(geneName));  //todo: if we want to reincorporate this, need to get ncbi api key
             });
             Promise.all(promises)

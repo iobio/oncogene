@@ -241,6 +241,7 @@
                                       :uploadedIndexUrl="uploadedTbiUrl"
                                       :uploadedSelectedSamples="uploadedSelectedSamples"
                                       :uploadedBuild="selectedBuild"
+                                      :parentModelInfoIdx="modelInfoIdx"
                                       @clear-model-info="setModelInfo"
                                       @set-model-info="setModelInfo"
                                       @remove-model-info="removeModelInfo"
@@ -384,6 +385,7 @@
                 validGenesMap: {},
                 geneListNames: [],
                 selectedList: null,
+                modelInfoIdx: 0,
 
                 // static data
                 DATA_DESCRIPTORS: [
@@ -725,7 +727,6 @@
                     // Don't add any verification parameters
                     newVal.id = modelInfo.id ? modelInfo.id : ('s' + order);
                     newVal.order = modelInfo.order ? modelInfo.order : order;
-                    newVal.order = modelInfo.order;
                     newVal.selectedSample = modelInfo.selectedSample;
                     newVal.isTumor = modelInfo.isTumor;
                     newVal.vcfUrl = modelInfo.vcfUrl;
@@ -780,9 +781,13 @@
                         self.uploadedTbiUrl = firstSample.tbiUrl;
 
                         let selectedSamples = [];
+                        self.modelInfoIdx = 0;
+                        let modelInfoCount = 0;
                         self.modelInfoList.forEach((modelInfo) => {
+                            modelInfoCount++;
                             selectedSamples.push(modelInfo.selectedSample);
                         });
+                        self.modelInfoIdx = modelInfoCount; // Update child component to stay on count
                         self.uploadedSelectedSamples = selectedSamples;
                         self.launchedFromConfig = true;
 
@@ -815,7 +820,6 @@
             },
             updateBuild: function (build) {
                 this.selectedBuild = build;
-
             },
             mountVcfSlide: function () {
                 this.carouselModel = 4;

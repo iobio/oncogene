@@ -65,7 +65,7 @@ class SampleModel {
         this.lastGeneLoaded = null;         // The most recent gene analyzed for this sample
         this.noMatchingSamples = false;     // True if active filters leave no variants applicable from this sample
         this.debugMe = false;
-        this.iProgress = {
+        this.inProgress = {
             'loadingVariants': false,
             'callingVariants': false,
             'loadingCoverage': false
@@ -1590,7 +1590,6 @@ class SampleModel {
         let me = this;
 
         return new Promise(function (resolve, reject) {
-
             // First the gene vcf data has been cached, just return
             // it.  (No need to retrieve the variants from the iobio service.)
             let resultMap = {};
@@ -2220,7 +2219,7 @@ class SampleModel {
 
         // Load the clinvar info for the variants loaded from the vcf
         var sortedFeatures = theVcfData.features.sort(SampleModel.orderVariantsByPosition);
-        var sortedAnnotVariants = annotatedVcfData.features.sort(SampleModel.orderVariantsByPosition)
+        var sortedAnnotVariants = annotatedVcfData.features.sort(SampleModel.orderVariantsByPosition);
         loadVariantIds(sortedFeatures, sortedAnnotVariants);
     }
 
@@ -3337,16 +3336,15 @@ SampleModel.calcMaxAlleleCount = function (theVcfData, maxAlleleCount = 0) {
 
 
 SampleModel.orderVariantsByPosition = function (a, b) {
-    const me = this;
     var refAltA = a.ref + "->" + a.alt;
     var refAltB = b.ref + "->" + b.alt;
 
     var chromA = a.chrom.indexOf("chr") == 0 ? a.chrom.split("chr")[1] : a.chrom;
     var chromB = b.chrom.indexOf("chr") == 0 ? b.chrom.split("chr")[1] : b.chrom;
-    if (!me.globalApp.$.isNumeric(chromA)) {
+    if (!chromA.startsWith('chr')) {
         chromA = chromA.charCodeAt(0);
     }
-    if (!me.globalApp.$.isNumeric(chromB)) {
+    if (!chromB.startsWith('chr')) {
         chromB = chromB.charCodeAt(0);
     }
 

@@ -1,5 +1,6 @@
-export default function GenericAnnotation(glyph) {
+export default function GenericAnnotation(glyph, d3) {
   var me = this;
+  me.d3 = d3;
   me.glyph = glyph;
   me.descriptor = {
     AVIA3: {
@@ -141,7 +142,7 @@ GenericAnnotation.prototype.getMatrixRows = function(annotators) {
 GenericAnnotation.prototype.appendGenericFilters = function(annotators) {
   var me = this;
   var html = "";
-  var container = d3.select("#filter-track #generic-annotation-filters");
+  var container = me.d3.select("#filter-track #generic-annotation-filters");
   container.html("");
   if (annotators && annotators.length > 0) {
     annotators.forEach(function(annotator) {
@@ -188,9 +189,7 @@ GenericAnnotation.prototype.appendGenericFilters = function(annotators) {
 
             filterSelector += "." + annot.fieldName;
             classToLabel[annot.fieldName] = annot.label;
-            filterCard.initFilterListeners(filterSelector, classToLabel)
-
-
+            // filterCard.initFilterListeners(filterSelector, classToLabel)
           }
         }
       }
@@ -247,6 +246,7 @@ GenericAnnotation.prototype._formatContentRow = function(label, value, clazzMap,
 };
 
 GenericAnnotation.prototype.shouldShow = function(annotator, fieldPath) {
+  const me = this;
   var theDescriptor = me.descriptor[annotator];
   var hide = false;
   if (theDescriptor) {
@@ -291,6 +291,7 @@ GenericAnnotation.prototype.getValue = function(variant, fieldPath) {
 }
 
 GenericAnnotation.prototype.setSimpleFields = function(variant) {
+  const me = this;
   for (var annotator in me.descriptor) {
     var theDescriptor = me.descriptor[annotator];
 

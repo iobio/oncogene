@@ -27,11 +27,14 @@
         </v-app-bar>
         <v-content>
             <Home v-if="cohortModel"
-                :d3="globalApp.d3"
-                :cohortModel="cohortModel"
-                :navbarHeight="navBarHeight"
-                @upload-config="onUploadConfig"
-                @load-demo="onLoadDemo"
+                  :d3="globalApp.d3"
+                  :$="globalApp.$"
+                  :cohortModel="cohortModel"
+                  :hoverTooltip="hoverTooltip"
+                  :clickTooltip="clickTooltip"
+                  :navbarHeight="navBarHeight"
+                  @upload-config="onUploadConfig"
+                  @load-demo="onLoadDemo"
             >
 
             </Home>
@@ -49,8 +52,10 @@
     import VariantTooltip from './js/VariantTooltip.js'
 
     // models
+    import CacheHelper from "./models/CacheHelper";
     import CohortModel from './models/CohortModel.js'
     import EndpointCmd from './models/EndpointCmd.js'
+    import FeatureMatrixModel from './models/FeatureMatrixModel.js'
     import FilterModel from './models/FilterModel.js'
     import FreebayesSettings from './models/FreebayesSettings.js'
     import GeneModel from './models/GeneModel.js'
@@ -74,15 +79,12 @@
                 hoverTooltip: null,
 
                 // models
+                // todo: pass some of these through cohort model, may not need handle to them in component
                 cohortModel: null,
                 featureMatrixModel: null,
                 filterModel: null,
                 geneModel: null,
                 genomeBuildHelper: null,
-                models: [],
-
-                // data props
-                selectedVariant: null,
 
                 // view props
                 mainContentWidth: 0,
@@ -112,10 +114,10 @@
                     self.globalApp.$('main.content .container').addClass("small");
                 }
             },
-            onUploadConfig: function() {
+            onUploadConfig: function () {
                 alert('Upload config not implemented in app yet');
             },
-            onLoadDemo: function() {
+            onLoadDemo: function () {
                 alert('Load demo not implemented in app yet');
             },
             promiseInitFromUrl: function () {
@@ -155,6 +157,45 @@
                     }
                 })
 
+            },
+            promiseInitCache: function () {
+                let self = this;
+                return new Promise(function (resolve, reject) {
+                    self.cacheHelper = new CacheHelper(self.globalApp, self.forceLocalStorage);
+
+                    // todo: these require d3 rebind - implement or get rid of
+                    // self.cacheHelper.on("geneAnalyzed", function (geneName) {
+                    //     self.$refs.genesCardRef.determineFlaggedGenes();
+                    //
+                    //     if (self.selectedGene && self.selectedGene.hasOwnProperty("gene_name")
+                    //         && geneName === self.selectedGene.gene_name) {
+                    //         self.promiseLoadData();
+                    //     }
+                    // });
+                    // self.cacheHelper.on("analyzeAllCompleted", function () {
+                    //     if (!self.isEduMode) {
+                    //         self.$refs.navRef.onShowFlaggedVariants();
+                    //     }
+                    //     if (self.launchedFromClin) {
+                    //         self.onSendFiltersToClin();
+                    //         self.onSendFlaggedVariantsToClin();
+                    //     }
+                    // });
+
+                    self.globalApp.cacheHelper = self.cacheHelper;
+                    window.globalCacheHelper = self.cacheHelper;
+
+                    self.cacheHelper.promiseInit()
+                        .then(function () {
+                            self.cacheHelper.isolateSession(self.isEduMode);
+                            resolve();
+                        })
+                        .catch(function (error) {
+                            var msg = "A problem occurred in promiseInitCache(): " + error;
+                            console.log(msg);
+                            reject(msg);
+                        })
+                })
             },
             promiseLoadData: function () {
                 let self = this;
@@ -224,12 +265,9 @@
         },
         mounted: function () {
             const self = this;
-
             // TODO: can probably get rid of this
             self.selectedGene = 'fakeGene1';
             self.selectedTranscript = 'fakeTranscript1';
-
-
             self.cardWidth = window.innerWidth;
 
             // self.mainContentWidth = self.d3.select('main.content .container').outerWidth();
@@ -250,15 +288,17 @@
             if (window != top && self.utility.detectSafari()) {
                 self.forceLocalStorage = true;
             }
-
             // self.setAppMode();
 
             self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp);
             self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
                 .then(function () {
+                    return self.promiseInitCache();
+                })
+                .then(function () {
                     let glyph = new Glyph();
                     let translator = new Translator(self.globalApp, glyph, self.globalApp.utility);
-                    let genericAnnotation = new GenericAnnotation(glyph);
+                    let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
                     self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);
                     self.geneModel.geneSource = "gencode";
@@ -283,22 +323,23 @@
                         translator,
                         self.geneModel,
                         self.genomeBuildHelper,
-                        new FreebayesSettings());
+                        new FreebayesSettings(),
+                        self.cacheHelper);
 
                     // self.geneModel.on("geneDangerSummarized", function (dangerSummary) {
                     //     self.cohortModel.captureFlaggedVariants(dangerSummary)
                     // });
 
-                    // self.cacheHelper.cohort = self.cohortModel;
+                    self.cacheHelper.cohort = self.cohortModel;
 
                     // self.variantExporter.cohort = self.cohortModel;
 
                     self.inProgress = self.cohortModel.inProgress;
 
 
-                    // self.featureMatrixModel = new FeatureMatrixModel(self.globalApp, self.cohortModel, self.isEduMode, self.isBasicMode, self.tourNumber);
-                    // self.featureMatrixModel.init();
-                    // self.cohortModel.featureMatrixModel = self.featureMatrixModel;
+                    self.featureMatrixModel = new FeatureMatrixModel(self.globalApp, self.cohortModel, false, false, 0);
+                    self.featureMatrixModel.init();
+                    self.cohortModel.featureMatrixModel = self.featureMatrixModel;
 
                     let tipType = "hover";
                     self.hoverTooltip = new VariantTooltip(
@@ -323,7 +364,7 @@
                         self);
 
 
-                    self.filterModel = new FilterModel(translator);
+                    self.filterModel = new FilterModel(translator, self.globalApp.$);
                     self.cohortModel.filterModel = self.filterModel;
 
                     // self.promiseInitFromUrl()

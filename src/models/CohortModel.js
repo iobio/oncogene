@@ -6,7 +6,7 @@ import CmmlUrls from '../data/cmml_urls.json'
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
     constructor(globalApp, endpoint, genericAnnotation, translator, geneModel,
-                genomeBuildHelper, freebayesSettings) {
+                genomeBuildHelper, freebayesSettings, cacheHelper) {
 
         this.globalApp = globalApp;
         this.isEduMode = false;
@@ -16,7 +16,7 @@ class CohortModel {
         this.translator = translator;
         this.geneModel = geneModel;
         // this.variantExporter = variantExporter;
-        // this.cacheHelper = cacheHelper;
+        this.cacheHelper = cacheHelper;
         this.genomeBuildHelper = genomeBuildHelper;
         this.freebayesSettings = freebayesSettings;
         this.filterModel = null;    // 1:1 filter model to patient
@@ -356,7 +356,6 @@ class CohortModel {
                     // add all modelInfo to sample models
                     // add cosmic sample model
                     let samplePromises = [];
-                    // todo: here do a check to see if we have all samples or subset
                     modelInfos.forEach(modelInfo => {
                         samplePromises.push(this.promiseAddSample(modelInfo, modelInfo.order));
                     });
@@ -462,6 +461,7 @@ class CohortModel {
             let vm = new SampleModel(self.globalApp);
             vm.init(self);
             modelInfo.model = vm;
+            vm.id = modelInfo.id;
             vm.order = modelInfo.order;
             vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
@@ -565,89 +565,6 @@ class CohortModel {
         self.sampleModels.push('foo');
         self.sampleModels.pop();
     }
-
-    // promiseSetSibs(affectedSamples, unaffectedSamples) {
-    //     let self = this;
-    //
-    //     self.sampleMapSibs.affected = [];
-    //     self.sampleMapSibs.unaffected = [];
-    //
-    //     if ((affectedSamples == null || affectedSamples.length === 0) &&
-    //         (unaffectedSamples == null || unaffectedSamples.length === 0)) {
-    //         return Promise.resolve();
-    //     }
-    //
-    //
-    //     var promises = [];
-    //     if (affectedSamples) {
-    //         affectedSamples.forEach(function (sampleName) {
-    //             var modelInfo = {
-    //                 'relationship': 'sibling',
-    //                 'affectedStatus': 'affected',
-    //                 'name': sampleName,
-    //                 'sample': sampleName,
-    //                 'vcf': self.getProbandModel().vcf.getVcfURL(),
-    //                 'tbi': self.getProbandModel().vcf.getTbiURL(),
-    //                 'bam': null,
-    //                 'bai': null
-    //             };
-    //             var p = self.promiseAddSib(modelInfo);
-    //             promises.push(p);
-    //         });
-    //     }
-    //     if (unaffectedSamples) {
-    //         unaffectedSamples.forEach(function (sampleName) {
-    //             var modelInfo = {
-    //                 'relationship': 'sibling',
-    //                 'affectedStatus': 'unaffected',
-    //                 'name': sampleName,
-    //                 'sample': sampleName,
-    //                 'vcf': self.getProbandModel().vcf.getVcfURL(),
-    //                 'tbi': self.getProbandModel().vcf.getTbiURL(),
-    //                 'bam': null, 'bai': null
-    //             };
-    //             var p = self.promiseAddSib(modelInfo);
-    //             promises.push(p);
-    //         });
-    //     }
-    //     return Promise.all(promises);
-    //
-    // }
-
-    // promiseAddSib(modelInfo) {
-    //     let self = this;
-    //     return new Promise(function (resolve, reject) {
-    //         let vm = new SampleModel(self.globalApp);
-    //         vm.init(self);
-    //         vm.setRelationship(modelInfo.relationship);
-    //         vm.affectedStatus = modelInfo.affectedStatus;
-    //
-    //         let vcfPromise = null;
-    //         if (modelInfo.vcf) {
-    //             vcfPromise = new Promise(function (vcfResolve, vcfReject) {
-    //                     vm.onVcfUrlEntered(modelInfo.vcf, modelInfo.tbi, function () {
-    //                         vm.setSampleName(modelInfo.sample);
-    //                         vm.setName(modelInfo.relationship + " " + modelInfo.sample);
-    //                         vcfResolve();
-    //                     })
-    //                 },
-    //                 function (error) {
-    //                     vcfReject(error);
-    //                 });
-    //         } else {
-    //             vm.sampleName = null;
-    //             vm.samplesNames = null;
-    //             vm.name = null;
-    //             vcfPromise = Promise.resolve();
-    //         }
-    //         vcfPromise
-    //             .then(function () {
-    //                 self.sampleMapSibs[modelInfo.affectedStatus].push(vm);
-    //                 resolve();
-    //             })
-    //
-    //     })
-    // }
 
     promiseAddClinvarSample() {
         let self = this;

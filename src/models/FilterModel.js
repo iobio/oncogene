@@ -2,7 +2,8 @@
  * Among other things, determines if a variant is somatic or not by incorporating filter logic. */
 
 class FilterModel {
-    constructor(translator) {
+    constructor(translator, $) {
+        this.$ = $;
         /* Somatic settings */
         this.DEFAULT_SOMATIC_CUTOFFS = {
             'normalAltFreq': 0.01,      // Must be between 0-1
@@ -235,7 +236,7 @@ class FilterModel {
             // Classify samples
             for (i = 0; i < Object.keys(resultMap).length; i++) {
                 let sampleId = Object.keys(resultMap)[i];
-                let currData = Object.extend({}, Object.values(resultMap)[i].model.vcfData);
+                let currData = self.$.extend({}, Object.values(resultMap)[i].model.vcfData);
                 let sampleObj = {'currData': currData, 'model': Object.values(resultMap)[i].model};
                 if (!(resultMap[sampleId].isTumor) && sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
                     normalSamples.push(sampleObj);
