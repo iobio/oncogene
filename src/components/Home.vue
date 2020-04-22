@@ -17,7 +17,7 @@
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <div v-else-if="!globalMode">
+                <v-card outlined v-else-if="!globalMode" :width="screenWidth" :height="700">
 <!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
                     <variant-card
                             ref="variantCardRef"
@@ -40,7 +40,8 @@
                             :selectedVariant="selectedVariant"
                             :regionStart="geneRegionStart"
                             :regionEnd="geneRegionEnd"
-                            :width="cardWidth"
+                            :width="screenWidth"
+                            :height="screenHeight"
                             :showGeneViz="true"
                             :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
                             :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
@@ -56,9 +57,9 @@
                             @show-coverage-cutoffs="showCoverageCutoffs = true"
                     >
                     </variant-card>
-                </div>
+                </v-card>
 
-                <div v-else>
+                <v-container v-else>
                     <v-flex xs5 md3>
                         <GlobalSidebar/>
                     <!--todo: only want to show filters tab if we don't have somatic only calls;-->
@@ -67,7 +68,7 @@
                         <GlobalGenome :d3="d3">
                         </GlobalGenome>
                     </v-flex>
-                </div>
+                </v-container>
             </v-layout>
 
             <!--Dynamic drawer-->
@@ -147,7 +148,7 @@
                 displayLoader: false,
                 showKnownVariantsCard: false,
                 showCosmicVariantsCard: false,
-                cardWidth: 0,
+                cardWidth: 500,
                 annotationComplete: false,
 
                 // selection state
@@ -202,7 +203,7 @@
 
                         self.promiseLoadData(self.selectedGene, self.selectedTranscript)
                             .then(() => {
-                                self.displayLoader = true;
+                                self.displayLoader = false;
                                 // todo: update view state and hide loader
                             })
                             .catch(error => {
@@ -217,7 +218,7 @@
                 const self = this;
 
                 return new Promise(function (resolve, reject) {
-                    self.cardWidth = self.$('#genes-card').innerWidth();
+                    // self.cardWidth = self.$('#genes-card').innerWidth(); // todo: put this back in when we add genes card
                     let options = {'getKnownVariants': false};
                     options['getCosmicVariants'] = false;
 

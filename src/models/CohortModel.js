@@ -349,19 +349,23 @@ class CohortModel {
 
     /* Creates gene objects for user-uploaded list and creates all sample models. */
     promiseInit(modelInfos, userGeneList) {
+        const self = this;
+
         // add gene list and validate
         return new Promise((resolve, reject) => {
-            this.geneModel.promiseCopyPasteGenes(userGeneList, { replace: true, warnOnDup: false })
+            self.inProgress.loadingDataSource = true;
+            self.geneModel.promiseCopyPasteGenes(userGeneList, { replace: true, warnOnDup: false })
                 .then(() => {
                     // add all modelInfo to sample models
                     // add cosmic sample model
                     let samplePromises = [];
                     modelInfos.forEach(modelInfo => {
-                        samplePromises.push(this.promiseAddSample(modelInfo, modelInfo.order));
+                        samplePromises.push(self.promiseAddSample(modelInfo, modelInfo.order));
                     });
-                    samplePromises.push(this.promiseAddCosmicSample());
+                    samplePromises.push(self.promiseAddCosmicSample());
                     Promise.all(samplePromises)
                         .then(() => {
+                            self.inProgress.loadingDataSources = false;
                             resolve();
                         }).catch(() => {
                             reject('Problem adding sample models.');
@@ -460,12 +464,19 @@ class CohortModel {
         return new Promise(function (resolve, reject) {
             let vm = new SampleModel(self.globalApp);
             vm.init(self);
+            if (destIndex >= 0) {
+                self.sampleModels[destIndex] = vm;
+            } else {
+                self.sampleModels.push(vm);
+            }
+            self.sampleMap[modelInfo.id] = modelInfo;
             modelInfo.model = vm;
             vm.id = modelInfo.id;
             vm.order = modelInfo.order;
             vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
 
+            // todo: doing redundant work here by checking headers again - update this in files menu
             let filePromises = [];
             if (modelInfo.vcfUrl) {
                 let vcfPromise = new Promise(function (vcfResolve) {
@@ -484,17 +495,32 @@ class CohortModel {
             }
 
             if (modelInfo.coverageBamUrl) {
-                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl, self.globalApp.COVERAGE_TYPE);
+                let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl, self.globalApp.COVERAGE_TYPE)
+                    .then(() => {
+                        self.getNormalModel().bam.setCoverageBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                    }).catch((err) => {
+                        reject(err);
+                    });
                 filePromises.push(coveragePromise);
             } else {
                 vm.bam = null;
             }
             if (modelInfo.rnaSeqBamUrl) {
-                let rnaseqPromise = self.getBamPromise(vm, modelInfo.rnaSeqBamUrl, modelInfo.rnaSeqBaiUrl, self.globalApp.RNASEQ_TYPE);
+                let rnaseqPromise = self.getBamPromise(vm, modelInfo.rnaSeqBamUrl, modelInfo.rnaSeqBaiUrl, self.globalApp.RNASEQ_TYPE)
+                    .then(() => {
+                        self.getNormalModel().bam.setRnaSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                    }).catch((err) => {
+                        reject(err);
+                    });
                 filePromises.push(rnaseqPromise);
             }
             if (modelInfo.atacSeqBamUrl) {
-                let atacSeqPromise = self.getBamPromise(vm, modelInfo.atacSeqBamUrl, modelInfo.atacSeqBaiUrl, self.globalApp.ATACSEQ_TYPE);
+                let atacSeqPromise = self.getBamPromise(vm, modelInfo.atacSeqBamUrl, modelInfo.atacSeqBaiUrl, self.globalApp.ATACSEQ_TYPE)
+                    .then(() => {
+                        self.getNormalModel().bam.setAtacSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                    }).catch((err) => {
+                        reject(err);
+                    });
                 filePromises.push(atacSeqPromise);
             }
 
@@ -514,13 +540,6 @@ class CohortModel {
 
             Promise.all(filePromises)
                 .then(function () {
-                    //let theModel = {'model': vm};
-                    if (destIndex >= 0) {
-                        self.sampleModels[destIndex] = vm;
-                    } else {
-                        self.sampleModels.push(vm);
-                    }
-                    self.sampleMap[modelInfo.id] = modelInfo;
                     resolve(vm);
                 });
         })
@@ -598,6 +617,7 @@ class CohortModel {
             return new Promise(function (resolve, reject) {
                 let vm = new SampleModel(self.globalApp);
                 vm.init(self);
+                vm.isCosmic = true;
                 vm.setId('cosmic-variants');
                 vm.setDisplayName('COSMIC');
 

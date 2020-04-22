@@ -1,4 +1,5 @@
 export default function geneD3(d3, vizId, selection, regionStart, regionEnd) {
+    // todo: left off here - need to udpate all of these to d3 v5
 
     // defaults
     var geneD3_showLabel = false;

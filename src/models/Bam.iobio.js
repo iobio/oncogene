@@ -83,7 +83,15 @@ export default class bamiobio {
         });
         cmd.on('end', function () {
             me.setHeader(rawHeader, bamType);
-            callback(me.header);
+            if (bamType === me.globalApp.COVERAGE_TYPE) {
+                callback(me.coverageHeader, bamType);
+            } else if (bamType === me.globalApp.RNASEQ_TYPE) {
+                callback(me.rnaSeqHeader, bamType);
+            } else if (bamType === me.globalApp.ATACSEQ_TYPE) {
+                callback(me.atacSeqHeader, bamType);
+            } else {
+                callback(null, bamType);
+            }
         });
         cmd.on('error', function (error) {
             console.log(error);
@@ -185,15 +193,17 @@ export default class bamiobio {
 
         this._transformRefName(refName, bamType, function (trRefName) {
             let bamSource = {};
-            if (bamType === this.globalApp.COVERAGE_TYPE) {
+            if (bamType === me.globalApp.COVERAGE_TYPE) {
                 bamSource.bamUrl = me.coverageBam;
                 bamSource.baiUrl = me.coverageBai;
-            } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            } else if (bamType === me.globalApp.RNASEQ_TYPE) {
                 bamSource.bamUrl = me.rnaSeqBam;
                 bamSource.baiUrl = me.rnaSeqBai;
-            } else {
+            } else if (bamType === me.globalApp.ATACSEQ_TYPE) {
                 bamSource.bamUrl = me.atacSeqBam;
                 bamSource.baiUrl = me.atacSeqBai;
+            } else {
+                console.log("Need to provide bam type to getCoverageForRegion");
             }
 
             let serverCacheKey = me._getServerCacheKey("coverage", trRefName, regionStart, regionEnd, bamSource.bamUrl,{maxPoints: maxPoints});

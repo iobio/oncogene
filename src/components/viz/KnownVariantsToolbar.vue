@@ -97,10 +97,10 @@
 
 <template>
     <div id="known-variants-toolbar">
-        <div style="width:205px;padding-top:10px;margin-top:0px;margin-right:10px;float:left">
-            <v-radio-group row v-model="viz">
-                <v-radio label="Counts" value="histo"></v-radio>
-                <v-radio v-if="id != 'cosmic-variants'" style="min-width: 120px" label="Variants" value="variants"></v-radio>
+        <div class="d-inline">
+            <v-radio-group v-model="viz">
+                <v-radio label="Counts" value="histo" color="appColor"></v-radio>
+                <v-radio v-if="id !== 'cosmic-variants'" style="min-width: 120px" label="Variants" value="variants"></v-radio>
                 <!--<v-radio style="min-width: 120px" label="Counts in Exons" value="histoExon"></v-radio>-->
             </v-radio-group>
         </div>

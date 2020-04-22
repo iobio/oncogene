@@ -191,7 +191,7 @@
             },
             transcriptClass: {
                 type: Function,
-                default: function (d, i) {
+                default: function (d) {
                     if (d.isCanonical) {
                         return 'transcript current';
                     } else {
@@ -201,7 +201,7 @@
             },
             featureClass: {
                 type: Function,
-                default: function (d, i) {
+                default: function (d) {
                     return d.feature_type.toLowerCase();
                 }
             },
@@ -224,6 +224,14 @@
             zoomSwitchOn: {
                 type: Boolean,
                 default: false
+            },
+            $: {
+                type: Function,
+                default: null
+            },
+            d3: {
+                type: Object,
+                default: null
             }
         },
         data() {
@@ -241,7 +249,7 @@
             draw: function () {
                 const self = this;
 
-                this.geneChart = geneD3()
+                self.geneChart = geneD3()
                     .width(self.fixedWidth > 0 ? self.fixedWidth : this.width)
                     .widthPercent("100%")
                     .heightPercent("100%")
@@ -260,8 +268,8 @@
                     .regionEnd(this.regionEnd)
                     .on("d3brush", function (brush) {
                         if (!brush.empty()) {
-                            let regionStart = d3.round(brush.extent()[0]);
-                            let regionEnd = d3.round(brush.extent()[1]);
+                            let regionStart = self.d3.round(brush.extent()[0]);
+                            let regionEnd = self.d3.round(brush.extent()[1]);
                             self.$emit('region-zoom', regionStart, regionEnd);
                         } else {
                             // Only being hit once
@@ -282,7 +290,7 @@
                     this.geneChart.regionEnd(this.regionEnd);
                     this.geneChart.width(self.fixedWidth > 0 ? self.fixedWidth : this.$el.clientWidth);
                     if (this.geneChart.width() > 0) {
-                        let selection = d3.select(this.$el).datum(self.data);
+                        let selection = self.d3.select(this.$el).datum(self.data);
                         this.geneChart.showBrush(showZoomBrush);
                         this.geneChart(selection);
                     }
@@ -305,7 +313,7 @@
         watch: {
             data: function (newData, oldData) {
                 let self = this;
-                if ($(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
+                if (self.$(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
                     this.update(false);
                 }
             },

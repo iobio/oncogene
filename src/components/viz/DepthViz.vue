@@ -159,9 +159,9 @@ export default {
     },
     methods: {
       draw: function() {
-        var self = this;
+        const self = this;
 
-        this.depthChart =  lineD3()
+        self.depthChart =  lineD3(self.d3)
           .width(this.width)
           .height(this.height)
           .widthPercent("100%")

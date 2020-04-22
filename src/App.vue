@@ -379,7 +379,7 @@
                     //                     timeout: 5000
                     //                 });
                     //                 self.bringAttention = 'gene';
-                    //             }
+                    //             }d
                     //         }
                     // })
                 })
