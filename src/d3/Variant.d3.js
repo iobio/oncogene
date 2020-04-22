@@ -1,57 +1,68 @@
-export default function variantD3(d3, vizId, theSelection) {
+export default function variantD3(d3, vizSettings) {
+    /**** CONSTRUCTOR ****/
 
-    // dimensions
-    var margin = {top: 10, right: 0, bottom: 20, left: 110},
-        width = 1000,
-        height = 400;
-    // scales
-    var x = d3.scaleLinear(),
-        y = d3.scaleLinear();
-    // axis
-    var xAxis = d3.axisBottom(x)
-        .tickFormat(tickFormatter);
-
-    // variables
-    var borderRadius = 1,
-        variantHeight = 12,
-        regionStart = null,
-        regionEnd = null,
-        showXAxis = true,
-        xTickFormat = null,
-        heightPercent = "100%",
-        widthPercent = "100%",
-        verticalLayers = 1,
-        verticalPadding = 3,
-        showTransition = true,
-        lowestWidth = 3,
-        dividerLevel = false,
-        container = null,
-        selection = theSelection;
-
-
-    function getSymbol(d) {
-        if (d.type.toUpperCase() === 'DEL') {
-            return d3.symbolTriangle;
-        } else if (d.type.toUpperCase() === 'INS') {
-            return d3.symbolCircle;
-        } else if (d.type.toUpperCase() === 'COMPLEX') {
-            return d3.symbolDiamond;
-        }
+    // Don't throw null exception
+    if (!vizSettings) {
+        console.log('WARNING: no vizSettings argument provided to variant.d3.');
+        vizSettings = {};
     }
+    var dispatch = d3.dispatch("d3brush", "d3outsideclick", "d3click", "d3mouseover", "d3mouseout", "d3glyphmouseover", "d3glyphmouseout");
 
-    function chart() {
-        // merge options and defaults
-        // options = $.extend(defaults, options);
+    // Viz-level sizing
+    var margin = vizSettings.margin ? vizSettings.margin : {top: 30, right: 0, bottom: 20, left: 110};
+    var width = 800,
+        height = 100,
+        widthPercent = vizSettings.widthPercent ? vizSettings.widthPercent : '100%',
+        heightPercent = vizSettings.heightPercent ? vizSettings.heightPercent : '100%';
 
-        if (verticalLayers == null) {
-            verticalLayers = 1;
+    // Glyph-level sizing
+    var variantHeight = vizSettings.variantHeight ? vizSettings.variantHeight : 8,
+        borderRadius = vizSettings.borderRadius ? vizSettings.borderRadius : 1,
+        verticalLayers = vizSettings.verticalLayers ? vizSettings.verticalLayers : 1,
+        verticalPadding = vizSettings.verticalPadding ? vizSettings.verticalPadding : 2,
+        lowestWidth = vizSettings.lowestWidth ? vizSettings.lowestWidth : 3;
+
+    // Scales, Axes, Deltas
+    var x = vizSettings.x ? vizSettings.x : d3.scaleLinear(),
+        y = vizSettings.y ? vizSettings.y : d3.scaleLinear();
+    var xTickFormat = vizSettings.xTickFormat ? vizSettings.xTickFormat : tickFormatter;
+    var xAxis = vizSettings.xAxis ? vizSettings.xAxis : d3.axisTop(x).tickFormat(xTickFormat);
+    var clazz = vizSettings.clazz ? vizSettings.clazz : null;
+
+    // Viz-level flags
+    var showXAxis = vizSettings.showXAxis ? vizSettings.showXAxis : false,
+        showBrush = vizSettings.showBrush ? vizSettings.showBrush : false,
+        brushHeight = vizSettings.brushHeight ? vizSettings.brushHeight : null,
+        showTransition = vizSettings.showTransition ? vizSettings.showTransition : true,
+        dividerLevel = vizSettings.dividerLevel ? vizSettings.dividerLevel : null;
+
+
+    /**** CHART DRAWING ****/
+
+    function chart(chartInfo) {
+        // Don't throw null exception
+        if (!chartInfo) {
+            console.log('WARNING: chartInfo parameters not provided to variant.d3 - could not draw variant chart.');
         }
+        // Required arguments
+        var regionStart = chartInfo.regionStart,
+            regionEnd = chartInfo.regionEnd;
+        var selection = chartInfo.selection;
+
+        // Optional arguments
+        verticalLayers = chartInfo.verticalLayers ? chartInfo.verticalLayers : verticalLayers;
+        lowestWidth = chartInfo.lowestWidth ? chartInfo.lowestWidth : lowestWidth;
+        width = chartInfo.width ? chartInfo.width : width;
 
         // Recalculate the height based on the number of vertical layers
         // Not sure why, but we have to bump up the layers by one; otherwise,
         // y will be negative for first layer
+        if (verticalLayers == null) {
+            verticalLayers = 1;
+        }
         height = verticalLayers * (variantHeight + verticalPadding);
         height += (variantHeight + verticalPadding);
+
         // Account for the margin when we are showing the xAxis
         if (showXAxis) {
             height += margin.bottom;
@@ -61,19 +72,18 @@ export default function variantD3(d3, vizId, theSelection) {
         }
         var dividerY = dividerLevel ? height - ((dividerLevel + 1) * (variantHeight + verticalPadding)) : null;
 
-        // determine inner height (w/o margins)
+
+        // Determine inner height (w/o margins)
         var innerHeight = height - margin.top - margin.bottom;
 
         selection.each(function(data) {
-            // set svg element
-            container = d3.select(this);
+            // Set svg element
+            var container = d3.select(this).classed('ibo-variant', true);
             container.selectAll("svg").remove();
 
             if (data && data.length > 0 && data[0] && data[0].features && data[0].features.length > 0) {
 
                 // Update the x-scale.
-                regionStart = data[0].start;
-                regionEnd = data[0].end;
                 if (regionStart && regionEnd) {
                     x.domain([regionStart, regionEnd]);
                 } else {
@@ -102,72 +112,74 @@ export default function variantD3(d3, vizId, theSelection) {
                 // distance between all variants.
                 // TODO:  Need to use this as a factor for increasing
                 // width of multi-base variants.
-                var minWidth = 6;
-                // For each level
-                for (var l = 0; l < verticalLayers; l++) {
-                    // For each row in array (per variant set; only one variant set)
-                    var minInterval = null;
-                    data.forEach(function (d) {
-                        // For each variant.  Calculate the distance on the screen
-                        // between the 2 variants.
-                        for (var i = 0; i < d.features.length - 1; i++) {
-                            if (d.features[i].level === l) {
-                                // find the next feature at the same level
-                                var nextPos = null;
-                                for (var next = i + 1; next < d.features.length; next++) {
-                                    if (d.features[next].level === l) {
-                                        nextPos = next;
-                                        break;
-                                    }
-                                }
-                                if (nextPos) {
-                                    var interval = Math.round(x(d.features[nextPos].start) - x(d.features[i].end));
-                                    interval = Math.max(interval, 1);
-                                    if (minInterval == null || interval < minInterval) {
-                                        minInterval = interval;
-                                    }
-                                } else {
-                                    // We couldn't find a second position at the same
-                                    // level
-                                }
-                            }
-                        }
-                        // Once we know the smallest interval for a level, compare it
-                        // so that we can keep track of the smallest between all levels.
-                        // This will determine the width of a snp.
-                        if (minInterval != null && minInterval < minWidth) {
-                            minWidth = minInterval;
-                        }
-
-                    });
-                }
+                // var minWidth = 6;
+                // // For each level
+                // for (var l = 0; l < verticalLayers; l++) {
+                //     // For each row in array (per variant set; only one variant set)
+                //     var minInterval = null;
+                //     data.forEach(function (d) {
+                //         // For each variant.  Calculate the distance on the screen
+                //         // between the 2 variants.
+                //         for (var i = 0; i < d.features.length - 1; i++) {
+                //             if (d.features[i].level === l) {
+                //                 // find the next feature at the same level
+                //                 var nextPos = null;
+                //                 for (var next = i + 1; next < d.features.length; next++) {
+                //                     if (d.features[next].level === l) {
+                //                         nextPos = next;
+                //                         break;
+                //                     }
+                //                 }
+                //                 if (nextPos) {
+                //                     var interval = Math.round(x(d.features[nextPos].start) - x(d.features[i].end));
+                //                     interval = Math.max(interval, 1);
+                //                     if (minInterval == null || interval < minInterval) {
+                //                         minInterval = interval;
+                //                     }
+                //                 } else {
+                //                     // We couldn't find a second position at the same
+                //                     // level
+                //                 }
+                //             }
+                //         }
+                //         // Once we know the smallest interval for a level, compare it
+                //         // so that we can keep track of the smallest between all levels.
+                //         // This will determine the width of a snp.
+                //         if (minInterval != null && minInterval < minWidth) {
+                //             minWidth = minInterval;
+                //         }
+                //     });
+                // }
 
                 // TODO:  Come up with a better pileup algorithm to ensure
                 // there is at least one pixel between each variant.  This
                 // works if the variant can be 1 pixel width, but we really want
                 // to signify a square for snps.  For now, try out
                 // a rectangle with a min width of 3.
-                minWidth = Math.max(minWidth, lowestWidth);
+                // minWidth = Math.max(minWidth, lowestWidth);
 
                 // TODO:  Need to review this code!!!  Added for exhibit
-                minWidth = variantHeight;
+                // var minWidth = variantHeight;
+
+                var circleSymbolAdjust = variantHeight >=16 ? 0 : variantHeight <= 8 ? 1 : 2;
 
                 var symbolScaleCircle = d3.scaleOrdinal()
                     .domain([3, 4, 5, 6, 7, 8, 10, 12, 14, 16])
-                    .range([9, 15, 25, 38, 54, 58, 70, 100, 130, 260]);
-                var symbolSizeCircle = symbolScaleCircle(minWidth);
+                    .range([9, 15, 25, 38, 54, 58, 64, 70, 100, 130]);
+                var symbolSizeCircle = symbolScaleCircle(variantHeight + circleSymbolAdjust);
 
                 var symbolScale = d3.scaleOrdinal()
                     .domain([3, 4, 5, 6, 7, 8, 10, 12, 14, 16])
                     .range([9, 15, 20, 25, 32, 58, 70, 100, 130, 160]);
+                var symbolSize = symbolScale(variantHeight);
 
-                var symbolSize = symbolScale(minWidth);
+                // Brush
+                var brush = x.call(d3.brushX().on('end', function() { dispatch.call('d3brush', brush)}));
 
                 // Select the svg element, if it exists.
-                var svg = container.selectAll("svg").data([0]);
-
-
-                var g = svg.join("svg")
+                var svgData = container.selectAll("svg").data([0]);
+                var g = svgData.enter()
+                    .append("svg")
                     .attr("width", widthPercent)
                     .attr("height", heightPercent)
                     .attr('viewBox', "0 0 " + parseInt(width + margin.left + margin.right) + " " + parseInt(height + margin.top + margin.bottom))
@@ -176,6 +188,12 @@ export default function variantD3(d3, vizId, theSelection) {
                     .attr("class", "group")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+                // Bind svg variable to selection, not data
+                var svg = container.selectAll('svg');
+
+                svg.on("click", function () {
+                    dispatch.call('d3outsideclick', null);
+                });
 
                 // The chart dimensions could change after instantiation, so update viewbox dimensions
                 // every time we draw the chart.
@@ -184,6 +202,12 @@ export default function variantD3(d3, vizId, theSelection) {
                         return this.parentNode === container.node();
                     })
                     .attr('viewBox', "0 0 " + parseInt(width + margin.left + margin.right) + " " + parseInt(height + margin.top + margin.bottom));
+
+
+                // Add grouping for flagged variants
+                svg.select("g.flagged-variants").remove();
+                svg.append("g")
+                    .attr("class", "flagged-variants");
 
 
                 // Create the X-axis.
@@ -195,6 +219,7 @@ export default function variantD3(d3, vizId, theSelection) {
                         .attr("transform", "translate(0," + (y.range()[0] + margin.bottom - margin.top) + ")")
                         .call(xAxis);
                 }
+
 
                 // Create dividing line
                 g.selectAll(".divider").remove();
@@ -215,6 +240,12 @@ export default function variantD3(d3, vizId, theSelection) {
 
                 }
 
+                // add tooltip div
+                container.selectAll(".tooltip").data([0])
+                    .join('div')
+                    .attr("class", "tooltip")
+                    .style("opacity", 0);
+
                 // Start variant model
                 // add elements
                 var track = g.selectAll('.track.snp')
@@ -233,9 +264,31 @@ export default function variantD3(d3, vizId, theSelection) {
                         return "translate(0," + y(i + 1) + ")"
                     });
 
+                var brushY = 0;
+                if (showBrush) {
+                    if (brushHeight == null) {
+                        brushHeight = variantHeight;
+                    }
+                    track.selectAll("g.x.brush").data([0])
+                        .join("g")
+                        .attr("class", "x brush")
+                        .call(brush)
+                        .selectAll("rect")
+                        .attr("y", brushY)
+                        .attr("height", brushHeight);
+                }
 
                 track.selectAll('.variant').remove();
                 trackindel.selectAll('.variant').remove();
+
+                // precompute y-coord for SNPs and INDELs to use same for w/ and w/o transition
+                var computedSnpY = function(d) {
+                    return height - ((d.level + 1) * (variantHeight + verticalPadding));
+                };
+                var indelOffset = (variantHeight >= 16 ? 0 : variantHeight <= 8 ? 2 : 3) * 2;
+                var computedIndelY = function(d) {
+                    return height - ((d.level + 1) * (variantHeight + verticalPadding) - indelOffset);
+                };
 
 
                 // snps
@@ -243,29 +296,29 @@ export default function variantD3(d3, vizId, theSelection) {
                     .data(function (d) {
                         return d['features'].filter(function (d) {
                             return d.type.toUpperCase() === 'SNP' || d.type.toUpperCase() === 'MNP';
-                    });
-                }).join('rect')
+                        });
+                    }).join('rect')
                     .attr('class', function (d) {
-                        return classifyByImpact(d);
+                        return clazz(d);
                     })
-                    .style('fill', function(d) {
-                        return getImpactColor(d);
+                    .attr('id', function (d) {
+                        return d.id;
                     })
                     .attr('rx', borderRadius)
                     .attr('ry', borderRadius)
                     .attr('x', function (d) {
-                        return Math.round(x(d.start) - (minWidth / 2) + (minWidth / 4));
+                        return Math.round(x(d.start) - (variantHeight / 2) + (variantHeight / 4));
                     })
                     .attr('width', function () {
                         return showTransition ? 0 : variantHeight;
                     })
                     .attr('y', function (d) {
-                        return showTransition ? 0 : height - ((d.level + 1) * (variantHeight + verticalPadding));
+                        return showTransition ? 0 : computedSnpY(d);
                     })
                     .attr('height', variantHeight);
 
 
-                // insertions and deletions
+                // insertions, deletions, complex
                 trackindel.selectAll('.variant').data(function (d) {
                     var indels = d['features'].filter(function (d) {
                         return d.type.toUpperCase() === 'DEL'
@@ -280,14 +333,14 @@ export default function variantD3(d3, vizId, theSelection) {
                             .type(getSymbol(d))();
                     })
                     .attr('class', function (d) {
-                        return classifyByImpact(d);
+                        return clazz(d);
                     })
-                    .style('fill', function(d) {
-                        return getImpactColor(d);
+                    .attr('id', function (d) {
+                        return d.id;
                     })
                     .attr("transform", function (d) {
                         var xCoord = x(d.start) + 2;
-                        var yCoord = showTransition ? 0 : height - ((d.level + 1) * (variantHeight + verticalPadding)) + 3;
+                        var yCoord = showTransition ? 0 : computedIndelY(d);
                         var tx = "translate(" + xCoord + "," + yCoord + ")";
                         return tx;
                     });
@@ -306,24 +359,23 @@ export default function variantD3(d3, vizId, theSelection) {
                             return "translate(0," + y(i + 1) + ")"
                         });
 
-
                     track.selectAll('.variant.snp, .variant.mnp').sort(function (a, b) {
                         return parseInt(a.start) - parseInt(b.start)
                     })
                         .transition()
-                        .duration(1200)
+                        .duration(1000)
                         .delay(function (d, i) {
                             return i * interval;
                         })
                         .ease(d3.easeBounce)
                         .attr('x', function (d) {
-                            return d3.format('d')(x(d.start) - (minWidth / 2) + (minWidth / 4));
+                            return Math.round(x(d.start) - (variantHeight / 2) + (variantHeight / 4));
                         })
                         .attr('width', function () {
                             return variantHeight;
                         })
                         .attr('y', function (d) {
-                            return height - ((d.level + 1) * (variantHeight + verticalPadding));
+                            return computedSnpY(d);
                         })
                         .attr('height', function () {
                             return variantHeight;
@@ -343,7 +395,7 @@ export default function variantD3(d3, vizId, theSelection) {
                         })
                         .attr("transform", function (d) {
                             var xCoord = x(d.start) + 2;
-                            var yCoord = height - ((d.level + 1) * (variantHeight + verticalPadding)) + 3;
+                            var yCoord = computedIndelY(d);
                             var tx = "translate(" + xCoord + "," + yCoord + ")";
                             return tx;
                         });
@@ -357,12 +409,12 @@ export default function variantD3(d3, vizId, theSelection) {
                         .ease(d3.easeBounce)
                         .attr("d", function (d) {
                             return d3.symbol()
-                                .type(getSymbol(d))
-                                .size(symbolSizeCircle)();
+                                .size(symbolSizeCircle)
+                                .type(getSymbol(d))();
                         })
                         .attr("transform", function (d) {
                             var xCoord = x(d.start) + 2;
-                            var yCoord = height - ((d.level + 1) * (variantHeight + verticalPadding)) + 3;
+                            var yCoord = computedIndelY(d);
                             var tx = "translate(" + xCoord + "," + yCoord + ")";
                             return tx;
                         });
@@ -375,17 +427,28 @@ export default function variantD3(d3, vizId, theSelection) {
                         })
                         .attr("d", function (d) {
                             return d3.symbol()
-                                .type(getSymbol(d))
-                                .size(symbolSize)();
+                                .size(symbolSize)
+                                .type(getSymbol(d))();
                         })
                         .attr("transform", function (d) {
                             var xCoord = x(d.start) + 2;
-                            var yCoord = height - ((d.level + 1) * (variantHeight + verticalPadding)) + 3;
+                            var yCoord = computedIndelY(d);
                             var tx = "translate(" + xCoord + "," + yCoord + ")";
                             return tx;
                         });
                 }
 
+                // Add listeners after adjusting symbol width, etc
+                g.selectAll('.variant')
+                    .on("click", function (d) {
+                        dispatch.call('d3click', this, d);
+                    })
+                    .on("mouseover", function (d) {
+                        dispatch.call('d3mouseover', this, d);
+                    })
+                    .on("mouseout", function () {
+                        dispatch.call('d3mouseout');
+                    });
 
                 // Generate the x axis
                 if (showXAxis) {
@@ -397,9 +460,8 @@ export default function variantD3(d3, vizId, theSelection) {
                         .call(xAxis);
                 }
 
-
                 // add a circle and arrows for 'hover' event and 'pinned' event
-                ['hover', 'pinned'].forEach(function (clazz) {
+                ['hover', 'pinned'].forEach(function(clazz) {
                     var circleClazz = '.' + clazz + '.circle';
                     if (svg.selectAll(circleClazz).empty()) {
                         svg.selectAll(circleClazz).data([0])
@@ -413,7 +475,6 @@ export default function variantD3(d3, vizId, theSelection) {
 
                     var arrowClazz = 'g.' + clazz + '.arrow';
                     if (svg.selectAll(arrowClazz).empty()) {
-                        //svg.selectAll("g.arrow").remove();
                         var garrow = svg.selectAll(arrowClazz).data([0])
                             .join("g")
                             .attr("class", clazz + " arrow")
@@ -438,7 +499,202 @@ export default function variantD3(d3, vizId, theSelection) {
             }
         });
     }
-    chart();
+
+    /**** OUTWARD-FACING FUNCTIONS ****/
+
+    chart.showFlaggedVariant = function(svg, variant, key) {
+        // Find the matching variant
+        var matchingVariant = null;
+        svg.selectAll(".variant").each(function (d) {
+            if (d.start === variant.start
+                && d.end === variant.end
+                && d.ref === variant.ref
+                && d.alt === variant.alt
+                && d.type.toLowerCase() === variant.type.toLowerCase()) {
+                matchingVariant = d;
+            }
+        });
+        if (!matchingVariant) {
+            return;
+        }
+
+        // Get the x, y for the variant's position
+        var mousex = Math.round(x(matchingVariant.start));
+        var mousey = height - ((matchingVariant.level + 1) * (variantHeight + verticalPadding));
+
+        var xpos = 0;
+        var ypos = mousey - 2;
+        if (variant.type.toUpperCase() === "DEL" || variant.type.toUpperCase() === "COMPLEX") {
+            xpos = mousex;
+        } else if (variant.type.toUpperCase() === "INS") {
+            xpos = mousex - .5;
+        } else {
+            xpos = mousex + .5;
+        }
+
+        var group = svg.select("g.flagged-variants")
+            .append("g")
+            .attr("class", "flagged-variant")
+            .attr("id", key ? key : "")
+            .attr("transform", "translate(" + xpos + "," + ypos + ")");
+
+
+        var flagGroup = group.append("g")
+            .attr("transform", "translate(-5,-5)");
+        flagGroup.append("rect")
+            .attr("x", 1)
+            .attr("y", 0)
+            .attr("width", 20)
+            .attr("height", 20);
+
+        return chart;
+    };
+
+    // chart.removeFlaggedVariant = function(svg, variant) {
+        // Find the matching variant
+        // svg.selectAll(".variant").each(function (d) {
+        //     if (d.start === variant.start
+        //         && d.end === variant.end
+        //         && d.ref === variant.ref
+        //         && d.alt === variant.alt
+        //         && d.type.toLowerCase() === variant.type.toLowerCase()) {
+        //     }
+        // });
+    // };
+
+    chart.showCircle = function(d, svgContainer, indicateMissingVariant, pinned) {
+        // Prevent second event from firing and clicking out
+        if (d3.event) {
+            d3.event.stopPropagation();
+        }
+
+        // Find the matching variant
+        var matchingVariant = null;
+        svgContainer.selectAll(".variant").each(function (variant) {
+            if (d.start === variant.start
+                && d.end === variant.end
+                && d.ref === variant.ref
+                && d.alt === variant.alt
+                && d.type.toLowerCase() === variant.type.toLowerCase()) {
+                    if (variant.zygosity != null && variant.zygosity.toLowerCase() === 'homref') {
+                        // we want to show an "x" for homozygous reference variants
+                        // instead of a circle
+                    } else {
+                        matchingVariant = variant;
+                    }
+            }
+        });
+
+        // Get the x for this position
+        if (matchingVariant) {
+            var mousex = x(matchingVariant.start);
+            var mousey = height - ((matchingVariant.level + 1) * (variantHeight + verticalPadding));
+
+            var circleClazz = pinned ? '.pinned.circle' : '.hover.circle';
+            var circle = svgContainer.select(circleClazz);
+            circle.transition()
+                .duration(200)
+                .style("opacity", 1);
+            circle.attr("cx", mousex + margin.left + 2)
+                .attr("cy", mousey + margin.top + 4);
+
+
+            var matrix = circle.node()
+                .getScreenCTM()
+                .translate(+circle.node().getAttribute("cx"), +circle.node().getAttribute("cy"));
+            var boundRect = circle.node().getBoundingClientRect();
+
+            // Firefox doesn't consider the transform (slideout's shift left) with the getScreenCTM() method,
+            // so instead the app will use getBoundingClientRect() method instead which does take into consideration
+            // the transform.
+            matchingVariant.screenX = Math.round(boundRect.left + (boundRect.width / 2));
+
+            // Since the body is vertically scrollable, we need to calculate the y by offsetting to a height of the
+            // scroll position in the container.
+            matchingVariant.screenY = Math.round((window.pageYOffset + matrix.f + margin.top) - boundRect.height);
+
+            //showCoordinateFrame(matchingVariant.screenX);
+
+        } else if (indicateMissingVariant) {
+            let mousex = Math.round(x(d.start));
+            let mousey = height - verticalPadding;
+
+            var arrowClazz = pinned ? 'g.pinned.arrow' : 'g.hover.arrow';
+            var garrow = svgContainer.select(arrowClazz);
+            garrow.attr("transform", "translate(" + (mousex + margin.left - variantHeight / 2) + "," + (mousey + margin.top - 6) + ")");
+            garrow.selectAll('.arrow').transition()
+                .duration(200)
+                .style("opacity", 1);
+        }
+    };
+
+    chart.hideCircle = function(svgContainer, pinned) {
+        var circleClazz = pinned ? '.pinned.circle' : '.hover.circle';
+        var pinnedArrowClazz = 'g.pinned.arrow';
+        var hoverArrowClazz = 'g.hover.arrow';
+        svgContainer.selectAll(circleClazz).transition()
+            .duration(500)
+            .style("opacity", 0);
+        if (pinned) {
+            svgContainer.selectAll(pinnedArrowClazz).selectAll(".arrow").transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+        if (!pinned) {
+            svgContainer.selectAll(hoverArrowClazz).selectAll(".arrow").transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+    };
+
+    chart.clearVariants = function() {
+        // TODO: implement
+    };
+
+    /* Updates styling classes applied to variants. Utilized in somatic filter application. */
+    chart.updateVariantClasses = function(svgContainer) {
+        var allVariants = svgContainer.selectAll(".variant");
+
+        // REPLACE classes here (except filter status - this is guaranteed by classifyByImpact)
+        allVariants.attr('class', function (d) {
+            return clazz(d);
+        });
+    };
+
+    /* Returns true if selected variant passes filter and is visible. */
+    chart.checkForSelectedVar = function(selectedVarId, svgContainer) {
+        var stillVisible = false;
+        svgContainer.selectAll('.filtered').each(function (d) {
+            if (d.id === selectedVarId) {
+                stillVisible = true;
+            }
+        });
+        return stillVisible;
+    };
+
+    chart.getDispatch = function() {
+        return dispatch;
+    };
+
+
+    /**** INTERNAL HELPER FUNCTIONS ****/
+
+    function getSymbol(d) {
+        if (d.type.toUpperCase() === 'DEL') {
+            return d3.symbolTriangle;
+        } else if (d.type.toUpperCase() === 'INS') {
+            return d3.symbolCircle;
+        } else if (d.type.toUpperCase() === 'COMPLEX') {
+            return d3.symbolDiamond;
+        }
+    }
+
+    /* Returns the value of the variant.
+     * As more filters are added, they can be listed here.  */
+    // function getVarValue(filterName, d) {
+    //     // Note: if filterName does not match variant prop, can add translation here
+    //     return d[filterName];
+    // }
 
     function tickFormatter(d) {
         if ((d / 1000000) >= 1)
@@ -448,171 +704,7 @@ export default function variantD3(d3, vizId, theSelection) {
         return d;
     }
 
-    function classifyByImpact(d) {
-        return 'variant' + ' ' + d.type.toLowerCase();
-    }
 
-    function getImpactColor(d) {
-        switch (d.impact.toUpperCase()) {
-            case 'HIGH':
-                return '#E0292B';
-            case 'MODERATE':
-                return '#F49A73';
-            case 'MODIFIER':
-                return '#f9e4b5';
-            case 'LOW':
-                return 'rgba(181, 207, 107, 0.65)';
-            default:
-                return '#888';
-        }
-    }
-
-    // chart.margin = function (_) {
-    //     if (!arguments.length) return margin;
-    //     margin = _;
-    //     return chart;
-    // };
-    // chart.width = function (_) {
-    //     if (!arguments.length) return width;
-    //     width = _;
-    //     return chart;
-    // };
-    // chart.height = function (_) {
-    //     if (!arguments.length) return height;
-    //     height = _;
-    //     return chart;
-    // };
-    // chart.widthPercent = function (_) {
-    //     if (!arguments.length) return widthPercent;
-    //     widthPercent = _;
-    //     return chart;
-    // };
-    // chart.heightPercent = function (_) {
-    //     if (!arguments.length) return heightPercent;
-    //     heightPercent = _;
-    //     return chart;
-    // };
-    // chart.x = function (_) {
-    //     if (!arguments.length) return x;
-    //     x = _;
-    //     return chart;
-    // };
-    // chart.y = function (_) {
-    //     if (!arguments.length) return y;
-    //     y = _;
-    //     return chart;
-    // };
-    // chart.xAxis = function (_) {
-    //     if (!arguments.length) return xAxis;
-    //     xAxis = _;
-    //     return chart;
-    // };
-    // // chart.yAxis = function (_) {
-    // //     if (!arguments.length) return yAxis;
-    // //     yAxis = _;
-    // //     return chart;
-    // // };
-    // chart.variantHeight = function (_) {
-    //     if (!arguments.length) return variantHeight;
-    //     variantHeight = _;
-    //     return chart;
-    // };
-    // chart.regionStart = function (_) {
-    //     if (!arguments.length) return regionStart;
-    //     regionStart = _;
-    //     return chart;
-    // };
-    // chart.regionEnd = function (_) {
-    //     if (!arguments.length) return regionEnd;
-    //     regionEnd = _;
-    //     return chart;
-    // };
-    // chart.showXAxis = function (_) {
-    //     if (!arguments.length) return showXAxis;
-    //     showXAxis = _;
-    //     return chart;
-    // };
-    // chart.xTickFormat = function (_) {
-    //     if (!arguments.length) return xTickFormat;
-    //     xTickFormat = _;
-    //     return chart;
-    // };
-    // chart.showBrush = function (_) {
-    //     if (!arguments.length) return showBrush;
-    //     showBrush = _;
-    //     return chart;
-    // };
-    // chart.brushHeight = function (_) {
-    //     if (!arguments.length) return brushHeight;
-    //     brushHeight = _;
-    //     return chart;
-    // };
-    // chart.verticalLayers = function (_) {
-    //     if (!arguments.length) return verticalLayers;
-    //     verticalLayers = _;
-    //     return chart;
-    // };
-    // chart.verticalPadding = function (_) {
-    //     if (!arguments.length) return verticalPadding;
-    //     verticalPadding = _;
-    //     return chart;
-    // };
-    // chart.showTransition = function (_) {
-    //     if (!arguments.length) return showTransition;
-    //     showTransition = _;
-    //     return chart;
-    // };
-    // chart.clazz = function (_) {
-    //     if (!arguments.length) return clazz;
-    //     clazz = _;
-    //     return chart;
-    // };
-    // chart.lowestWidth = function (_) {
-    //     if (!arguments.length) return lowestWidth;
-    //     lowestWidth = _;
-    //     return chart;
-    // };
-    // chart.dividerLevel = function (_) {
-    //     if (!arguments.length) return dividerLevel;
-    //     dividerLevel = _;
-    //     return chart;
-    // };
-    // chart.tooltipHTML = function (_) {
-    //     if (!arguments.length) return tooltipHTML;
-    //     tooltipHTML = _;
-    //     return chart;
-    // };
-    // chart.showCircle = function (_) {
-    //     if (!arguments.length) return showCircle;
-    //     showCircle = _;
-    //     return chart;
-    // };
-    // chart.hideCircle = function (_) {
-    //     if (!arguments.length) return hideCircle;
-    //     hideCircle = _;
-    //     return chart;
-    // };
-    // chart.checkForSelectedVar = function (_) {
-    //     if (!arguments.length) return checkForSelectedVar;
-    //     checkForSelectedVar = _;
-    //     return chart;
-    // };
-    // chart.promiseFilterVariants = function (_) {
-    //     if (!arguments.length) return promiseFilterVariants;
-    //     promiseFilterVariants = _;
-    //     return chart;
-    // };
-    // chart.updateVariantClasses = function (_) {
-    //     if (!arguments.length) return updateVariantClasses;
-    //     updateVariantClasses = _;
-    //     return chart;
-    // };
-
-    // New rebind paradigm
-    // chart.on = function() {
-    //     var value = dispatch.on.apply(dispatch, arguments);
-    //     return value === dispatch ? chart : value;
-    // };
-
+    /*** RETURN OBJECT ****/
     return chart;
 }

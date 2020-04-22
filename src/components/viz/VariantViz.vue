@@ -1,5 +1,6 @@
 <style lang="sass">
     @import ../../assets/sass/variables
+    @import ../../assets/sass/_symbols.sass
 
     .variant
         opacity: 1
@@ -75,7 +76,6 @@
     export default {
         name: 'variant-viz',
         props: {
-            data: {},
             model: {}, // SampleModel
             annotationScheme: {
                 default: 'vep',
@@ -147,7 +147,8 @@
                 variantChart: {},
                 noPassingResults: false,
                 filterChips: [],    // TODO: actually implement these
-                id: ''
+                id: '',
+                data: null  // variants that go into d3 viz
             }
         },
         created: function () {
@@ -161,16 +162,16 @@
                 const self = this;
 
                 const variantVizOptions = {
-                  margin: this.margin,
-                  showXAxis: this.showXAxis,
-                  xTickFormat: this.xTickFormat,
-                  variantHeight: this.variantHeight,
-                  verticalPadding: 4,
-                  showBrush: this.showBrush,
-                  showTransition: this.showTransition,
-                  clazz: function(variant) {
-                      return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack);
-                  }
+                    margin: this.margin,
+                    showXAxis: this.showXAxis,
+                    xTickFormat: this.xTickFormat,
+                    variantHeight: this.variantHeight,
+                    verticalPadding: 4,
+                    showBrush: this.showBrush,
+                    showTransition: this.showTransition,
+                    clazz: function(variant) {
+                        return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack);
+                    }
                 };
 
                 // Instantiate d3 object
@@ -205,12 +206,12 @@
                     let selection = self.d3.select(self.$el).datum([self.data]);
 
                     const chartData = {
-                      selection: selection,
-                      regionStart: self.regionStart,
-                      regionEnd: self.regionEnd,
-                      verticalLayers: self.data.maxLevel,
-                      lowestWidth: self.data.featureWidth + 1,
-                      width: self.width
+                        selection: selection,
+                        regionStart: self.regionStart,
+                        regionEnd: self.regionEnd,
+                        verticalLayers: self.data.maxLevel,
+                        lowestWidth: self.data.featureWidth + 1,
+                        width: self.width
                     };
                     self.variantChart(chartData);
                 }
@@ -252,7 +253,8 @@
             }
         },
         watch: {
-            data: function () {
+            'model.loadedVariants.features': function () {
+                this.data = this.model.loadedVariants;
                 this.update();
             }
 

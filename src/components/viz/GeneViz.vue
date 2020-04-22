@@ -249,7 +249,7 @@
             draw: function () {
                 const self = this;
 
-                self.geneChart = geneD3()
+                self.geneChart = geneD3(self.d3, self.regionStart, self.regionEnd)
                     .width(self.fixedWidth > 0 ? self.fixedWidth : this.width)
                     .widthPercent("100%")
                     .heightPercent("100%")
@@ -264,8 +264,8 @@
                     .featureClass(function (feature, i) {
                         return self.featureClass(feature, i);
                     })
-                    .regionStart(this.regionStart)
-                    .regionEnd(this.regionEnd)
+                    // .regionStart(this.regionStart)
+                    // .regionEnd(this.regionEnd)
                     .on("d3brush", function (brush) {
                         if (!brush.empty()) {
                             let regionStart = self.d3.round(brush.extent()[0]);

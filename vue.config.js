@@ -3,14 +3,16 @@ module.exports = {
     "vuetify"
   ],
   devServer: {
-    disableHostCheck: true,
-    // proxy: {
-    //   '^/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json': {
-    //     target: 'https://eutils.ncbi.nlm.nih.gov'
-    //   },
-    //   '^/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json': {
-    //     target: 'https://eutils.ncbi.nlm.nih.gov'
-    //   }
-    // }
-  }
+    disableHostCheck: true
+  },
+  // css: {
+  //   loaderOptions: {
+  //     sass: {
+  //       data: `
+  //         @import "@/assets/sass/_variable.sass";
+  //         @import "@/assets/sass/_symbols.sass";
+  //       `
+  //     }
+  //   }
+  // }
 }

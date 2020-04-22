@@ -13,9 +13,11 @@ import {
     active
 } from 'd3-transition';
 
-import { axisBottom } from 'd3-axis';
+import { axisBottom, axisTop } from 'd3-axis';
 
 import { easeBounce } from 'd3-ease';
+
+import { brushX } from 'd3-brush';
 
 import {
     dispatch,
@@ -32,6 +34,8 @@ export default {
     scaleQuantile,
     scaleOrdinal,
     axisBottom,
+    axisTop,
+    brushX,
     dispatch,
     tsv, json,
     max, min,

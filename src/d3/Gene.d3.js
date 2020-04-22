@@ -1,5 +1,5 @@
-export default function geneD3(d3, vizId, selection, regionStart, regionEnd) {
-    // todo: left off here - need to udpate all of these to d3 v5
+export default function geneD3(d3, regionStart, regionEnd) {
+    // todo: took selection out of here...
 
     // defaults
     var geneD3_showLabel = false;
@@ -447,7 +447,7 @@ export default function geneD3(d3, vizId, selection, regionStart, regionEnd) {
     }
 
     // Call chart
-    chart(selection);
+    // chart(selection);    // todo: needs to be moved to component level
 
 
     // chart.transcriptClass = function (_) {

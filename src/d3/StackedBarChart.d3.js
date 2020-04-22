@@ -1,4 +1,6 @@
 export default function stackedBarChartD3(d3, $) {
+  // todo: port this to v5
+
   var dispatch = d3.dispatch("d3click");
 
   var defaults = {};
