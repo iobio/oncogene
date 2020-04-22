@@ -293,30 +293,29 @@
                         >
                             coverage
                         </div>
-
-<!--                        <div id="bam-track">-->
-<!--                            <depth-viz-->
-<!--                                    v-if="showDepthViz"-->
-<!--                                    ref="depthVizRef"-->
-<!--                                    :data="sampleModel.coverage"-->
-<!--                                    :coverageMedian="geneCoverageMedian"-->
-<!--                                    :coverageDangerRegions="coverageDangerRegions"-->
-<!--                                    :currentPoint="coveragePoint"-->
-<!--                                    :maxDepth="sampleModel.cohort.maxDepth"-->
-<!--                                    :regionStart="regionStart"-->
-<!--                                    :regionEnd="regionEnd"-->
-<!--                                    :width="width"-->
-<!--                                    :margin="depthVizMargin"-->
-<!--                                    :height="60"-->
-<!--                                    :showTooltip="false"-->
-<!--                                    :showXAxis="false"-->
-<!--                                    :regionGlyph="depthVizRegionGlyph"-->
-<!--                                    :d3="d3"-->
-<!--                                    :$="$"-->
-<!--                                    @region-selected="showExonTooltip"-->
-<!--                            >-->
-<!--                            </depth-viz>-->
-<!--                        </div>-->
+                        <div id="bam-track">
+                            <depth-viz
+                                    v-if="showDepthViz"
+                                    ref="depthVizRef"
+                                    :model="sampleModel"
+                                    :coverageMedian="geneCoverageMedian"
+                                    :coverageDangerRegions="coverageDangerRegions"
+                                    :currentPoint="coveragePoint"
+                                    :maxDepth="sampleModel.cohort.maxDepth"
+                                    :regionStart="regionStart"
+                                    :regionEnd="regionEnd"
+                                    :width="width"
+                                    :margin="depthVizMargin"
+                                    :height="60"
+                                    :showTooltip="false"
+                                    :showXAxis="false"
+                                    :regionGlyph="depthVizRegionGlyph"
+                                    :d3="d3"
+                                    :$="$"
+                                    @region-selected="showExonTooltip"
+                            >
+                            </depth-viz>
+                        </div>
 
 <!--                        <gene-viz id="gene-viz"-->
 <!--                                  v-bind:class="{ hide: !showGeneViz }"-->
@@ -346,7 +345,7 @@
 <script>
     // import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
-    // import DepthViz from "./viz/DepthViz.vue"
+    import DepthViz from "./viz/DepthViz.vue"
     import StackedBarChartViz from "./viz/StackedBarChartViz.vue"
     // import KnownVariantsToolbar from "./viz/KnownVariantsToolbar.vue"
 
@@ -355,7 +354,7 @@
         components: {
             VariantViz,
             // GeneViz,
-            // DepthViz,
+            DepthViz,
             // KnownVariantsToolbar,
             StackedBarChartViz
         },

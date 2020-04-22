@@ -434,25 +434,13 @@ export default class EndpointCmd {
         }
     }
 
-    getBamHeader(bamUrl, baiUrl) {
+    getBamHeader(bamUrl) {
         if (this.gruBackend) {
             let params = {url: bamUrl};
-            if (baiUrl && baiUrl !== '') {
-                params['indexUrl'] = baiUrl;
-
-                // NOTE: we have to add a dummy region here for the program to look at the .bai file
-                // Otherwise you can put garbage in here for .bai and it won't check it and return header just fine
-                // TODO: THIS IS HARDCODED FOR GRCH37 CHR FORMAT
-                // TODO: make this dynamic for grch38 also
-                params['samtoolsRegion'] = '1:10000-20000';
-            }
             return this.api.streamCommand('alignmentHeader', params);
         } else {
             const me = this;
             let args = ['view', '-H', '"' + bamUrl + '"'];
-            if (baiUrl) {
-                args.push('"' + baiUrl + '"');
-            }
             let cmd = this.iobio.cmd(
                 me.IOBIO.samtoolsOnDemand,
                 args,

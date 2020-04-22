@@ -24,7 +24,7 @@ class SampleModel {
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
         this.loadedVariants = null;
         this.variantHistoData = null;
-        this.coverage = [[]];
+        this.coverage = [[]];       // Coverage pulled from bamData (now coverageData, rnaseqData, etc... todo: need coverage var for each of these to pass into depth-viz
         this.somaticVarCoverage = [[]]; // List of [start site, read depth] corresponding to sites in tumor samples but not in normal samples - aka this is only used in normal SampleModel
 
         // vcf data
@@ -205,6 +205,9 @@ class SampleModel {
     }
 
     isBamLoaded(bamType) {
+        if (!bamType) {
+            console.log("Error: need bam type in isBamLoaded");
+        }
         return this.isBamReadyToLoad(bamType);
     }
 
@@ -1157,7 +1160,7 @@ class SampleModel {
     // todo: this PoC needs to be updated to include bamType
     getBamDepth(gene, selectedTranscript, bamType, callbackDataLoaded) {
         const me = this;
-        if (!this.isBamLoaded()) {
+        if (!this.isBamLoaded(bamType)) {
             if (callbackDataLoaded) {
                 callbackDataLoaded();
             }
@@ -3043,6 +3046,17 @@ class SampleModel {
             me.rnaSeqData = data;
         } else {
             me.atacSeqData = data;
+        }
+    }
+
+    getBamData(bamType) {
+        const me = this;
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
+            return me.coverageData;
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            return me.rnaSeqData;
+        } else {
+            return me.atacSeqData;
         }
     }
 }

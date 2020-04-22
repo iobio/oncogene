@@ -73,9 +73,11 @@ class CohortModel {
         this.onlySomaticCalls = false;
         this.rankedSomaticGeneList = [];    // A ranked list of somatic gene objects for entire genome (ordered most pathogenic/relevant -> least)
     }
+
     /*
      * GETTERS
      */
+
     // todo: this needs to be updated with valid sample data
     getDemoVcfs() {
         let self = this;
@@ -327,7 +329,7 @@ class CohortModel {
                 if (samples == null) {
                     reject('Could not read samples from config file');
                 }
-                samples.forEach((sample) =>  {
+                samples.forEach((sample) => {
                     let currInfo = {};
                     currInfo.id = sample.id;
                     currInfo.isTumor = sample.isTumor;
@@ -354,7 +356,7 @@ class CohortModel {
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
-            self.geneModel.promiseCopyPasteGenes(userGeneList, { replace: true, warnOnDup: false })
+            self.geneModel.promiseCopyPasteGenes(userGeneList, {replace: true, warnOnDup: false})
                 .then(() => {
                     // add all modelInfo to sample models
                     // add cosmic sample model
@@ -368,10 +370,10 @@ class CohortModel {
                             self.inProgress.loadingDataSources = false;
                             resolve();
                         }).catch(() => {
-                            reject('Problem adding sample models.');
+                        reject('Problem adding sample models.');
                     })
                 }).catch(() => {
-                    reject('Problem copying and pasting genes in.');
+                reject('Problem copying and pasting genes in.');
             })
         })
     }
@@ -442,11 +444,11 @@ class CohortModel {
             return samp.isTumor === false;
         });
 
-        let sortedTumorModels = tumorModels.sort(function(a,b) {
+        let sortedTumorModels = tumorModels.sort(function (a, b) {
             return a.order - b.order;
         });
 
-        let sortedNormalModels = normalModels.sort(function(a,b) {
+        let sortedNormalModels = normalModels.sort(function (a, b) {
             return a.order - b.order;
         });
 
@@ -497,7 +499,7 @@ class CohortModel {
             if (modelInfo.coverageBamUrl) {
                 let coveragePromise = self.getBamPromise(vm, modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl, self.globalApp.COVERAGE_TYPE)
                     .then(() => {
-                        self.getNormalModel().bam.setCoverageBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                        vm.bam.setCoverageBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
                     }).catch((err) => {
                         reject(err);
                     });
@@ -508,7 +510,7 @@ class CohortModel {
             if (modelInfo.rnaSeqBamUrl) {
                 let rnaseqPromise = self.getBamPromise(vm, modelInfo.rnaSeqBamUrl, modelInfo.rnaSeqBaiUrl, self.globalApp.RNASEQ_TYPE)
                     .then(() => {
-                        self.getNormalModel().bam.setRnaSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                        vm.bam.setRnaSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
                     }).catch((err) => {
                         reject(err);
                     });
@@ -517,7 +519,7 @@ class CohortModel {
             if (modelInfo.atacSeqBamUrl) {
                 let atacSeqPromise = self.getBamPromise(vm, modelInfo.atacSeqBamUrl, modelInfo.atacSeqBaiUrl, self.globalApp.ATACSEQ_TYPE)
                     .then(() => {
-                        self.getNormalModel().bam.setAtacSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
+                        vm.bam.setAtacSeqBam(modelInfo.coverageBamUrl, modelInfo.coverageBaiUrl);
                     }).catch((err) => {
                         reject(err);
                     });
@@ -525,13 +527,13 @@ class CohortModel {
             }
 
             if (modelInfo.cnvUrl) {
-                let cnvPromise = new Promise(function(cnvResolve) {
-                    vm.onCnvUrlEntered(modelInfo.cnvUrl, function() {
-                        cnvResolve();
-                    },
-                    function(error) {
-                        reject(error)
-                    })
+                let cnvPromise = new Promise(function (cnvResolve) {
+                    vm.onCnvUrlEntered(modelInfo.cnvUrl, function () {
+                            cnvResolve();
+                        },
+                        function (error) {
+                            reject(error)
+                        })
                 });
                 filePromises.push(cnvPromise);
             } else {
@@ -547,10 +549,10 @@ class CohortModel {
 
     getBamPromise(sampleModel, bamUrl, baiUrl, bamType) {
         return new Promise((resolve) => {
-                sampleModel.onBamUrlEntered(bamUrl, baiUrl, bamType, function () {
-                    resolve();
-                })
-            });
+            sampleModel.onBamUrlEntered(bamUrl, baiUrl, bamType, function () {
+                resolve();
+            })
+        });
     }
 
     /* Removes a sample model corresponding to the given id */
@@ -640,7 +642,7 @@ class CohortModel {
        When addNonCanonical = true, cosmic & clinvar sample models are prepended to the returned list. */
     sortSampleModels(canonicalModels, map, addNonCanonical = true) {
         // Sort models according to order variable
-        let sortedModels = canonicalModels.sort(function(a,b) {
+        let sortedModels = canonicalModels.sort(function (a, b) {
             return map[a.id].order - map[b.id].order;
         });
 
@@ -661,13 +663,13 @@ class CohortModel {
         let self = this;
         if (self.tumorInfo == null || forceRefresh) {
             self.tumorInfo = [];
-            self.getCanonicalModels().forEach(function(model) {
+            self.getCanonicalModels().forEach(function (model) {
                 if (model && model.getId() !== 'known-variants' && model.getId() !== 'cosmic-variants') {
                     let info = {};
                     info.model = model;
                     info.id = model.getId();
                     info.status = model.getTumorStatus() ? 'Tumor' : 'Normal';
-                    info.label  = model.getDisplayName();
+                    info.label = model.getDisplayName();
                     info.id = model.getDisplayName();
 
                     self.tumorInfo.push(info);
@@ -718,7 +720,7 @@ class CohortModel {
             }
         });
 
-        tumorModels.sort((a,b) => {
+        tumorModels.sort((a, b) => {
             return a.order - b.order;
         });
         return tumorModels;
@@ -734,7 +736,7 @@ class CohortModel {
             }
         });
 
-        normalModels.sort((a,b) => {
+        normalModels.sort((a, b) => {
             return a.order - b.order;
         });
         return normalModels;
@@ -798,18 +800,19 @@ class CohortModel {
     /* Loads global somatic list */
     promiseAnnotateGlobalSomatics() {
         return new Promise((resolve, reject) => {
-           this.promiseAnnotateSomaticVariants()
+            this.promiseAnnotateSomaticVariants()
                 .then((somaticVariants) => {
                     let somaticGeneObjs = this.groupSomaticVarsByGene(somaticVariants);
                     this.rankedSomaticGeneList = this.promiseRankSomaticObjs(somaticGeneObjs);
                 })
                 .catch(error => {
-                   reject('Problem loading somatic variants: ' + error);
+                    reject('Problem loading somatic variants: ' + error);
                 });
         });
     }
 
     /* Loads data for all samples for a single gene */
+
     // todo: update this to include loading cnv, rnaseq, atacseq data if available
     promiseLoadData(theGene, theTranscript, options) {
         const self = this;
@@ -829,14 +832,15 @@ class CohortModel {
 
                 // var resultMap = null;
                 let p1 = self.promiseLoadVariants(theGene, theTranscript, options);
-                    // .then(function (data) {
-                    //     resultMap = data.resultMap;
-                    // });
+                // .then(function (data) {
+                //     resultMap = data.resultMap;
+                // });
                 promises.push(p1);
 
-                let p2 = self.promiseLoadCoverage(theGene, theTranscript)
+                // todo: include more promises here depending on if we have CNV, rnaseq, atacseq data
+                let p2 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.COVERAGE_TYPE)
                     .then(function () {
-                        self.setCoverage();
+                        self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
                     });
                 promises.push(p2);
 
@@ -845,25 +849,25 @@ class CohortModel {
 
                         // Set entry data flag to false for all sample models
                         self.sampleModels.forEach((currModel) => {
-                           currModel.markEntryDataChanged(false);
+                            currModel.markEntryDataChanged(false);
                         });
 
                         // Now summarize the danger for the selected gene
                         // self.promiseSummarizeDanger(theGene, theTranscript, resultMap.s0, null)
                         //     .then(function () {
 
-                            self.promiseFilterVariants()
-                                .then(() => {
-                                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap)
-                                        .then((inheritanceObj) => {
-                                            let geneChanged = options.loadFromFlag;
-                                            self.setLoadedVariants(theGene, null, geneChanged, options.loadFeatureMatrix);
-                                            self.endGeneProgress(theGene.gene_name);
-                                            self.allSomaticFeaturesLookup = inheritanceObj.somaticLookup;
-                                            self.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
-                                            resolve();
+                        self.promiseFilterVariants()
+                            .then(() => {
+                                self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap)
+                                    .then((inheritanceObj) => {
+                                        let geneChanged = options.loadFromFlag;
+                                        self.setLoadedVariants(theGene, null, geneChanged, options.loadFeatureMatrix);
+                                        self.endGeneProgress(theGene.gene_name);
+                                        self.allSomaticFeaturesLookup = inheritanceObj.somaticLookup;
+                                        self.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
+                                        resolve();
                                     });
-                                });
+                            });
                     })
                     .catch(function (error) {
                         self.endGeneProgress(theGene.gene_name);
@@ -891,7 +895,7 @@ class CohortModel {
                     // TODO: return somaticVars here make lookup to store this in - ensure returning data first
                     resolve();
                 }).catch((error) => {
-                    reject('Problem pulling back somatic variants: ' + error);
+                reject('Problem pulling back somatic variants: ' + error);
             });
         });
     }
@@ -959,10 +963,10 @@ class CohortModel {
 
     promiseGetCosmicVariantIds(theGene, theTranscript) {
         let self = this;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
             self.sampleMap['cosmic-variants'].model.promiseGetVariantIds(theGene, theTranscript, self.sampleMap['cosmic-variants'].model)
-                .then(function(resultMap) {
+                .then(function (resultMap) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.cosmicVariantIdHash = resultMap['cosmic-variants-ids'];
                     delete resultMap['cosmic-variants-ids'];
@@ -978,17 +982,17 @@ class CohortModel {
         let self = this;
         if (self.cosmicVariantViz === 'variants') {
             return self._promiseLoadCosmicVariants(theGene, theTranscript);
-        } else  {
+        } else {
             return self._promiseLoadCosmicVariantCounts(theGene, theTranscript);
         }
     }
 
     _promiseLoadCosmicVariants(theGene, theTranscript) {
         let self = this;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
             self.sampleMap['cosmic-variants'].model.promiseAnnotateVariants(theGene, theTranscript, [self.sampleMap['cosmic-variants'].model], false, false)
-                .then(function(resultMap) {
+                .then(function (resultMap) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.setLoadedVariants(theGene, 'cosmic-variants');
                     resolve(resultMap);
@@ -1001,15 +1005,15 @@ class CohortModel {
 
     _promiseLoadCosmicVariantCounts(theGene, theTranscript) {
         let self = this;
-        return new Promise(function(resolve, reject) {
+        return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
             var binLength = null;
             if (self.cosmicVariantViz === 'histo') {
-                binLength = Math.floor( ((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
+                binLength = Math.floor(((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
             }
             let annotationMode = 'vep';
             self.sampleMap['cosmic-variants'].model.promiseGetCosmicVariantHistoData(theGene, theTranscript, binLength, annotationMode)
-                .then(function(data) {
+                .then(function (data) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.setVariantHistoData('cosmic-variants', data);
                     resolve(data);
@@ -1046,14 +1050,16 @@ class CohortModel {
         })
     }
 
-    promiseLoadCoverage(theGene, theTranscript) {
+    promiseLoadCoverage(theGene, theTranscript, bamType) {
         let self = this;
         return new Promise(function (resolve, reject) {
 
-            self.promiseGetCachedGeneCoverage(theGene, theTranscript, true)
-                .then(function () {
-                    return self.promiseLoadBamDepth(theGene, theTranscript);
-                })
+            // todo: not utlizing cache atm
+            // self.promiseGetCachedGeneCoverage(theGene, theTranscript, true)
+            //     .then(function () {
+            //         return self.promiseLoadBamDepth(theGene, theTranscript, bamType);
+            // })
+            self.promiseLoadBamDepth(theGene, theTranscript, bamType)
                 .then(function (data) {
                     resolve(data);
                 })
@@ -1195,8 +1201,8 @@ class CohortModel {
         // Plug combined, unique features into feature matrix model
         if (id !== 'known-variants' && id !== 'cosmic-variants' && drawFeatureMatrix) {
             if (self.allUniqueFeaturesObj != null && self.allUniqueFeaturesObj.features
-                    && self.allUniqueFeaturesObj.features.length > 0
-                    && loadFromFlag) {
+                && self.allUniqueFeaturesObj.features.length > 0
+                && loadFromFlag) {
                 self.featureMatrixModel.promiseRankVariants(self.allUniqueFeaturesObj, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants())
             } else if (allVariants && allVariants.features.length > 0) {
                 self.featureMatrixModel.promiseRankVariants(allVariants, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants());
@@ -1226,18 +1232,19 @@ class CohortModel {
         });
     }
 
-    setCoverage(regionStart, regionEnd) {
+    // todo: update PoC for this
+    setCoverage(regionStart, regionEnd, bamType) {
         const self = this;
         self.getCanonicalModels().forEach(function (model) {
-            if (model.bamData) {
+            let bamData = model.getBamData(bamType);
+            if (bamData) {
                 if (regionStart && regionEnd) {
-                    model.coverage = model.bamData.coverage.filter(function (depth) {
+                    model.coverage = bamData.coverage.filter(function (depth) {
                         return depth[0] >= regionStart && depth[0] <= regionEnd;
                     })
                 } else {
-                    model.coverage = model.bamData.coverage;
+                    model.coverage = bamData.coverage;
                 }
-
                 if (model.coverage) {
                     var max = self.globalApp.d3.max(model.coverage, function (d) {
                         return d[1]
@@ -1346,7 +1353,7 @@ class CohortModel {
             } else {
                 // for each non-ref sample, assign inCosmic field for variants
                 for (var id in resultMap) {
-                    if (id !== 'known-variants' && id !=='cosmic-variants') {
+                    if (id !== 'known-variants' && id !== 'cosmic-variants') {
                         let currSample = resultMap[id];
                         currSample.features.forEach((feat) => {
                             if (cosmicHash[feat.id]) {
@@ -1496,29 +1503,29 @@ class CohortModel {
                 //     // Determine harmful variants, cache data, etc.
                 //     resolveIt(resolve, resultMap, geneObject, theTranscript, options);
                 // } else {
-                    // We only pass in the affected info if we need to sync up genotypes because samples
-                    // were in separate vcf files
-                    // var syncGenotypes = self.isAlignmentsOnly() || self.samplesInSingleVcf() ? false : true;
-                    //
-                    // var trioModel = new VariantTrioModel(resultMap.proband, resultMap.mother, resultMap.father, null, syncGenotypes, self.affectedInfo);
-                    //
-                    // // Compare the mother and father variants to the proband, setting the inheritance
-                    // // mode on the proband's variants
-                    // trioModel.compareVariantsToMotherFather(function () {
-                    //
-                    //     self.getProbandModel().promiseDetermineCompoundHets(resultMap.proband, geneObject, theTranscript)
-                    //         .then(function () {
-                    //             // Now set the affected status for the family on each variant of the proband
-                    //             self.getProbandModel().determineAffectedStatus(resultMap.proband, geneObject, theTranscript, self.affectedInfo, function () {
-                    //
-                    //                 // Determine harmful variants, cache data, etc.
-                    //                 resolveIt(resolve, resultMap, geneObject, theTranscript, options);
-                    //
-                    //             });
-                    //         })
-                    //
-                    //
-                    // })
+                // We only pass in the affected info if we need to sync up genotypes because samples
+                // were in separate vcf files
+                // var syncGenotypes = self.isAlignmentsOnly() || self.samplesInSingleVcf() ? false : true;
+                //
+                // var trioModel = new VariantTrioModel(resultMap.proband, resultMap.mother, resultMap.father, null, syncGenotypes, self.affectedInfo);
+                //
+                // // Compare the mother and father variants to the proband, setting the inheritance
+                // // mode on the proband's variants
+                // trioModel.compareVariantsToMotherFather(function () {
+                //
+                //     self.getProbandModel().promiseDetermineCompoundHets(resultMap.proband, geneObject, theTranscript)
+                //         .then(function () {
+                //             // Now set the affected status for the family on each variant of the proband
+                //             self.getProbandModel().determineAffectedStatus(resultMap.proband, geneObject, theTranscript, self.affectedInfo, function () {
+                //
+                //                 // Determine harmful variants, cache data, etc.
+                //                 resolveIt(resolve, resultMap, geneObject, theTranscript, options);
+                //
+                //             });
+                //         })
+                //
+                //
+                // })
                 //}
 
             }
@@ -1603,7 +1610,7 @@ class CohortModel {
                             //if (filteredVcfData && filteredVcfData.features) {
                             //    return self.getNormalModel().promiseDetermineCompoundHets(filteredVcfData, geneObject, theTranscript);
                             //} else {
-                                return Promise.resolve(filteredVcfData);
+                            return Promise.resolve(filteredVcfData);
                             //}
                         })
                         .then(function (theVcfData) {
@@ -1652,7 +1659,6 @@ class CohortModel {
                         });
                     promises.push(promise);
                 }
-
             });
             Promise.all(promises).then(function () {
                 resolve(geneCoverageAll);
@@ -1660,20 +1666,19 @@ class CohortModel {
         })
     }
 
-    promiseLoadBamDepth(theGene, theTranscript) {
+    promiseLoadBamDepth(theGene, theTranscript, bamType) {
         let self = this;
-
         return new Promise(function (resolve, reject) {
             let promises = [];
             let theResultMap = {};
             self.getCanonicalModels().forEach(function (model) {
-                if (model.isBamLoaded() /*&& model.entryDataChanged*/) {
+                if (model.isBamLoaded(bamType) /*&& model.entryDataChanged*/) {
                     model.inProgress.loadingCoverage = true;
                     var p = new Promise(function (innerResolve) {
                         var theModel = model;
-                        theModel.getBamDepth(theGene, theTranscript, function (coverageData) {
+                        theModel.getBamDepth(theGene, theTranscript, bamType, function (coverageData) {
                             theModel.inProgress.loadingCoverage = false;
-                            theResultMap[theModel.relationship] = coverageData;
+                            theResultMap[theModel.id] = coverageData;
                             innerResolve();
                         });
                     });
@@ -2066,8 +2071,8 @@ class CohortModel {
                 .then(function () {
                     resolve(count === cardCount);
                 }).catch((error) => {
-                    reject('Problem in has called variants: ' + error);
-                });
+                reject('Problem in has called variants: ' + error);
+            });
         });
     }
 
@@ -2184,7 +2189,7 @@ class CohortModel {
         let self = this;
         var index = -1;
         var i = 0;
-        this.flaggedVariants.forEach(function(v) {
+        this.flaggedVariants.forEach(function (v) {
             var matches = (
                 self.globalApp.utility.stripRefName(v.chrom) === self.globalApp.utility.stripRefName(variant.chrom)
                 && v.start === variant.start
@@ -2526,7 +2531,7 @@ class CohortModel {
     //
     // }
 
-    organizeVariantsByFilterAndGene(activeFilterName, isFullAnalysis, interpretationFilters, options={includeNotCategorized: false}) {
+    organizeVariantsByFilterAndGene(activeFilterName, isFullAnalysis, interpretationFilters, options = {includeNotCategorized: false}) {
         let self = this;
         let filters = [];
         for (var filterName in self.filterModel.flagCriteria) {
@@ -2540,27 +2545,27 @@ class CohortModel {
                     var sortedGenes = self._organizeVariantsForFilter(filterName, flagCriteria.userFlagged, isFullAnalysis, interpretationFilters);
 
                     if (sortedGenes.length > 0) {
-                        filters.push({'key': filterName, 'filter': flagCriteria, 'genes': sortedGenes });
+                        filters.push({'key': filterName, 'filter': flagCriteria, 'genes': sortedGenes});
                     }
                 }
             }
         }
 
-        let sortedFilters = filters.sort(function(filterObject1, filterObject2) {
+        let sortedFilters = filters.sort(function (filterObject1, filterObject2) {
             return filterObject1.filter.order > filterObject2.filter.order;
         });
 
-        sortedFilters.forEach(function(filterObject) {
+        sortedFilters.forEach(function (filterObject) {
             filterObject.variantCount = 0;
             var variantIndex = 1;
-            filterObject.genes.forEach(function(geneList) {
+            filterObject.genes.forEach(function (geneList) {
 
                 // Sort the variants according to the Ranked Variants table features
                 self.featureMatrixModel.setFeaturesForVariants(geneList.variants);
                 geneList.variants = self.featureMatrixModel.sortVariantsByFeatures(geneList.variants);
 
 
-                geneList.variants.forEach(function(variant) {
+                geneList.variants.forEach(function (variant) {
                     variant.ordinalFilter = variantIndex++;
                     filterObject.variantCount++;
                 })
@@ -2572,7 +2577,7 @@ class CohortModel {
 
     getFlaggedVariant(theVariant) {
         let self = this;
-        var existingVariants = this.flaggedVariants.filter(function(v) {
+        var existingVariants = this.flaggedVariants.filter(function (v) {
             var matches = (
                 self.globalApp.utility.stripRefName(v.chrom) == self.globalApp.utility.stripRefName(theVariant.chrom)
                 && v.start === theVariant.start
@@ -2588,9 +2593,9 @@ class CohortModel {
 
     }
 
-    getFlaggedVariantCount(isFullAnalysis, options={includeNotCategorized: false}) {
+    getFlaggedVariantCount(isFullAnalysis, options = {includeNotCategorized: false}) {
         let self = this;
-        let theFlaggedVariants = self.flaggedVariants.filter(function(variant) {
+        let theFlaggedVariants = self.flaggedVariants.filter(function (variant) {
             if (isFullAnalysis) {
                 let include = true;
                 if (!options.includeNotCategorized && variant.filtersPassed.length === 1 && variant.filtersPassed.indexOf("notCategorized") === 0) {
@@ -2651,7 +2656,7 @@ class CohortModel {
 
     // TODO: used for clin and left navigation panel functionality - incorporate in future
     getFlaggedVariantsForGene(geneName) {
-        let theVariants = this.flaggedVariants.filter(function(flaggedVariant) {
+        let theVariants = this.flaggedVariants.filter(function (flaggedVariant) {
             return flaggedVariant.gene.gene_name === geneName;
         });
         return theVariants;
@@ -2674,10 +2679,10 @@ class CohortModel {
 
     _organizeVariantsForFilter(filterName, userFlagged, isFullAnalysis, interpretationFilters) {
         let self = this;
-        let geneMap        = {};
-        let flaggedGenes   = [];
+        let geneMap = {};
+        let flaggedGenes = [];
         if (this.flaggedVariants) {
-            this.flaggedVariants.forEach(function(variant) {
+            this.flaggedVariants.forEach(function (variant) {
                 if ((userFlagged && variant.isUserFlagged) ||
                     (filterName && variant.filtersPassed && variant.filtersPassed.indexOf(filterName) >= 0)) {
 
@@ -2702,16 +2707,16 @@ class CohortModel {
                 }
             });
 
-            let sortedGenes = flaggedGenes.sort(function(a,b) {
+            let sortedGenes = flaggedGenes.sort(function (a, b) {
                 return self.geneModel.compareDangerSummary(a.gene.gene_name, b.gene.gene_name);
             });
             let i = 0;
-            sortedGenes.forEach(function(flaggedGene) {
+            sortedGenes.forEach(function (flaggedGene) {
                 // Sort the variants according to the Ranked Variants table features
                 self.featureMatrixModel.setFeaturesForVariants(flaggedGene.variants);
                 let sortedVariants = self.featureMatrixModel.sortVariantsByFeatures(flaggedGene.variants);
 
-                sortedVariants.forEach(function(variant) {
+                sortedVariants.forEach(function (variant) {
                     variant.index = i;
                     i++;
                 });
@@ -2734,7 +2739,7 @@ class CohortModel {
             for (var filterName in self.filterModel.flagCriteria) {
                 if (dangerSummary.badges[filterName]) {
                     let theFlaggedVariants = dangerSummary.badges[filterName];
-                    theFlaggedVariants.forEach(function(variant) {
+                    theFlaggedVariants.forEach(function (variant) {
                         let matchingVariant = self.getFlaggedVariant(variant);
                         if (!matchingVariant) {
                             self.flaggedVariants.push(variant);
@@ -2765,7 +2770,13 @@ class CohortModel {
                 // Add in descending order
                 let topRange = Math.round((1 - (i * intervalSize)) * 100) / 100;
                 let bottomRange = Math.round((topRange - intervalSize) * 100) / 100;
-                let node = {sampleId: model.id, bottomRange: (bottomRange + ''), topRange: (topRange + ''), color: currModelColor, isEmpty: true};
+                let node = {
+                    sampleId: model.id,
+                    bottomRange: (bottomRange + ''),
+                    topRange: (topRange + ''),
+                    color: currModelColor,
+                    isEmpty: true
+                };
                 nodeList.push(node);
             }
             if (model.isTumor) {
@@ -2793,7 +2804,7 @@ class CohortModel {
             let currModel = orderedModels[i];
             let currModelVars = currModel.loadedVariants != null ? currModel.loadedVariants.features : [];
             let currModelVarHash = currModel.variantIdHash;
-            let nextModel = orderedModels[i+1];
+            let nextModel = orderedModels[i + 1];
             let nextModelVars = nextModel.loadedVariants != null ? nextModel.loadedVariants.features : [];
             let nextModelVarHash = nextModel.variantIdHash;
 
@@ -2801,7 +2812,7 @@ class CohortModel {
             nextModelVars.forEach((variant) => {
                 let prevVar = currModelVarHash[variant.id];
                 if (!prevVar) {
-                    let fakeVar = { id: variant.id, af: 0 };
+                    let fakeVar = {id: variant.id, af: 0};
                     currModelVars.push(fakeVar);
                 }
             });
@@ -2810,7 +2821,7 @@ class CohortModel {
             currModelVars.forEach((variant) => {
                 let nextVar = nextModelVarHash[variant.id];
                 if (!nextVar) {
-                    let fakeVar = { id: variant.id, af: 0 };
+                    let fakeVar = {id: variant.id, af: 0};
                     nextModelVars.push(fakeVar);
                 }
             });
@@ -2821,8 +2832,16 @@ class CohortModel {
             });
             currModelNodes.forEach((node) => {
                 let linkId = self.getLinkId(currModel.id, nextModel.id, node);
-                let flatLink = { id: linkId, source: (currModel.id + '_' + node.bottomRange), sourceModelId: currModel.id,
-                    target: (nextModel.id + '_' + node.bottomRange), targetModelId: nextModel.id, variantIds: [], value: 1, isSpacer: true };
+                let flatLink = {
+                    id: linkId,
+                    source: (currModel.id + '_' + node.bottomRange),
+                    sourceModelId: currModel.id,
+                    target: (nextModel.id + '_' + node.bottomRange),
+                    targetModelId: nextModel.id,
+                    variantIds: [],
+                    value: 1,
+                    isSpacer: true
+                };
                 linkList.push(flatLink);
                 linkHash[linkId] = flatLink;
             });
@@ -2891,10 +2910,18 @@ class CohortModel {
                     sourceAndTarget.forEach((node) => {
                         node.isEmpty = false;
                     });
-                // If not, create new link object
+                    // If not, create new link object
                 } else {
-                    let newLink = { id: linkId, source: (currModel.id + '_' + currRoundedAf), sourceModelId: currModel.id,
-                        target: (nextModel.id + '_' + nextRoundedAf), targetModelId: nextModel.id, variantIds: [variant.id], value: 1, isSpacer: false };
+                    let newLink = {
+                        id: linkId,
+                        source: (currModel.id + '_' + currRoundedAf),
+                        sourceModelId: currModel.id,
+                        target: (nextModel.id + '_' + nextRoundedAf),
+                        targetModelId: nextModel.id,
+                        variantIds: [variant.id],
+                        value: 1,
+                        isSpacer: false
+                    };
                     linkHash[linkId] = newLink;
                     linkList.push(newLink);
 
@@ -2948,7 +2975,7 @@ class CohortModel {
 
             // Adjust each node so scaled to the same approximate height
             // NOTE: this helps to make nodes a bit better, but impossible to make completely synonymous
-            for (let i = 0; i < orderedModels.length -1; i++) {
+            for (let i = 0; i < orderedModels.length - 1; i++) {
                 for (let j = 0; j < numIntervals; j++) {
                     let bottomRange = Math.round(j * intervalSize * 100) / 100;
 
@@ -2976,10 +3003,22 @@ class CohortModel {
                             // Otherwise, add another fake link to pad value
                             if (i === (orderedModels.length - 1)) {
                                 // Slightly diff approach for last column
-                                let fakeLink = { source: (orderedModels[i-1].id + '_' + bottomRange), target: (orderedModels[i].id + '_' + bottomRange), variantIds: [], value: valDiff, isSpacer: true };
+                                let fakeLink = {
+                                    source: (orderedModels[i - 1].id + '_' + bottomRange),
+                                    target: (orderedModels[i].id + '_' + bottomRange),
+                                    variantIds: [],
+                                    value: valDiff,
+                                    isSpacer: true
+                                };
                                 linkList.push(fakeLink);
                             } else {
-                                let fakeLink = { source: (orderedModels[i].id + '_' + bottomRange), target: (orderedModels[i+1].id + '_' + bottomRange), variantIds: [], value: valDiff, isSpacer: true };
+                                let fakeLink = {
+                                    source: (orderedModels[i].id + '_' + bottomRange),
+                                    target: (orderedModels[i + 1].id + '_' + bottomRange),
+                                    variantIds: [],
+                                    value: valDiff,
+                                    isSpacer: true
+                                };
                                 linkList.push(fakeLink);
                             }
                         }
@@ -2995,6 +3034,7 @@ class CohortModel {
     }
 
     /* Returns IDs of all variants, in any track, that passes filters. Used to populate feature matrix. */
+
     // TODO: can I get rid of this now?
     getAllFilterPassingVariants() {
         const self = this;

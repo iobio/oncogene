@@ -47,7 +47,6 @@ export default class bamiobio {
     getHeader(bamType, callback) {
         const me = this;
         let bamUrl = null;
-        let baiUrl = null;
 
         // Check if we have cached first
         if (bamType === this.globalApp.COVERAGE_TYPE) {
@@ -55,26 +54,23 @@ export default class bamiobio {
                 callback(this.coverageHeader);
             } else {
                 bamUrl = this.coverageBam;
-                baiUrl = this.coverageBai;
             }
         } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             if (this.rnaSeqHeader) {
                 callback(this.rnaSeqHeader);
             } else {
                 bamUrl = this.rnaSeqBam;
-                baiUrl = this.rnaSeqBai;
             }
         } else if (bamType === this.globalApp.ATACSEQ_TYPE) {
             if (this.atacSeqHeader) {
                 callback(this.atacSeqHeader);
             } else {
                 bamUrl = this.atacSeqBam;
-                baiUrl = this.atacSeqBai;
             }
         }
 
         // Otherwise go fetch
-        const cmd = me.endpoint.getBamHeader(bamUrl, baiUrl);
+        const cmd = me.endpoint.getBamHeader(bamUrl);
         let rawHeader = "";
         cmd.on('data', function (data) {
             if (data != null) {
@@ -104,26 +100,22 @@ export default class bamiobio {
         const me = this;
         let existingHeaderStr = null;
         let bamUrl = null;
-        let baiUrl = null;
 
         if (bamType === this.globalApp.COVERAGE_TYPE) {
             existingHeaderStr = this.coverageHeaderStr;
             bamUrl = this.coverageBam;
-            baiUrl = this.coverageBai;
         } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             existingHeaderStr = this.rnaSeqHeaderStr;
             bamUrl = this.rnaSeqBam;
-            baiUrl = this.rnaSeqBai;
         } else {
             existingHeaderStr = this.globalApp.atacSeqHeaderStr;
             bamUrl = this.atacSeqBam;
-            baiUrl = this.atacSeqBai;
         }
 
         if (existingHeaderStr) {
             callback(existingHeaderStr);
         } else {
-            const cmd = me.endpoint.getBamHeader(bamUrl, baiUrl);
+            const cmd = me.endpoint.getBamHeader(bamUrl);
             let rawHeader = "";
             cmd.on('data', function(data) {
                 if (data != null) {
