@@ -45,7 +45,7 @@
                             :showGeneViz="true"
                             :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
                             :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
-                            :geneVizShowXAxis="model.id === 's0' || model.id === 'known-variants' || model.id === 'cosmic-variants'"
+                            :geneVizShowXAxis="false"
                             :annotationComplete="annotationComplete"
                             :d3="d3"
                             :$="$"

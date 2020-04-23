@@ -1,13 +1,15 @@
-export default function geneD3(d3, regionStart, regionEnd) {
+export default function geneD3(d3, options) {
     // todo: took selection out of here...
+    var dispatch = d3.dispatch("d3selected", "d3featuretooltip", "d3featureglyphtooltip", "d3brush");
 
     // defaults
-    var geneD3_showLabel = false;
-    var geneD3_showXAxis = true;
+    var geneD3_showLabel = options.showLabel ? options.showLabel : false;
+    var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
+    // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
 
     // dimensions
-    var margin = {top: 10, right: 0, bottom: 15, left: 110},
+    var margin = options.margin ? options.margin : {top: 10, right: 0, bottom: 15, left: 110},
         geneD3_width = 1000,
         geneD3_height = 10;
 
@@ -20,7 +22,7 @@ export default function geneD3(d3, regionStart, regionEnd) {
         .tickFormat(tickFormatter);
 
     // variables
-    var geneD3_trackHeight = 40,
+    var geneD3_trackHeight = options.trackHeight ? options.trackHeight : 40,
         borderRadius = 1,
         minFtWidth = 0.5;
     var transcriptClass = function () {
@@ -29,10 +31,10 @@ export default function geneD3(d3, regionStart, regionEnd) {
     var geneD3_utrHeight = undefined,
         geneD3_cdsHeight = 12,
         geneD3_arrowHeight = 8,
-        geneD3_regionStart = regionStart,
-        geneD3_regionEnd = regionEnd,
-        geneD3_widthPercent = '100%',
-        geneD3_heightPercent = '100%';
+        geneD3_regionStart = options.regionStart,
+        geneD3_regionEnd = options.regionEnd,
+        geneD3_widthPercent = options.widthPercent ? options.widthPercent : '100%',
+        geneD3_heightPercent = options.heightPercent ? options.heightPercent : '100%';
 
     //  options
     var featureClass = function (d) { return d.feature_type.toLowerCase() };
@@ -98,7 +100,7 @@ export default function geneD3(d3, regionStart, regionEnd) {
                 .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
                 .attr("preserveAspectRatio", "none")
                 .append('g')
-                .attr("transform", "translate(" + margin.left + "," + parseInt(margin.top + featureGlyphHeight - 30) + ")");
+                .attr("transform", "translate(" + margin.left + "," + parseInt(margin.top + featureGlyphHeight) + ")");
 
 
             // The chart dimensions could change after instantiation, so update viewbox dimensions
@@ -396,6 +398,25 @@ export default function geneD3(d3, regionStart, regionEnd) {
 
     }
 
+    /*** OUTWARD FACING FUNCTIONS ***/
+    chart.getDispatch = function () {
+        return dispatch;
+    };
+
+    chart.updateSize = function(options) {
+        geneD3_regionStart = options.regionStart ? options.regionStart : geneD3_regionStart;
+        geneD3_regionEnd = options.regionEnd ? options.regionEnd : geneD3_regionEnd;
+        geneD3_width = options.width ? options.width : geneD3_width;
+    };
+
+    // chart.setZoomBrush = function(brush) {
+    //     geneD3_showBrush = brush;
+    // };
+
+    chart.getWidth = function() {
+        return geneD3_width;
+    };
+
     // moves selection to front of svg
     // function moveToFront(selection) {
     //     return selection.each(function () {
@@ -403,6 +424,7 @@ export default function geneD3(d3, regionStart, regionEnd) {
     //     });
     // }
 
+    /*** HELPER FUNCTIONS ***/
     // updates the hash with the center of the biggest span between features
     function centerSpan(d) {
         var span = 0;
@@ -438,7 +460,6 @@ export default function geneD3(d3, regionStart, regionEnd) {
     }
 
     function tickFormatter(d) {
-
         if ((d / 1000000) >= 1)
             d = d / 1000000 + "M";
         else if ((d / 1000) >= 1)

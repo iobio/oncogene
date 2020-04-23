@@ -66,7 +66,7 @@ export default class VariantTooltip {
         }
 
         // let w = me.WIDTH;
-        let h = this.globalApp.d3.round(tooltip[0][0].offsetHeight);
+        let h = Math.round(tooltip[0][0].offsetHeight);
 
         // We use css variables to place the tooltip chevron in the middle, center of the tooltip
         let middlePos = (h / 2);
@@ -600,7 +600,7 @@ export default class VariantTooltip {
         }
 
         if (genotypeAltCount == null || genotypeAltCount.indexOf(",") >= 0) {
-            BAR_WIDTH = this.globalApp.d3.round(MAX_BAR_WIDTH * (genotypeDepth / maxAlleleCount));
+            BAR_WIDTH = Math.round(MAX_BAR_WIDTH * (genotypeDepth / maxAlleleCount));
             container.select("svg").remove();
             let svg = container
                 .append("svg")
@@ -633,7 +633,7 @@ export default class VariantTooltip {
         let otherCount = totalCount - (+genotypeRefCount + +genotypeAltCount);
 
         // proportion the widths of alt, other (for multi-allelic), and ref
-        BAR_WIDTH = this.globalApp.d3.round((MAX_BAR_WIDTH) * (totalCount / maxAlleleCount));
+        BAR_WIDTH = Math.round((MAX_BAR_WIDTH) * (totalCount / maxAlleleCount));
         if (BAR_WIDTH < 10) {
             BAR_WIDTH = 10;
         }
@@ -641,9 +641,9 @@ export default class VariantTooltip {
             BAR_WIDTH = BAR_WIDTH - PADDING;
         }
         let altPercent = +genotypeAltCount / totalCount;
-        let altWidth = this.globalApp.d3.round(altPercent * BAR_WIDTH);
+        let altWidth = Math.round(altPercent * BAR_WIDTH);
         let refPercent = +genotypeRefCount / totalCount;
-        let refWidth = this.globalApp.d3.round(refPercent * BAR_WIDTH);
+        let refWidth = Math.round(refPercent * BAR_WIDTH);
         let otherWidth = BAR_WIDTH - (altWidth + refWidth);
 
         // Force a separate line if the bar width is too narrow for count to fit inside or
@@ -693,7 +693,7 @@ export default class VariantTooltip {
         let g = svg.append("g")
             .attr("transform", (separateLineForLabel ? "translate(-6,11)" : "translate(0,0)"));
         if (altWidth > 0) {
-            let altX = this.globalApp.d3.round(altWidth / 2);
+            let altX = Math.round(altWidth / 2);
             if (altX < 6) {
                 altX = 6;
             }
@@ -707,7 +707,7 @@ export default class VariantTooltip {
         }
 
         if (otherCount > 0) {
-            otherX = altWidth + this.globalApp.d3.round(otherWidth / 2);
+            otherX = altWidth + Math.round(otherWidth / 2);
             // Nudge the multi-allelic "other" count over to the right if it is
             // too close to the alt count.
             if (otherX - 11 < altX) {
@@ -731,7 +731,7 @@ export default class VariantTooltip {
                 .text("(multi-allelic)");
         }
         if (genotypeRefCount > 0 && (altWidth > 0 || otherWidth > 0)) {
-            refX = altWidth + otherWidth + this.globalApp.d3.round(refWidth / 2);
+            refX = altWidth + otherWidth + Math.round(refWidth / 2);
             if (refX - 11 < otherX || refX - 11 < altX) {
                 refX = refX + 10;
             }

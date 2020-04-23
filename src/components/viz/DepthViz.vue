@@ -240,10 +240,10 @@
                 this.$emit('updateDepthChart', this.depthChart);
             },
             showCurrentPoint: function (point) {
-                this.depthChart.showCircle()(point.pos, point.depth);
+                this.depthChart.showCircle(point.pos, point.depth);
             },
             hideCurrentPoint: function () {
-                this.depthChart.hideCircle()();
+                this.depthChart.hideCircle();
             }
         },
         watch: {

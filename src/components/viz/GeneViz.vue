@@ -6,10 +6,10 @@
             shape-rendering: crispEdges
             stroke-width: 3px
 
-    .iobio-gene .brush .extent
-        stroke: #000
-        fill-opacity: .125
-        shape-rendering: crispEdges
+        .iobio-gene .brush .extent
+            stroke: #000
+            fill-opacity: .125
+            shape-rendering: crispEdges
 
 </style>
 
@@ -145,6 +145,7 @@
         .cds.danger
             fill: $danger-exon-color
             stroke: $danger-exon-border-color
+
         .utr.danger
             fill: $danger-exon-color
             stroke: $danger-exon-border-color
@@ -249,24 +250,42 @@
             draw: function () {
                 const self = this;
 
-                self.geneChart = geneD3(self.d3, self.regionStart, self.regionEnd)
-                    .width(self.fixedWidth > 0 ? self.fixedWidth : this.width)
-                    .widthPercent("100%")
-                    .heightPercent("100%")
-                    .margin(this.margin)
-                    .showXAxis(this.showXAxis)
-                    .drawBrush(self.isZoomTrack) // Controls drawing backing brush obj
-                    .showBrush(false)            // Controls displaying brush
-                    .trackHeight(this.trackHeight)
-                    .cdsHeight(this.cdsHeight)
-                    .showLabel(this.showLabel)
-                    .transcriptClass(this.transcriptClass)
-                    .featureClass(function (feature, i) {
-                        return self.featureClass(feature, i);
-                    })
+                let options = {
+                    regionStart: self.regionStart,
+                    regionEnd: self.regionEnd,
+                    width: self.fixedWidth > 0 ? self.fixedWidth : this.width,
+                    widthPercent: '100%',
+                    heightPercent: '100%',
+                    margin: self.margin,
+                    showXAxis: false,
+                    drawBrush: self.isZoomTrack,
+                    showBrush: false,
+                    trackHeight: self.trackHeight,
+                    cdsHeight: self.cdsHeight,
+                    showLabel: self.showLabel,
+                    transcriptClass: self.transcriptClass
+                };
+                self.geneChart = geneD3(self.d3, options);
+
+                let dispatch = self.geneChart.getDispatch();
+
+                    // .width(self.fixedWidth > 0 ? self.fixedWidth : this.width)
+                    // .widthPercent("100%")
+                    // .heightPercent("100%")
+                    // .margin(this.margin)
+                    // .showXAxis(this.showXAxis)
+                    // .drawBrush(self.isZoomTrack) // Controls drawing backing brush obj
+                    // .showBrush(false)            // Controls displaying brush
+                    // .trackHeight(this.trackHeight)
+                    // .cdsHeight(this.cdsHeight)
+                    // .showLabel(this.showLabel)
+                    // .transcriptClass(this.transcriptClass)
+                    // .featureClass(function (feature, i) {
+                    //     return self.featureClass(feature, i);
+                    // })
                     // .regionStart(this.regionStart)
                     // .regionEnd(this.regionEnd)
-                    .on("d3brush", function (brush) {
+                    dispatch.on("d3brush", function (brush) {
                         if (!brush.empty()) {
                             let regionStart = self.d3.round(brush.extent()[0]);
                             let regionEnd = self.d3.round(brush.extent()[1]);
@@ -283,15 +302,19 @@
                         self.$emit("feature-selected", featureObject, feature, lock);
                     });
             },
-            update: function (showZoomBrush) {
+            update: function () {
                 const self = this;
                 if (self.data && self.data.length > 0 && self.data[0] != null && Object.keys(self.data[0]).length > 0) {
-                    this.geneChart.regionStart(this.regionStart);
-                    this.geneChart.regionEnd(this.regionEnd);
-                    this.geneChart.width(self.fixedWidth > 0 ? self.fixedWidth : this.$el.clientWidth);
-                    if (this.geneChart.width() > 0) {
+                    let options = {
+                        regionStart: self.regionStart,
+                        regionEnd: self.regionEnd,
+                        width: self.fixedWidth > 0 ? self.fixedWidth : self.$el.clientWidth
+                    };
+                    this.geneChart.updateSize(options);
+
+                    if (this.geneChart.getWidth() > 0) {
                         let selection = self.d3.select(this.$el).datum(self.data);
-                        this.geneChart.showBrush(showZoomBrush);
+                        // this.geneChart.showZoomBrush(showZoomBrush);
                         this.geneChart(selection);
                     }
                 }

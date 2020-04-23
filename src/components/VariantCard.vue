@@ -316,25 +316,24 @@
                             >
                             </depth-viz>
                         </div>
-
-<!--                        <gene-viz id="gene-viz"-->
-<!--                                  v-bind:class="{ hide: !showGeneViz }"-->
-<!--                                  :data="[selectedTranscript]"-->
-<!--                                  :margin="geneVizMargin"-->
-<!--                                  :width="width"-->
-<!--                                  :height="40"-->
-<!--                                  :trackHeight="geneVizTrackHeight"-->
-<!--                                  :cdsHeight="geneVizCdsHeight"-->
-<!--                                  :regionStart="regionStart"-->
-<!--                                  :regionEnd="regionEnd"-->
-<!--                                  :showXAxis="geneVizShowXAxis"-->
-<!--                                  :featureClass="getExonClass"-->
-<!--                                  :isZoomTrack="false"-->
-<!--                                  :$="$"-->
-<!--                                  :d3="d3"-->
-<!--                                  @feature-selected="showExonTooltip"-->
-<!--                        >-->
-<!--                        </gene-viz>-->
+                        <gene-viz id="gene-viz"
+                                  v-bind:class="{ hide: !showGeneViz }"
+                                  :data="[selectedTranscript]"
+                                  :margin="geneVizMargin"
+                                  :width="width"
+                                  :height="80"
+                                  :trackHeight="geneVizTrackHeight"
+                                  :cdsHeight="geneVizCdsHeight"
+                                  :regionStart="regionStart"
+                                  :regionEnd="regionEnd"
+                                  :showXAxis="geneVizShowXAxis"
+                                  :featureClass="getExonClass"
+                                  :isZoomTrack="false"
+                                  :$="$"
+                                  :d3="d3"
+                                  @feature-selected="showExonTooltip"
+                        >
+                        </gene-viz>
                     </div>
                 </v-card>
             </v-expansion-panel-content>
@@ -343,7 +342,7 @@
 </template>
 
 <script>
-    // import GeneViz from "./viz/GeneViz.vue"
+    import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
     import DepthViz from "./viz/DepthViz.vue"
     import StackedBarChartViz from "./viz/StackedBarChartViz.vue"
@@ -353,7 +352,7 @@
         name: 'variant-card',
         components: {
             VariantViz,
-            // GeneViz,
+            GeneViz,
             DepthViz,
             // KnownVariantsToolbar,
             StackedBarChartViz
@@ -394,7 +393,10 @@
                 type: Boolean,
                 default: true
             },
-            geneVizShowXAxis: null,
+            geneVizShowXAxis: {
+                type: Boolean,
+                default: false
+            },
             annotationComplete: {
                 type: Boolean,
                 default: false
@@ -576,8 +578,8 @@
                 this.clickTooltip.scroll(direction, "#click-tooltip");
             },
             hideVariantTooltip: function (tipType) {
-                let hoverTooltip = self.d3.select("#main-tooltip");
-                let clickTooltip = self.d3.select("#click-tooltip");
+                let hoverTooltip = this.d3.select("#main-tooltip");
+                let clickTooltip = this.d3.select("#click-tooltip");
 
                 // If we haven't specified a type, hide them both
                 if (tipType == null) {
@@ -613,7 +615,7 @@
                 }
             },
             hideVariantCircle: function (lock) {
-                let self = this;
+                const self = this;
                 if (self.showVariantViz) {
                     let container = this.getVariantSVG();
                     self.$refs.variantVizRef.hideVariantCircle(container, lock);
@@ -626,11 +628,10 @@
             },
             // Returns all loaded and called variant viz SVGs
             getVariantSVG: function () {
-                return self.d3.select(this.$el).select('.expansion-panel__container').select('.expansion-panel__body').select('#card-viz').select('.variant-viz > svg');
+                return this.d3.select(this.$el).select('.expansion-panel__container').select('.expansion-panel__body').select('#card-viz').select('.variant-viz > svg');
             },
             getTrackSVG: function (vizTrackName) {
-                let svg = self.d3.select(this.$el).select('#' + vizTrackName + ' > svg');
-                return svg;
+                return this.d3.select(this.$el).select('#' + vizTrackName + ' > svg');
             },
             hideCoverageCircle: function () {
                 if (this.showDepthViz) {

@@ -1,5 +1,6 @@
 export default function lineD3(d3, vizSettings) {
     var dispatch = d3.dispatch("d3brush", "d3rendered", "d3region", "d3horizontallineclick");
+    var debug = false;
 
     var KIND_LINE = "line";
     var KIND_AREA = "area";
@@ -35,7 +36,7 @@ export default function lineD3(d3, vizSettings) {
 
     // var formatter = d3.format(',');
 
-    // var theData = null;
+    var theData = null;
 
     // var pos = function (d) {
     //     return d.pos
@@ -54,97 +55,9 @@ export default function lineD3(d3, vizSettings) {
     //     return pos + ',' + depth;
     // }
 
-    // var showCircle = function (start, theDepth) {
-    //     if (container == null) {
-    //         return;
-    //     }
-    //     // Find the closest position in the data
-    //     var d = null;
-    //     if (theData) {
-    //         for (var i = 0; i < theData.length - 1; i++) {
-    //             if (start >= getPos(theData[i]) && start <= getPos(theData[i + 1])) {
-    //                 d = theData[i];
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //
-    //
-    //     // Get the x for this position
-    //     if (d) {
-    //         var mousex = d3.round(x(pos(d)));
-    //         var mousey = d3.round(y(depth(d)));
-    //         var posx = d3.round(pos(d));
-    //         var depthy = d3.round(depth(d));
-    //
-    //         var invertedx = x.invert(mousex);
-    //         var invertedy = y.invert(mousey);
-    //
-    //         if (theDepth == null || theDepth == "") {
-    //             theDepth = depthy.toString();
-    //         }
-    //         var circleText = formatCircleText(posx, theDepth);
-    //         if (debug) {
-    //             circleText += ' ' + posx + ':' + depthy + ' ' + invertedx + ':' + invertedy;
-    //         }
-    //
-    //         var label = container.select(".circle-label");
-    //         label.transition()
-    //             .duration(200)
-    //             .style("opacity", 1);
-    //         label.attr("x", 0)
-    //             .attr("y", margin.top + 5)
-    //             .attr("class", "circle-label")
-    //             .text(circleText);
-    //
-    //         container.select(".circle-label")
-    //             .attr("x", function () {
-    //                 var w = this.getBBox().width;
-    //                 var x = mousex + margin.left - (w / 2) + 3;
-    //
-    //                 if (x + (w / 2) > innerWidth) {
-    //                     // If the circle label is too far to the right,
-    //                     // position it as far right as possible without
-    //                     // truncating the text.
-    //                     x = innerWidth - (w / 2);
-    //                 } else if (x - (w / 2) < 0) {
-    //                     // If the circle label is position out-of-bounds
-    //                     // from the area, position the label to
-    //                     // start at x position 0;
-    //                     x = 0;
-    //                 }
-    //                 return x;
-    //             });
-    //
-    //         var circle = container.select(".circle");
-    //         circle.transition()
-    //             .duration(200)
-    //             .style("opacity", .7);
-    //         circle.attr("cx", mousex + margin.left + 2)
-    //             .attr("cy", mousey + margin.top)
-    //             .attr("r", 3)
-    //
-    //     }
-    // };
-    //
-    // var hideCircle = function () {
-    //     if (container == null) {
-    //         return;
-    //     }
-    //     container.select(".circle").transition()
-    //         .duration(500)
-    //         .style("opacity", 0);
-    //
-    //     container.select(".circle-label").transition()
-    //         .duration(500)
-    //         .style("opacity", 0);
-    //
-    // };
-
     function exports(selection) {
         selection.each(function (data) {
-            // theData = data;
-
+            theData = data;
             container = d3.select(this);
             var svgData = d3.select(this)
                 .selectAll("svg")
@@ -405,7 +318,7 @@ export default function lineD3(d3, vizSettings) {
         maxDepth = options.maxDepth;
         width = options.width;
         height = options.height;
-    }
+    };
 
     exports.showHorizontalLine = function (yValue, label, clazz) {
         if (container == null) {
@@ -501,6 +414,91 @@ export default function lineD3(d3, vizSettings) {
         return dispatch;
     };
 
+    exports.showCircle = function (start, theDepth) {
+        if (container == null) {
+            return;
+        }
+        // Find the closest position in the data
+        var d = null;
+        if (theData) {
+            for (var i = 0; i < theData.length - 1; i++) {
+                if (start >= getPos(theData[i]) && start <= getPos(theData[i + 1])) {
+                    d = theData[i];
+                    break;
+                }
+            }
+        }
+
+        // Get the x for this position
+        if (d) {
+            var mousex = Math.round(x(getPos(d)));
+            var mousey = Math.round(y(getDepth(d)));
+            var posx = Math.round(getPos(d));
+            var depthy = Math.round(getDepth(d));
+
+            var invertedx = x.invert(mousex);
+            var invertedy = y.invert(mousey);
+
+            if (theDepth == null || theDepth === "") {
+                theDepth = depthy.toString();
+            }
+            var circleText = formatCircleText(posx, theDepth);
+            if (debug) {
+                circleText += ' ' + posx + ':' + depthy + ' ' + invertedx + ':' + invertedy;
+            }
+
+            var label = container.select(".circle-label");
+            label.transition()
+                .duration(200)
+                .style("opacity", 1);
+            label.attr("x", 0)
+                .attr("y", margin.top + 5)
+                .attr("class", "circle-label")
+                .text(circleText);
+
+            container.select(".circle-label")
+                .attr("x", function () {
+                    var w = this.getBBox().width;
+                    var x = mousex + margin.left - (w / 2) + 3;
+
+                    if (x + (w / 2) > innerWidth) {
+                        // If the circle label is too far to the right,
+                        // position it as far right as possible without
+                        // truncating the text.
+                        x = innerWidth - (w / 2);
+                    } else if (x - (w / 2) < 0) {
+                        // If the circle label is position out-of-bounds
+                        // from the area, position the label to
+                        // start at x position 0;
+                        x = 0;
+                    }
+                    return x;
+                });
+
+            var circle = container.select(".circle");
+            circle.transition()
+                .duration(200)
+                .style("opacity", .7);
+            circle.attr("cx", mousex + margin.left + 2)
+                .attr("cy", mousey + margin.top)
+                .attr("r", 3)
+
+        }
+    };
+
+    exports.hideCircle = function () {
+        if (container == null) {
+            return;
+        }
+        container.select(".circle").transition()
+            .duration(500)
+            .style("opacity", 0);
+
+        container.select(".circle-label").transition()
+            .duration(500)
+            .style("opacity", 0);
+    };
+
     /*** INTERNAL HELPER FUNCTIONS ***/
     function getPos(d) {
         return d[0];
@@ -518,9 +516,9 @@ export default function lineD3(d3, vizSettings) {
         }
     }
 
-    // function formatCircleText(pos, depth) {
-    //     return depth + 'x';
-    // }
+    function formatCircleText(pos, depth) {
+        return depth + 'x';
+    }
 
     // todo: leaving out for now...
     // function regionGlyph(d, i, regionX) {

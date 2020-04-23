@@ -11,7 +11,7 @@ Vue.config.productionTip = false;
 Vue.mixin({
     data: function () {
         return {
-            utility: new Util(),
+            utility: new Util($),
             globalApp: new GlobalApp($, d3)
         };
     },

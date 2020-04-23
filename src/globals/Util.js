@@ -1,7 +1,7 @@
 import d3 from '@/assets/d3';
 
 class Util {
-  constructor() {
+  constructor($) {
     this.impactEduMode = {
       HIGH:      'Harmful',
       MODERATE:  'Probably harmful',
@@ -9,6 +9,7 @@ class Util {
       LOW:       'Benign'
     };
     this.globalApp = null;
+    this.$ = $;
   }
 
   formatRegion() {
@@ -16,7 +17,7 @@ class Util {
   }
 
   decodeUrl(url) {
-    if (url && (url.slice(0,14) == 'https%3A%2F%2F' || url.slice(0,13) == 'http%3A%2F%2F'))
+    if (url && (url.slice(0,14) === 'https%3A%2F%2F' || url.slice(0,13) === 'http%3A%2F%2F'))
       return decodeURIComponent(url)
     else
       return url;
@@ -48,7 +49,7 @@ class Util {
 
   visibleHeight($el) {
       var elH = $el.outerHeight(),
-          H = $(window).height(),
+          H = this.$(window).height(),
           r = $el[0].getBoundingClientRect(), t=r.top, b=r.bottom;
       return Math.max(0, t>0? Math.min(elH, H-t) : (b<H?b:H));
   }
@@ -60,7 +61,7 @@ class Util {
 
   changeSiteStylesheet(cssHref) {
 
-      var oldlink = $("#site-stylesheet")[0];
+      var oldlink = this.$("#site-stylesheet")[0];
 
       var newlink = document.createElement("link");
       newlink.setAttribute("rel",  "stylesheet");
@@ -589,13 +590,13 @@ class Util {
 
   getTooltipCoordinates(node, tooltip, containerWidth, topMargin) {
     var coord = {};
-    var tooltipWidth  = d3.round(tooltip.node().offsetWidth);
-    var tooltipHeight = d3.round(tooltip.node().offsetHeight);
+    var tooltipWidth  = Math.round(tooltip.node().offsetWidth);
+    var tooltipHeight = Math.round(tooltip.node().offsetHeight);
 
     var matrix    = node.getScreenCTM()
                         .translate(+node.getAttribute("cx"), +node.getAttribute("cy"));
     var boundRect = node.getBoundingClientRect();
-    coord.x       = d3.round(boundRect.left + (boundRect.width/2));
+    coord.x       = Math.round(boundRect.left + (boundRect.width/2));
     coord.y       = window.pageYOffset + matrix.f + topMargin;
     coord.width   = boundRect.width;
     coord.height  = boundRect.height;
@@ -676,12 +677,12 @@ class Util {
 
       info.coord = variant.chrom + ":" + variant.start;
     info.refalt = variant.ref + "->" + variant.alt;
-    if (variant.ref == '' && variant.alt == '') {
+    if (variant.ref === '' && variant.alt === '') {
       info.refalt = '(' + variant.len + ' bp)';
     }
 
 
-    if (variant.hasOwnProperty("vepExon") && !$.isEmptyObject(variant.vepExon)) {
+    if (variant.hasOwnProperty("vepExon") && !this.$.isEmptyObject(variant.vepExon)) {
       info.exon += "Exon ";
       info.exon += Object.keys(variant.vepExon).join(",");
     }
@@ -689,7 +690,7 @@ class Util {
     info.inheritance = translator.getInheritanceLabel(variant.inheritance);
 
     for (key in variant.clinVarClinicalSignificance) {
-      if (key != 'none' && key != 'undefined' ) {
+      if (key !== 'none' && key !== 'undefined' ) {
         if (!isEduMode || (key.indexOf("uncertain_significance") >= 0 || key.indexOf("pathogenic") >= 0)) {
           if (info.clinvarSig.length > 0 ) {
               info.clinvarSig += ", ";
@@ -700,7 +701,7 @@ class Util {
     }
 
     for (key in variant.clinVarPhenotype) {
-      if (key != 'not_specified'  && key != 'undefined') {
+      if (key !== 'not_specified'  && key !== 'undefined') {
         if (info.phenotype.length > 0) {
             info.phenotype += ", ";
         }

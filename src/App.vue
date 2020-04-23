@@ -391,6 +391,8 @@
     }
 </script>
 <style scoped lang="sass">
+    @import ./assets/sass/_tooltip.sass
+
     #title
         font-family: Quicksand
         font-weight: 500
