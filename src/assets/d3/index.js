@@ -21,6 +21,8 @@ import { brushX } from 'd3-brush';
 
 import { line, area, curveLinear } from 'd3-shape';
 
+import { range } from 'd3-array';
+
 import {
     dispatch,
     tsv, json,
@@ -35,6 +37,7 @@ export default {
     scaleLinear,
     scaleQuantile,
     scaleOrdinal,
+    range,
     axisBottom,
     axisTop,
     axisRight,

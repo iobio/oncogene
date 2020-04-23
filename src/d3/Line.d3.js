@@ -230,16 +230,8 @@ export default function lineD3(d3, vizSettings) {
             var theMaxDepth = maxDepth ? Math.max(maxDepth, d3.max(data, getDepth)) : d3.max(data, getDepth);
             y.domain([0, theMaxDepth]);
 
-
             var brush = x.call(d3.brushX().on('end', function() { dispatch.call('d3brush', brush)}));
-            // var brush = d3.svg.brush()
-            //     .x(x)
-            //     .on("brushend", function () {
-            //         dispatch.d3brush(brush);
-            //     });
 
-            // var xAxis = d3.svg.axis()
-            //     .scale(x)
             var xAxis = d3.axisBottom(x)
                 .tickFormat(function (d) {
                     if ((d / 1000000) >= 1)
@@ -254,9 +246,6 @@ export default function lineD3(d3, vizSettings) {
                 xAxis.tickFormat(formatXTick);
             }
 
-
-            // var yAxis = d3.svg.axis()
-            //     .scale(y)
             var yAxis = d3.axisRight(y);
             // if (yAxisLine) {
             //     yAxis.innerTickSize(-innerWidth)
@@ -267,7 +256,7 @@ export default function lineD3(d3, vizSettings) {
             //     yAxis.orient("right");
             // }
 
-            if (yTicks && yTicks == 3) {
+            if (yTicks && yTicks === 3) {
                 var newTickValues = [];
                 newTickValues.push(0);
                 newTickValues.push(Math.round(y.domain()[1] / 2));
@@ -304,7 +293,7 @@ export default function lineD3(d3, vizSettings) {
             }
 
 
-            svgGroup = svg.selectAll("g.group")
+            svgGroup = svg.selectAll("g.group");
             svgGroup.selectAll("g.x").remove();
             if (showXAxis) {
                 svgGroup.selectAll("g.x").data([data]).enter()
@@ -325,7 +314,7 @@ export default function lineD3(d3, vizSettings) {
             // not sure why, but second time through, the svgGroup is a
             // "placeholder", so we will just select the group again
             // to remove the path and then add the new one.
-            svgGroup = svg.selectAll("g.group")
+            svgGroup = svg.selectAll("g.group");
             svgGroup.select("#line-chart-path").remove();
 
             var linePath = svgGroup.append("path")
@@ -339,7 +328,7 @@ export default function lineD3(d3, vizSettings) {
                     .duration(1000)
                     .attrTween('d', function () {
                         {
-                            var interpolate = d3.scale.quantile()
+                            var interpolate = d3.scaleQuantile()
                                 .domain([0, 1])
                                 .range(d3.range(1, data.length + 1));
 
@@ -349,9 +338,9 @@ export default function lineD3(d3, vizSettings) {
                             }
                         }
                     })
-                    .each("end", function () {
-                        dispatch.d3rendered();
-                    });
+                    // .each("end", function () {
+                    //     dispatch.d3rendered();
+                    // });
 
             }
 
@@ -372,7 +361,7 @@ export default function lineD3(d3, vizSettings) {
                         .duration(1000)
                         .attrTween('d', function () {
                             {
-                                var interpolate = d3.scale.quantile()
+                                var interpolate = d3.scaleQuantile()
                                     .domain([0, 1])
                                     .range(d3.range(1, data.length + 1));
 
