@@ -17,58 +17,126 @@
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-card outlined v-else-if="!globalMode" :width="screenWidth" :height="700">
-<!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
-                    <variant-card
-                            ref="variantCardRef"
-                            v-for="model in sampleModels"
-                            :key="model.order"
-                            v-bind:class="[
+                <v-flex xs9 v-if="dataEntered">
+                    <v-card outlined :height="700">
+                        <!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
+                        <variant-card
+                                ref="variantCardRef"
+                                v-for="model in sampleModels"
+                                :key="model.order"
+                                v-bind:class="[
                                 { 'full-width': true, 'hide': Object.keys(selectedGene).length === 0 || !cohortModel  || cohortModel.inProgress.loadingDataSources
                                   || (model.id === 'known-variants' && showKnownVariantsCard === false) || (model.id === 'cosmic-variants' && showCosmicVariantsCard === false)
                                 },
                                 model.id
                                 ]"
-                            :globalAppProp="globalApp"
-                            :sampleModel="model"
-                            :canonicalSampleIds="canonicalSampleIds"
-                            :classifyVariantSymbolFunc="model.classifyByImpact"
-                            :hoverTooltip="hoverTooltip"
-                            :clickTooltip="clickTooltip"
-                            :selectedGene="selectedGene"
-                            :selectedTranscript="analyzedTranscript"
-                            :selectedVariant="selectedVariant"
-                            :regionStart="geneRegionStart"
-                            :regionEnd="geneRegionEnd"
-                            :width="screenWidth"
-                            :height="screenHeight"
-                            :showGeneViz="true"
-                            :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
-                            :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
-                            :geneVizShowXAxis="false"
-                            :annotationComplete="annotationComplete"
-                            :d3="d3"
-                            :$="$"
-                            @cohort-variant-click="onCohortVariantClick"
-                            @cohort-variant-hover="onCohortVariantHover"
-                            @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                            @variants-viz-change="onVariantsVizChange"
-                            @variants-filter-change="onVariantsFilterChange"
-                            @show-coverage-cutoffs="showCoverageCutoffs = true"
-                    >
-                    </variant-card>
-                </v-card>
-
-                <v-container v-else>
-                    <v-flex xs5 md3>
-                        <GlobalSidebar/>
-                    <!--todo: only want to show filters tab if we don't have somatic only calls;-->
-                    </v-flex>
-                    <v-flex xs7 md9>
-                        <GlobalGenome :d3="d3">
-                        </GlobalGenome>
-                    </v-flex>
-                </v-container>
+                                :globalAppProp="globalApp"
+                                :sampleModel="model"
+                                :canonicalSampleIds="canonicalSampleIds"
+                                :classifyVariantSymbolFunc="model.classifyByImpact"
+                                :hoverTooltip="hoverTooltip"
+                                :clickTooltip="clickTooltip"
+                                :selectedGene="selectedGene"
+                                :selectedTranscript="analyzedTranscript"
+                                :selectedVariant="selectedVariant"
+                                :regionStart="geneRegionStart"
+                                :regionEnd="geneRegionEnd"
+                                :width="screenWidth"
+                                :height="screenHeight"
+                                :showGeneViz="true"
+                                :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
+                                :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
+                                :geneVizShowXAxis="false"
+                                :annotationComplete="annotationComplete"
+                                :d3="d3"
+                                :$="$"
+                                @cohort-variant-click="onCohortVariantClick"
+                                @cohort-variant-hover="onCohortVariantHover"
+                                @cohort-variant-hover-end="onCohortVariantHoverEnd"
+                                @variants-viz-change="onVariantsVizChange"
+                                @variants-filter-change="onVariantsFilterChange"
+                                @show-coverage-cutoffs="showCoverageCutoffs = true"
+                        >
+                        </variant-card>
+                    </v-card>
+                </v-flex>
+                <v-flex xs3 v-if="dataEntered">
+                    <v-card>
+                        <v-tabs v-model="selectedTab">
+                            <v-tabs-slider style="max-width: 120px" color="primary"></v-tabs-slider>
+                            <v-tab href="#genes-tab">
+                                Ranked Genes
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
+                            </v-tab>
+                            <v-tab href="#summary-tab">
+                                Summary
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">bar_chart</v-icon>
+                            </v-tab>
+                            <v-tab href="#filter-tab">
+                                Filters
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">bubble_chart</v-icon>
+                            </v-tab>
+                            <v-tab href="#history-tab">
+                                History
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>
+                            </v-tab>
+                            <v-tab-item
+                                    :key="'genesTab'"
+                                    :id="'genes-tab'">
+                                <v-container>
+                                    <v-card>
+                                        gene card
+                                    </v-card>
+<!--                                    todo: import TDS gene card-->
+<!--                                    <gene-list-card-->
+<!--                                            ref="geneListCard"-->
+<!--                                            :selectedGene="selectedGene.gene_name">-->
+<!--                                    </gene-list-card>-->
+                                </v-container>
+                            </v-tab-item>
+                            <v-tab-item
+                                    :key="'summaryTab'"
+                                    :id="'summary-tab'">
+                                <v-container>
+                                    <variant-summary-card
+                                            ref="variantSummaryCardRef"
+                                            :selectedGene="selectedGeneName"
+                                            :variant="selectedVariant"
+                                            :variantInfo="selectedVariantInfo"
+                                            :$="globalApp.$"
+                                            @summaryCardVariantDeselect="deselectVariant">
+                                    </variant-summary-card>
+                                </v-container>
+                            </v-tab-item>
+                            <v-tab-item
+                                    :key="'filterTab'"
+                                    :id="'filter-tab'">
+                                <v-container>
+                                    <filter-panel-menu
+                                            v-if="filterModel"
+                                            ref="filterSettingsMenuRef"
+                                            :filterModel="filterModel"
+                                            :showCoverageCutoffs="showCoverageCutoffs"
+                                            :annotationComplete="annotationComplete"
+                                            :applyFilters="applyFilters"
+                                            @filter-change="onFilterChange">
+                                    </filter-panel-menu>
+                                </v-container>
+                            </v-tab-item>
+                            <v-tab-item
+                                    :key="'historyTab'"
+                                    :id="'history-tab'">
+                                <v-container>
+                                    <history-tab
+                                            ref="historyTabRef"
+                                            :geneHistoryList="geneHistoryList"
+                                            @reload-gene-history="reloadGene">
+                                    </history-tab>
+                                </v-container>
+                            </v-tab-item>
+                        </v-tabs>
+                    </v-card>
+                </v-flex>
             </v-layout>
 
             <!--Dynamic drawer-->
@@ -95,18 +163,25 @@
 </template>
 
 <script>
-    import GlobalSidebar from './GlobalSidebar.vue'
-    import GlobalGenome from './GlobalGenome.vue'
+    // import GlobalSidebar from './GlobalSidebar.vue'
+    // import GlobalGenome from './GlobalGenome.vue'
     import Welcome from './Welcome.vue'
     import VariantCard from './VariantCard.vue'
+    import VariantSummaryCard from './VariantSummaryCard.vue'
+    import FilterPanelMenu from './filter/FilterPanelMenu.vue'
+    import HistoryTab from './HistoryTab.vue'
+    import '@/assets/css/v-tooltip.css'
 
     export default {
         name: "Home.vue",
         components: {
-            GlobalSidebar,
-            GlobalGenome,
+            // GlobalSidebar,
+            // GlobalGenome,
             Welcome,
-            VariantCard
+            VariantCard,
+            VariantSummaryCard,
+            FilterPanelMenu,
+            HistoryTab
         },
         props: {
             d3: {
@@ -122,6 +197,10 @@
                 default: 0
             },
             cohortModel: {
+                type: Object,
+                default: null
+            },
+            filterModel: {
                 type: Object,
                 default: null
             },
@@ -159,6 +238,8 @@
                 coverageDangerRegions: null,
                 geneRegionStart: null,
                 geneRegionEnd: null,
+                lastClickCard: null,
+                selectedTab: 'genes-tab',
 
                 // models & model data
                 sampleModels: null,
@@ -245,81 +326,73 @@
              * INTERACTIVITY
              */
             onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
-                console.log(variant);
-                console.log(sourceComponent);
-                console.log(sampleModelId);
-                // const self = this;
-                // if (variant) {
-                //     self.lastClickCard = sampleModelId;
-                //     self.calcFeatureMatrixWidthPercent();
-                //     self.selectedVariant = variant;
-                //     self.selectedVariantParentSampleId = sampleModelId;
-                //     self.selectedVariantNotes = variant.notes;
-                //     self.selectedVariantInterpretation = variant.interpretation;
-                //     self.activeGeneVariantTab = self.isBasicMode ? "feature-matrix-tab" : "var-detail-tab";
-                //     self.showVariantExtraAnnots(sampleModelId, variant);
-                //
-                //     if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
-                //         self.$refs.navRef.selectVariant(variant, 'current');
-                //     }
-                //     self.$refs.variantCardRef.forEach(function (variantCard) {
-                //         if (sourceComponent == null || variantCard != sourceComponent) {
-                //             variantCard.hideVariantCircle(true);
-                //             variantCard.showVariantCircle(variant, true);
-                //             variantCard.showCoverageCircle(variant);
-                //         }
-                //     });
-                //     if (self.$refs.scrollButtonRefVariant) {
-                //         self.$refs.scrollButtonRefVariant.showScrollButtons();
-                //     }
-                // } else {
-                //     self.deselectVariant();
-                // }
+                const self = this;
+                if (variant) {
+                    self.lastClickCard = sampleModelId;
+                    // self.calcFeatureMatrixWidthPercent();
+                    self.selectedVariant = variant;
+                    self.selectedVariantParentSampleId = sampleModelId;
+                    self.selectedVariantNotes = variant.notes;
+                    self.selectedVariantInterpretation = variant.interpretation;
+                    self.activeGeneVariantTab = self.isBasicMode ? "feature-matrix-tab" : "var-detail-tab";
+                    self.showVariantExtraAnnots(sampleModelId, variant);
+
+                    if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
+                        self.$refs.navRef.selectVariant(variant, 'current');
+                    }
+                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                        if (sourceComponent == null || variantCard != sourceComponent) {
+                            variantCard.hideVariantCircle(true);
+                            variantCard.showVariantCircle(variant, true);
+                            variantCard.showCoverageCircle(variant);
+                        }
+                    });
+                    if (self.$refs.scrollButtonRefVariant) {
+                        self.$refs.scrollButtonRefVariant.showScrollButtons();
+                    }
+                } else {
+                    self.deselectVariant();
+                }
             },
-            // TODO: maybe pass in source component id here?
             onCohortVariantHover: function (variant, sourceComponent) {
-                console.log(variant);
-                console.log(sourceComponent);
-                // console.log('Hovering in home from source cmpnt: ' + sourceComponent.id);
-                // const self = this;
-                // self.$refs.variantCardRef.forEach(function (variantCard) {
-                //     if (variantCard != sourceComponent) {
-                //         variantCard.showVariantCircle(variant, false);
-                //         variantCard.showCoverageCircle(variant);
-                //     }
-                // });
+                console.log('Hovering in home from source cmpnt: ' + sourceComponent.id);
+                const self = this;
+                self.$refs.variantCardRef.forEach(function (variantCard) {
+                    if (variantCard != sourceComponent) {
+                        variantCard.showVariantCircle(variant, false);
+                        variantCard.showCoverageCircle(variant);
+                    }
+                });
                 // if (self.$refs.navRef != sourceComponent) {
                 //     self.$refs.navRef.selectVariant(variant, 'highlight');
                 // }
             },
             onCohortVariantHoverEnd: function () {
-                // const self = this;
-                // if (self.$refs.variantCardRef) {
-                //     self.$refs.variantCardRef.forEach(function (variantCard) {
-                //         variantCard.hideVariantCircle(false);
-                //         variantCard.hideCoverageCircle();
-                //     });
-                //     self.$refs.navRef.selectVariant(null, 'highlight');
-                // }
+                const self = this;
+                if (self.$refs.variantCardRef) {
+                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                        variantCard.hideVariantCircle(false);
+                        variantCard.hideCoverageCircle();
+                    });
+                    // self.$refs.navRef.selectVariant(null, 'highlight');
+                }
             },
             onVariantsVizChange: function (viz, trackId) {
-                console.log(viz);
-                console.log(trackId);
-                // let self = this;
-                // if (viz) {
-                //     if (trackId === 'known-variants') {
-                //         self.cohortModel.knownVariantViz = viz;
-                //     } else if (trackId === 'cosmic-variants') {
-                //         self.cohortModel.cosmicVariantViz = viz;
-                //     }
-                // }
-                // if (self.showKnownVariantsCard && self.cohortModel && self.cohortModel.isLoaded
-                //     && Object.keys(self.selectedGene).length > 0 && trackId === 'known-variants') {
-                //     self.cohortModel.promiseLoadKnownVariants(self.selectedGene, self.selectedTranscript);
-                // } else if (self.showCosmicVariantsCard && self.cohortModel && self.cohortModel.isLoaded
-                //     && Object.keys(self.selectedGene).length > 0 && trackId === 'cosmic-variants') {
-                //     self.cohortModel.promiseLoadCosmicVariants(self.selectedGene, self.selectedTranscript);
-                // }
+                const self = this;
+                if (viz) {
+                    if (trackId === 'known-variants') {
+                        self.cohortModel.knownVariantViz = viz;
+                    } else if (trackId === 'cosmic-variants') {
+                        self.cohortModel.cosmicVariantViz = viz;
+                    }
+                }
+                if (self.showKnownVariantsCard && self.cohortModel && self.cohortModel.isLoaded
+                    && Object.keys(self.selectedGene).length > 0 && trackId === 'known-variants') {
+                    self.cohortModel.promiseLoadKnownVariants(self.selectedGene, self.selectedTranscript);
+                } else if (self.showCosmicVariantsCard && self.cohortModel && self.cohortModel.isLoaded
+                    && Object.keys(self.selectedGene).length > 0 && trackId === 'cosmic-variants') {
+                    self.cohortModel.promiseLoadCosmicVariants(self.selectedGene, self.selectedTranscript);
+                }
             },
             // FILTER TODO: I don't think this is ever used currently...
             onVariantsFilterChange: function (selectedCategories, trackId) {
@@ -336,6 +409,92 @@
                 //     self.cohortModel.setLoadedVariants(self.selectedGene, 'cosmic-variants');
                 // }
             },
+            deselectVariant: function () {
+                const self = this;
+                self.lastClickCard = null;
+                self.selectedVariant = null;
+                self.selectedVariantRelationship = null;
+                self.activeGeneVariantTab = "feature-matrix-tab";
+                if (self.$refs.variantCardRef) {
+                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                        variantCard.hideVariantTooltip();
+                        variantCard.hideVariantCircle(true);
+                        variantCard.hideCoverageCircle();
+                    })
+                }
+                // if (self.$refs.navRef) {
+                //     self.$refs.navRef.selectVariant(null);
+                // }
+            },
+            onExitClickTooltip: function() {
+                const self = this;
+                if (self.lastClickCard === 'featureMatrix') {
+                    self.$refs.navRef.onVariantClick(null);
+                } else if (self.lastClickCard) {
+                    self.$refs.variantCardRef.forEach((cardRef) => {
+                        if (self.lastClickCard === cardRef.sampleModel.id) {
+                            cardRef.onVariantClick(null);
+                        }
+                    })
+                }
+            },
+            showVariantExtraAnnots: function (parentSampleId, variant) {
+                let self = this;
+                if (!self.isEduMode && !self.cohortModel.getModel(parentSampleId).isAlignmentsOnly()) {
+                    if (parentSampleId === 'known-variants') {
+                        self.cohortModel
+                            .getModel(parentSampleId)
+                            .promiseGetVariantExtraAnnotations(self.selectedGene, self.selectedTranscript, self.selectedVariant)
+                            .then(function (refreshedVariant) {
+                                self.refreshVariantExtraAnnots(parentSampleId, variant, [refreshedVariant]);
+                            })
+                        // TODO: need to put else if cosmic-variants
+                    } else {
+                        self.cohortModel
+                            .getModel(parentSampleId)
+                            .promiseGetImpactfulVariantIds(self.selectedGene, self.selectedTranscript)
+                            .then(function (annotatedVariants) {
+                                // If the clicked variant is in the list of annotated variants, show the
+                                // tooltip; otherwise, the callback will get the extra annots for this
+                                // specific variant
+                                self.refreshVariantExtraAnnots(parentSampleId, variant, annotatedVariants, function () {
+                                    // The clicked variant wasn't annotated in the batch of variants.  Get the
+                                    // extra annots for this specific variant.
+                                    self.cohortModel
+                                        .getModel(parentSampleId)
+                                        .promiseGetVariantExtraAnnotations(self.selectedGene, self.selectedTranscript, self.selectedVariant)
+                                        .then(function (refreshedVariant) {
+                                            self.refreshVariantExtraAnnots(parentSampleId, variant, [refreshedVariant]);
+                                        })
+                                })
+                            });
+                    }
+                }
+            },
+            refreshVariantExtraAnnots: function (sourceComponent, variant, annotatedVariants, callbackNotFound) {
+                var targetVariants = annotatedVariants.filter(function (v) {
+                    return variant &&
+                        variant.start === v.start &&
+                        variant.ref === v.ref &&
+                        variant.alt === v.alt;
+                });
+                if (targetVariants.length > 0) {
+                    var annotatedVariant = targetVariants[0];
+                    annotatedVariant.screenX = variant.screenX;
+                    annotatedVariant.screenY = variant.screenY;
+                    annotatedVariant.screenXMatrix = variant.screenXMatrix;
+                    annotatedVariant.screenYMatrix = variant.screenYMatrix;
+
+                    variant.extraAnnot = true;
+                    variant.vepHGVSc = annotatedVariant.vepHGVSc;
+                    variant.vepHGVSp = annotatedVariant.vepHGVSp;
+                    variant.vepVariationIds = annotatedVariant.vepVariationIds;
+                } else {
+                    if (callbackNotFound) {
+                        callbackNotFound();
+                    }
+                }
+            },
         },
         computed: {
             overlayWidth: function() {
@@ -349,6 +508,20 @@
                     })
                 }
                 return [];
+            },
+            selectedVariantInfo: function () {
+                if (this.selectedVariant) {
+                    return this.globalApp.utility.formatDisplay(this.selectedVariant, this.variantModel.translator)
+                } else {
+                    return null;
+                }
+            },
+            selectedGeneName: function () {
+                if (this.selectedGene) {
+                    return this.selectedGene.gene_name;
+                } else {
+                    return null;
+                }
             }
         },
     }

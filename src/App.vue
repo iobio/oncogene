@@ -30,6 +30,7 @@
                   :d3="globalApp.d3"
                   :$="globalApp.$"
                   :cohortModel="cohortModel"
+                  :filterModel="filterModel"
                   :hoverTooltip="hoverTooltip"
                   :clickTooltip="clickTooltip"
                   :navbarHeight="navBarHeight"
@@ -120,44 +121,44 @@
             onLoadDemo: function () {
                 alert('Load demo not implemented in app yet');
             },
-            promiseInitFromUrl: function () {
-                const self = this;
-                return new Promise(function (resolve, reject) {
-                    // Extract lists from collective params
-                    let sampleNames = [];
-                    let tumorStatuses = [];
-                    let vcfs = [];
-                    let tbis = [];
-                    let bams = [];
-                    let bais = [];
-
-                    let modelInfos = [];
-                    for (let i = 0; i < sampleNames.length; i++) {
-                        let modelInfo = {'name': sampleNames[i]};
-                        modelInfo.id = tumorStatuses[i] ? 'n' + i : 't' + (i - 1);
-                        modelInfo.name = sampleNames[i];
-                        modelInfo.isTumor = tumorStatuses[i];
-                        modelInfo.vcf = vcfs[i];
-                        modelInfo.tbi = tbis[i];
-                        modelInfo.bam = bams[i];
-                        modelInfo.bai = bais[i];
-                        modelInfos.order = i;
-                        modelInfos.push(modelInfo);
-                    }
-
-                    if (modelInfos.length > 0) {
-                        self.cohortModel.promiseInit(modelInfos)
-                            .then(function () {
-                                resolve();
-                            }).catch(function (error) {
-                            reject(error);
-                        })
-                    } else {
-                        resolve();
-                    }
-                })
-
-            },
+            // promiseInitFromUrl: function () {
+            //     const self = this;
+            //     return new Promise(function (resolve, reject) {
+            //         // Extract lists from collective params
+            //         let sampleNames = [];
+            //         let tumorStatuses = [];
+            //         let vcfs = [];
+            //         let tbis = [];
+            //         let bams = [];
+            //         let bais = [];
+            //
+            //         let modelInfos = [];
+            //         for (let i = 0; i < sampleNames.length; i++) {
+            //             let modelInfo = {'name': sampleNames[i]};
+            //             modelInfo.id = tumorStatuses[i] ? 'n' + i : 't' + (i - 1);
+            //             modelInfo.name = sampleNames[i];
+            //             modelInfo.isTumor = tumorStatuses[i];
+            //             modelInfo.vcf = vcfs[i];
+            //             modelInfo.tbi = tbis[i];
+            //             modelInfo.bam = bams[i];
+            //             modelInfo.bai = bais[i];
+            //             modelInfos.order = i;
+            //             modelInfos.push(modelInfo);
+            //         }
+            //
+            //         if (modelInfos.length > 0) {
+            //             self.cohortModel.promiseInit(modelInfos)
+            //                 .then(function () {
+            //                     resolve();
+            //                 }).catch(function (error) {
+            //                 reject(error);
+            //             })
+            //         } else {
+            //             resolve();
+            //         }
+            //     })
+            //
+            // },
             promiseInitCache: function () {
                 let self = this;
                 return new Promise(function (resolve, reject) {
@@ -197,71 +198,71 @@
                         })
                 })
             },
-            promiseLoadData: function () {
-                let self = this;
-
-                // TODO: this is how we get rolling for new setup...
-
-
-                return new Promise(function (resolve, reject) {
-
-                    if (self.cohortModel) {
-                        self.cohortModel.promiseLoadSomaticVariants()
-                            .then(() => {
-                                resolve();
-                            })
-                            .catch((error) => {
-                                reject(error);
-                            })
-                    }
-
-                    // if (self.models && self.models.length > 0) {
-                    //     // let cardWidthScale = self.isLeftDrawerOpen ? 1.0 : 0.65;
-                    //     self.cardWidth = self.$('#genes-card').innerWidth();
-                    //     var options = {'getKnownVariants': self.showKnownVariantsCard};
-                    //     options['getCosmicVariants'] = self.showCosmicVariantsCard;
-                    //     options['loadFromFlag'] = loadingFromFlagEvent;
-                    //     options['loadFeatureMatrix'] = loadFeatureMatrix;
-                    //
-                    //     // TODO: promiseloadallsomatic
-                    //
-                    //     self.cohortModel.promiseLoadData(self.selectedGene,
-                    //         self.selectedTranscript,
-                    //         options)
-                    //         .then(function() {
-                    //             self.onUpdateSamples(); // TODO: do we still need to call this?
-                    //
-                    //             // Draw feature matrix after somatic field filled
-                    //             self.calcFeatureMatrixWidthPercent();
-                    //             let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
-                    //             self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
-                    //                 self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
-                    //
-                    //             // TODO: should I populate somatic filters here?
-                    //             // self.filterModel.populateEffectFilters(resultMap);
-                    //             // self.filterModel.populateRecFilters(resultMap);
-                    //
-                    //             // TODO: doesn't work w/ intervals not even in 1
-                    //             const nodeRange = 0.10;
-                    //             self.cohortModel.varAfNodes = self.cohortModel.getVariantAFNodes(nodeRange);
-                    //             self.cohortModel.varAfLinks = self.cohortModel.getVariantAFLinks(self.cohortModel.varAfNodes, nodeRange);
-                    //
-                    //             self.cohortModel.promiseMarkCodingRegions(self.selectedGene, self.selectedTranscript)
-                    //                 .then(function (data) {
-                    //                     self.analyzedTranscript = data.transcript;
-                    //                     self.coverageDangerRegions = data.dangerRegions;
-                    //                     self.$refs.genesCardRef.determineFlaggedGenes();
-                    //                     resolve();
-                    //                 });
-                    //         })
-                    //         .catch(function (error) {
-                    //             reject(error);
-                    //         })
-                    // } else {
-                    //     Promise.resolve();
-                    // }
-                })
-            },
+            // promiseLoadData: function () {
+            //     let self = this;
+            //
+            //     // TODO: this is how we get rolling for new setup...
+            //
+            //
+            //     return new Promise(function (resolve, reject) {
+            //
+            //         if (self.cohortModel) {
+            //             self.cohortModel.promiseLoadSomaticVariants()
+            //                 .then(() => {
+            //                     resolve();
+            //                 })
+            //                 .catch((error) => {
+            //                     reject(error);
+            //                 })
+            //         }
+            //
+            //         // if (self.models && self.models.length > 0) {
+            //         //     // let cardWidthScale = self.isLeftDrawerOpen ? 1.0 : 0.65;
+            //         //     self.cardWidth = self.$('#genes-card').innerWidth();
+            //         //     var options = {'getKnownVariants': self.showKnownVariantsCard};
+            //         //     options['getCosmicVariants'] = self.showCosmicVariantsCard;
+            //         //     options['loadFromFlag'] = loadingFromFlagEvent;
+            //         //     options['loadFeatureMatrix'] = loadFeatureMatrix;
+            //         //
+            //         //     // TODO: promiseloadallsomatic
+            //         //
+            //         //     self.cohortModel.promiseLoadData(self.selectedGene,
+            //         //         self.selectedTranscript,
+            //         //         options)
+            //         //         .then(function() {
+            //         //             self.onUpdateSamples(); // TODO: do we still need to call this?
+            //         //
+            //         //             // Draw feature matrix after somatic field filled
+            //         //             self.calcFeatureMatrixWidthPercent();
+            //         //             let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
+            //         //             self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
+            //         //                 self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
+            //         //
+            //         //             // TODO: should I populate somatic filters here?
+            //         //             // self.filterModel.populateEffectFilters(resultMap);
+            //         //             // self.filterModel.populateRecFilters(resultMap);
+            //         //
+            //         //             // TODO: doesn't work w/ intervals not even in 1
+            //         //             const nodeRange = 0.10;
+            //         //             self.cohortModel.varAfNodes = self.cohortModel.getVariantAFNodes(nodeRange);
+            //         //             self.cohortModel.varAfLinks = self.cohortModel.getVariantAFLinks(self.cohortModel.varAfNodes, nodeRange);
+            //         //
+            //         //             self.cohortModel.promiseMarkCodingRegions(self.selectedGene, self.selectedTranscript)
+            //         //                 .then(function (data) {
+            //         //                     self.analyzedTranscript = data.transcript;
+            //         //                     self.coverageDangerRegions = data.dangerRegions;
+            //         //                     self.$refs.genesCardRef.determineFlaggedGenes();
+            //         //                     resolve();
+            //         //                 });
+            //         //         })
+            //         //         .catch(function (error) {
+            //         //             reject(error);
+            //         //         })
+            //         // } else {
+            //         //     Promise.resolve();
+            //         // }
+            //     })
+            // },
         },
         mounted: function () {
             const self = this;
@@ -296,8 +297,9 @@
                     return self.promiseInitCache();
                 })
                 .then(function () {
-                    let glyph = new Glyph();
+                    let glyph = new Glyph(self.globalApp.d3, self.globalApp.$);
                     let translator = new Translator(self.globalApp, glyph, self.globalApp.utility);
+                    glyph.translator = translator;
                     let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
                     self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);

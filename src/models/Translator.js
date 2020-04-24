@@ -154,11 +154,11 @@ export default class Translator {
       return inCosmic === true ? 'COSMIC variant' : '';
   }
 
-  showHighestImpactSymbol(selection, options) {
+  showHighestImpactSymbol(selection, d3, options) {
     var variant = d3.select(selection.node().parentNode).datum();
     var vepHighestImpacts = options.self.globalApp.utility.getNonCanonicalHighestImpactsVep(variant, options.self.impactMap);
     if (Object.keys(vepHighestImpacts).length > 0) {
-      options.self.glyph.showImpactSymbol(selection, options);
+      options.self.glyph.showImpactSymbol(selection, d3, options);
     }
   }
     getTranslatedFilterName(filterName) {

@@ -1,6 +1,4 @@
 <style lang="sass">
-    @import ../../assets/sass/variables
-    @import ../../assets/sass/_symbols.sass
 
     .variant
         opacity: 1
@@ -183,7 +181,7 @@
                     self.onVariantClick(variant);
                 });
                 dispatch.on('d3outsideclick', function() {
-                    self.onVariantClick(null);
+                    //self.onVariantClick(null);
                 });
                 dispatch.on('d3mouseover', function(variant) {
                     self.onVariantHover(variant);

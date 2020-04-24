@@ -7,6 +7,7 @@ export default function geneD3(d3, options) {
     var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
     // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
+    // var selectedTranscript = null;
 
     // dimensions
     var margin = options.margin ? options.margin : {top: 10, right: 0, bottom: 15, left: 110},
@@ -256,35 +257,33 @@ export default function geneD3(d3, options) {
                 .attr('height', function (d) {
                     if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
                     else return geneD3_cdsHeight;
-                });
-
-                // .attr("pointer-events", "all")
-                // .style("cursor", "pointer")
-                // .on("mouseover", function (d) {
-                //     // show the tooltip
-                //     var featureObject = d3.select(this);
-                //
-                //     // select the transcript
-                //     svg.selectAll('.transcript.selected').classed("selected", false);
-                //     d3.select(this.parentNode).classed("selected", true);
-                // })
-                // .on("mouseout", function (d) {
-                //     // de-select the transcript
-                //     d3.select(this.parentNode).classed("selected", false);
-                //
-                // })
-                // .on("click", function (d) {
-                //     // select the transcript
-                //     svg.selectAll('.transcript.current').classed("current", false);
-                //     d3.select(this.parentNode).classed("current", true);
-                //     selectedTranscript = d3.select(this.parentNode)[0][0].__data__;
-                //     dispatch.d3selected(selectedTranscript);
-
-
-                    // // show the tooltip
+                })
+                .attr("pointer-events", "all")
+                .style("cursor", "pointer")
+                .on("mouseover", function () {
+                    // show the tooltip
                     // var featureObject = d3.select(this);
-                    // dispatch.d3featuretooltip(featureObject, d, true);
-                // });
+
+                    // select the transcript
+                    svg.selectAll('.transcript.selected').classed("selected", false);
+                    d3.select(this.parentNode).classed("selected", true);
+                })
+                .on("mouseout", function () {
+                    // de-select the transcript
+                    d3.select(this.parentNode).classed("selected", false);
+
+                })
+                .on("click", function (d) {
+                    // select the transcript
+                    // svg.selectAll('.transcript.current').classed("current", false);
+                    // d3.select(this.parentNode).classed("current", true);
+                    // selectedTranscript = d3.select(this.parentNode)[0][0].__data__;
+                    // dispatch.call('d3selected', selectedTranscript);
+
+                    // show the tooltip
+                    var featureObject = d3.select(this);
+                    dispatch.call('d3featuretooltip', this, featureObject, d, true);
+                });
 
 
             // Add any feature glyphs

@@ -628,7 +628,8 @@
             },
             // Returns all loaded and called variant viz SVGs
             getVariantSVG: function () {
-                return this.d3.select(this.$el).select('.expansion-panel__container').select('.expansion-panel__body').select('#card-viz').select('.variant-viz > svg');
+                return this.d3.select(this.$el).select('#card-viz').select('.variant-viz').select('svg');
+                // return this.d3.select(this.$el).select('.expansion-panels').select('.expansion-panel__container').select('.expansion-panel__body').select('#card-viz').select('.variant-viz > svg');
             },
             getTrackSVG: function (vizTrackName) {
                 return this.d3.select(this.$el).select('#' + vizTrackName + ' > svg');
@@ -700,11 +701,9 @@
                     self.hideExonTooltip();
                     return;
                 }
-
                 if (self.selectedExon) {
                     return;
                 }
-
                 if (lock) {
                     self.selectedExon = feature;
                     tooltip.style("pointer-events", "all");

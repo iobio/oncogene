@@ -66,7 +66,8 @@ export default class VariantTooltip {
         }
 
         // let w = me.WIDTH;
-        let h = Math.round(tooltip[0][0].offsetHeight);
+        // let h = Math.round(tooltip[0][0].offsetHeight);
+        let h = Math.round(tooltip.node().offsetHeight);
 
         // We use css variables to place the tooltip chevron in the middle, center of the tooltip
         let middlePos = (h / 2);
@@ -132,7 +133,7 @@ export default class VariantTooltip {
         }
         // If the tooltip sits below the elements, is the bottom of the tooltip
         // above the bottom of the window?
-        if ((y + coord.height + h) - yScroll < me.globalApp.utility.visibleHeight(this.globalApp.$('body'))) {
+        if ((y + coord.height + h) - yScroll < me.globalApp.utility.visibleHeight(me.globalApp.$('body'))) {
             availSpace.bottom.allowed = true;
             availSpace.bottom.tooltipTop = y + coord.height;
             availSpace.bottom.sideTooltipVertOffset = -1 * me.SIDE_TOOLTIP_VERT_OFFSET;
@@ -140,7 +141,7 @@ export default class VariantTooltip {
         // If the tooltip sits in the center (either to the left or right) of the element,
         // are both top and bottom edges within the window?
         if ((y + coord.height / 2) - (h / 2) - yScroll >= 0
-            && ((y + coord.height / 2) + (h / 2) - yScroll < me.globalApp.utility.visibleHeight(this.globalApp.$('body')))) {
+            && ((y + coord.height / 2) + (h / 2) - yScroll < me.globalApp.utility.visibleHeight(me.globalApp.$('body')))) {
             availSpace.middle.allowed = true;
             availSpace.middle.tooltipTop = y + (coord.height / 2);
             availSpace.middle.sideTooltipVertOffset = -1 * (h / 2);
@@ -223,7 +224,7 @@ export default class VariantTooltip {
 
     injectVariantGlyphs(tooltip, variant) {
         const me = this;
-        let tooltipNode = this.globalApp.$(tooltip.node());
+        let tooltipNode = me.globalApp.$(tooltip.node());
         let info = me.globalApp.utility.formatDisplay(variant, me.translator, me.isEduMode);
 
         let injectClinvarBadge = function (clinsig, key, translate) {
@@ -235,8 +236,8 @@ export default class VariantTooltip {
                     var linkSelector = ".tooltip-clinsig-link" + key;
                     if (badge && tooltipNode.find(linkSelector).length > 0) {
                         var div = tooltipNode.find(linkSelector);
-                        this.globalApp.$(div).prepend("<svg class=\"clinvar-badge\" style=\"float:left\"  height=\"12\" width=\"14\">");
-                        var svg = this.globalApp.d3.select(this.globalApp.$(div).find("svg.clinvar-badge")[0]);
+                        me.globalApp.$(div).prepend("<svg class=\"clinvar-badge\" style=\"float:left\"  height=\"12\" width=\"14\">");
+                        var svg = me.globalApp.d3.select(me.globalApp.$(div).find("svg.clinvar-badge")[0]);
                         var selection = svg.data([{
                             width: 10,
                             height: 10,
@@ -254,7 +255,7 @@ export default class VariantTooltip {
                 if (me.translator.clinvarMap.hasOwnProperty(clinsigToken)) {
                     let clazz = me.translator.clinvarMap[clinsigToken].clazz;
 
-                    let outerDiv = this.globalApp.d3.select('#' + divId);
+                    let outerDiv = me.globalApp.d3.select('#' + divId);
                     outerDiv.append('svg')
                         .attr('class', 'clinvar-badge')
                         .style('float', 'left')
@@ -277,7 +278,7 @@ export default class VariantTooltip {
             if (isInherited === true) {
                 return;
             }
-            let outerDiv = this.globalApp.d3.select('#' + divId);
+            let outerDiv = me.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'somatic-badge')
                 .style('float', 'left')
@@ -301,7 +302,7 @@ export default class VariantTooltip {
             if (inCosmic == null || inCosmic === false) {
                 return;
             }
-            let outerDiv = this.globalApp.d3.select('#' + divId);
+            let outerDiv = me.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'cosmic-badge')
                 .style('float', 'left')
@@ -320,7 +321,7 @@ export default class VariantTooltip {
         };
 
         let injectImpactBadge = function(variant, vepImpact, divId, translate1, translate2) {
-            let outerDiv = this.globalApp.d3.select('#' + divId);
+            let outerDiv = me.globalApp.d3.select('#' + divId);
             outerDiv.append('svg')
                 .attr('class', 'impact-badge')
                 .style('float', 'left')
@@ -335,7 +336,7 @@ export default class VariantTooltip {
 
             let impactClazz = me.translator.impactMap[vepImpact].clazz;
             let options = { 'transform1': translate1, 'transform2': translate2 };
-            me.glyph.showImpactBadge(selection, variant, impactClazz, options);
+            me.glyph.showImpactBadge(selection, variant, impactClazz, me.globalApp.d3, options);
         };
 
         if (variant.clinvarSubmissions && variant.clinvarSubmissions.length > 0) {
@@ -380,7 +381,7 @@ export default class VariantTooltip {
         const me = this;
 
         // Add header
-        let container = this.globalApp.d3.select('#' + divId);
+        let container = me.globalApp.d3.select('#' + divId);
         let svg = container.append("div")
             .attr("id", "allele-count-legend")
             .append("svg")
@@ -532,7 +533,7 @@ export default class VariantTooltip {
         // Then do actual drawing
         Promise.all(depthPromises).then(() => {
             // Hide loader glyph
-            this.globalApp.d3.select('#af-svg-loader').style('display', 'none');
+            me.globalApp.d3.select('#af-svg-loader').style('display', 'none');
 
             // Sort in model order to sync with affectedInfo order
             genotypeInfo.sort((a, b) => {
@@ -547,11 +548,13 @@ export default class VariantTooltip {
                 let selectedClazz = info.model.id === id ? 'selected' : '';
                 let displayName = info.model.selectedSample;
                 let row = container.append("div")
-                    .attr("class", "ped-info");
+                    .attr("class", "ped-info")
+                    .attr("style", "display: flex");
 
                 // Add sample name column
                 row.append("div")
-                    .attr("class", "click-value col-xs-2")
+                    .attr("class", "click-value")
+                    .attr("style", "flex: 2")
                     .html("<span class='sample-type-symbol'></span>"
                         + "<span class='ped-label "
                         + selectedClazz + "'>"
@@ -566,13 +569,15 @@ export default class VariantTooltip {
                     afText = formattedAf > 0 ? me.globalApp.utility.percentage(formattedAf) : '0%';
                 }
                 row.append("div")
-                    .attr("class", "click-af-field col-xs-2")
+                    .attr("class", "click-af-field")
+                    .attr("style", "flex: 2")
                     .append('text')
                     .text(afText);
 
                 // Add bar viz of counts
                 let barContainer = row.append("div")
-                    .attr("class", "allele-count-bar col-xs-8");
+                    .attr("class", "allele-count-bar")
+                    .attr("style", "flex: 8");
                 me._appendAlleleCountSVG(barContainer,
                     genotype.altCount,
                     genotype.refCount,
@@ -854,18 +859,20 @@ export default class VariantTooltip {
         let info = me.globalApp.utility.formatDisplay(variant, me.translator, me.isEduMode);
         let positionInfo = (geneObject ? geneObject.gene_name : "") + " " + info.coord;
         let clinvarInfo = me.globalApp.utility.capitalizeFirstLetter(info.clinvarSig);
-        let labelClasses = 'click-label col-xs-5';
-        let valueClasses = 'click-value col-xs-7';
-        let svgValueClasses = 'click-svg-value col-xs-12';
+        let labelClasses = 'click-label'; // 5
+        let labelColNum = 5;
+        let valueClasses = 'click-value'; // 7
+        let valueColNum = 7;
+        let svgValueClasses = 'click-svg-value';
         return (
             me._tooltipClickHeader("Variant Details", true)
-            + me._formatLeftHalf(me._tooltipLabeledRow('Position', positionInfo, labelClasses, valueClasses, 'clickTipPosition')
-                + me._tooltipLabeledRow('Type', me.globalApp.utility.translateExonInfo(info.exon) + ' ' + me.globalApp.utility.translateVariantType(variant.type), labelClasses, valueClasses, 'clickTipVarType')
-                + me._tooltipLabeledRow('Base \u0394', info.refalt, labelClasses, valueClasses, 'clickTipDelta')
-                + me._tooltipLabeledRow('Impact', me.globalApp.utility.capitalizeFirstLetter(info.vepImpact), labelClasses, valueClasses, 'clickTipImpact')
-                + me._tooltipLabeledRow('Is Somatic', variant.isInherited == null ? 'Undetermined' : variant.isInherited === true ? 'No' : 'Yes', labelClasses, valueClasses, 'clickTipSomatic')
-                + me._tooltipLabeledRowWithLink('In COSMIC', variant.inCosmic === true ? 'Yes' : 'No', labelClasses, valueClasses, 'clickTipCosmic', info.cosmicUrl)
-                + me._tooltipLabeledRowWithLink('ClinVar', clinvarInfo === "" ? "N/A" : clinvarInfo, labelClasses, valueClasses, 'clickTipClinvar', info.clinvarUrl))
+            + me._formatLeftHalf(me._tooltipLabeledRow('Position', positionInfo, labelClasses, labelColNum, valueClasses, valueColNum, 'clickTipPosition')
+                + me._tooltipLabeledRow('Type', me.globalApp.utility.translateExonInfo(info.exon) + ' ' + me.globalApp.utility.translateVariantType(variant.type), labelClasses, labelColNum, valueClasses, valueColNum,'clickTipVarType')
+                + me._tooltipLabeledRow('Base \u0394', info.refalt, labelClasses, labelColNum, valueClasses, valueColNum, 'clickTipDelta')
+                + me._tooltipLabeledRow('Impact', me.globalApp.utility.capitalizeFirstLetter(info.vepImpact), labelClasses, labelColNum, valueClasses, valueColNum, 'clickTipImpact')
+                + me._tooltipLabeledRow('Is Somatic', variant.isInherited == null ? 'Undetermined' : variant.isInherited === true ? 'No' : 'Yes', labelClasses,  labelColNum, valueClasses, valueColNum, 'clickTipSomatic')
+                + me._tooltipLabeledRowWithLink('In COSMIC', variant.inCosmic === true ? 'Yes' : 'No', labelClasses, labelColNum, valueClasses, valueColNum,'clickTipCosmic', info.cosmicUrl)
+                + me._tooltipLabeledRowWithLink('ClinVar', clinvarInfo === "" ? "N/A" : clinvarInfo, labelClasses, labelColNum, valueClasses, valueColNum,'clickTipClinvar', info.clinvarUrl))
             + me._formatRightHalf(me._tooltipClickRow(me._getAfDiv(), svgValueClasses) + me._tooltipButtonRow(variant, true, true))
         );
 
@@ -902,11 +909,11 @@ export default class VariantTooltip {
     }
 
     _formatLeftHalf(html) {
-        return '<div class="col-xs-4" style="padding:5px">' + html + '</div>';
+        return '<v-container fluid fill-height><div style="display: flex"><div style="flex: 6; padding-top: 5px; padding-bottom: 5px; padding-left: 5px; padding-right: 15px">' + html + '</div>';
     }
 
     _formatRightHalf(html) {
-        return '<div class="col-xs-8" style="padding:5px">' + html + '</div>';
+        return '<div style="padding:5px; margin-left: 10px; flex: 6">' + html + '</div></div></v-container>';
     }
 
     _getAfDiv() {
@@ -950,21 +957,21 @@ export default class VariantTooltip {
     }
 
     _tooltipClickHeader(tooltipName, showExitButton) {
-        let titleWidth = 'col-xs-12';
+        let titleWidth = '12';
         if (showExitButton) {
-            titleWidth = 'col-xs-11';
+            titleWidth = '11';
         }
-        let titleLine = '<div class="' + titleWidth + ' click-tip-header">' + tooltipName + '</div>';
+        let titleLine = '<v-row><v-col cols="' + titleWidth + '" class="click-tip-header">' + tooltipName + '</v-col>';
         let buttons = '';
         if (showExitButton) {
-            buttons += '<div class="col-xs-1" style="padding-right:4px"><button id="click-tip-exit-btn" type="button" class="click-tip-close-btn btn btn--flat btn--small btn--icon" style="float: right"><i class="icon material-icons">clear</i></button></div>'
+            buttons += '<v-col cols="1" style="padding-right:4px"><button id="click-tip-exit-btn" type="button" class="click-tip-close-btn btn btn--flat btn--small btn--icon" style="float: right"><i class="icon material-icons">clear</i></button></v-col></v-row>'
         }
         let dividerLine = '<hr class="click-tip-divider">';
         return titleLine + buttons + dividerLine;
     }
 
     _tooltipClickRow(value, clazz) {
-        return '<div class="' + clazz + '">' + value + '</div>';
+        return '<div style="flex: 5" class="' + clazz + '"><div style="flex: 7">' + value + '</div></div>';
     }
 
     _tooltipClassedRow(value1, class1, value2, class2, style) {
@@ -977,17 +984,17 @@ export default class VariantTooltip {
             + '</div>';
     }
 
-    _tooltipLabeledRow(label, value, labelClazz, valueClazz, valueId) {
-        return '<div style="padding: 2px 0px">'
-            + '<div class="' + labelClazz + '" style="text-align:left;word-break:none"><u>' + label + '</u>:</div>'
-            + '<div class="' + valueClazz + '" style="text-align:left;word-break:normal" id="' + valueId + '">' + value + '</div>'
+    _tooltipLabeledRow(label, value, labelClazz, labelColNum, valueClazz, valueColNum, valueId) {
+        return '<div style="padding: 2px 0px; display: flex">'
+            + '<div style="flex: ' + labelColNum + '" class="' + labelClazz + '" style="text-align:left;word-break:none;"><u>' + label + ':</u></div>'
+            + '<div style="flex: ' + valueColNum + '" class="' + valueClazz + '" style="text-align:left;word-break:normal;" id="' + valueId + '">' + value + '</div>'
             + '</div>';
     }
 
-    _tooltipLabeledRowWithLink(label, value, labelClazz, valueClazz, valueId, link) {
-        let row = '<div style="padding: 2px 0px">'
-            + '<div class="' + labelClazz + '" style="text-align:left;word-break:none"><u>' + label + '</u>:</div>'
-            + '<div class="' + valueClazz + '" style="text-align:left;word-break:normal" id="' + valueId + '">' + value;
+    _tooltipLabeledRowWithLink(label, value, labelClazz, labelColNum, valueClazz, valueColNum, valueId, link) {
+        let row = '<div style="padding: 2px 0px; display: flex">'
+            + '<div class="' + labelClazz + '" style="text-align:left;word-break:none; flex:' + labelColNum + '"><u>' + label + '</u>:</div>'
+            + '<div class="' + valueClazz + '" style="text-align:left;word-break:normal; flex:' + valueColNum + '" id="' + valueId + '">' + value;
             if (link) {
                 row += '<a href="' + link + '" target="' + label + '" style="padding-left: 4px;"><i class="icon link-icon material-icons">open_in_new</i></a>';
             }
@@ -1000,8 +1007,8 @@ export default class VariantTooltip {
         let buttons = '';
         if (showFlagBtn) {
             let buttonText = variant.isFlagged ? 'Remove Flag' : 'Flag Variant';
-            buttons += '<button id="click-tip-flag-btn" type="button" class="btn btn--small click-tip-btn" style="padding-top: 5px">'
-                + buttonText
+            buttons += '<div><button id="click-tip-flag-btn" class="click-tip-btn mx-2 px-5 py-2">'
+                +  buttonText
                 + '<svg id="user-flagged-symbol" viewBox="0 0 24 24" width="18" height="18" class="click-tip-icon">'
                 + '<path d="M0 0h24v24H0z" fill="none"/>'
                 + '<path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/>'
@@ -1009,8 +1016,8 @@ export default class VariantTooltip {
                 + '</button>'
         }
         if (showPileupBtn) {
-            buttons += '<button id="click-tip-pileup-btn" type="button" class="btn btn--small click-tip-btn">Show Pileup' +
-                '<i class="material-icons glyph click-tip-icon" style="padding-right: 3px; font-size: 16px">line_style</i></button>'
+            buttons += '<button id="click-tip-pileup-btn" class="click-tip-btn mx-2 px-5 py-2">Show Pileup' +
+                '<i class="material-icons glyph click-tip-icon" style="padding-right: 3px; font-size: 16px">line_style</i></button></div>'
         }
         return buttons;
     }
