@@ -23,7 +23,7 @@
                         <variant-card
                                 ref="variantCardRef"
                                 v-for="model in sampleModels"
-                                :key="model.order"
+                                :key="model.id"
                                 v-bind:class="[
                                 { 'full-width': true, 'hide': Object.keys(selectedGene).length === 0 || !cohortModel  || cohortModel.inProgress.loadingDataSources
                                   || (model.id === 'known-variants' && showKnownVariantsCard === false) || (model.id === 'cosmic-variants' && showCosmicVariantsCard === false)
@@ -100,10 +100,15 @@
                                 <v-container>
                                     <variant-summary-card
                                             ref="variantSummaryCardRef"
+                                            :sampleIds="sampleIds"
+                                            :selectedSamples="selectedSamples"
                                             :selectedGene="selectedGeneName"
                                             :variant="selectedVariant"
                                             :variantInfo="selectedVariantInfo"
                                             :$="globalApp.$"
+                                            :d3="globalApp.d3"
+                                            :cohortModel="cohortModel"
+                                            @summary-mounted="onSummaryMounted"
                                             @summaryCardVariantDeselect="deselectVariant">
                                     </variant-summary-card>
                                 </v-container>
@@ -229,6 +234,8 @@
                 showCosmicVariantsCard: false,
                 cardWidth: 500,
                 annotationComplete: false,
+                showCoverageCutoffs: false,
+                applyFilters: false,
 
                 // selection state
                 selectedGene: null,
@@ -242,7 +249,10 @@
                 selectedTab: 'genes-tab',
 
                 // models & model data
+                sampleIds: null,   // Sample ids for canonical sample models
+                selectedSamples: null,  // NOTE: must be in same order as sampleIds
                 sampleModels: null,
+                geneHistoryList: [],
             };
         },
         watch: {
@@ -269,7 +279,15 @@
                 self.cohortModel.promiseInit(modelInfos, userGeneList)
                     .then(() => {
                         self.sampleModels = self.cohortModel.sampleModels;
-                        self.cohortModel.setTumorInfo(true);
+                        self.sampleIds = [];
+                        self.selectedSamples = [];
+
+                        let canonModels = self.cohortModel.getCanonicalModels();
+                        canonModels.forEach(model => {
+                            self.sampleIds.push(model.id);
+                            self.selectedSamples.push(model.selectedSample);
+                        });
+
 
                         // todo: for screenshot purposes, skipping this for now
                         // let promises = [];
@@ -321,12 +339,12 @@
                         })
                 });
             },
-
             /*
              * INTERACTIVITY
              */
             onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
                 const self = this;
+                self.deselectVariant();
                 if (variant) {
                     self.lastClickCard = sampleModelId;
                     // self.calcFeatureMatrixWidthPercent();
@@ -334,12 +352,11 @@
                     self.selectedVariantParentSampleId = sampleModelId;
                     self.selectedVariantNotes = variant.notes;
                     self.selectedVariantInterpretation = variant.interpretation;
-                    self.activeGeneVariantTab = self.isBasicMode ? "feature-matrix-tab" : "var-detail-tab";
                     self.showVariantExtraAnnots(sampleModelId, variant);
 
-                    if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
-                        self.$refs.navRef.selectVariant(variant, 'current');
-                    }
+                    // if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
+                    //     self.$refs.navRef.selectVariant(variant, 'current');
+                    // }
                     self.$refs.variantCardRef.forEach(function (variantCard) {
                         if (sourceComponent == null || variantCard != sourceComponent) {
                             variantCard.hideVariantCircle(true);
@@ -347,11 +364,8 @@
                             variantCard.showCoverageCircle(variant);
                         }
                     });
-                    if (self.$refs.scrollButtonRefVariant) {
-                        self.$refs.scrollButtonRefVariant.showScrollButtons();
-                    }
-                } else {
-                    self.deselectVariant();
+                    // Tab to summary card
+                    self.selectedTab = 'summary-tab';
                 }
             },
             onCohortVariantHover: function (variant, sourceComponent) {
@@ -414,10 +428,9 @@
                 self.lastClickCard = null;
                 self.selectedVariant = null;
                 self.selectedVariantRelationship = null;
-                self.activeGeneVariantTab = "feature-matrix-tab";
                 if (self.$refs.variantCardRef) {
                     self.$refs.variantCardRef.forEach(function (variantCard) {
-                        variantCard.hideVariantTooltip();
+                        // variantCard.hideVariantTooltip();
                         variantCard.hideVariantCircle(true);
                         variantCard.hideCoverageCircle();
                     })
@@ -495,6 +508,141 @@
                     }
                 }
             },
+            // todo: need to incorporate single gene entry
+            promiseLoadGene: function (geneName, theTranscript, loadingFromFlagEvent = false, loadFeatureMatrix = true) {
+                const self = this;
+                self.showWelcome = false;
+                self.clearZoom = true;
+                self.applyFilters = false;
+                return new Promise(function (resolve, reject) {
+                    if (self.cohortModel) {
+                        self.cohortModel.clearLoadedData(geneName);
+                    }
+                    if (self.featureMatrixModel) {
+                        self.featureMatrixModel.clearRankedVariants();
+                    }
+                    self.geneModel.promiseAddGeneName(geneName)
+                        .then(function () {
+                            self.geneModel.promiseGetGeneObject(geneName)
+                                .then(function (theGeneObject) {
+                                    if (self.bringAttention === 'gene') {
+                                        self.bringAttention = null;
+                                    }
+                                    self.geneModel.adjustGeneRegion(theGeneObject);
+                                    self.geneRegionStart = theGeneObject.start;
+                                    self.geneRegionEnd = theGeneObject.end;
+                                    self.selectedGene = theGeneObject;
+
+                                    if (theTranscript) {
+                                        // If we have selected a flagged variant, we want to use the flagged
+                                        // variant's transcript
+                                        self.selectedTranscript = theTranscript;
+                                    } else {
+                                        // Determine the transcript that should be selected for this gene
+                                        // If the transcript wasn't previously selected for this gene,
+                                        // set it to the canonical transcript
+                                        let latestTranscript = self.geneModel.getLatestGeneTranscript(geneName);
+                                        if (latestTranscript == null) {
+                                            self.selectedTranscript = self.geneModel.getCanonicalTranscript(self.selectedGene);
+                                            self.geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
+                                        } else {
+                                            self.selectedTranscript = latestTranscript;
+                                        }
+                                    }
+
+                                    if (self.$refs.scrollButtonRefGene) {
+                                        self.$refs.scrollButtonRefGene.showScrollButtons();
+                                    }
+                                    if (self.cohortModel.isLoaded) {
+                                        self.promiseLoadData(loadingFromFlagEvent, loadFeatureMatrix)
+                                            .then(function () {
+                                                self.clearZoom = false;
+                                                self.showVarViz = true;
+                                                self.applyFilters = true;
+                                                resolve();
+                                            })
+                                            .catch(function (err) {
+                                                console.log(err);
+                                                reject(err);
+                                            })
+                                    } else {
+                                        resolve();
+                                    }
+                                })
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            self.geneModel.removeGene(geneName);
+                            self.onShowSnackbar({
+                                message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
+                                timeout: 60000
+                            })
+                        })
+                })
+            },
+            // todo: this needs to be updated for somatic calling entry point
+            onFilterChange: function() {
+                const self = this;
+
+                // TODO: figure out why this is taking so long to refresh...
+
+                // Only annotate once we are guaranteed that our DOM update is done for all tracks
+                self.cohortModel.promiseFilterVariants()
+                    .then(() => {
+                        console.log('Done promiseFilterVariants');
+                        self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
+                            .then((inheritanceObj) => {
+                                self.cohortModel.setLoadedVariants(self.selectedGene);
+
+                                // Turn loading flags off
+                                self.cohortModel.getCanonicalModels().forEach((sampleModel) => {
+                                    sampleModel.inProgress.loadingVariants = false;
+                                });
+
+                                self.cohortModel.allSomaticFeaturesLookup = inheritanceObj.somaticLookup;
+                                self.cohortModel.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
+
+                                // Draw feature matrix after somatic field filled
+                                let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
+                                self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
+                                    self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
+
+                                // Then we need to update coloring for tumor tracks only
+                                // TODO: we should be able to get rid of this once they're drawn post inheritance sorting
+                                if (self.$refs.variantCardRef) {
+                                    self.$refs.variantCardRef.forEach((cardRef) => {
+                                        if (cardRef.sampleModel.isTumor === true) {
+                                            cardRef.updateVariantClasses();
+                                        }
+                                    });
+                                }
+                            });
+                    }).catch((err) => {
+                    console.log('There was a problem applying variant filter: ' + err);
+                });
+            },
+            // todo: this needs to be updated to work without navref
+            reloadGene: function(geneToReload) {
+                let self = this;
+                if (geneToReload !== self.selectedGene.gene_name) {
+                    // Load gene
+                    self.onGeneSelected(geneToReload);
+                    // Fill in text entry
+                    //self.$refs.navRef.setSelectedGeneText(geneToReload);
+                }
+            },
+            onGeneSelected: function (geneName) {
+                const self = this;
+                self.deselectVariant();
+                self.promiseLoadGene(geneName, null, false);
+                //self.activeGeneVariantTab = "feature-matrix-tab";
+            },
+            onSummaryMounted: function() {
+                if (this.selectedVariant) {
+                    this.$refs.variantSummaryCardRef.hideGetStartedBanner();
+                    // this.$refs.variantSummaryCardRef.drawBars();
+                }
+            }
         },
         computed: {
             overlayWidth: function() {
@@ -511,7 +659,7 @@
             },
             selectedVariantInfo: function () {
                 if (this.selectedVariant) {
-                    return this.globalApp.utility.formatDisplay(this.selectedVariant, this.variantModel.translator)
+                    return this.globalApp.utility.formatDisplay(this.selectedVariant, this.cohortModel.translator)
                 } else {
                     return null;
                 }

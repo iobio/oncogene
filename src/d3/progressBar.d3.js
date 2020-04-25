@@ -2,45 +2,16 @@
  SJG Mar2018
  Adapted from https://github.com/sarahob/d3ProgressBar/blob/master/d3progressbar.js
  */
-export default function progressBar(d3) {
-    var dispatch = d3.dispatch("d3rendered");
+export default function progressBar(d3, id) {
+    // todo: add options param here and preferentially fill from there first
     var height = 20,
-        svgSegmentWidth = 500,
-        segmentWidth = 200,
         roundedCorners = 10,
         backgroundFill = 'white',
-        blueFill = '#6c94b7', // Fill color
-        currentStatus,
-        parentId,
-        states;
-
-    var moveProgressBar = function (frequency) {
-        var svg = d3.select('#' + parentId).select('svg');
-        var progBar = svg.select('.progress-rect');
-
-        // Fill bar if we have a frequency coming in
-        var freqNum = parseInt(frequency);
-        if (freqNum.isNaN() && freqNum > 0 && bar) {
-            progBar.transition()
-                .duration(700)
-                .attr('fill', blueFill)
-                .attr('width', function () {
-                    var scaledWidth = freqNum * 0.9;  // Progress bar is 90% width of parent svg
-                    // SJG_BOG TODO: this is going to need to change for smaller layout
-                    return scaledWidth > 10 ? (scaledWidth + "%") : "10%"; // Keep width at a minimum so bubble fits into outline
-                });
-        }
-        // Otherwise make bar disappear
-        else if (progBar) {
-            progBar.transition()
-                .duration(700)
-                .attr('fill', backgroundFill) // Set to white to get rid of remaining border
-                .attr('width', "0%");
-        }
-    };
+        blueFill = '#7f1010', // Fill color
+        barId = id;
 
     function bar() {
-        var svg = d3.select('#' + parentId)
+        var svg = d3.select('#' + barId + 'Progress')
             .append('svg')
             .attr('height', height)
             .attr('width', '100%')
@@ -69,7 +40,7 @@ export default function progressBar(d3) {
             .attr('fill', blueFill);
 
         // Ghost fill this to get rid of initial funky outline
-        var bar = d3.select('#' + parentId).select('svg').select('.progress-rect')
+        var bar = d3.select('#' + barId + 'Progress').select('svg').select('.progress-rect');
         bar.transition()
             .duration(700)
             .attr('fill', blueFill)
@@ -78,82 +49,36 @@ export default function progressBar(d3) {
             .duration(700)
             .attr('fill', backgroundFill)
             .attr('width', "0%");
-
-        dispatch.d3rendered();
     }
 
-    bar.height = function (_) {
-        if (!arguments.length) {
-            return height;
+    /*** OUTWARD FACING FUNCTIONS ***/
+    bar.moveProgressBar = function (frequency) {
+        var svg = d3.select('#' + barId + 'Progress').select('svg');
+        var progBar = svg.select('.progress-rect');
+
+        // Fill bar if we have a frequency coming in
+        var freqNum = parseInt(frequency);
+        if (!isNaN(freqNum) && freqNum > 0 && bar) {
+            progBar.transition()
+                .duration(700)
+                .attr('fill', blueFill)
+                .attr('width', function () {
+                    var scaledWidth = freqNum * 0.9;  // Progress bar is 90% width of parent svg
+                    return scaledWidth > 10 ? (scaledWidth + "%") : "10%"; // Keep width at a minimum so bubble fits into outline
+                });
         }
-        height = _;
-        return bar;
+        // Otherwise make bar disappear
+        else if (progBar) {
+            progBar.transition()
+                .duration(700)
+                .attr('fill', backgroundFill) // Set to white to get rid of remaining border
+                .attr('width', "0%");
+        }
     };
 
-    bar.svgSegmentWidth = function (_) {
-        if (!arguments.length) {
-            return svgSegmentWidth;
-        }
-        svgSegmentWidth = _;
-        return bar;
+    bar.getId = function() {
+        return barId;
     };
 
-    bar.segmentWidth = function (_) {
-        if (!arguments.length) {
-            return segmentWidth;
-        }
-        segmentWidth = _;
-        return bar;
-    };
-
-    bar.roundedCorners = function (_) {
-        if (!arguments.length) {
-            return roundedCorners;
-        }
-        roundedCorners = _;
-        return bar;
-    };
-
-    bar.backgroundFill = function (_) {
-        if (!arguments.length) {
-            return backgroundFill;
-        }
-        backgroundFill = _;
-        return bar;
-    };
-
-    bar.currentStatus = function (_) {
-        if (!arguments.length) {
-            return currentStatus;
-        }
-        currentStatus = _;
-        return bar;
-    };
-
-    bar.parentId = function (_) {
-        if (!arguments.length) {
-            return parentId;
-        }
-        parentId = _;
-        return bar;
-    };
-
-    bar.states = function (_) {
-        if (!arguments.length) {
-            return states;
-        }
-        states = _;
-        return bar;
-    };
-
-    bar.moveProgressBar = function (_) {
-        if (!arguments.length) {
-            return moveProgressBar;
-        }
-        states = _;
-        return bar;
-    }
-
-    // d3.rebind(bar, dispatch, "on");
     return bar;
 }

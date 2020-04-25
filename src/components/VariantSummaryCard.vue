@@ -27,6 +27,7 @@
             box-shadow: 6px 11px 48px -7px rgba(0, 0, 0, 0.60)
     .summary-card
         padding-top: 15px
+        font-family: Open Sans
     .summary-viz
         min-height: 100px
         max-height: 600px
@@ -71,6 +72,7 @@
             word-break: break-word
             padding-left: 1px
             padding-right: 1px
+            color: #888888
         .cohort-summary-field-value
             font-size: 12px
             word-break: break-word
@@ -179,8 +181,8 @@
         <v-flex xl9 offset-xl2 lg12>
             <div class='form-inline'>
                 <div class='form-group'>
-                    <v-chip v-bind:class="{hide: variant == null}" v-bind:style="{margin: 0}" small outline
-                            color="cohortDarkBlue"
+                    <v-chip v-if="variant" v-bind:style="{margin: 0}" small outlined
+                            color="appColor"
                             @input="summaryCardVariantDeselect()">
                             <span style="padding-right: 10px; font-size: 14px; text-align:center;"
                                   v-bind:class="{hide: geneName === ''}">{{geneName}}</span>
@@ -203,38 +205,30 @@
                              :refAlt="variantRefAlt"
                              :clinVarText="clinVarText"
                              :clinVarColor="clinVarColor"
-                             :siftText="siftText"
-                             :siftColor="siftColor"
-                             :polyPhenText="polyPhenText"
-                             :polyPhenColor="polyPhenColor"
+                             :cosmicText="cosmicText"
                              :revelText="revelText"
-                             :foldEnrichmentInfo="foldEnrichmentInfo"
-                             :pValueInfo="pValueInfo"
-                             :log10pValueInfo="log10pValueInfo"
+                             :somaticText="somaticText"
                              :variantSelected="variantSelected">
                 </feature-viz>
                 <allele-frequency-viz id="loaded-freq-viz" class="summary-viz" style="padding-top: 10px"
                                       ref="summaryFrequencyViz"
+                                      :sampleIds="sampleIds"
+                                      :selectedSamples="selectedSamples"
                                       :selectedVariant="variant"
-                                      :oneKGenomes="oneKGenomes"
-                                      :gnomad="gnomad"
-                                      :exAc="exAc"
-                                      :totalProbandAlleleCount="totalProbandAlleleCount"
-                                      :totalSubsetAlleleCount="totalSubsetAlleleCount"
-                                      :affectedProbandAlleleCount="affectedProbandAlleleCount"
-                                      :affectedSubsetAlleleCount="affectedSubsetAlleleCount">
+                                      :sampleMap="sampleReadsMap"
+                                      :d3="d3">
                 </allele-frequency-viz>
-                <bar-feature-viz id="loaded-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
-                                 ref="summaryBarFeatureViz"
-                                 :selectedVariant="variant"
-                                 :probandZygMap="probandZygMap"
-                                 :subsetZygMap="subsetZygMap"
-                                 :affectedProbandCount="affectedProbandCount"
-                                 :affectedSubsetCount="affectedSubsetCount"
-                                 :totalProbandCount="totalProbandCount"
-                                 :totalSubsetCount="totalSubsetCount"
-                                 @zyg-bars-mounted="zygBarsMounted">
-                </bar-feature-viz>
+<!--                <bar-feature-viz id="loaded-bar-feature-viz" class="summary-viz" style="padding-top: 10px"-->
+<!--                                 ref="summaryBarFeatureViz"-->
+<!--                                 :selectedVariant="variant"-->
+<!--                                 :probandZygMap="probandZygMap"-->
+<!--                                 :subsetZygMap="subsetZygMap"-->
+<!--                                 :affectedProbandCount="affectedProbandCount"-->
+<!--                                 :affectedSubsetCount="affectedSubsetCount"-->
+<!--                                 :totalProbandCount="totalProbandCount"-->
+<!--                                 :totalSubsetCount="totalSubsetCount"-->
+<!--                                 @zyg-bars-mounted="zygBarsMounted">-->
+<!--                </bar-feature-viz>-->
             </v-layout>
         </v-container>
     </v-container>
@@ -244,19 +238,23 @@
 <script>
     import FeatureViz from "./viz/FeatureViz.vue"
     import AlleleFrequencyViz from "./viz/AlleleFrequencyViz.vue"
-    import BarFeatureViz from "./viz/BarFeatureViz.vue"
+    // import BarFeatureViz from "./viz/BarFeatureViz.vue"
     export default {
         name: 'variant-summary-card',
         components: {
             FeatureViz,
             AlleleFrequencyViz,
-            BarFeatureViz
+            // BarFeatureViz
         },
         props: {
+            sampleIds: null,
+            selectedSamples: null,  // NOTE: must be in same order as sampleIds
             variant: null,
             variantInfo: null,
             selectedGene: null,
-            $: null
+            d3: null,
+            $: null,
+            cohortModel: null
         },
         data() {
             return {
@@ -264,117 +262,14 @@
             }
         },
         computed: {
-            // NOTE: the following counts are number of SAMPLES not ALLELES
-            totalProbandCount: function () {
-                if (!this.cohortFieldsValid) {
-                    return -1;
-                } else if (this.variant != null)
-                    return this.variant.totalProbandCount;
-                return 0;
-            },
-            totalSubsetCount: function () {
-                if (!this.cohortFieldsValid) {
-                    return -1;
-                } else if (this.variant != null)
-                    return this.variant.totalSubsetCount;
-                return 0;
-            },
-            affectedProbandCount: function () {
-                if (this.variant != null)
-                    return this.variant.affectedProbandCount;
-                return 0;
-            },
-            affectedSubsetCount: function () {
-                if (this.variant != null)
-                    return this.variant.affectedSubsetCount;
-                return 0;
-            },
-            //NOTE: the following counts are number of ALLELES not SAMPLES
-            totalProbandAlleleCount: function() {
-                if (this.variant != null && this.variant.probandZygCounts.length === 0)
-                    return -1;
-                else if (this.variant != null)
-                    return (this.variant.probandZygCounts[0] * 2 + this.variant.probandZygCounts[1] * 2 + this.variant.probandZygCounts[2] * 2);
-                return 0;
-            },
-            affectedProbandAlleleCount: function() {
-                if (this.variant != null)
-                    return (this.variant.probandZygCounts[1] + this.variant.probandZygCounts[2] * 2);
-                return 0;
-            },
-            totalSubsetAlleleCount: function() {
-                if (this.variant != null && this.variant.subsetZygCounts.length === 0)
-                    return -1;
-                else if (this.variant != null)
-                    return (this.variant.subsetZygCounts[0] * 2 + this.variant.subsetZygCounts[1] * 2 + this.variant.subsetZygCounts[2] * 2);
-                return 0;
-            },
-            affectedSubsetAlleleCount: function() {
-                if (this.variant != null)
-                    return (this.variant.subsetZygCounts[1] + this.variant.subsetZygCounts[2] * 2);
-                return 0;
-            },
-            subsetDelta: function () {
-                if (this.variant != null) {
-                    let delta = this.variant.subsetDelta;
-                    let roundedDelta = Math.round(this.variant.subsetDelta * 10) / 10;
-                    if (delta <= 1.0)
-                        return delta;
-                    else
-                        return roundedDelta;
+            sampleReadsMap: function() {
+                // Get variant from each sample
+                // Populate map w/ sampleId: [total, alt, ref]
+                let map = {};
+                if (this.cohortModel && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
                 }
-                return 1;
-            },
-            foldEnrichmentInfo: function () {
-                // NOTE: not displaying for now
-                if (this.variant != null) {
-                    let delta = this.variant.subsetDelta;
-                    let adjDelta = this.variant.subsetDelta;
-                    if (delta < 1 && delta > 0) {
-                        adjDelta = 1 / delta;
-                    }
-                    let foldEnrich = Math.round(adjDelta * 10) / 10;
-                    if (!this.cohortFieldsValid) {
-                        return "N/A";
-                    }
-                    else if (delta > 1) return (foldEnrich + "x" + " IN SUBSETS");
-                    else if (delta < 1) return (foldEnrich + "x" + " IN PROBANDS");
-                    else if (this.variant.totalSubsetCount > 0) return ("EQUAL FREQUENCY");
-                    else return "PROBANDS ONLY";
-                }
-                return "-";
-            },
-            pValueInfo: function () {
-                if (this.variant != null && !this.blacklistStatus) {
-                    if (!this.cohortFieldsValid) {
-                        return "N/A";
-                    } else {
-                        if (+this.variant.pVal === 1) {
-                            return '1';
-                        } else {
-                            let pValText = (+this.variant.pVal) * 100 / 100;
-                            return '' + pValText;
-                        }
-                    }
-                }
-                return "-";
-            },
-            log10pValueInfo: function () {
-                if (this.variant != null && !this.blacklistStatus) {
-                    if (!this.cohortFieldsValid) {
-                        return "N/A";
-                    } else {
-                        return '' + ((+this.variant.adjustedLevel)).toFixed(2);
-                    }
-                }
-                return "-";
-            },
-            enrichTextClass: function () {
-                if (this.variant != null) {
-                    if (this.variant.subsetDelta >= 2) return '.enrichment_subset_UP';
-                    else if (this.variant.subsetDelta <= 0.5) return '.enrichment_subset_DOWN';
-                }
-                return "";
+                return map;
             },
             effect: function () {
                 if (this.variantInfo != null)
@@ -417,28 +312,9 @@
                 }
                 return "";
             },
-            siftText: function () {
-                if (this.variantInfo != null)
-                    return this.variantInfo.sift;
-                return "";
-            },
-            siftColor: function () {
-                if (this.variantInfo != null && this.variantInfo.sift != null) {
-                    var clazz = this.variantInfo.sift.replace(" ", "_");
-                    return "colorby_sift_" + clazz;
-                }
-                return "";
-            },
-            polyPhenText: function () {
-                if (this.variantInfo != null)
-                    return this.variantInfo.polyphen;
-                return "";
-            },
-            polyPhenColor: function () {
+            cosmicText: function() {
                 if (this.variantInfo != null) {
-                    var phenText = this.variantInfo.polyphen;
-                    phenText = phenText.replace(" ", "_");
-                    return "colorby_polyphen_" + phenText;
+                    return this.variantInfo.inCosmic ? 'Yes' : 'No';
                 }
                 return "";
             },
@@ -448,82 +324,11 @@
                 }
                 return "";
             },
-            oneKGenomes: function () {
-                if (this.variant != null && this.variant.af1000G != null) {
-                    if (this.variant.af1000G !== '.' && this.variant.af1000G !== '') {
-                        return Math.round(this.variant.af1000G * 100) + "%";
-                    }
+            somaticText: function() {
+                if (this.variantInfo != null) {
+                    return this.variantInfo.isInherited === true ? 'Inherited' : (this.variantInfo.isInherited === false ? 'Somatic' : 'Undet.');
                 }
-                return "-";
-            },
-            gnomad: function () {
-                if (this.variant != null && this.variant.afgnomAD != null) {
-                    if (this.variant.afgnomAD !== '.' && this.variant.afgnomAD !== '') {
-                        return Math.round(this.variant.afgnomAD * 100) + "%";
-                    }
-                }
-                return "-";
-            },
-            exAc: function () {
-                if (this.variant != null && this.variant.afExAC != null) {
-                    if (this.variant.afExAC !== '.' && this.variant.afExAC !== '') {
-                        return Math.round(this.variant.afExAC * 100) + "%";
-                    }
-                }
-                return "-";
-            },
-            probandZygMap: function () {
-                let map = [];
-                if (this.variant != null) {
-                    let zygArr = this.variant.probandZygCounts;
-                    map.push({label: "hom ref", value: zygArr[0]});
-                    map.push({label: "het", value: zygArr[1]});
-                    map.push({label: "hom alt", value: zygArr[2]});
-                    map.push({label: "no call", value: zygArr[3]});
-                }
-                else {
-                    map.push({label: "hom ref", value: 0});
-                    map.push({label: "het", value: 0});
-                    map.push({label: "hom alt", value: 0});
-                    map.push({label: "no call", value: 0});
-                }
-                return map;
-            },
-            subsetZygMap: function () {
-                let map = [];
-                if (this.variant != null) {
-                    let zygArr = this.variant.subsetZygCounts;
-                    map.push({label: "hom ref", value: zygArr[0]});
-                    map.push({label: "het", value: zygArr[1]});
-                    map.push({label: "hom alt", value: zygArr[2]});
-                    map.push({label: "no call", value: zygArr[3]});
-                }
-                else {
-                    map.push({label: "hom ref", value: 0});
-                    map.push({label: "het", value: 0});
-                    map.push({label: "hom alt", value: 0});
-                    map.push({label: "no call", value: 0});
-                }
-                return map;
-            },
-            statusMap: function () {
-                var map = [];
-                var affectedCount = 0, unaffectedCount = 0;
-                if (this.variant != null && this.variant.genotypes != null) {
-                    var gtObj = this.variant.genotypes;
-                    for (var gt in gtObj) {
-                        if (gtObj.hasOwnProperty(gt)) {
-                            if (gtObj[gt].zygosity === 'HOM' || gtObj[gt].zygosity === 'HET')
-                                affectedCount++;
-                            else if (gtObj[gt].zygosity === 'HOMREF') {
-                                unaffectedCount++;
-                            }
-                        }
-                    }
-                }
-                map.push({label: "unaff", value: unaffectedCount});
-                map.push({label: "aff", value: affectedCount});
-                return map;
+                return "";
             },
             geneName: function () {
                 if (this.variant != null && this.selectedGene != null) {
@@ -552,28 +357,13 @@
                 self.$refs.summaryFrequencyViz.clear();
                 self.$emit("summaryCardVariantDeselect");
             },
-            assignBarChartValues: function (probandN, subsetN) {
-                let self = this;
-                if (self.$refs.summaryBarFeatureViz != null) {
-                    self.$refs.summaryBarFeatureViz.drawCharts(probandN, subsetN);
-                }
-            },
-            setCohortFieldsNotApplicable: function () {
-                let self = this;
-                self.cohortFieldsValid = false;
-            },
-            setCohortFieldsApplicable: function() {
-                let self = this;
-                self.cohortFieldsValid = true;
-            },
-            zygBarsMounted: function() {
-                let self = this;
-                self.$emit('zyg-bars-mounted');
-            },
             hideGetStartedBanner: function() {
                 this.$('#getStartedBlock').hide();
                 this.$('.summary-viz').css({'filter': 'none', '-webkit-filter': 'none'});
             }
+        },
+        mounted: function() {
+            this.$emit('summary-mounted');
         }
     }
 </script>

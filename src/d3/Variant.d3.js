@@ -106,61 +106,6 @@ export default function variantD3(d3, vizSettings) {
                 y.domain([0, data.length]);
                 y.range([innerHeight, 0]);
 
-                // Find out the smallest interval between variants on the x-axis
-                // for each level. For a single nucleotide variant, what is
-                // the standard width we would like to show given the minimum
-                // distance between all variants.
-                // TODO:  Need to use this as a factor for increasing
-                // width of multi-base variants.
-                // var minWidth = 6;
-                // // For each level
-                // for (var l = 0; l < verticalLayers; l++) {
-                //     // For each row in array (per variant set; only one variant set)
-                //     var minInterval = null;
-                //     data.forEach(function (d) {
-                //         // For each variant.  Calculate the distance on the screen
-                //         // between the 2 variants.
-                //         for (var i = 0; i < d.features.length - 1; i++) {
-                //             if (d.features[i].level === l) {
-                //                 // find the next feature at the same level
-                //                 var nextPos = null;
-                //                 for (var next = i + 1; next < d.features.length; next++) {
-                //                     if (d.features[next].level === l) {
-                //                         nextPos = next;
-                //                         break;
-                //                     }
-                //                 }
-                //                 if (nextPos) {
-                //                     var interval = Math.round(x(d.features[nextPos].start) - x(d.features[i].end));
-                //                     interval = Math.max(interval, 1);
-                //                     if (minInterval == null || interval < minInterval) {
-                //                         minInterval = interval;
-                //                     }
-                //                 } else {
-                //                     // We couldn't find a second position at the same
-                //                     // level
-                //                 }
-                //             }
-                //         }
-                //         // Once we know the smallest interval for a level, compare it
-                //         // so that we can keep track of the smallest between all levels.
-                //         // This will determine the width of a snp.
-                //         if (minInterval != null && minInterval < minWidth) {
-                //             minWidth = minInterval;
-                //         }
-                //     });
-                // }
-
-                // TODO:  Come up with a better pileup algorithm to ensure
-                // there is at least one pixel between each variant.  This
-                // works if the variant can be 1 pixel width, but we really want
-                // to signify a square for snps.  For now, try out
-                // a rectangle with a min width of 3.
-                // minWidth = Math.max(minWidth, lowestWidth);
-
-                // TODO:  Need to review this code!!!  Added for exhibit
-                // var minWidth = variantHeight;
-
                 var circleSymbolAdjust = variantHeight >=16 ? 0 : variantHeight <= 8 ? 1 : 2;
 
                 var symbolScaleCircle = d3.scaleOrdinal()
@@ -190,7 +135,6 @@ export default function variantD3(d3, vizSettings) {
 
                 // Bind svg variable to selection, not data
                 var svg = container.selectAll('svg');
-
                 svg.on("click", function () {
                     dispatch.call('d3outsideclick', null);
                 });
@@ -441,6 +385,7 @@ export default function variantD3(d3, vizSettings) {
                 // Add listeners after adjusting symbol width, etc
                 g.selectAll('.variant')
                     .on("click", function (d) {
+                        d3.event.stopPropagation();
                         dispatch.call('d3click', this, d);
                     })
                     .on("mouseover", function (d) {

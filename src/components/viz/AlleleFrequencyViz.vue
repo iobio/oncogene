@@ -9,57 +9,13 @@
 <template>
     <v-flex xs12>
         <v-layout row>
-            <v-flex xs12 class="field-label-header" style="text-align: left">Allele Frequencies</v-flex>
+            <v-flex xs12 class="field-label-header" style="text-align: left">Alternate Allele Frequencies</v-flex>
         </v-layout>
-        <v-layout row>
-            <v-flex xs2 md2 class="summary-field-label">1000G:</v-flex>
-            <v-flex xs2 v-bind:class="{ hide: loadingExtraAnnotations === true }" class="summary-field-value">{{
-                oneKGenomes }}
+        <v-layout row v-for="(id, i) in sampleIds" :key="id">
+            <v-flex xs2 class="summary-field-label">{{ selectedSamples[i] }}</v-flex>
+            <v-flex xs3 class="summary-field-value">{{ getPercentageDisplay(id) }}
             </v-flex>
-            <v-flex xs2 class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">
-                <img src="/src/assets/images/wheel.gif">
-            </v-flex>
-            <v-flex xs9 md9 id="oneKProgress" style="padding: 0px"></v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs2 md2 class="summary-field-label">gnomAD:</v-flex>
-            <v-flex xs2 v-bind:class="{ hide: loadingExtraAnnotations === true }" class="summary-field-value">{{ gnomad
-                }}
-            </v-flex>
-            <v-flex xs2 class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">
-                <img src="/src/assets/images/wheel.gif">
-            </v-flex>
-            <v-flex xs9 md9 id="gnomadProgress" style="padding: 0px"></v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs2 md2 class="summary-field-label">ExAC:</v-flex>
-            <v-flex xs2 v-bind:class="{ hide: loadingExtraAnnotations === true }" class="summary-field-value">{{ exAc
-                }}
-            </v-flex>
-            <v-flex xs2 class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">
-                <img src="/src/assets/images/wheel.gif">
-            </v-flex>
-            <v-flex xs9 md9 id="exAcProgress" style="padding: 0px"></v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs2 md2 class="summary-field-label">Proband:</v-flex>
-            <v-flex xs2 v-bind:class="{ hide: loadingExtraAnnotations === true }" class="summary-field-value">{{
-                probandDisplay }}
-            </v-flex>
-            <v-flex xs2 class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">
-                <img src="/src/assets/images/wheel.gif">
-            </v-flex>
-            <v-flex xs9 md9 id="probandProgress" style="padding: 0px"></v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs2 md2 class="summary-field-label">Subset:</v-flex>
-            <v-flex xs2 v-bind:class="{ hide: loadingExtraAnnotations === true }" class="summary-field-value">{{
-                subsetDisplay }}
-            </v-flex>
-            <v-flex xs2 class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">
-                <img src="/src/assets/images/wheel.gif">
-            </v-flex>
-            <v-flex xs9 md9 id="subsetProgress" style="padding: 0px"></v-flex>
+            <v-flex xs7 :id="id + 'Progress'" style="padding: 0px"></v-flex>
         </v-layout>
     </v-flex>
 </template>
@@ -70,41 +26,16 @@
         name: 'allele-frequency-viz',
         data() {
             return {
-                oneKBar: {},
-                exAcBar: {},
-                gnomadBar: {},
-                probandBar: {},
-                subsetBar: {},
-                probandDisplay: '-',
-                subsetDisplay: '-'
+                bars: null,
+                barsDrawn: false,
+                waitingToFill: true
             }
         },
         props: {
             selectedVariant: {},
-            oneKGenomes: {
-                default: "",
-                type: String
-            },
-            exAc: {
-                default: "",
-                type: String
-            },
-            gnomad: {
-                default: "",
-                type: String
-            },
-            totalProbandAlleleCount: {
-                default: 0,
-                type: Number
-            },
-            totalSubsetAlleleCount: {
-                default: 0,
-                type: Number
-            },
-            affectedProbandAlleleCount: {
-                default: 0,
-                type: Number
-            },
+            sampleMap: {},
+            sampleIds: null,
+            selectedSamples: null,  // NOTE: must be same order as sampleIds
             d3: {
                 type: Object,
                 default: null
@@ -113,142 +44,80 @@
         created: function () {
         },
         mounted: function () {
-            this.drawProgressBars();
-        },
-        computed: {
-            affectedProbandPercentage: function () {
-                if (this.totalProbandAlleleCount === 0 || this.totalProbandAlleleCount < 0 || this.blacklistStatus) {
-                    return "0";
-                }
-                let numMutantAlleles = this.affectedProbandAlleleCount;
-                let totalAlleleCount = this.totalProbandAlleleCount;
-
-                let freq = (Math.round((numMutantAlleles / totalAlleleCount) * 100));
-                if (freq === 0 && numMutantAlleles > 0) {
-                    return "1%";
-                }
-                return (Math.round((numMutantAlleles / totalAlleleCount) * 100)) + "";
-            },
-            affectedSubsetPercentage: function () {
-                if (this.totalSubsetAlleleCount === 0 || this.totalSubsetAlleleCount < 0 || this.blacklistStatus) {
-                    return "0";
-                }
-                let numMutantAlleles = this.affectedSubsetAlleleCount;
-                let totalAlleleCount = this.totalSubsetAlleleCount;
-
-                let freq = (Math.round((numMutantAlleles / totalAlleleCount) * 100));
-                if (freq === 0 && numMutantAlleles > 0) {
-                    return "1%";
-                }
-                return (Math.round((numMutantAlleles / totalAlleleCount) * 100)) + "";
+            this.drawAfBars();
+            if (this.waitingToFill) {
+                this.fillProgressBars();
+                this.waitingToFill = false;
             }
+            this.barsDrawn = true;
         },
         methods: {
-            drawProgressBars() {
-                let self = this;
-
-                self.oneKBar = progressBar(self.d3)
-                    .parentId('oneKProgress')
-                    .on('d3rendered', function () {
-                    });
-                self.oneKBar();
-
-                self.gnomadBar = progressBar(self.d3)
-                    .parentId('gnomadProgress')
-                    .on('d3rendered', function () {
-                    });
-                self.gnomadBar();
-
-                self.exAcBar = progressBar(self.d3)
-                    .parentId('exAcProgress')
-                    .on('d3rendered', function () {
-                    });
-                self.exAcBar();
-
-                self.probandBar = progressBar(self.d3)
-                    .parentId('probandProgress')
-                    .on('d3rendered', function () {
-                    });
-                self.probandBar();
-
-                self.subsetBar = progressBar(self.d3)
-                    .parentId('subsetProgress')
-                    .on('d3rendered', function () {
-                    });
-                self.subsetBar();
+            drawAfBars() {
+                const self = this;
+                self.bars = [];
+                self.sampleIds.forEach((id) => {
+                    let currBar = progressBar(self.d3, id);
+                    currBar();
+                    self.bars.push(currBar);
+                });
             },
             fillProgressBars() {
-                let self = this;
-
-                self.oneKBar.moveProgressBar()(self.oneKGenomes);
-                self.gnomadBar.moveProgressBar()(self.gnomad);
-                self.exAcBar.moveProgressBar()(self.exAc);
-                self.probandBar.moveProgressBar()(self.affectedProbandPercentage);
-                self.subsetBar.moveProgressBar()(self.affectedSubsetPercentage);
+                const self = this;
+                self.bars.forEach((bar) => {
+                    let af = self.getMatchingAp(bar.getId());
+                    bar.moveProgressBar(af);
+                });
             },
             clear() {
-                let self = this;
-                self.oneKBar.moveProgressBar()(0);
-                self.gnomadBar.moveProgressBar()(0);
-                self.exAcBar.moveProgressBar()(0);
-                self.probandBar.moveProgressBar()(0);
-                self.subsetBar.moveProgressBar()(0);
+                const self = this;
+                self.bars.forEach((bar) => {
+                    bar.moveProgressBar(0);
+                });
             },
-            getProbandDisplay() {
-                if (this.selectedVariant == null || this.blacklistStatus) return "-";
-                else if (this.totalProbandAlleleCount < 0) return 'N/A';
-                else if (this.totalProbandAlleleCount === 0) return "0%";
-                else {
-                    let numMutantAlleles = this.affectedProbandAlleleCount;
-                    let totalAlleleCount = this.totalProbandAlleleCount;
-
-                    let freq = Math.round((numMutantAlleles / totalAlleleCount) * 100);
-                    if (freq === 0 && numMutantAlleles > 0) {
-                        return "<1%";
+            getMatchingAp(sampleId) {
+                const self = this;
+                if (!self.sampleMap) {
+                    console.log('Error: need samplereads map to populate bars');
+                } else {
+                    let feat = self.sampleMap[sampleId];
+                    if (!feat) {
+                        console.log('Error: unrecognized sample id when fetching reads');
+                    } else {
+                        if (feat.genotypeDepth === 0) {
+                            return 0;
+                        } else {
+                            return Math.round(feat.genotypeAltCount / feat.genotypeDepth * 100); // alt / total
+                        }
                     }
-                    return freq + "%";
                 }
             },
-            getSubsetDisplay() {
-                if (this.selectedVariant == null || this.blacklistStatus) return "-";
-                else if (this.totalProbandAlleleCount < 0) return 'N/A';
-                else if (this.totalSubsetAlleleCount === 0) return "0%";
+            getPercentageDisplay(sampleId) {
+                if (this.selectedVariant == null) return "-";
                 else {
-                    let numMutantAlleles = this.affectedSubsetAlleleCount;
-                    let totalAlleleCount = this.totalSubsetAlleleCount;
+                    let feat = this.sampleMap[sampleId];
+                    if (!feat) {
+                        return '-';
+                    }
+                    let numMutantAlleles = feat.genotypeAltCount;
+                    let totalAlleleCount = feat.genotypeDepth;
+                    if (totalAlleleCount === 0) return '0%';
 
                     let freq = Math.round((numMutantAlleles / totalAlleleCount) * 100);
                     if (freq === 0 && numMutantAlleles > 0) {
-                        return "<1%";
+                        return '<1% (' + numMutantAlleles + '/' + totalAlleleCount + ')';
                     }
-                    return freq + "%";
+                    return freq + '% (' + numMutantAlleles + '/' + totalAlleleCount + ')';
                 }
             }
         },
         watch: {
             selectedVariant: function () {
-                this.fillProgressBars();
-                this.probandDisplay = this.getProbandDisplay();
-                this.subsetDisplay = this.getSubsetDisplay();
-            },
-            oneKGenomes: function() {
-                let self = this;
-                if (self.oneKGenomes !== '-') {
-                    self.oneKBar.moveProgressBar()(self.oneKGenomes);
+                if (this.barsDrawn) {
+                    this.fillProgressBars();
+                } else {
+                    this.waitingToFill = true;
                 }
             },
-            exAc: function() {
-                let self = this;
-                if (self.exAc !== '-') {
-                    self.exAcBar.moveProgressBar()(self.exAc);
-                }
-            },
-            gnomad: function() {
-                let self = this;
-                if (self.gnomad !== '-') {
-                    self.gnomadBar.moveProgressBar()(self.gnomad);
-                }
-            }
         }
     }
 

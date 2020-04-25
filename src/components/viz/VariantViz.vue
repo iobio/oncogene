@@ -181,7 +181,7 @@
                     self.onVariantClick(variant);
                 });
                 dispatch.on('d3outsideclick', function() {
-                    //self.onVariantClick(null);
+                    self.onVariantClick(null);
                 });
                 dispatch.on('d3mouseover', function(variant) {
                     self.onVariantHover(variant);

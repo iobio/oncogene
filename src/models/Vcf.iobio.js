@@ -663,11 +663,8 @@ export default function vcfiobio(theGlobalApp) {
                                     }
                                 })
                             }
-                            if (strand === '') {
-                                console.log("Could not find strand from promiseGetVariantIds");
-                            }
                             alt = getCssSafeAlt(alt);
-                            strand = strand === '+' ? 'plus' : 'minus';
+                            strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
                             let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
 
                             // Parse ids and return as array

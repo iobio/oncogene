@@ -670,7 +670,9 @@ class Util {
       dbSnpUrl: "",
       dbSnpLink: "",
       filtersPassed: "",
-      cosmicUrl: null
+      cosmicUrl: null,
+      isInherited: variant.isInherited,
+      inCosmic: variant.inCosmic
     };
     var key = null;
     var i = 0;
@@ -710,7 +712,7 @@ class Util {
     }
 
 
-    if (info.clinvarSig != null && info.clinvarSig != "") {
+    if (info.clinvarSig != null && info.clinvarSig !== "") {
       if (variant.clinVarUid != null && variant.clinVarUid != '') {
         info.clinvarUrl = 'http://www.ncbi.nlm.nih.gov/clinvar/variation/' + variant.clinVarUid;
       } else if (variant.clinvarSubmissions != null && variant.clinvarSubmissions.length > 0) {

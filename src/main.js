@@ -10,18 +10,6 @@ import $ from 'jquery'
 
 Vue.config.productionTip = false;
 
-// Have to define rebind for v5 of d3
-// Copies a variable number of methods from source to target.
-d3.rebind = function(target, source) {
-    var d3_rebind = function(target, source, method) {
-        var value = method.apply(source, arguments);
-        return value === source ? target : value;
-    };
-    var i = 1, n = arguments.length, method;
-    while (++i < n) target[method = arguments[i]] = d3_rebind(target, source, source[method]);
-    return target;
-};
-
 Vue.mixin({
     data: function () {
         return {

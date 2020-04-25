@@ -286,6 +286,18 @@ class CohortModel {
         }
     }
 
+    // Returns list of variant objects corresponding to the provided variant ID
+    // from all canonical sample models in this cohort
+    getMatchingVariants(varId) {
+        let map = {};
+        let models = this.getCanonicalModels();
+        models.forEach(model => {
+             map[model.id] = model.variantIdHash[varId];
+             // todo: if the variant doesn't exist in vcf, need to pull reads from bam?
+        });
+        return map;
+    }
+
     /*
      * SETTERS
      */
@@ -304,6 +316,25 @@ class CohortModel {
                 default:
             }
         })
+    }
+
+    setTumorInfo(forceRefresh) {
+        let self = this;
+        if (self.tumorInfo == null || forceRefresh) {
+            self.tumorInfo = [];
+            self.getCanonicalModels().forEach(function(model) {
+                if (model && model.getId() !== 'known-variants' && model.getId() !== 'cosmic-variants') {
+                    let info = {};
+                    info.model = model;
+                    info.id = model.getId();
+                    info.status = model.getTumorStatus() ? 'Tumor' : 'Normal';
+                    info.label  = model.getDisplayName();
+                    info.id = model.getDisplayName();
+
+                    self.tumorInfo.push(info);
+                }
+            });
+        }
     }
 
     setBuild(build) {
@@ -367,6 +398,7 @@ class CohortModel {
                     samplePromises.push(self.promiseAddCosmicSample());
                     Promise.all(samplePromises)
                         .then(() => {
+                            self.setTumorInfo(true);
                             self.inProgress.loadingDataSources = false;
                             resolve();
                         }).catch(() => {
@@ -657,25 +689,6 @@ class CohortModel {
             }
         }
         return refModels.concat(sortedModels);
-    }
-
-    setTumorInfo(forceRefresh) {
-        let self = this;
-        if (self.tumorInfo == null || forceRefresh) {
-            self.tumorInfo = [];
-            self.getCanonicalModels().forEach(function (model) {
-                if (model && model.getId() !== 'known-variants' && model.getId() !== 'cosmic-variants') {
-                    let info = {};
-                    info.model = model;
-                    info.id = model.getId();
-                    info.status = model.getTumorStatus() ? 'Tumor' : 'Normal';
-                    info.label = model.getDisplayName();
-                    info.id = model.getDisplayName();
-
-                    self.tumorInfo.push(info);
-                }
-            });
-        }
     }
 
     /* Returns sample model corresponding to name or null if DNE */

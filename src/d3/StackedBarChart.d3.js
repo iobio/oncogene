@@ -462,7 +462,7 @@ export default function stackedBarChartD3(d3, $) {
   };
 
   // This adds the "on" methods to our custom exports
-  d3.rebind(chart, dispatch, "on");
+  // d3.rebind(chart, dispatch, "on");
 
   return chart;
 }

@@ -1,6 +1,7 @@
 import {
     select,
-    selectAll
+    selectAll,
+    event
 } from 'd3-selection';
 
 import {
@@ -34,6 +35,7 @@ import {
 export default {
     select,
     selectAll,
+    event,
     scaleLinear,
     scaleQuantile,
     scaleOrdinal,
