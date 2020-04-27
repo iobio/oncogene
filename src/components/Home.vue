@@ -7,7 +7,7 @@
         >
             <!--Static main page-->
             <v-layout>
-                <Welcome v-if="!dataEntered"
+                <Welcome v-if="!dataEntered && !debugMode"
                          :d3="d3"
                          :cohortModel="cohortModel"
                          :welcomeWidth="screenWidth"
@@ -17,7 +17,7 @@
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-flex xs9 v-if="dataEntered">
+                <v-flex xs9 v-if="dataEntered || debugMode">
                     <v-card outlined :height="700">
                         <!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
                         <variant-card
@@ -35,7 +35,6 @@
                                 :canonicalSampleIds="canonicalSampleIds"
                                 :classifyVariantSymbolFunc="model.classifyByImpact"
                                 :hoverTooltip="hoverTooltip"
-                                :clickTooltip="clickTooltip"
                                 :selectedGene="selectedGene"
                                 :selectedTranscript="analyzedTranscript"
                                 :selectedVariant="selectedVariant"
@@ -60,7 +59,7 @@
                         </variant-card>
                     </v-card>
                 </v-flex>
-                <v-flex xs3 v-if="dataEntered">
+                <v-flex xs3 v-if="dataEntered || debugMode">
                     <v-card>
                         <v-tabs v-model="selectedTab">
                             <v-tabs-slider style="max-width: 120px" color="primary"></v-tabs-slider>
@@ -84,14 +83,11 @@
                                     :key="'genesTab'"
                                     :id="'genes-tab'">
                                 <v-container>
-                                    <v-card>
-                                        gene card
-                                    </v-card>
-<!--                                    todo: import TDS gene card-->
-<!--                                    <gene-list-card-->
-<!--                                            ref="geneListCard"-->
-<!--                                            :selectedGene="selectedGene.gene_name">-->
-<!--                                    </gene-list-card>-->
+                                    <somatic-genes-card
+                                            ref="somaticGenesCard"
+                                            :rankedGeneList="rankedGeneList"
+                                            @variant-selected="onCohortVariantClick">
+                                    </somatic-genes-card>
                                 </v-container>
                             </v-tab-item>
                             <v-tab-item
@@ -143,23 +139,6 @@
                     </v-card>
                 </v-flex>
             </v-layout>
-
-            <!--Dynamic drawer-->
-            <v-navigation-drawer
-                    v-model="displayEvidenceDrawer"
-                    app
-                    temporary
-                    right
-                    :width="overlayWidth"
-            >
-                <!--<EvidenceDrawer-->
-                    <!--:drug="selectedDrug"-->
-                    <!--:screenWidth="screenWidth"-->
-                    <!--:screenHeight="screenHeight"-->
-                    <!--:screenFile="SCREEN_FILE"-->
-                    <!--:pdxIds="PDX_IDS">-->
-                <!--</EvidenceDrawer>-->
-            </v-navigation-drawer>
         </v-sheet>
         <v-overlay :value="displayLoader">
             <v-progress-circular indeterminate size="64"></v-progress-circular>
@@ -168,25 +147,24 @@
 </template>
 
 <script>
-    // import GlobalSidebar from './GlobalSidebar.vue'
-    // import GlobalGenome from './GlobalGenome.vue'
     import Welcome from './Welcome.vue'
     import VariantCard from './VariantCard.vue'
     import VariantSummaryCard from './VariantSummaryCard.vue'
     import FilterPanelMenu from './filter/FilterPanelMenu.vue'
     import HistoryTab from './HistoryTab.vue'
+    import SomaticGenesCard from './SomaticGenesCard.vue'
+
     import '@/assets/css/v-tooltip.css'
 
     export default {
         name: "Home.vue",
         components: {
-            // GlobalSidebar,
-            // GlobalGenome,
             Welcome,
             VariantCard,
             VariantSummaryCard,
             FilterPanelMenu,
-            HistoryTab
+            HistoryTab,
+            SomaticGenesCard
         },
         props: {
             d3: {
@@ -212,19 +190,13 @@
             hoverTooltip: {
                 type: Object,
                 default: null
-            },
-            clickTooltip: {
-                type: Object,
-                default: null
             }
         },
         data: () => {
             return {
                 // todo: get rid of unused vars
-                displayEvidenceDrawer: false,
                 screenWidth: window.innerWidth,
                 screenHeight: window.innerHeight,
-                displayDrawerWidth: 0,
 
                 // view state
                 globalMode: false,
@@ -253,6 +225,9 @@
                 selectedSamples: null,  // NOTE: must be in same order as sampleIds
                 sampleModels: null,
                 geneHistoryList: [],
+                rankedGeneList: [],
+
+                debugMode: false
             };
         },
         watch: {
@@ -288,26 +263,29 @@
                             self.selectedSamples.push(model.selectedSample);
                         });
 
+                        this.cohortModel.promiseAnnotateGlobalSomatics()
+                            .then((topRankedGene) => {
+                                let geneModel = self.cohortModel.geneModel;
 
-                        // todo: for screenshot purposes, skipping this for now
-                        // let promises = [];
-                        //promises.push(this.cohortModel.promiseAnnotateGlobalSomatics());
-
-                        // todo: then load top gene from list
-                        let geneModel = self.cohortModel.geneModel;
-                        self.selectedGene = Object.values(geneModel.geneObjects)[0];
-                        self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-                        self.geneRegionStart = self.selectedGene.start;
-                        self.geneRegionEnd = self.selectedGene.end;
-
-                        self.promiseLoadData(self.selectedGene, self.selectedTranscript)
-                            .then(() => {
                                 self.displayLoader = false;
-                                // todo: update view state and hide loader
-                            })
-                            .catch(error => {
-                                Promise.reject('Could not load data: ' + error);
-                            })
+                                self.rankedGeneList = geneModel.rankedGeneList;
+
+                                self.selectedGene = topRankedGene;
+                                self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                                self.geneRegionStart = self.selectedGene.start;
+                                self.geneRegionEnd = self.selectedGene.end;
+
+                                self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                    .then(() => {
+                                        // todo: appeasing linter, get rid of
+                                        console.log('Successfully loaded top gene');
+                                    })
+                                    .catch(error => {
+                                        Promise.reject('Could not load data: ' + error);
+                                    })
+                            }).catch(error => {
+                            console.log('There was a problem initializing cohort model: ' + error);
+                        });
                     })
                     .catch(error => {
                         console.log('There was a problem initializing cohort model: ' + error);
@@ -345,6 +323,7 @@
             onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
                 const self = this;
                 self.deselectVariant();
+                // todo: make sure that variant object is the same here coming from ranked gene list
                 if (variant) {
                     self.lastClickCard = sampleModelId;
                     // self.calcFeatureMatrixWidthPercent();
@@ -377,9 +356,6 @@
                         variantCard.showCoverageCircle(variant);
                     }
                 });
-                // if (self.$refs.navRef != sourceComponent) {
-                //     self.$refs.navRef.selectVariant(variant, 'highlight');
-                // }
             },
             onCohortVariantHoverEnd: function () {
                 const self = this;
@@ -408,20 +384,12 @@
                     self.cohortModel.promiseLoadCosmicVariants(self.selectedGene, self.selectedTranscript);
                 }
             },
-            // FILTER TODO: I don't think this is ever used currently...
+            // FILTER
             onVariantsFilterChange: function (selectedCategories, trackId) {
                 console.log(selectedCategories);
                 console.log(trackId);
                 // todo: will have to fetch somatic variants again here
 
-                // let self = this;
-                // if (trackId === 'known-variants') {
-                //     self.filterModel.setModelFilter('known-variants', 'vepImpact', selectedCategories);
-                //     self.cohortModel.setLoadedVariants(self.selectedGene, 'known-variants');
-                // } else if (trackId === 'cosmic-variants') {
-                //     self.filterModel.setModelFilter('cosmic-variants', 'vepImpact', selectedCategories);
-                //     self.cohortModel.setLoadedVariants(self.selectedGene, 'cosmic-variants');
-                // }
             },
             deselectVariant: function () {
                 const self = this;
@@ -433,21 +401,6 @@
                         // variantCard.hideVariantTooltip();
                         variantCard.hideVariantCircle(true);
                         variantCard.hideCoverageCircle();
-                    })
-                }
-                // if (self.$refs.navRef) {
-                //     self.$refs.navRef.selectVariant(null);
-                // }
-            },
-            onExitClickTooltip: function() {
-                const self = this;
-                if (self.lastClickCard === 'featureMatrix') {
-                    self.$refs.navRef.onVariantClick(null);
-                } else if (self.lastClickCard) {
-                    self.$refs.variantCardRef.forEach((cardRef) => {
-                        if (self.lastClickCard === cardRef.sampleModel.id) {
-                            cardRef.onVariantClick(null);
-                        }
                     })
                 }
             },

@@ -71,6 +71,7 @@ class CohortModel {
 
         // new stuff - tb sorted
         this.onlySomaticCalls = false;
+        this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.rankedSomaticGeneList = [];    // A ranked list of somatic gene objects for entire genome (ordered most pathogenic/relevant -> least)
     }
 
@@ -387,6 +388,7 @@ class CohortModel {
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
+
             self.geneModel.promiseCopyPasteGenes(userGeneList, {replace: true, warnOnDup: false})
                 .then(() => {
                     // add all modelInfo to sample models
@@ -409,62 +411,6 @@ class CohortModel {
             })
         })
     }
-
-    /* Group somatic variants by gene. */
-    groupSomaticVarsByGene(somaticVariants) {
-        // todo: implement
-
-        console.log(somaticVariants);   // todo: appease linter
-    }
-
-    /* Ranks the gene objects with their respective somatic variants. */
-    promiseRankSomaticObjs(somaticGeneObjs) {
-        // rank variants
-        console.log(somaticGeneObjs);   // todo: appease linter
-        // todo: implement
-    }
-
-
-    // promiseInit(modelInfos) {
-    //     let self = this;
-    //
-    //     return new Promise(function (resolve, reject) {
-    //         self.isLoaded = false;
-    //         self.inProgress.loadingDataSources = true;
-    //         self.sampleModels = [];
-    //         self.flaggedVariants = [];
-    //         self.genesInProgress = [];
-    //         self.sampleMap = {};
-    //         self.clearLoadedData();
-    //
-    //         // Increment orders of all sample model infos, to accomodate clinvar & cosmic tracks first
-    //         modelInfos.forEach((modelInfo) => {
-    //             modelInfo.order += 2;
-    //         });
-    //
-    //         let promises = [];
-    //         promises.push(self.promiseAddClinvarSample());
-    //         promises.push(self.promiseAddCosmicSample());
-    //         modelInfos.forEach(function (modelInfo) {
-    //             promises.push(self.promiseAddSample(modelInfo));
-    //         });
-    //
-    //         Promise.all(promises)
-    //             .then(function () {
-    //                 // Enforce cosmic & clinvar tracks being on top
-    //                 self.sampleModels = self.sortSampleModels(self.getCanonicalModels(), self.sampleMap);
-    //
-    //                 // Flip status flags
-    //                 self.setTumorInfo(true);
-    //                 self.inProgress.loadingDataSources = false;
-    //                 self.isLoaded = true;
-    //                 resolve();
-    //             })
-    //             .catch(function (error) {
-    //                 reject(error);
-    //             })
-    //     })
-    // }
 
     assignCategoryOrders() {
         var samples = this.getCanonicalModels();
@@ -510,7 +456,7 @@ class CohortModel {
             vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
 
-            // todo: doing redundant work here by checking headers again - update this in files menu
+            // todo: doing redundant work here by checking headers again - cache this after files menu call
             let filePromises = [];
             if (modelInfo.vcfUrl) {
                 let vcfPromise = new Promise(function (vcfResolve) {
@@ -812,17 +758,60 @@ class CohortModel {
 
     /* Loads global somatic list */
     promiseAnnotateGlobalSomatics() {
+        const self = this;
         return new Promise((resolve, reject) => {
-            this.promiseAnnotateSomaticVariants()
+            self.promiseAnnotateSomaticVariants()
                 .then((somaticVariants) => {
-                    let somaticGeneObjs = this.groupSomaticVarsByGene(somaticVariants);
-                    this.rankedSomaticGeneList = this.promiseRankSomaticObjs(somaticGeneObjs);
+                    // returns idx: obj w/ name: selectedSample and features list
+                    self.promisePopulateSomaticVarMap(somaticVariants)
+                        .then((varMap) => {
+                            self.somaticVarMap = varMap;
+                            self.geneModel.promiseGroupAndRank(self.somaticVarMap)
+                                .then(topRankedGene => {
+                                    resolve(topRankedGene);
+                                })
+                                .catch(error => {
+                                    reject('Something went wrong ranking genes by variants ' + error);
+                                });
+                        }).catch(error => {
+                            reject('Somthing went wrong populating somatic variant map: ' + error);
+                        });
                 })
                 .catch(error => {
                     reject('Problem loading somatic variants: ' + error);
                 });
         });
     }
+
+
+    /* Returns a hash of samples: parsed vcf results. Iterates through list of features per sample,
+     * and appends each unique feature to a hash of varId : varObj. Updates feature objects (varObj)
+     * added to has to reflect which samples in cohort contains the variant.
+    */
+    promisePopulateSomaticVarMap(somaticVarMap) {
+        const self = this;
+        let featureMap = {};
+
+        return new Promise((resolve) => {
+            Object.values(somaticVarMap).forEach((sampleObj) => {
+                let selectedSample = sampleObj.name;
+                sampleObj.features.forEach(feature => {
+                    let featObj = featureMap[feature.id];
+                    if (featObj == null) {
+                        feature.sampleMap = {};
+                        self.getCanonicalModels().forEach(model => {
+                            feature.sampleMap[model.selectedSample] = false;
+                        });
+                        featureMap[feature.id] = feature;
+                    } else {
+                        featObj.sampleMap[selectedSample] = true;
+                    }
+                })
+            });
+            resolve(featureMap);
+        })
+    }
+
 
     /* Loads data for all samples for a single gene */
 
@@ -904,9 +893,7 @@ class CohortModel {
             let regions = self.geneModel.getFormattedGeneRegions();
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticCriteria, selectedSamples, regions)
                 .then((somaticVariants) => {
-                    console.log(somaticVariants);
-                    // TODO: return somaticVars here make lookup to store this in - ensure returning data first
-                    resolve();
+                    resolve(somaticVariants);
                 }).catch((error) => {
                 reject('Problem pulling back somatic variants: ' + error);
             });

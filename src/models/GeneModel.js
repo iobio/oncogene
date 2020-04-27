@@ -63,8 +63,7 @@ class GeneModel {
         this.NUMBER_PHENOLYZER_GENES = 300;
         this.phenolyzerGenes = [];
 
-        this.rankedGenes = {};
-
+        this.rankedGeneList = [];
         this.geneRegions = [];
 
         // this.dispatch = d3.dispatch("geneDangerSummarized");
@@ -532,44 +531,46 @@ class GeneModel {
                 // Search NCBI based on the gene name to obtain the gene ID
                 var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
                 me.globalApp.$.ajax({
-                    url: url,
-                    type: "GET",
-                    dataType: "json",
-                    crossDomain: true}
-                    ).done(function (data) {
-                        // Now that we have the gene ID, get the NCBI gene summary
-                        var webenv = data["esearchresult"]["webenv"];
-                        var queryKey = data["esearchresult"]["querykey"];
-                        var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
-                        me.globalApp.$.ajax({
+                        url: url,
+                        type: "GET",
+                        dataType: "json",
+                        crossDomain: true
+                    }
+                ).done(function (data) {
+                    // Now that we have the gene ID, get the NCBI gene summary
+                    var webenv = data["esearchresult"]["webenv"];
+                    var queryKey = data["esearchresult"]["querykey"];
+                    var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
+                    me.globalApp.$.ajax({
                             url: summaryUrl,
                             type: 'GET',
                             dataType: 'json',
-                            crossDomain: true}
-                            ).done(function (sumData) {
-                                if (sumData.result == null || sumData.result.uids.length === 0) {
-                                    if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
-                                        sumData.esummaryresult.forEach(function (message) {
-                                            console.log("Unable to get NCBI gene summary from eutils esummary");
-                                            console.log(message);
-                                        });
-                                    }
-                                    me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                                    resolve(unknownGeneInfo);
+                            crossDomain: true
+                        }
+                    ).done(function (sumData) {
+                        if (sumData.result == null || sumData.result.uids.length === 0) {
+                            if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
+                                sumData.esummaryresult.forEach(function (message) {
+                                    console.log("Unable to get NCBI gene summary from eutils esummary");
+                                    console.log(message);
+                                });
+                            }
+                            me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                            resolve(unknownGeneInfo);
 
-                                } else {
-                                    var uid = sumData.result.uids[0];
-                                    var geneInfo = sumData.result[uid];
-                                    me.geneNCBISummaries[geneName] = geneInfo;
-                                    resolve(geneInfo)
-                                }
-                            })
-                            .fail(function () {
-                                me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                                reject("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
-                                // resolve(unknownGeneInfo);
-                            })
+                        } else {
+                            var uid = sumData.result.uids[0];
+                            var geneInfo = sumData.result[uid];
+                            me.geneNCBISummaries[geneName] = geneInfo;
+                            resolve(geneInfo)
+                        }
                     })
+                        .fail(function () {
+                            me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                            reject("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
+                            // resolve(unknownGeneInfo);
+                        })
+                })
                     .fail(function () {
                         me.geneNCBISummaries[geneName] = unknownGeneInfo;
                         reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
@@ -716,6 +717,18 @@ class GeneModel {
                 success: function (response) {
                     if (response.length > 0 && response[0].hasOwnProperty('gene_name')) {
                         var theGeneObject = response[0];
+                        // Oncogene adds
+                        theGeneObject.somaticVariantList = [];
+                        theGeneObject.score = -1;
+                        theGeneObject.cosmicHighCount = 0;
+                        theGeneObject.cosmicModerCount = 0;
+                        theGeneObject.cosmicLowCount = 0;
+                        theGeneObject.cosmicModifCount = 0;
+                        theGeneObject.highCount = 0;
+                        theGeneObject.moderCount = 0;
+                        theGeneObject.lowCount = 0;
+                        theGeneObject.modifCount = 0;
+
                         me.geneObjects[theGeneObject.gene_name] = theGeneObject;
                         resolve(theGeneObject);
                     } else {
@@ -1190,7 +1203,6 @@ class GeneModel {
         return 0;
     }
 
-
     compareDangerSummaryByLowCoverage(geneName1, geneName2) {
         var me = this;
 
@@ -1224,7 +1236,128 @@ class GeneModel {
         }
     }
 
+    /* Returns a list of genes, ranked according to the somatic variants each contains.
+     * Ranks, in order, by:
+     *      1. Contains highest number of {x} VEP impact, COSMIC-containing features
+     *      2. Contains highest number of {x} VEP impact features
+     *      ...where {x} is High, Moderate, Low, Modifier in order
+     * Takes in a list of unique, somatic variants. Each variant contains a boolean
+     * representing if a sample contains it or not. Annotates each gene object to append
+     * which variants occur within it (for use when a user clicks on a gene).
+     */
+    promiseGroupAndRank(somaticVars) {
+        const self = this;
+        let genesWithVars = {};
+        let scorePromises = [];
 
+        return new Promise((resolve, reject) => {
+            Object.values(somaticVars).forEach(feat => {
+                // For now, just adding a list of vars per object
+                // We may want to change this depending on gene list viz needs
+                if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
+                    self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
+                } else {
+                    // VEP might call gene something else than what gene service does
+                    // TODO: need to figure out what to do here if we don't find a match...
+                    console.log('Could not match VEP gene symbol to ClinGen');
+                }
+                genesWithVars[feat.geneSymbol] = true;
+            });
+            // Once each variant is assigned to its gene object, we can score them
+            Object.keys(genesWithVars).forEach(geneName => {
+                let scoreP = self.promiseScoreGene(geneName);
+                scorePromises.push(scoreP);
+            });
+
+            // Once each gene is scored we can rank them
+            Promise.all(scorePromises)
+                .then(() => {
+                    self.promiseRankGenes()
+                        .then(topGene => {
+                            resolve(topGene);
+                        }).catch(error => {
+                        reject('There was a problem ranking genes: ' + error);
+                    })
+                })
+        })
+    }
+
+    // todo: incorporate CiVIC into this
+    promiseScoreGene(geneName) {
+        const self = this;
+        const VEP_HIGH = 'HIGH';
+        const VEP_MODER = 'MODERATE';
+        const VEP_LOW = 'LOW';
+        let score = 0;
+
+        return new Promise((resolve) => {
+            // todo: add counts per annotation type here too for populating badges
+            let geneObj = self.geneObjects[geneName];
+            if (geneObj) {
+                geneObj.somaticVariantList.forEach(feat => {
+                    let impact = Object.keys(feat.highestImpactVep);
+                    if (impact.length > 0) {
+                        impact = impact[0];
+                    }
+
+                    let cosmicBonus = 0;
+                    if (feat.inCosmic) {
+                        cosmicBonus = 1;
+                    }
+                    if (impact === VEP_HIGH) {
+                        score += 4 + cosmicBonus;
+                        if (cosmicBonus > 0) {
+                            geneObj.cosmicHighCount += 1;
+                        } else {
+                            geneObj.highCount += 1;
+                        }
+                    } else if (impact === VEP_MODER) {
+                        score += 3 + cosmicBonus;
+                        if (cosmicBonus > 0) {
+                            geneObj.cosmicModerCount += 1;
+                        } else {
+                            geneObj.moderCount += 1;
+                        }
+                    } else if (impact === VEP_LOW) {
+                        score += 2 + cosmicBonus;
+                        if (cosmicBonus > 0) {
+                            geneObj.cosmicLowCount += 1;
+                        } else {
+                            geneObj.lowCount += 1;
+                        }
+                    } else {
+                        score += 1 + cosmicBonus;
+                        if (cosmicBonus > 0) {
+                            geneObj.cosmicModifCount += 1;
+                        } else {
+                            geneObj.modifCount += 1;
+                        }
+                    }
+                });
+                geneObj.score = score;
+            }
+            resolve();
+        })
+    }
+
+    promiseRankGenes() {
+        const self = this;
+        return new Promise(resolve => {
+            let genesWithVars = Object.values(self.geneObjects).filter((geneObj) => {
+                return geneObj.score > 0;
+            });
+            // Sort alphabetically first (a->z)
+            self.rankedGeneList = genesWithVars.sort((a, b) => {
+                return (a.gene_name < b.gene_name) ? 1 : -1;
+            });
+
+            // Then sort by score (descending)
+            self.rankedGeneList = self.rankedGeneList.sort((a, b) => {
+                return (a.score < b.score) ? 1 : -1;
+            });
+            resolve(self.rankedGeneList[0]);
+        });
+    }
 
     /* Returns an array of gene regions strings found in geneObjects formatted for bcftools calls
      * ex: ['chrA:startA-endA', 'chrB:startB-endB', ...]

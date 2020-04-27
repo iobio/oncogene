@@ -832,7 +832,7 @@
             }
         },
         mounted: function () {
-            this.makeItRain();
+            // this.makeItRain();
             this.populateValidGenesMap();
             this.populateGeneLists();
         }

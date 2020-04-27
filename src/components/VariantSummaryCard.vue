@@ -218,17 +218,7 @@
                                       :sampleMap="sampleReadsMap"
                                       :d3="d3">
                 </allele-frequency-viz>
-<!--                <bar-feature-viz id="loaded-bar-feature-viz" class="summary-viz" style="padding-top: 10px"-->
-<!--                                 ref="summaryBarFeatureViz"-->
-<!--                                 :selectedVariant="variant"-->
-<!--                                 :probandZygMap="probandZygMap"-->
-<!--                                 :subsetZygMap="subsetZygMap"-->
-<!--                                 :affectedProbandCount="affectedProbandCount"-->
-<!--                                 :affectedSubsetCount="affectedSubsetCount"-->
-<!--                                 :totalProbandCount="totalProbandCount"-->
-<!--                                 :totalSubsetCount="totalSubsetCount"-->
-<!--                                 @zyg-bars-mounted="zygBarsMounted">-->
-<!--                </bar-feature-viz>-->
+<!--                todo: put in AF viz rnaseq/atacseq counts here too-->
             </v-layout>
         </v-container>
     </v-container>
