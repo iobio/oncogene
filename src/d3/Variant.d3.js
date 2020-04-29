@@ -1,3 +1,5 @@
+import { event as currentEvent } from 'd3';
+
 export default function variantD3(d3, vizSettings) {
     /**** CONSTRUCTOR ****/
 
@@ -133,11 +135,8 @@ export default function variantD3(d3, vizSettings) {
                     .attr("class", "group")
                     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-                // Bind svg variable to selection, not data
+                // // Bind svg variable to selection, not data
                 var svg = container.selectAll('svg');
-                svg.on("click", function () {
-                    dispatch.call('d3outsideclick', null);
-                });
 
                 // The chart dimensions could change after instantiation, so update viewbox dimensions
                 // every time we draw the chart.
@@ -385,8 +384,8 @@ export default function variantD3(d3, vizSettings) {
                 // Add listeners after adjusting symbol width, etc
                 g.selectAll('.variant')
                     .on("click", function (d) {
-                        d3.event.stopPropagation();
                         dispatch.call('d3click', this, d);
+                        currentEvent.stopPropagation();
                     })
                     .on("mouseover", function (d) {
                         dispatch.call('d3mouseover', this, d);
@@ -441,6 +440,10 @@ export default function variantD3(d3, vizSettings) {
                             .style("opacity", 0);
                     }
                 });
+                d3.selectAll('svg').filter(':not(.variant)')
+                    .on("click", function() {
+                        dispatch.call('d3outsideclick', null);
+                    })
             }
         });
     }
@@ -508,11 +511,6 @@ export default function variantD3(d3, vizSettings) {
     // };
 
     chart.showCircle = function(d, svgContainer, indicateMissingVariant, pinned) {
-        // Prevent second event from firing and clicking out
-        if (d3.event) {
-            d3.event.stopPropagation();
-        }
-
         // Find the matching variant
         var matchingVariant = null;
         svgContainer.selectAll(".variant").each(function (variant) {

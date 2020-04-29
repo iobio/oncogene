@@ -191,20 +191,21 @@
             </v-expansion-panel-header>
             <v-expansion-panel-content :value="openState">
                 <v-card outlined :style="{padding: '5px 10px'}" id="card-viz">
-                    <stacked-bar-chart-viz
-                            id="known-variants-chart"
-                            style="width:100%"
-                            v-if="(sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants') || (sampleModel.id === 'cosmic-variants' && cosmicVariantsViz !== 'variants')"
-                            :data="sampleModel.variantHistoData"
-                            :width="width"
-                            :xStart="selectedGene.start"
-                            :xEnd="selectedGene.end"
-                            :regionStart="regionStart"
-                            :regionEnd="regionEnd"
-                            :categories="getCategories(sampleModel.id)"
-                            :d3="d3"
-                    >
-                    </stacked-bar-chart-viz>
+<!--                    <stacked-bar-chart-viz-->
+<!--                            id="known-variants-chart"-->
+<!--                            style="width:100%"-->
+<!--                            v-if="(sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants') || (sampleModel.id === 'cosmic-variants' && cosmicVariantsViz !== 'variants')"-->
+<!--                            :data="sampleModel.variantHistoData"-->
+<!--                            :width="width"-->
+<!--                            :xStart="selectedGene.start"-->
+<!--                            :xEnd="selectedGene.end"-->
+<!--                            :regionStart="regionStart"-->
+<!--                            :regionEnd="regionEnd"-->
+<!--                            :categories="getCategories(sampleModel.id)"-->
+<!--                            :d3="d3"-->
+<!--                            :$="$"-->
+<!--                    >-->
+<!--                    </stacked-bar-chart-viz>-->
                     <div style="width:100%">
                         <div style="text-align: center; clear: both">
                             <div v-show="loadingVars" class="loader vcfloader"
@@ -266,7 +267,6 @@
                         <variant-viz id="loaded-variant-viz"
                                      ref="variantVizRef"
                                      v-show="showVariantViz"
-                                     v-bind:class="{hide: sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants'}"
                                      :modelId="sampleModel.getId()"
                                      :model="sampleModel"
                                      :regionStart="regionStart"
@@ -345,7 +345,7 @@
     import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
     import DepthViz from "./viz/DepthViz.vue"
-    import StackedBarChartViz from "./viz/StackedBarChartViz.vue"
+    // import StackedBarChartViz from "./viz/StackedBarChartViz.vue"
     // import KnownVariantsToolbar from "./viz/KnownVariantsToolbar.vue"
 
     export default {
@@ -355,7 +355,7 @@
             GeneViz,
             DepthViz,
             // KnownVariantsToolbar,
-            StackedBarChartViz
+            // StackedBarChartViz
         },
         props: {
             globalAppProp: null,  //For some reason, global mixin not working on variant card.  possible cause for-item?

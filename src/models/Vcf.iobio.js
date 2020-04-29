@@ -118,6 +118,12 @@ export default function vcfiobio(theGlobalApp) {
         vcfFile = null;
     }
 
+    exports.setUrls = function(theVcfUrl, theTbiUrl) {
+        vcfURL = theVcfUrl;
+        tbiUrl = theTbiUrl;
+        sourceType = SOURCE_TYPE_URL;
+    };
+
     exports.clearVcfURL = function () {
         vcfURL = null;
         tbiUrl = null;
@@ -935,7 +941,6 @@ export default function vcfiobio(theGlobalApp) {
             // Parse the vcf object into a variant object that is visualized by the client.
             var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId);
 
-
             callback(annotatedRecs, results);
         });
 
@@ -1612,7 +1617,7 @@ export default function vcfiobio(theGlobalApp) {
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
-                            let cssFormattedAlt = getCssSafeAlt(alt);
+                            // let cssFormattedAlt = getCssSafeAlt(alt);
 
                             // Keep the variant if we are just parsing a single sample (parseMultiSample=false)
                             // or we are parsing multiple samples and this sample's genotype is het or hom
@@ -1624,7 +1629,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'level': +0,
                                     'chrom': rec.chrom,
                                     'type': annot.typeAnnotated && annot.typeAnnotated !== '' ? annot.typeAnnotated : type,
-                                    'id': ('var_' + rec.pos + '_' + rec.chrom + '_' + rec.ref + '_' + cssFormattedAlt),  // key = var_start_chromosome_strand_ref_alt
+                                    'id': ('var_' + rec.pos + '_' + rec.chrom + '_' + rec.ref + '_' + alt),  // key = var_start_chromosome_strand_ref_alt
                                     'ref': rec.ref,
                                     'alt': alt,
                                     'qual': rec.qual,
@@ -1806,7 +1811,6 @@ export default function vcfiobio(theGlobalApp) {
                             len = rec.ref.length - alt.length;
                         }
                         end = +rec.pos + len;
-
                     }
 
 
@@ -1828,7 +1832,7 @@ export default function vcfiobio(theGlobalApp) {
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
-                            let cssFormattedAlt = getCssSafeAlt(rec.alt);
+                            // let cssFormattedAlt = getCssSafeAlt(rec.alt);
                             let cssFormattedStrand = geneObject.strand === '+' ? 'plus' : 'minus';
                             let trimmedChromName = refName.indexOf("chr") === 0 ? refName.slice(3) : refName; // We have to synonymize chromosome name between versions - no chr13 vs 13 b/c messes up track filtering
 
@@ -1843,7 +1847,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'strand': geneObject.strand,
                                     'chrom': refName,
                                     'type': annot.typeAnnotated && annot.typeAnnotated !== '' ? annot.typeAnnotated : type,
-                                    'id': ('var_' + rec.pos + '_' + trimmedChromName + '_' + cssFormattedStrand + '_' + rec.ref + '_' + cssFormattedAlt),  // key = start.chromosome.strand.ref.alt NOTE: have to use alt instead of rec.alt b/c rec.alt is comma-delim combined of all alts
+                                    'id': ('var_' + rec.pos + '_' + trimmedChromName + '_' + cssFormattedStrand + '_' + rec.ref + '_' + alt),  // key = start.chromosome.strand.ref.alt NOTE: have to use alt instead of rec.alt b/c rec.alt is comma-delim combined of all alts
                                     'ref': rec.ref,
                                     'alt': alt,
                                     'qual': rec.qual,

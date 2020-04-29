@@ -236,8 +236,8 @@ class FilterModel {
             // Classify samples
             for (i = 0; i < Object.keys(resultMap).length; i++) {
                 let sampleId = Object.keys(resultMap)[i];
-                let currData = self.$.extend({}, Object.values(resultMap)[i].model.vcfData);
-                let sampleObj = {'currData': currData, 'model': Object.values(resultMap)[i].model};
+                let currData = self.$.extend({}, Object.values(resultMap)[i].vcfData);
+                let sampleObj = {'currData': currData, 'model': Object.values(resultMap)[i]};
                 if (!(resultMap[sampleId].isTumor) && sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
                     normalSamples.push(sampleObj);
                 } else if (sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {

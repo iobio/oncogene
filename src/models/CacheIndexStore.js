@@ -5,7 +5,7 @@ export default function CacheIndexStore() {
   this.objectStores = {'vcfData': null, 'fbData' : null, 'dangerSummary': null, 'geneCoverage': null, 'bamData': null};
 }
 
-CacheIndexStore.prototype.promiseInit = function(callback) {
+CacheIndexStore.prototype.promiseInit = function() {
   var me = this;
 
   return new Promise(function(resolve, reject) {
@@ -24,7 +24,7 @@ CacheIndexStore.prototype.promiseInit = function(callback) {
        })
     };
 
-    open.onsuccess = function(ev) {
+    open.onsuccess = function() {
       // assign the database for access outside
       me.db = open.result;
       resolve();
@@ -50,11 +50,11 @@ CacheIndexStore.prototype.promiseCreateObjectStores = function(event) {
     for (var dataKind in me.objectStores) {
       if (!existingNames.contains(dataKind)) {
         var store = me.db.createObjectStore(dataKind, {keyPath: "id"});
-        var index = store.createIndex("geneIndex", "gene", {unique: false});
+        store.createIndex("geneIndex", "gene", {unique: false});
 
         var transaction = event.target.transaction;
         var p = new Promise(function(resolve, reject) {
-              transaction.oncomplete = function(event) {
+              transaction.oncomplete = function() {
                     // Now store is available to be populated
                     resolve();
                 }
@@ -133,7 +133,7 @@ CacheIndexStore.prototype.promiseRemoveData = function(dataKind, key) {
       var store     = tx.objectStore(dataKind);
       var delData   = store.delete(key);
 
-    delData.onsuccess = function(event) {
+    delData.onsuccess = function() {
       resolve();
     }
     delData.onerror = function(event) {
@@ -165,7 +165,6 @@ CacheIndexStore.prototype.getDataByGene = function(dataKind, gene, callback) {
 
 CacheIndexStore.prototype.getKeys = function(dataKind, callback) {
   var me = this;
-  var keys = [];
 
   var tx         = me.db.transaction(dataKind, "readonly");
     var store      = tx.objectStore(dataKind);
@@ -228,7 +227,7 @@ CacheIndexStore.prototype.showContents = function(dataKind, callback) {
     var store      = tx.objectStore(dataKind);
 
   var openCursor = store.openCursor();
-  openCursor.onsuccess = function(ev) {
+  openCursor.onsuccess = function() {
     var cursor = openCursor.result;
     if (cursor) {
       cacheEntries.push(cursor.value);

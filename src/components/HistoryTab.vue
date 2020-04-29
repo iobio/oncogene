@@ -44,7 +44,7 @@
         props: {
             geneHistoryList: {
                 type: Array,
-                default: []
+                default: () => { return []; }
             }
         },
         data() {

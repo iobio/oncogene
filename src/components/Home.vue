@@ -248,6 +248,10 @@
         },
         methods: {
             onLaunch: function(modelInfos, userGeneList) {
+                this.callSomaticVariants(modelInfos, userGeneList);
+            },
+            // Point of entry for launch and filter changes
+            callSomaticVariants: function(modelInfos, userGeneList) {
                 const self = this;
                 self.dataEntered = true;
                 self.displayLoader = true;
@@ -267,7 +271,9 @@
                             .then((topRankedGene) => {
                                 let geneModel = self.cohortModel.geneModel;
 
+                                // Get rid of global loader
                                 self.displayLoader = false;
+
                                 self.rankedGeneList = geneModel.rankedGeneList;
 
                                 self.selectedGene = topRankedGene;
@@ -275,16 +281,22 @@
                                 self.geneRegionStart = self.selectedGene.start;
                                 self.geneRegionEnd = self.selectedGene.end;
 
-                                self.promiseLoadData(self.selectedGene, self.selectedTranscript)
-                                    .then(() => {
-                                        // todo: appeasing linter, get rid of
-                                        console.log('Successfully loaded top gene');
-                                    })
-                                    .catch(error => {
-                                        Promise.reject('Could not load data: ' + error);
-                                    })
+                                self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                                .then(() => {
+                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                        .then(() => {
+                                            // todo: appeasing linter, get rid of
+                                            console.log('Successfully loaded top gene');
+                                        })
+                                        .catch(error => {
+                                            Promise.reject('Could not load data: ' + error);
+                                        })
+                                })
+                                .catch(error => {
+                                    Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                                })
                             }).catch(error => {
-                            console.log('There was a problem initializing cohort model: ' + error);
+                            console.log('There was a problem calling global somatics: ' + error);
                         });
                     })
                     .catch(error => {
@@ -471,9 +483,9 @@
                     if (self.cohortModel) {
                         self.cohortModel.clearLoadedData(geneName);
                     }
-                    if (self.featureMatrixModel) {
-                        self.featureMatrixModel.clearRankedVariants();
-                    }
+                    // if (self.featureMatrixModel) {
+                    //     self.featureMatrixModel.clearRankedVariants();
+                    // }
                     self.geneModel.promiseAddGeneName(geneName)
                         .then(function () {
                             self.geneModel.promiseGetGeneObject(geneName)
@@ -507,17 +519,23 @@
                                         self.$refs.scrollButtonRefGene.showScrollButtons();
                                     }
                                     if (self.cohortModel.isLoaded) {
-                                        self.promiseLoadData(loadingFromFlagEvent, loadFeatureMatrix)
-                                            .then(function () {
-                                                self.clearZoom = false;
-                                                self.showVarViz = true;
-                                                self.applyFilters = true;
-                                                resolve();
-                                            })
-                                            .catch(function (err) {
-                                                console.log(err);
-                                                reject(err);
-                                            })
+                                        self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                                        .then(() => {
+                                            self.promiseLoadData(loadingFromFlagEvent, loadFeatureMatrix)
+                                                .then(function () {
+                                                    self.clearZoom = false;
+                                                    self.showVarViz = true;
+                                                    self.applyFilters = true;
+                                                    resolve();
+                                                })
+                                                .catch(function (err) {
+                                                    console.log(err);
+                                                    reject(err);
+                                                })
+                                        }).catch(error => {
+                                            Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                                        })
+
                                     } else {
                                         resolve();
                                     }
@@ -543,6 +561,7 @@
                 self.cohortModel.promiseFilterVariants()
                     .then(() => {
                         console.log('Done promiseFilterVariants');
+                        // todo: this doesn't need to be done now since filter recall will go through global somatic route
                         self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
                             .then((inheritanceObj) => {
                                 self.cohortModel.setLoadedVariants(self.selectedGene);

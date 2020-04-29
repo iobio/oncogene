@@ -1300,38 +1300,21 @@ class GeneModel {
                         impact = impact[0];
                     }
 
-                    let cosmicBonus = 0;
-                    if (feat.inCosmic) {
-                        cosmicBonus = 1;
-                    }
+                    // Note: variants cannot be annotated w/ COSMIC
+                    // for entire list, so don't need to add that into equation for now
+
                     if (impact === VEP_HIGH) {
-                        score += 4 + cosmicBonus;
-                        if (cosmicBonus > 0) {
-                            geneObj.cosmicHighCount += 1;
-                        } else {
-                            geneObj.highCount += 1;
-                        }
+                        score += 4;
+                        geneObj.highCount += 1;
                     } else if (impact === VEP_MODER) {
-                        score += 3 + cosmicBonus;
-                        if (cosmicBonus > 0) {
-                            geneObj.cosmicModerCount += 1;
-                        } else {
-                            geneObj.moderCount += 1;
-                        }
+                        score += 3;
+                        geneObj.moderCount += 1;
                     } else if (impact === VEP_LOW) {
-                        score += 2 + cosmicBonus;
-                        if (cosmicBonus > 0) {
-                            geneObj.cosmicLowCount += 1;
-                        } else {
-                            geneObj.lowCount += 1;
-                        }
+                        score += 2;
+                        geneObj.lowCount += 1;
                     } else {
-                        score += 1 + cosmicBonus;
-                        if (cosmicBonus > 0) {
-                            geneObj.cosmicModifCount += 1;
-                        } else {
-                            geneObj.modifCount += 1;
-                        }
+                        score += 1;
+                        geneObj.modifCount += 1;
                     }
                 });
                 geneObj.score = score;
@@ -1355,7 +1338,7 @@ class GeneModel {
             self.rankedGeneList = self.rankedGeneList.sort((a, b) => {
                 return (a.score < b.score) ? 1 : -1;
             });
-            resolve(self.rankedGeneList[0]);
+            resolve(self.rankedGeneList[1]);
         });
     }
 

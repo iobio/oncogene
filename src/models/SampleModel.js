@@ -38,9 +38,6 @@ class SampleModel {
         this.coverageUrlEntered = false;
         this.rnaSeqUrlEntered = false;
         this.atacSeqUrlEntered = false;
-
-        // this.bamUrlEntered = false;
-        // this.bamFileOpened = false;
         this.getBamRefName = null;
 
         // cnv data
@@ -848,6 +845,25 @@ class SampleModel {
     //     });
     // }
 
+    // We don't need to check bam urls again, already checked in loader
+    onBamUrlConfirmed(bamUrl, baiUrl, bamType, callback) {
+        const self = this;
+
+        if (bamUrl == null || bamUrl === "") {
+            self._markBamUrlEntered(bamUrl, baiUrl, bamType, false);
+            self.bam = null;
+            if (callback) {
+                callback(false)
+            }
+        } else {
+            self._markBamUrlEntered(bamUrl, baiUrl, bamType, true);
+            self.getBamRefName = this._stripRefName;
+            if (callback) {
+                callback(true);
+            }
+        }
+    }
+
     onBamUrlEntered(bamUrl, baiUrl, bamType, callback) {
         const self = this;
         // self.coverageData = null; todo: do I really need to clear data
@@ -878,13 +894,19 @@ class SampleModel {
         self.getBamRefName = this._stripRefName;
     }
 
-    _markBamUrlEntered(type, isEntered) {
+    _markBamUrlEntered(bamUrl, baiUrl, type, isEntered) {
         if (type === this.globalApp.COVERAGE_TYPE) {
             this.coverageUrlEntered = isEntered;
+            this.bam.coverageBam = bamUrl;
+            this.bam.coverageBai = baiUrl;
         } else if (type === this.globalApp.RNASEQ_TYPE) {
             this.rnaSeqUrlEntered = isEntered;
+            this.bam.rnaSeqBam = bamUrl;
+            this.bam.rnaSeqBai = baiUrl;
         } else if (type === this.globalApp.ATACSEQ_TYPE) {
             this.atacSeqUrlEntered = isEntered;
+            this.bam.atacSeqBam = bamUrl;
+            this.bam.atacSeqBai = baiUrl;
         }
     }
 
@@ -992,6 +1014,13 @@ class SampleModel {
             this.bam.clearAll();
         }
         this.globalApp.utility.removeUrl(bamType + 'bam' + cardIndex);
+    }
+
+    // We've already checked urls, just fill in info
+    onVcfUrlConfirmed(vcfUrl, tbiUrl, selectedSample) {
+        this.vcfUrlEntered = true;
+        this.vcf.setUrls(vcfUrl, tbiUrl);
+        this.selectedSample = selectedSample;
     }
 
     onVcfUrlEntered(vcfUrl, tbiUrl, callback) {
@@ -1588,8 +1617,108 @@ class SampleModel {
         });
     }
 
+    // Returns all vcf data in multi-sample vcf, per track
+    promiseGetAllVariants(theGene, theTranscript, isMultiSample) {
+        const me = this;
+        return new Promise(function (resolve, reject) {
+            // First the gene vcf data has been cached, just return
+            // it.  (No need to retrieve the variants from the iobio service.)
+            let resultMap = {};
+            me._promiseGetData(CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
+                .then(function (vcfData) {
+                    if (vcfData != null && vcfData !== '') {
+                        resultMap = vcfData;
+                        return resultMap;
+                    } else {
+                        me._promiseVcfRefName(theGene.chr)
+                            .then(function () {
+                                let samplesInFile = me._getSamplesToRetrieve();
+                                return me.vcf.promiseGetVariants(
+                                    me.getVcfRefName(theGene.chr),
+                                    theGene,
+                                    theTranscript,
+                                    null,   // regions
+                                    isMultiSample, // is multi-sample
+                                    samplesInFile,
+                                    me.getAnnotationScheme().toLowerCase(),
+                                    me.getTranslator().clinvarMap,
+                                    me.getGeneModel().geneSource === 'refseq',
+                                    me.isBasicMode || me.globalApp.getVariantIdsForGene,  // hgvs notation
+                                    me.globalApp.getVariantIdsForGene,  // rsid
+                                    me.globalApp.vepAF,   // vep af
+                                    null,   // cache
+                                    me.id
+                                );
+                            })
+                            .then(data => {
+                                resultMap = data[1];
+                                resolve(resultMap);
+                            }).catch(error => {
+                            reject(error)
+                        })
+                    }
+                });
+        });
+    }
 
-    promiseAnnotateVariants(theGene, theTranscript, variantModels, isMultiSample, isBackground) {
+    processVariants(results) {
+        const me = this;
+        if (results && results.length > 0) {
+            // Base this off of ID
+            let filtData = results.filter((item) => {
+                return item.name === me.getSelectedSample();
+            });
+
+            if (filtData.length > 0) {
+                filtData = filtData[0]
+            } else {
+                filtData = results[0];
+            }
+
+            let theGeneObject = me.getGeneModel().geneObjects[filtData.gene];
+            if (theGeneObject) {
+
+                var resultMap = {};
+                var idx = 0;
+
+                var postProcessNextVariantCard = function (idx, callback) {
+                    if (idx === 1) {
+                        if (callback) {
+                            callback();
+                        }
+                    } else {
+                        var theVcfData = results[idx];
+                        if (theVcfData == null) {
+                            if (callback) {
+                                callback();
+                            }
+                            return;
+                        }
+                        theVcfData.gene = theGeneObject;
+                        resultMap[me.id] = theVcfData;
+                        me.vcfData = theVcfData;
+                        idx++;
+                        postProcessNextVariantCard(idx, callback);
+                    }
+                };
+
+                postProcessNextVariantCard(idx, function () {
+                    // Set the highest allele freq for all variants
+                    for (var key in resultMap) {
+                        var theVcfData = resultMap[key];
+                        if (theVcfData && theVcfData.features) {
+                            theVcfData.features.forEach(function (variant) {
+                                me._determineHighestAf(variant);
+                                me.variantIdHash[variant.id] = variant;
+                            })
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    promiseAnnotateVariants(theGene, theTranscript, sampleModels, isMultiSample, isBackground) {
         let me = this;
 
         return new Promise(function (resolve, reject) {
@@ -1597,7 +1726,7 @@ class SampleModel {
             // it.  (No need to retrieve the variants from the iobio service.)
             let resultMap = {};
             let promises = [];
-            variantModels.forEach(function (model) {
+            sampleModels.forEach(function (model) {
                 let p = model._promiseGetData(CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
                     .then(function (vcfData) {
                         if (vcfData != null && vcfData !== '') {
@@ -1619,7 +1748,7 @@ class SampleModel {
 
             Promise.all(promises)
                 .then(function () {
-                        if (Object.keys(resultMap).length === variantModels.length) {
+                        if (Object.keys(resultMap).length === sampleModels.length) {
                             resolve(resultMap);
                         } else {
                             // We don't have the variants for the gene in cache,
@@ -1671,13 +1800,13 @@ class SampleModel {
                                                 var idx = 0;
 
                                                 var postProcessNextVariantCard = function (idx, callback) {
-                                                    if (idx === variantModels.length) {
+                                                    if (idx === sampleModels.length) {
                                                         if (callback) {
                                                             callback();
                                                         }
                                                         return;
                                                     } else {
-                                                        var model = variantModels[idx];
+                                                        var model = sampleModels[idx];
                                                         var theVcfData = results[idx];
                                                         if (theVcfData == null) {
                                                             if (callback) {

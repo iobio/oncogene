@@ -1,7 +1,6 @@
 import {
     select,
     selectAll,
-    event
 } from 'd3-selection';
 
 import {
@@ -22,7 +21,7 @@ import { brushX } from 'd3-brush';
 
 import { line, area, curveLinear } from 'd3-shape';
 
-import { range } from 'd3-array';
+import { range, extent } from 'd3-array';
 
 import {
     dispatch,
@@ -32,14 +31,16 @@ import {
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
 } from 'd3';
 
+import {event as currentEvent} from 'd3';
+
 export default {
     select,
     selectAll,
-    event,
+    currentEvent,
     scaleLinear,
     scaleQuantile,
     scaleOrdinal,
-    range,
+    range, extent,
     axisBottom,
     axisTop,
     axisRight,

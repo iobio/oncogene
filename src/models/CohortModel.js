@@ -449,26 +449,16 @@ class CohortModel {
             } else {
                 self.sampleModels.push(vm);
             }
-            self.sampleMap[modelInfo.id] = modelInfo;
+            self.sampleMap[modelInfo.id] = vm;
             modelInfo.model = vm;
             vm.id = modelInfo.id;
             vm.order = modelInfo.order;
             vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
 
-            // todo: doing redundant work here by checking headers again - cache this after files menu call
             let filePromises = [];
             if (modelInfo.vcfUrl) {
-                let vcfPromise = new Promise(function (vcfResolve) {
-                        vm.onVcfUrlEntered(modelInfo.vcfUrl, modelInfo.tbiUrl, function () {
-                            vm.setDisplayName(modelInfo.selectedSample);
-                            vcfResolve();
-                        })
-                    },
-                    function (error) {
-                        reject(error);
-                    });
-                filePromises.push(vcfPromise);
+                vm.onVcfUrlConfirmed(modelInfo.vcfUrl, modelInfo.tbiUrl, modelInfo.selectedSample);
             } else {
                 vm.selectedSample = null;
                 vm.vcf = null;
@@ -527,7 +517,7 @@ class CohortModel {
 
     getBamPromise(sampleModel, bamUrl, baiUrl, bamType) {
         return new Promise((resolve) => {
-            sampleModel.onBamUrlEntered(bamUrl, baiUrl, bamType, function () {
+            sampleModel.onBamUrlConfirmed(bamUrl, baiUrl, bamType, function () {
                 resolve();
             })
         });
@@ -578,9 +568,8 @@ class CohortModel {
                 let clinvarUrl = self.globalApp.getClinvarUrl(self.genomeBuildHelper.getCurrentBuildName(), true);
                 vm.onVcfUrlEntered(clinvarUrl, null, function () {
                         self.sampleModels.push(vm);
-                        let sample = {'id': 'known-variants', 'model': vm, 'order': 0};
-                        self.sampleMap['known-variants'] = sample;
-                        resolve(sample);
+                        self.sampleMap['known-variants'] = vm;
+                        resolve();
                     },
                     function (error) {
                         reject(error);
@@ -605,9 +594,8 @@ class CohortModel {
                 let cosmicTbi = cosmicUrl + ".tbi";
                 vm.onVcfUrlEntered(cosmicUrl, cosmicTbi, function () {
                         self.sampleModels.push(vm);
-                        let sample = {'id': 'cosmic-variants', 'model': vm, 'order': 1};
-                        self.sampleMap['cosmic-variants'] = sample;
-                        resolve(sample);
+                        self.sampleMap['cosmic-variants'] = vm;
+                        resolve();
                     },
                     function (error) {
                         reject(error);
@@ -628,10 +616,10 @@ class CohortModel {
         let refModels = [];
         if (addNonCanonical) {
             if (map['known-variants']) {
-                refModels.push(map['known-variants'].model);
+                refModels.push(map['known-variants']);
             }
             if (map['cosmic-variants']) {
-                refModels.push(map['cosmic-variants'].model);
+                refModels.push(map['cosmic-variants']);
             }
         }
         return refModels.concat(sortedModels);
@@ -640,7 +628,7 @@ class CohortModel {
     /* Returns sample model corresponding to name or null if DNE */
     getModel(id) {
         if (this.sampleMap[id] != null) {
-            return this.sampleMap[id].model;
+            return this.sampleMap[id];
         } else {
             return null;
         }
@@ -650,7 +638,7 @@ class CohortModel {
     getNormalModel() {
         let self = this;
         if (self.sampleMap && self.sampleMap['s0']) {
-            return self.sampleMap['s0'].model;
+            return self.sampleMap['s0'];
         } else {
             return null;
         }
@@ -659,9 +647,22 @@ class CohortModel {
     /* Returns all normal and tumor models */
     getCanonicalModels() {
         let models = this.sampleModels.filter(function (model) {
-            return model.id !== 'known-variants' && model.id !== 'cosmic-variants';
+            if (model != null)
+                return model.id !== 'known-variants' && model.id !== 'cosmic-variants';
+            return false;
         });
         return models;
+    }
+
+    getModelBySelectedSample(selectedSample) {
+        const self = this;
+        let models = self.sampleModels.filter(model => {
+            return model.selectedSample === selectedSample;
+        });
+        if (models.length > 0) {
+            return models[0];
+        }
+        return null;
     }
 
     /* Returns all normal and tumor models AND non-canonical (ClinVar/COSMIC) models. */
@@ -814,7 +815,6 @@ class CohortModel {
 
 
     /* Loads data for all samples for a single gene */
-
     // todo: update this to include loading cnv, rnaseq, atacseq data if available
     promiseLoadData(theGene, theTranscript, options) {
         const self = this;
@@ -827,16 +827,29 @@ class CohortModel {
                 self.startGeneProgress(theGene.gene_name);
                 self.clearLoadedData(theGene.gene_name);
 
+                // Turn on loader glyphs
+                self.sampleModels.forEach(model => {
+                    model.inProgress.loadingVariants = true;
+                });
+
                 // Enforce Cosmic sample top track
                 self.sampleModels = self.sortSampleModels(self.getCanonicalModels(), self.sampleMap);
 
                 self.assignCategoryOrders();
 
                 // var resultMap = null;
-                let p1 = self.promiseLoadVariants(theGene, theTranscript, options);
-                // .then(function (data) {
-                //     resultMap = data.resultMap;
-                // });
+                let p1 = self.promiseLoadVariants(theGene, theTranscript, options)
+                    .then(function (data) {
+                        // todo: think I might need to update sample map here with variants
+                        // Turn off loader glyphs
+                        self.sampleModels.forEach(model => {
+                            model.inProgress.loadingVariants = false;
+                        });
+
+                        // todo: think I might need to update sample map here with variants
+                        console.log(data);
+                        // let resultMap = data.resultMap;
+                });
                 promises.push(p1);
 
                 // todo: include more promises here depending on if we have CNV, rnaseq, atacseq data
@@ -927,7 +940,7 @@ class CohortModel {
         let self = this;
         return new Promise(function (resolve, reject) {
             self.getModel('known-variants').inProgress.loadingVariants = true;
-            self.sampleMap['known-variants'].model.promiseAnnotateVariants(theGene, theTranscript, [self.sampleMap['known-variants'].model], false, false)
+            self.sampleMap['known-variants'].promiseAnnotateVariants(theGene, theTranscript, [self.sampleMap['known-variants']], false, false)
                 .then(function (resultMap) {
                     self.getModel('known-variants').inProgress.loadingVariants = false;
                     self.setLoadedVariants(theGene, 'known-variants');
@@ -949,7 +962,7 @@ class CohortModel {
                 binLength = Math.floor(((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
             }
             let annotationMode = 'vep';
-            self.sampleMap['known-variants'].model.promiseGetKnownVariantHistoData(theGene, theTranscript, binLength, annotationMode)
+            self.sampleMap['known-variants'].promiseGetKnownVariantHistoData(theGene, theTranscript, binLength, annotationMode)
                 .then(function (data) {
                     self.getModel('known-variants').inProgress.loadingVariants = false;
                     self.setVariantHistoData('known-variants', data);
@@ -965,7 +978,7 @@ class CohortModel {
         let self = this;
         return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
-            self.sampleMap['cosmic-variants'].model.promiseGetVariantIds(theGene, theTranscript, self.sampleMap['cosmic-variants'].model)
+            self.sampleMap['cosmic-variants'].promiseGetVariantIds(theGene, theTranscript, self.sampleMap['cosmic-variants'])
                 .then(function (resultMap) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.cosmicVariantIdHash = resultMap['cosmic-variants-ids'];
@@ -991,7 +1004,7 @@ class CohortModel {
         let self = this;
         return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
-            self.sampleMap['cosmic-variants'].model.promiseAnnotateVariants(theGene, theTranscript, [self.sampleMap['cosmic-variants'].model], false, false)
+            self.sampleMap['cosmic-variants'].promiseAnnotateVariants(theGene, theTranscript, [self.sampleMap['cosmic-variants']], false, false)
                 .then(function (resultMap) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.setLoadedVariants(theGene, 'cosmic-variants');
@@ -1012,7 +1025,7 @@ class CohortModel {
                 binLength = Math.floor(((+theGene.end - +theGene.start) / self.globalApp.d3.select('#gene-viz').innerWidth()) * 8);
             }
             let annotationMode = 'vep';
-            self.sampleMap['cosmic-variants'].model.promiseGetCosmicVariantHistoData(theGene, theTranscript, binLength, annotationMode)
+            self.sampleMap['cosmic-variants'].promiseGetCosmicVariantHistoData(theGene, theTranscript, binLength, annotationMode)
                 .then(function (data) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.setVariantHistoData('cosmic-variants', data);
@@ -1028,19 +1041,8 @@ class CohortModel {
         let self = this;
 
         return new Promise(function (resolve, reject) {
-            //let isMultiSample = self.samplesInSingleVcf();
-            let isMultiSample = true;  // TODO: hardcoding to test for now - test with single sample vcf
+            const isMultiSample = true;
             self.promiseAnnotateVariants(theGene, theTranscript, isMultiSample, false, options)
-                // .then(function (resultMap) {
-                //     // Flag bookmarked variants
-                //     self.setVariantFlags(resultMap['s0']);
-                //
-                //     // the variants are fully annotated so determine inheritance (if trio).
-                //     return self.promiseAnnotateInheritance(theGene, theTranscript, resultMap, {
-                //         isBackground: false,
-                //         cacheData: true
-                //     })
-                // })
                 .then(function (resultMap) {
                     resolve(resultMap);
                 })
@@ -1275,37 +1277,25 @@ class CohortModel {
     }
 
     promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
-        let self = this;
+        const self = this;
         return new Promise(function (resolve, reject) {
             let annotatePromises = [];
             let theResultMap = {};
-            self.featureMatrixModel.inProgress.loadingVariants = true;
-            for (var id in self.sampleMap) {
-                let model = self.sampleMap[id].model;
-                // let noReloadNecessary = model.lastGeneLoaded === theGene.gene_name && model.loadedVariants != null && !model.entryDataChanged;
-                if ((model.isVcfReadyToLoad() || model.isLoaded()) /*&& !noReloadNecessary*/) {
-                    model.lastGeneLoaded = theGene.gene_name;
-                    if (!isBackground) {
-                        model.inProgress.loadingVariants = true;
-                    }
-                    if (id !== 'known-variants' && id !== 'cosmic-variants') {
-                        let p = model.promiseAnnotateVariants(theGene, theTranscript, [model], isMultiSample, isBackground)
-                            .then(function (resultMap) {
-                                for (var theId in resultMap) {
-                                    // if (!isBackground) {
-                                    //     self.getModel(theId).inProgress.loadingVariants = false;
-                                    // }
-                                    theResultMap[theId] = resultMap[theId];
-                                }
-                                self.annotationComplete = false;
-                            })
-                            .catch((error) => {
-                                reject('Problem annotating variants: ' + error);
-                            });
-                        annotatePromises.push(p);
-                    }
-                }
-            }
+            // self.featureMatrixModel.inProgress.loadingVariants = true;
+
+            // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
+            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, [self.getNormalModel()], isMultiSample, isBackground)
+                .then((resultMap) => {
+                    resultMap.forEach(resultObj => {
+                        let sampleModel = self.getModelBySelectedSample(resultObj.name);
+                        sampleModel.processVariants(resultMap);
+                        theResultMap[sampleModel.id] = resultObj;
+                    });
+                self.annotationComplete = false;
+            }).catch((error) => {
+                reject('Problem annotating variants: ' + error);
+            });
+            annotatePromises.push(p);
 
             // Load clinvar track
             if (options.getKnownVariants) {
@@ -1321,24 +1311,38 @@ class CohortModel {
             }
 
             // Always get COSMIC IDs so we can put status in feature matrix
-            let p = self.promiseGetCosmicVariantIds(theGene, theTranscript);
-            annotatePromises.push(p);
+            // let p = self.promiseGetCosmicVariantIds(theGene, theTranscript);
+            // annotatePromises.push(p);
 
             Promise.all(annotatePromises)
                 .then(function () {
-                    self.promiseAnnotateWithCosmic(theResultMap)
-                        .then(function (updatedResultMap) {
-                            self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
-                                .then(function (data) {
-                                    for (var theId in data) {
-                                        if (!isBackground) {
-                                            self.getModel(theId).inProgress.loadingVariants = false;
+                    if (self.cosmicVariantIdHash) {
+                        self.promiseAnnotateWithCosmic(theResultMap)
+                            .then(function (updatedResultMap) {
+                                self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
+                                    .then(function (data) {
+                                        for (var theId in data) {
+                                            if (!isBackground) {
+                                                self.getModel(theId).inProgress.loadingVariants = false;
+                                            }
                                         }
+                                        self.annotationComplete = true;
+                                        resolve(data)
+                                    });
+                            });
+                    } else {
+                        console.log("Could not annotate with COSMIC b/c hash map not populated");
+                        self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
+                            .then(function (data) {
+                                for (var theId in data) {
+                                    if (!isBackground) {
+                                        self.getModel(theId).inProgress.loadingVariants = false;
                                     }
-                                    self.annotationComplete = true;
-                                    resolve(data)
-                                });
-                        });
+                                }
+                                self.annotationComplete = true;
+                                resolve(data)
+                            });
+                    }
                 });
         })
     }

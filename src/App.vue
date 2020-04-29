@@ -57,7 +57,7 @@
     import EndpointCmd from './models/EndpointCmd.js'
     import FeatureMatrixModel from './models/FeatureMatrixModel.js'
     import FilterModel from './models/FilterModel.js'
-    import FreebayesSettings from './models/FreebayesSettings.js'
+    // import FreebayesSettings from './models/FreebayesSettings.js'
     import GeneModel from './models/GeneModel.js'
     import GenericAnnotation from './models/GenericAnnotation.js'
     import GenomeBuildHelper from './models/GenomeBuildHelper.js'
@@ -220,7 +220,7 @@
                         translator,
                         self.geneModel,
                         self.genomeBuildHelper,
-                        new FreebayesSettings(),
+                        null, //new FreebayesSettings(),
                         self.cacheHelper);
 
                     // self.geneModel.on("geneDangerSummarized", function (dangerSummary) {

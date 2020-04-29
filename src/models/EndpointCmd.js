@@ -10,7 +10,8 @@ export default class EndpointCmd {
         this.launchedFromUtah = this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        this.api = new Client('dev.backend.iobio.io:9002', {secure: false});
+        this.api = new Client('backend.iobio.io', {secure: false});
+        this.devApi = new Client('dev.backend.iobio.io:9002', {secure: false});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
 
@@ -136,7 +137,9 @@ export default class EndpointCmd {
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
 
         if (this.gruBackend) {
-            cmd = me.api.streamCommand('annotateSomaticVariants',
+            // todo: renamed getSomaticVar -> annotateSomaticVar + param updates
+            // put in PR to gru
+            cmd = me.devApi.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr: selectedSamplesStr,
