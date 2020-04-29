@@ -1288,7 +1288,7 @@ class CohortModel {
                 .then((resultMap) => {
                     resultMap.forEach(resultObj => {
                         let sampleModel = self.getModelBySelectedSample(resultObj.name);
-                        sampleModel.processVariants(resultMap);
+                        sampleModel.processVariants([resultObj]);
                         theResultMap[sampleModel.id] = resultObj;
                     });
                 self.annotationComplete = false;

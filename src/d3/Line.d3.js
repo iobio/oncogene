@@ -68,7 +68,8 @@ export default function lineD3(d3, vizSettings) {
                 .attr("width", widthPercent)
                 .attr("height", heightPercent)
                 .attr('viewBox', "0 0 " + (parseInt(width) + margin.left + margin.right) + " " + parseInt(height))
-                .attr("preserveAspectRatio", "none");
+                .attr("preserveAspectRatio", "none")
+                .merge(svgData);
 
             // The chart dimensions could change after instantiation, so update viewbox dimensions
             // every time we draw the chart.
@@ -234,7 +235,8 @@ export default function lineD3(d3, vizSettings) {
                 .datum(data)
                 .attr("id", "line-chart-path")
                 .attr("class", "line")
-                .attr("d", line(data));
+                .attr("d", line);
+                // .attr("d", line(data));
 
             if (showTransition) {
                 linePath.transition()

@@ -176,38 +176,6 @@
 
                 self.depthChart = lineD3(self.d3, lineVizOptions);
 
-                // .width(this.width)
-                // .height(this.height)
-                // .widthPercent("100%")
-                // .heightPercent("100%")
-                // .kind(this.kind)
-                // .margin(this.margin)
-                // .showXAxis(this.showXAxis)
-                // .showYAxis(this.showYAxis)
-                // .yAxisLine(this.yAxisLine)
-                // .yTicks(this.yTicks)
-                // .pos(function (d) {
-                //     return d[0]
-                // })
-                // .depth(function (d) {
-                //     return d[1]
-                // })
-                // .maxDepth(this.maxDepth)
-                // .yTickFormat(function (val) {
-                //     if (val === 0) {
-                //         return "";
-                //     } else {
-                //         return val + "x";
-                //     }
-                // })
-                // .formatCircleText(function (pos, depth) {
-                //     return depth + 'x';
-                // })
-                // .regionGlyph(function (d, i, regionX) {
-                //     var parent = this.d3.select(this.parentNode);
-                //     return self.regionGlyph(d, parent, regionX);
-                // });
-
                 // Register listeners
                 let dispatch = self.depthChart.getDispatch();
                 dispatch.on("d3region", function (featureObject, feature, lock) {

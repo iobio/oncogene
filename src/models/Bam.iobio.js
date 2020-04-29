@@ -52,18 +52,21 @@ export default class bamiobio {
         if (bamType === this.globalApp.COVERAGE_TYPE) {
             if (this.coverageHeader) {
                 callback(this.coverageHeader);
+                return;
             } else {
                 bamUrl = this.coverageBam;
             }
         } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             if (this.rnaSeqHeader) {
                 callback(this.rnaSeqHeader);
+                return;
             } else {
                 bamUrl = this.rnaSeqBam;
             }
         } else if (bamType === this.globalApp.ATACSEQ_TYPE) {
             if (this.atacSeqHeader) {
                 callback(this.atacSeqHeader);
+                return;
             } else {
                 bamUrl = this.atacSeqBam;
             }

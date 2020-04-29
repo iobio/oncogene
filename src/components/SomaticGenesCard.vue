@@ -20,7 +20,7 @@
                                 <v-list-item-group v-model="selectedVarIdx" color="primary">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
                                         <v-list-item-content>
-                                            <v-list-item-title v-text="getVarText(feat)" @click="onVariantSelected"></v-list-item-title>
+                                            <v-list-item-title v-text="getVarText(feat)" @click="onVariantSelected(feat)"></v-list-item-title>
                                         </v-list-item-content>
                                     </v-list-item>
                                 </v-list-item-group>
@@ -81,8 +81,8 @@
             getVarText: function(feat) {
                 return feat.id;
             },
-            onVariantSelected: function() {
-                this.$emit('variant-selected', this.rankedGeneList[this.selectedVarIdx], this, 'rankedList');
+            onVariantSelected: function(feature) {
+                this.$emit('variant-selected', feature, this, 'rankedList');
             }
         },
         computed: {}

@@ -254,7 +254,6 @@
         computed: {
             sampleReadsMap: function() {
                 // Get variant from each sample
-                // Populate map w/ sampleId: [total, alt, ref]
                 let map = {};
                 if (this.cohortModel && this.variant) {
                     map = this.cohortModel.getMatchingVariants(this.variant.id);

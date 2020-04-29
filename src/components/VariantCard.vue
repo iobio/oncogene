@@ -227,43 +227,11 @@
                     </div>
 
                     <div style="width:100%" id="viz-div">
-<!--                        <div class="chart-label"-->
-<!--                             v-if="showVariantViz && sampleModel.cohort.geneModel.geneDangerSummaries[selectedGene.gene_name] && sampleModel.cohort.geneModel.geneDangerSummaries[selectedGene.gene_name].CALLED && sampleModel.calledVariants && sampleModel.calledVariants.features.length > 0"-->
-<!--                        >-->
-<!--                            called variants-->
-<!--                        </div>-->
-
-<!--                        <variant-viz id="called-variant-viz"-->
-<!--                                     ref="calledVariantVizRef"-->
-<!--                                     v-show="showVariantViz"-->
-<!--                                     v-bind:class="{hide: sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants'}"-->
-<!--                                     :data="sampleModel.calledVariants"-->
-<!--                                     :modelId="sampleModel.getId()"-->
-<!--                                     :model="sampleModel"-->
-<!--                                     :regionStart="regionStart"-->
-<!--                                     :regionEnd="regionEnd"-->
-<!--                                     :annotationScheme="annotationScheme"-->
-<!--                                     :width="width"-->
-<!--                                     :margin="variantVizMargin"-->
-<!--                                     :variantHeight="variantSymbolHeight"-->
-<!--                                     :variantPadding="variantSymbolPadding"-->
-<!--                                     :showBrush="false"-->
-<!--                                     :showXAxis="true"-->
-<!--                                     :classifySymbolFunc="classifyVariantSymbolFunc"-->
-<!--                                     :isTumorTrack="sampleModel.isTumor"-->
-<!--                                     :isKnownOrCosmicTrack="isKnownOrCosmicTrack"-->
-<!--                                     :d3="d3"-->
-<!--                                     @variantClick="onVariantClick"-->
-<!--                                     @variantHover="onVariantHover"-->
-<!--                                     @variantHoverEnd="onVariantHoverEnd">-->
-<!--                        </variant-viz>-->
-
                         <div class="chart-label"
                              v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features.length > 0 && sampleModel.id !== 'known-variants'"
                         >
-                            loaded variants
+                            all variants
                         </div>
-
                         <variant-viz id="loaded-variant-viz"
                                      ref="variantVizRef"
                                      v-show="showVariantViz"

@@ -669,7 +669,6 @@ export default function vcfiobio(theGlobalApp) {
                                     }
                                 })
                             }
-                            alt = getCssSafeAlt(alt);
                             strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
                             let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
 
@@ -917,6 +916,7 @@ export default function vcfiobio(theGlobalApp) {
 
                     // Parse the vcf record into its fields
                     var fields = record.split('\t');
+                    let chrom = fields[0];
                     var pos = fields[1];
                     var ref = fields[3];
                     var alt = fields[4];
@@ -931,7 +931,7 @@ export default function vcfiobio(theGlobalApp) {
 
                     // Turn vcf record into a JSON object and add it to an array
                     var vcfObject = {
-                        'pos': pos, 'id': 'id', 'ref': ref, 'alt': alt,
+                        'pos': pos, 'id': 'id', 'ref': ref, 'alt': alt, 'chrom': chrom,
                         'qual': qual, 'filter': filter, 'info': info, 'format': format, 'genotypes': genotypes
                     };
                     vcfObjects.push(vcfObject);
@@ -1629,7 +1629,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'level': +0,
                                     'chrom': rec.chrom,
                                     'type': annot.typeAnnotated && annot.typeAnnotated !== '' ? annot.typeAnnotated : type,
-                                    'id': ('var_' + rec.pos + '_' + rec.chrom + '_' + rec.ref + '_' + alt),  // key = var_start_chromosome_strand_ref_alt
+                                    'id': me.getVariantId(rec, alt),
                                     'ref': rec.ref,
                                     'alt': alt,
                                     'qual': rec.qual,
@@ -1832,9 +1832,6 @@ export default function vcfiobio(theGlobalApp) {
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
-                            // let cssFormattedAlt = getCssSafeAlt(rec.alt);
-                            let cssFormattedStrand = geneObject.strand === '+' ? 'plus' : 'minus';
-                            let trimmedChromName = refName.indexOf("chr") === 0 ? refName.slice(3) : refName; // We have to synonymize chromosome name between versions - no chr13 vs 13 b/c messes up track filtering
 
                             // Keep the variant if we are just parsing a single sample (parseMultiSample=false)
                             // or we are parsing multiple samples and this sample's genotype is het or hom
@@ -1847,7 +1844,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'strand': geneObject.strand,
                                     'chrom': refName,
                                     'type': annot.typeAnnotated && annot.typeAnnotated !== '' ? annot.typeAnnotated : type,
-                                    'id': ('var_' + rec.pos + '_' + trimmedChromName + '_' + cssFormattedStrand + '_' + rec.ref + '_' + alt),  // key = start.chromosome.strand.ref.alt NOTE: have to use alt instead of rec.alt b/c rec.alt is comma-delim combined of all alts
+                                    'id': me.getVariantId(rec, alt),
                                     'ref': rec.ref,
                                     'alt': alt,
                                     'qual': rec.qual,
@@ -1969,29 +1966,14 @@ export default function vcfiobio(theGlobalApp) {
         return parseMultiSample ? results : results[0];
     };
 
-    var getCssSafeAlt = function (alt) {
-        if (alt == null || alt === "") {
-            console.log("Bad alt input");
-            return alt;
+    // Note: can't include strandedness here b/c no gene objects for somatic calls
+    exports.getVariantId = function(rec, alt) {
+        if (!rec || !rec.chrom) {
+            console.log('ERROR: no record to get variant id from');
+            return 'var';
         }
-
-        if (alt === '*') {
-            return 'D';
-        }
-
-        let safeAlt = alt;
-        let checkAlt = true;
-        while (checkAlt) {
-            let badCharIdx = safeAlt.indexOf(',');
-            if (badCharIdx >= 0) {
-                safeAlt = alt.slice(0, badCharIdx);
-                safeAlt += '_';
-                safeAlt += alt.slice(badCharIdx + 1);
-            } else {
-                checkAlt = false;
-            }
-        }
-        return safeAlt;
+        let trimmedChromName = rec.chrom.indexOf("chr") === 0 ? rec.chrom.slice(3) : rec.chrom; // We have to synonymize chromosome name between versions - no chr13 vs 13 b/c messes up track filtering
+        return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_' + alt);
     };
 
     exports._parseAnnot = function (rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {

@@ -343,7 +343,9 @@
                     self.selectedVariantParentSampleId = sampleModelId;
                     self.selectedVariantNotes = variant.notes;
                     self.selectedVariantInterpretation = variant.interpretation;
-                    self.showVariantExtraAnnots(sampleModelId, variant);
+
+                    // todo: took this out for now, not sure exactly what it does for oncogene
+                    // self.showVariantExtraAnnots(sampleModelId, variant);
 
                     // if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
                     //     self.$refs.navRef.selectVariant(variant, 'current');
