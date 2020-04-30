@@ -72,8 +72,8 @@
     export default {
         name: 'depth-viz',
         props: {
-            model: {
-                type: Object,
+            coverage: {
+                type: Array,
                 default: null
             },
             coverageDangerRegions: {
@@ -186,7 +186,7 @@
             },
             update: function () {
                 var self = this;
-                if (self.model && self.model.coverage.length > 0 && self.model.coverage[0].length > 0) {
+                if (self.coverage.length > 0 && self.coverage[0].length > 0) {
                     self.$(self.$el).removeClass("hide");
                     let options = {
                         maxDepth: self.maxDepth,
@@ -196,7 +196,7 @@
                         height: self.height
                     };
                     self.depthChart.updateSize(options);
-                    let selection = self.d3.select(self.$el).datum(self.model.coverage);
+                    let selection = self.d3.select(self.$el).datum(self.coverage);
                     self.depthChart(selection);
                 } else {
                     self.$(self.$el).addClass("hide");
@@ -215,7 +215,7 @@
             }
         },
         watch: {
-            'model.coverage': function () {
+            coverage: function () {
                 this.update();
             },
             coverageDangerRegions: function () {

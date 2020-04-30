@@ -263,44 +263,28 @@
                     trackHeight: self.trackHeight,
                     cdsHeight: self.cdsHeight,
                     showLabel: self.showLabel,
-                    transcriptClass: self.transcriptClass
+                    transcriptClass: self.transcriptClass,
+                    color: '#7f1010'
                 };
                 self.geneChart = geneD3(self.d3, options);
 
                 let dispatch = self.geneChart.getDispatch();
-
-                    // .width(self.fixedWidth > 0 ? self.fixedWidth : this.width)
-                    // .widthPercent("100%")
-                    // .heightPercent("100%")
-                    // .margin(this.margin)
-                    // .showXAxis(this.showXAxis)
-                    // .drawBrush(self.isZoomTrack) // Controls drawing backing brush obj
-                    // .showBrush(false)            // Controls displaying brush
-                    // .trackHeight(this.trackHeight)
-                    // .cdsHeight(this.cdsHeight)
-                    // .showLabel(this.showLabel)
-                    // .transcriptClass(this.transcriptClass)
-                    // .featureClass(function (feature, i) {
-                    //     return self.featureClass(feature, i);
-                    // })
-                    // .regionStart(this.regionStart)
-                    // .regionEnd(this.regionEnd)
-                    dispatch.on("d3brush", function (brush) {
-                        if (!brush.empty()) {
-                            let regionStart = self.d3.round(brush.extent()[0]);
-                            let regionEnd = self.d3.round(brush.extent()[1]);
-                            self.$emit('region-zoom', regionStart, regionEnd);
-                        } else {
-                            // Only being hit once
-                            self.$emit('region-zoom-reset');
-                        }
-                    })
-                    .on("d3selected", function (d) {
-                        self.$emit('transcript-selected', d);
-                    })
-                    .on("d3featuretooltip", function (featureObject, feature, lock) {
-                        self.$emit("feature-selected", featureObject, feature, lock);
-                    });
+                dispatch.on("d3brush", function (brush) {
+                    if (!brush.empty()) {
+                        let regionStart = self.d3.round(brush.extent()[0]);
+                        let regionEnd = self.d3.round(brush.extent()[1]);
+                        self.$emit('region-zoom', regionStart, regionEnd);
+                    } else {
+                        // Only being hit once
+                        self.$emit('region-zoom-reset');
+                    }
+                })
+                .on("d3selected", function (d) {
+                    self.$emit('transcript-selected', d);
+                })
+                .on("d3featuretooltip", function (featureObject, feature, lock) {
+                    self.$emit("feature-selected", featureObject, feature, lock);
+                });
             },
             update: function () {
                 const self = this;

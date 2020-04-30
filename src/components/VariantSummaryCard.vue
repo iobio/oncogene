@@ -218,7 +218,19 @@
                                       :sampleMap="sampleReadsMap"
                                       :d3="d3">
                 </allele-frequency-viz>
-<!--                todo: put in AF viz rnaseq/atacseq counts here too-->
+                <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
+                                 ref="summaryBarFeatureViz"
+                                 :counts="rnaSeqCounts"
+                                 :bamtype="'rnaSeq'"
+                                 :d3="d3">
+                </bar-feature-viz>
+                <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
+                                 ref="summaryBarFeatureViz"
+                                 :counts="atacSeqCounts"
+                                 :selectedVariant="variant"
+                                 :bamType="'atacSeq'"
+                                 :d3="d3">
+                </bar-feature-viz>
             </v-layout>
         </v-container>
     </v-container>
@@ -228,13 +240,13 @@
 <script>
     import FeatureViz from "./viz/FeatureViz.vue"
     import AlleleFrequencyViz from "./viz/AlleleFrequencyViz.vue"
-    // import BarFeatureViz from "./viz/BarFeatureViz.vue"
+    import BarFeatureViz from "./viz/BarFeatureViz.vue"
     export default {
         name: 'variant-summary-card',
         components: {
             FeatureViz,
             AlleleFrequencyViz,
-            // BarFeatureViz
+            BarFeatureViz
         },
         props: {
             sampleIds: null,
@@ -244,7 +256,15 @@
             selectedGene: null,
             d3: null,
             $: null,
-            cohortModel: null
+            cohortModel: null,
+            hasRnaSeq: {
+                type: Boolean,
+                default: false
+            },
+            hasAtacSeq: {
+                type: Boolean,
+                default: false
+            },
         },
         data() {
             return {
@@ -257,6 +277,28 @@
                 let map = {};
                 if (this.cohortModel && this.variant) {
                     map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+                return map;
+            },
+            rnaSeqCounts: function() {
+                // Get rnaseq counts from each sample
+                let map = {};
+                if (this.cohortModel && this.cohortModel.hasRnaSeqData && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+                for (var feat in map) {
+                    map[feat] = map[feat].genernaSeqCoverage;
+                }
+                return map;
+            },
+            atacSeqCounts: function() {
+                // Get atacseq counts from each sample
+                let map = {};
+                if (this.cohortModel && this.cohortModel.hasAtacSeqData && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+                for (var feat in map) {
+                    map[feat] = map[feat].geneatacSeqCoverage;
                 }
                 return map;
             },

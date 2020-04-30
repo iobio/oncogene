@@ -3,6 +3,12 @@
     #bam-track
         margin-top: -5px
 
+    .loader-label
+        font-family: Quicksand
+        color: #888888
+        font-size: 16px
+        padding-bottom: 2px
+
     #variant-card
         .variant-chip
             font-size: 12px
@@ -255,21 +261,70 @@
                                      @variantHoverEnd="onVariantHoverEnd"
                                      @apply-active-filters="applyActiveFilters">
                         </variant-viz>
-
-                        <div class="chart-label"
-                             v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1"
-                        >
+                        <div class="chart-label" v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                             coverage
                         </div>
                         <div id="bam-track">
                             <depth-viz
                                     v-if="showDepthViz"
                                     ref="depthVizRef"
-                                    :model="sampleModel"
+                                    :coverage="sampleModel.coverage"
                                     :coverageMedian="geneCoverageMedian"
                                     :coverageDangerRegions="coverageDangerRegions"
                                     :currentPoint="coveragePoint"
                                     :maxDepth="sampleModel.cohort.maxDepth"
+                                    :regionStart="regionStart"
+                                    :regionEnd="regionEnd"
+                                    :width="width"
+                                    :margin="depthVizMargin"
+                                    :height="60"
+                                    :showTooltip="false"
+                                    :showXAxis="false"
+                                    :regionGlyph="depthVizRegionGlyph"
+                                    :d3="d3"
+                                    :$="$"
+                                    @region-selected="showExonTooltip"
+                            >
+                            </depth-viz>
+                        </div>
+                        <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
+                            rna-seq
+                        </div>
+                        <div id="rna-bam-track">
+                            <depth-viz
+                                    v-if="showDepthViz"
+                                    ref="depthVizRef"
+                                    :coverage="sampleModel.rnaSeqCoverage"
+                                    :coverageMedian="geneCoverageMedian"
+                                    :coverageDangerRegions="coverageDangerRegions"
+                                    :currentPoint="coveragePoint"
+                                    :maxDepth="sampleModel.cohort.maxRnaSeqDepth"
+                                    :regionStart="regionStart"
+                                    :regionEnd="regionEnd"
+                                    :width="width"
+                                    :margin="depthVizMargin"
+                                    :height="60"
+                                    :showTooltip="false"
+                                    :showXAxis="false"
+                                    :regionGlyph="depthVizRegionGlyph"
+                                    :d3="d3"
+                                    :$="$"
+                                    @region-selected="showExonTooltip"
+                            >
+                            </depth-viz>
+                        </div>
+                        <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
+                            atac-seq
+                        </div>
+                        <div id="atac-bam-track">
+                            <depth-viz
+                                    v-if="showDepthViz"
+                                    ref="depthVizRef"
+                                    :coverage="sampleModel.atacSeqCoverage"
+                                    :coverageMedian="geneCoverageMedian"
+                                    :coverageDangerRegions="coverageDangerRegions"
+                                    :currentPoint="coveragePoint"
+                                    :maxDepth="sampleModel.cohort.maxAtacSeqDepth"
                                     :regionStart="regionStart"
                                     :regionEnd="regionEnd"
                                     :width="width"

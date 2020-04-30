@@ -24,81 +24,82 @@
 <template>
     <v-flex xs12>
         <v-layout row>
-            <v-flex xs12 class="field-label-header" style="text-align:left">Cohort Zygosity Counts</v-flex>
+            <v-flex xs12 class="field-label-header" style="text-align:left">Raw Bam Counts</v-flex>
         </v-layout>
         <v-layout row>
-            <v-flex xs2 class="summary-field-label">Probands:</v-flex>
-            <v-flex xs9 id="probandZygBar" style="padding-bottom:5px"></v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs2 class="summary-field-label">Subsets:</v-flex>
-            <v-flex xs9 id="subsetZygBar" style="padding-bottom:5px"></v-flex>
+            <v-flex xs2 class="summary-field-label">{{ chartLabel }}:</v-flex>
+            <v-flex xs9 :id="bamType + 'bar'" style="padding-bottom:5px"></v-flex>
         </v-layout>
     </v-flex>
 </template>
 
 <script>
+    import barChart from '../../d3/barChart.d3.js'
+
     export default {
         name: 'bar-feature-viz',
         data() {
             return {
-                probandZygChart: {},
-                subsetZygChart: {},
-                blank: ''
+                chart: null
             }
         },
         props: {
-            selectedVariant: {},
-            probandZygMap: {},
-            subsetZygMap: {},
-            statusMap: {},
-            depthMap: {},
-            affectedProbandCount: {},
-            affectedSubsetCount: {},
-            totalProbandCount: {},
-            totalSubsetCount: {},
-            blacklistStatus: false
+            selectedVariant: {
+                type: Object,
+                default: null
+            },
+            bamType: {
+                type: String,
+                default: null
+            },
+            counts: {
+                type: Object,
+                default: null
+            },
+            d3: null
         },
-        created: function () {
-        },
-        mounted: function () {
-            let self = this;
-            self.$emit('zyg-bars-mounted');
+        computed: {
+            chartLabel: function() {
+                return this.bamType === 'rnaSeq' ? 'Rna-Seq' : 'Atac-Seq';
+            }
         },
         methods: {
-            drawCharts(probandSampleCount, subsetSampleCount) {
-                let self = this;
+            drawCharts() {
+                const self = this;
 
                 // Don't draw charts until we have counts
-                if (probandSampleCount == null || probandSampleCount === 0) {
+                if (self.counts == null) {
                     return;
                 }
 
-                self.probandZygChart = barChart()
-                    .parentId('probandZygBar')
-                    .yValueMax(probandSampleCount)
-                    .yTicks(self.getTicks(probandSampleCount))
-                    .on('d3rendered', function () {
-                    });
-                self.probandZygChart(self.probandZygMap);
+                let maxCount = 0;
+                let sampleCount = 0;
+                Object.values(self.counts).forEach(count => {
+                    if (count > maxCount)
+                        maxCount = count;
+                    sampleCount++;
+                });
 
-                self.subsetZygChart = barChart()
-                    .parentId('subsetZygBar')
-                    .yValueMax(subsetSampleCount)
-                    .yTicks(self.getTicks(subsetSampleCount))
-                    .on('d3rendered', function () {
-                    });
-                self.subsetZygChart(self.subsetZygMap);
+                let options = {
+                    'parentId': self.bamType + 'bar',
+                    'yValMax': maxCount,
+                    'yTicks': self.getTicks(sampleCount)
+                };
+                self.chart = barChart(self.d3, options);
             },
             fillCharts() {
                 let self = this;
-                self.probandZygChart.fillChart()(self.probandZygMap);
-                self.subsetZygChart.fillChart()(self.subsetZygMap);
+                let objs = [];
+                for (var count in self.counts) {
+                    let obj = { label: count, value: self.counts[count] };
+                    objs.push(obj);
+                }
+
+                self.chart.fillChart(objs);
             },
             clear() {
                 let self = this;
-                self.probandZygChart.fillChart()();
-                self.subsetZygChart.fillChart()();
+                self.chart.fillChart();
             },
             getTicks(sampleCount) {
                 let maxTicks = 5;
@@ -111,11 +112,9 @@
         },
         watch: {
             selectedVariant: function () {
-                if (!this.blacklistStatus || this.selectedVariant == null) {
-                    this.fillCharts();
-                }
+                this.drawCharts();
+                this.fillCharts();
             }
-        },
-        computed: {}
+        }
     }
 </script>

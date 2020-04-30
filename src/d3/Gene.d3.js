@@ -8,6 +8,7 @@ export default function geneD3(d3, options) {
     // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
     // var selectedTranscript = null;
+    var color = options.color ? options.color : '#969696';
 
     // dimensions
     var margin = options.margin ? options.margin : {top: 10, right: 0, bottom: 15, left: 110},
@@ -165,7 +166,7 @@ export default function geneD3(d3, options) {
                     }
                 })
                 .join('line')
-                .style('stroke', '#969696')
+                .style('stroke', color)
                 .attr('x1', function (d) {
                     return Math.round(x(d[0]))
                 })
@@ -218,7 +219,7 @@ export default function geneD3(d3, options) {
             transcript.selectAll(".arrow").remove();
             transcript.selectAll('.arrow').data(centerSpan)
                 .join('path')
-                .style('stroke', '#969696')
+                .style('stroke', color)
                 .style('fill', 'transparent')
                 .attr('d', centerArrow);
 
@@ -240,7 +241,7 @@ export default function geneD3(d3, options) {
                     return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
                 });
             }).join('rect')
-                .style('fill', '9f9f9f')
+                .style('fill', color)
                 .style('stroke', 'hsla(0,0%,65%,.6')
                 .attr('rx', borderRadius)
                 .attr('ry', borderRadius)

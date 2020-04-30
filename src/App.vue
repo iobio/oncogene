@@ -4,9 +4,33 @@
             <v-toolbar-title class="headline text-uppercase">
                 <span id="title">Oncogene.iobio</span>
             </v-toolbar-title>
-            <v-toolbar-title style="padding-bottom:15px">
-                <span id="beta-title">v2</span>
-            </v-toolbar-title>
+<!--            <v-toolbar-title style="padding-bottom:15px">-->
+<!--                <span id="beta-title">2.0</span>-->
+<!--            </v-toolbar-title>-->
+            <v-toolbar-items>
+                <v-autocomplete v-model="lookupGene"
+                                :items="allGeneNames"
+                                prepend-icon="search"
+                                :allow-overflow="false"
+                                outlined
+                                dense
+                                single-line
+                                :search-input="searchVal"
+                                :eager="true"
+                                :readonly="false"
+                                label="Enter gene..."
+                                style="padding-top: 10px; padding-left: 30px; font-family: Quicksand; color: white">
+                </v-autocomplete>
+                <div id="nav-chips" v-show="selectedGeneDisplay"
+                     style="text-align: center; padding-top: 3px; padding-left: 8px">
+                    <v-chip color="lightPrimary" class="app-toolbar-chip">
+                        {{ selectedGeneDisplay }}
+                    </v-chip>
+                    <v-chip color="lightPrimary" class="app-toolbar-chip">
+                        {{ selectedBuild }}
+                    </v-chip>
+                </div>
+            </v-toolbar-items>
             <v-spacer></v-spacer>
             <files-menu
                     v-if="cohortModel"
@@ -35,6 +59,7 @@
                   :navbarHeight="navBarHeight"
                   @upload-config="onUploadConfig"
                   @load-demo="onLoadDemo"
+                  @gene-changed="onGeneChanged"
             >
 
             </Home>
@@ -57,7 +82,6 @@
     import EndpointCmd from './models/EndpointCmd.js'
     import FeatureMatrixModel from './models/FeatureMatrixModel.js'
     import FilterModel from './models/FilterModel.js'
-    // import FreebayesSettings from './models/FreebayesSettings.js'
     import GeneModel from './models/GeneModel.js'
     import GenericAnnotation from './models/GenericAnnotation.js'
     import GenomeBuildHelper from './models/GenomeBuildHelper.js'
@@ -75,8 +99,10 @@
         data: () => {
             return {
                 // views
-                // clickTooltip: null,
                 hoverTooltip: null,
+                selectedGeneName: null,
+                selectedGeneDisplay: null,
+                selectedBuild: null,
 
                 // models
                 cohortModel: null,
@@ -88,12 +114,29 @@
                 // view props
                 mainContentWidth: 0,
                 navBarHeight: 0,
+                dataLoaded: false,
+                enteredGene: null,
 
                 // static data
-                allGenes: allGenesData
+                allGenes: allGenesData,
+                allGeneNames: ['test', 'moo', 'oink'],
+                lookupGene: null,
+                searchVal: ''
             }
         },
+        computed: {
+            // allGeneNames: function() {
+            //     let geneNames = ['test', 'oink', 'moo'];
+            //     // this.allGenes.forEach(geneObj => {
+            //     //     geneNames.push(geneObj.gene_name);
+            //     // });
+            //     return geneNames;
+            // }
+        },
         methods: {
+            filterGenes: function() {
+
+            },
             onLoadDemoData: function (loadAction) {
                 this.$emit("load-demo-data", loadAction);
             },
@@ -124,25 +167,6 @@
                 return new Promise(function (resolve, reject) {
                     self.cacheHelper = new CacheHelper(self.globalApp, self.forceLocalStorage);
 
-                    // todo: these require d3 rebind - implement or get rid of
-                    // self.cacheHelper.on("geneAnalyzed", function (geneName) {
-                    //     self.$refs.genesCardRef.determineFlaggedGenes();
-                    //
-                    //     if (self.selectedGene && self.selectedGene.hasOwnProperty("gene_name")
-                    //         && geneName === self.selectedGene.gene_name) {
-                    //         self.promiseLoadData();
-                    //     }
-                    // });
-                    // self.cacheHelper.on("analyzeAllCompleted", function () {
-                    //     if (!self.isEduMode) {
-                    //         self.$refs.navRef.onShowFlaggedVariants();
-                    //     }
-                    //     if (self.launchedFromClin) {
-                    //         self.onSendFiltersToClin();
-                    //         self.onSendFlaggedVariantsToClin();
-                    //     }
-                    // });
-
                     self.globalApp.cacheHelper = self.cacheHelper;
                     window.globalCacheHelper = self.cacheHelper;
 
@@ -157,6 +181,11 @@
                             reject(msg);
                         })
                 })
+            },
+            onGeneChanged: function(geneDisplay) {
+                this.selectedGeneDisplay = geneDisplay;
+                this.selectedBuild = this.genomeBuildHelper.currentBuild.name;
+                this.dataLoaded = true;
             },
         },
         mounted: function () {
@@ -273,14 +302,25 @@
 <style scoped lang="sass">
     @import ./assets/sass/_tooltip.sass
 
+    .app-toolbar-chip
+        font-size: 14px
+        font-family: Quicksand
+        font-weight: bold
+        margin-top: 10px
+        margin-left: 10px
+
     #title
         font-family: Quicksand
-        font-weight: 500
+        font-weight: 300
 
-        #beta-title
-            font-style: italic
-            font-size: 16px
-            margin-right: 5px
-            margin-left: 0px
-            color: yellow
+    #beta-title
+        font-size: 14px
+        margin-right: 5px
+        margin-left: 0px
+        padding-left: 2px
+
+    #nav-chips
+        .chip
+            background: #965757
+            color: white
 </style>

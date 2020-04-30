@@ -19,17 +19,11 @@
                 </Welcome>
                 <v-flex xs9 v-if="dataEntered || debugMode">
                     <v-card outlined :height="700">
-                        <!--                    todo: will have panels in here depending on types of data we have- set off of cohortModel.hasDataType props?-->
                         <variant-card
                                 ref="variantCardRef"
-                                v-for="model in sampleModels"
+                                v-for="model in sampleModelsToDisplay"
                                 :key="model.id"
-                                v-bind:class="[
-                                { 'full-width': true, 'hide': Object.keys(selectedGene).length === 0 || !cohortModel  || cohortModel.inProgress.loadingDataSources
-                                  || (model.id === 'known-variants' && showKnownVariantsCard === false) || (model.id === 'cosmic-variants' && showCosmicVariantsCard === false)
-                                },
-                                model.id
-                                ]"
+                                v-bind:class="[ { 'full-width': true}, model.id ]"
                                 :globalAppProp="globalApp"
                                 :sampleModel="model"
                                 :canonicalSampleIds="canonicalSampleIds"
@@ -60,8 +54,8 @@
                     </v-card>
                 </v-flex>
                 <v-flex xs3 v-if="dataEntered || debugMode">
-                    <v-card>
-                        <v-tabs v-model="selectedTab">
+                    <v-card class="px-2">
+                        <v-tabs v-model="selectedTab" class="px-1">
                             <v-tabs-slider style="max-width: 120px" color="primary"></v-tabs-slider>
                             <v-tab href="#genes-tab">
                                 Ranked Genes
@@ -75,10 +69,10 @@
                                 Filters
                                 <v-icon style="margin-bottom: 0; padding-left: 5px">bubble_chart</v-icon>
                             </v-tab>
-                            <v-tab href="#history-tab">
-                                History
-                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>
-                            </v-tab>
+<!--                            <v-tab href="#history-tab">-->
+<!--                                History-->
+<!--                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
+<!--                            </v-tab>-->
                             <v-tab-item
                                     :key="'genesTab'"
                                     :id="'genes-tab'">
@@ -86,7 +80,12 @@
                                     <somatic-genes-card
                                             ref="somaticGenesCard"
                                             :rankedGeneList="rankedGeneList"
-                                            @variant-selected="onCohortVariantClick">
+                                            :selectedGeneName="selectedGeneName"
+                                            :totalSomaticVarCount="totalSomaticVarCount"
+                                            @variant-hover="onCohortVariantHover"
+                                            @variant-hover-exit="onCohortVariantHoverEnd"
+                                            @variant-selected="onCohortVariantClick"
+                                            @gene-selected-from-list="onGeneSelected">
                                     </somatic-genes-card>
                                 </v-container>
                             </v-tab-item>
@@ -104,6 +103,8 @@
                                             :$="globalApp.$"
                                             :d3="globalApp.d3"
                                             :cohortModel="cohortModel"
+                                            :hasRnaSeq="cohortModel.hasRnaSeqData"
+                                            :hasAtacSeq="cohortModel.hasAtacSeqData"
                                             @summary-mounted="onSummaryMounted"
                                             @summaryCardVariantDeselect="deselectVariant">
                                     </variant-summary-card>
@@ -124,17 +125,17 @@
                                     </filter-panel-menu>
                                 </v-container>
                             </v-tab-item>
-                            <v-tab-item
-                                    :key="'historyTab'"
-                                    :id="'history-tab'">
-                                <v-container>
-                                    <history-tab
-                                            ref="historyTabRef"
-                                            :geneHistoryList="geneHistoryList"
-                                            @reload-gene-history="reloadGene">
-                                    </history-tab>
-                                </v-container>
-                            </v-tab-item>
+<!--                            <v-tab-item-->
+<!--                                    :key="'historyTab'"-->
+<!--                                    :id="'history-tab'">-->
+<!--                                <v-container>-->
+<!--                                    <history-tab-->
+<!--                                            ref="historyTabRef"-->
+<!--                                            :geneHistoryList="geneHistoryList"-->
+<!--                                            @reload-gene-history="reloadGene">-->
+<!--                                    </history-tab>-->
+<!--                                </v-container>-->
+<!--                            </v-tab-item>-->
                         </v-tabs>
                     </v-card>
                 </v-flex>
@@ -151,7 +152,7 @@
     import VariantCard from './VariantCard.vue'
     import VariantSummaryCard from './VariantSummaryCard.vue'
     import FilterPanelMenu from './filter/FilterPanelMenu.vue'
-    import HistoryTab from './HistoryTab.vue'
+    // import HistoryTab from './HistoryTab.vue'
     import SomaticGenesCard from './SomaticGenesCard.vue'
 
     import '@/assets/css/v-tooltip.css'
@@ -163,7 +164,7 @@
             VariantCard,
             VariantSummaryCard,
             FilterPanelMenu,
-            HistoryTab,
+            // HistoryTab,
             SomaticGenesCard
         },
         props: {
@@ -219,6 +220,7 @@
                 geneRegionEnd: null,
                 lastClickCard: null,
                 selectedTab: 'genes-tab',
+                totalSomaticVarCount: -1,
 
                 // models & model data
                 sampleIds: null,   // Sample ids for canonical sample models
@@ -244,6 +246,10 @@
                 } else {
                     this.annotationComplete = false;
                 }
+            },
+            selectedGene: function() {
+                let selectedGeneDisplay = this.selectedGene.gene_name + " " + this.selectedGene.chr;
+                this.$emit('gene-changed', selectedGeneDisplay);
             }
         },
         methods: {
@@ -268,14 +274,20 @@
                         });
 
                         this.cohortModel.promiseAnnotateGlobalSomatics()
-                            .then((topRankedGene) => {
+                            .then(rankObj => {
+                                let totalSomaticVarCount = rankObj.count;
+                                let topRankedGene = rankObj.gene;
+
                                 let geneModel = self.cohortModel.geneModel;
+                                self.totalSomaticVarCount = totalSomaticVarCount;
 
                                 // Get rid of global loader
                                 self.displayLoader = false;
 
-                                self.rankedGeneList = geneModel.rankedGeneList;
+                                // Turn on track loaders
+                                self.cohortModel.setLoaders(true);
 
+                                self.rankedGeneList = geneModel.rankedGeneList;
                                 self.selectedGene = topRankedGene;
                                 self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
                                 self.geneRegionStart = self.selectedGene.start;
@@ -362,7 +374,6 @@
                 }
             },
             onCohortVariantHover: function (variant, sourceComponent) {
-                console.log('Hovering in home from source cmpnt: ' + sourceComponent.id);
                 const self = this;
                 self.$refs.variantCardRef.forEach(function (variantCard) {
                     if (variantCard != sourceComponent) {
@@ -475,27 +486,29 @@
                     }
                 }
             },
-            // todo: need to incorporate single gene entry
-            promiseLoadGene: function (geneName, theTranscript, loadingFromFlagEvent = false, loadFeatureMatrix = true) {
+            promiseLoadGene: function (geneName, theTranscript) {
                 const self = this;
+                const geneModel = self.cohortModel.geneModel;
+
                 self.showWelcome = false;
                 self.clearZoom = true;
                 self.applyFilters = false;
                 return new Promise(function (resolve, reject) {
                     if (self.cohortModel) {
                         self.cohortModel.clearLoadedData(geneName);
+                        self.cohortModel.setLoaders(true);
                     }
                     // if (self.featureMatrixModel) {
                     //     self.featureMatrixModel.clearRankedVariants();
                     // }
-                    self.geneModel.promiseAddGeneName(geneName)
+                    geneModel.promiseAddGeneName(geneName)
                         .then(function () {
-                            self.geneModel.promiseGetGeneObject(geneName)
+                            geneModel.promiseGetGeneObject(geneName)
                                 .then(function (theGeneObject) {
                                     if (self.bringAttention === 'gene') {
                                         self.bringAttention = null;
                                     }
-                                    self.geneModel.adjustGeneRegion(theGeneObject);
+                                    geneModel.adjustGeneRegion(theGeneObject);
                                     self.geneRegionStart = theGeneObject.start;
                                     self.geneRegionEnd = theGeneObject.end;
                                     self.selectedGene = theGeneObject;
@@ -508,10 +521,10 @@
                                         // Determine the transcript that should be selected for this gene
                                         // If the transcript wasn't previously selected for this gene,
                                         // set it to the canonical transcript
-                                        let latestTranscript = self.geneModel.getLatestGeneTranscript(geneName);
+                                        let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
                                         if (latestTranscript == null) {
-                                            self.selectedTranscript = self.geneModel.getCanonicalTranscript(self.selectedGene);
-                                            self.geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
+                                            self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                                            geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
                                         } else {
                                             self.selectedTranscript = latestTranscript;
                                         }
@@ -523,7 +536,7 @@
                                     if (self.cohortModel.isLoaded) {
                                         self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
                                         .then(() => {
-                                            self.promiseLoadData(loadingFromFlagEvent, loadFeatureMatrix)
+                                            self.promiseLoadData(self.selectedGene, self.selectedTranscript)
                                                 .then(function () {
                                                     self.clearZoom = false;
                                                     self.showVarViz = true;
@@ -545,7 +558,7 @@
                         })
                         .catch(function (error) {
                             console.log(error);
-                            self.geneModel.removeGene(geneName);
+                            geneModel.removeGene(geneName);
                             self.onShowSnackbar({
                                 message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
                                 timeout: 60000
@@ -644,6 +657,23 @@
                 } else {
                     return null;
                 }
+            },
+            sampleModelsToDisplay: function() {
+                let filteredModels = [];
+                if (this.sampleModels) {
+                    this.sampleModels.forEach(model => {
+                        if (this.showCosmicVariantsCard && model.id === 'cosmic-variants') {
+                            filteredModels.push(model);
+                        }
+                        if (this.showKnownVariantsCard && model.id === 'known-variants') {
+                            filteredModels.push(model);
+                        }
+                        if (model.id !== 'known-variants' && model.id !== 'cosmic-variants') {
+                            filteredModels.push(model);
+                        }
+                    })
+                }
+                return filteredModels;
             }
         },
     }

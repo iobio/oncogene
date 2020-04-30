@@ -136,7 +136,6 @@ export default class bamiobio {
         }
     }
 
-    // todo: signature for this has changed (added bamType)
     getGeneCoverage(geneObject, transcript, bams, bamType, callback) {
         const me = this;
         const refName = geneObject.chr;
@@ -153,6 +152,7 @@ export default class bamiobio {
         this._transformRefName(refName, bamType,function (trRefName) {
             let index = 0;
             let bamSources = [];
+            // Note: leaving this PoC using the static def even though model relationship has changed
             me._initializeBamSource(bams, trRefName, regionStart, regionEnd, bamSources, index, function () {
                 const cmd = me.endpoint.getGeneCoverage(bamSources, trRefName, geneObject.gene_name, regionStart, regionEnd, regions);
                 let geneCoverageData = "";
@@ -451,6 +451,7 @@ export default class bamiobio {
     }
 
     // Sequentially examine each bam source, either specifying the bamUrl, or creating a blob (for local files)
+    // todo: this function & PoC is super confusing - fix
     _initializeBamSource(bams, refName, regionStart, regionEnd, bamSources, idx, bamType, callback) {
         var me = this;
         if (idx === bams.length) {

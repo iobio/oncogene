@@ -76,19 +76,28 @@ class GeneModel {
         return new Promise(function (resolve) {
             let geneName = theGeneName.toUpperCase();
 
-            if (me.geneNames.indexOf(geneName) < 0) {
-                me.geneNames.push(geneName);
-                me.sortedGeneNames.push(geneName);
-                me.promiseGetGenePhenotypes(geneName)
-                    .then(function () {
-                        return me.promiseGetNCBIGeneSummary(geneName);
-                    })
-                    .then(function () {
+            if (!me.geneObjects[geneName]) {
+                me.promiseGetGeneObject(geneName)
+                    .then(() => {
                         resolve();
                     })
             } else {
                 resolve();
             }
+
+            // if (me.geneNames.indexOf(geneName) < 0) {
+            //     me.geneNames.push(geneName);
+            //     me.sortedGeneNames.push(geneName);
+            //     me.promiseGetGenePhenotypes(geneName)
+            //         .then(function () {
+            //             return me.promiseGetNCBIGeneSummary(geneName);
+            //         })
+            //         .then(function () {
+            //             resolve();
+            //         })
+            // } else {
+            //     resolve();
+            // }
         })
     }
 
@@ -696,7 +705,13 @@ class GeneModel {
 
     promiseGetGeneObject(geneName) {
         const me = this;
+
         return new Promise(function (resolve, reject) {
+
+            // If we've already fetched the gene object for somatic list, just return it
+            if (me.geneObjects[geneName]) {
+                resolve(me.geneObjects[geneName]);
+            }
 
             var url = me.geneInfoServer + 'api/gene/' + geneName;
 
@@ -1249,6 +1264,7 @@ class GeneModel {
         const self = this;
         let genesWithVars = {};
         let scorePromises = [];
+        let totalSomaticVarCount = 0;
 
         return new Promise((resolve, reject) => {
             Object.values(somaticVars).forEach(feat => {
@@ -1256,6 +1272,7 @@ class GeneModel {
                 // We may want to change this depending on gene list viz needs
                 if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
                     self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
+                    totalSomaticVarCount++;
                 } else {
                     // VEP might call gene something else than what gene service does
                     // TODO: need to figure out what to do here if we don't find a match...
@@ -1274,7 +1291,7 @@ class GeneModel {
                 .then(() => {
                     self.promiseRankGenes()
                         .then(topGene => {
-                            resolve(topGene);
+                            resolve({'gene': topGene, "count": totalSomaticVarCount});
                         }).catch(error => {
                         reject('There was a problem ranking genes: ' + error);
                     })
@@ -1338,7 +1355,7 @@ class GeneModel {
             self.rankedGeneList = self.rankedGeneList.sort((a, b) => {
                 return (a.score < b.score) ? 1 : -1;
             });
-            resolve(self.rankedGeneList[1]);
+            resolve(self.rankedGeneList[0]);
         });
     }
 

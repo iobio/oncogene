@@ -25,7 +25,7 @@ class CohortModel {
         this.varAfLinks = null;
 
         this.annotationScheme = 'vep';
-        this.isLoaded = false;
+        this.isLoaded = true;
 
         this.sampleModels = [];                 // List of sample models correlated with this cohort
         this.sampleMap = {};                    // Relates IDs to model objects
@@ -37,7 +37,9 @@ class CohortModel {
         this.mode = 'time';                     // Indicates time-series mode
         this.maxAlleleCount = null;
         this.tumorInfo = null;                  // Used in variant detail cards & tooltips
-        this.maxDepth = 0;
+        this.maxDepth = 0;                      // Coverage depth
+        this.maxRnaSeqDepth = 0;
+        this.maxAtacSeqDepth = 0;
         this.annotationComplete = false;        // True when all tracks have finished annotation
 
         this.inProgress = {
@@ -302,6 +304,13 @@ class CohortModel {
     /*
      * SETTERS
      */
+    setLoaders(show) {
+        this.sampleModels.forEach(model => {
+            model.inProgress.loadingVariants = show;
+            model.inProgress.loadingCoverage = show;
+        });
+    }
+
     setInputDataTypes(userDataList) {
         userDataList.forEach((dataType) => {
             switch (dataType) {
@@ -768,8 +777,8 @@ class CohortModel {
                         .then((varMap) => {
                             self.somaticVarMap = varMap;
                             self.geneModel.promiseGroupAndRank(self.somaticVarMap)
-                                .then(topRankedGene => {
-                                    resolve(topRankedGene);
+                                .then(rankObj => {
+                                    resolve(rankObj);
                                 })
                                 .catch(error => {
                                     reject('Something went wrong ranking genes by variants ' + error);
@@ -815,7 +824,6 @@ class CohortModel {
 
 
     /* Loads data for all samples for a single gene */
-    // todo: update this to include loading cnv, rnaseq, atacseq data if available
     promiseLoadData(theGene, theTranscript, options) {
         const self = this;
         let promises = [];
@@ -838,26 +846,36 @@ class CohortModel {
                 self.assignCategoryOrders();
 
                 // var resultMap = null;
-                let p1 = self.promiseLoadVariants(theGene, theTranscript, options)
-                    .then(function (data) {
-                        // todo: think I might need to update sample map here with variants
-                        // Turn off loader glyphs
-                        self.sampleModels.forEach(model => {
-                            model.inProgress.loadingVariants = false;
-                        });
-
-                        // todo: think I might need to update sample map here with variants
-                        console.log(data);
-                        // let resultMap = data.resultMap;
-                });
+                let p1 = self.promiseLoadVariants(theGene, theTranscript, options);
                 promises.push(p1);
 
-                // todo: include more promises here depending on if we have CNV, rnaseq, atacseq data
                 let p2 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.COVERAGE_TYPE)
                     .then(function () {
                         self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
                     });
                 promises.push(p2);
+
+                if (self.hasRnaSeqData) {
+                    let p = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.RNASEQ_TYPE)
+                        .then(function() {
+                            self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
+                        }).catch(error => {
+                            console.log("Problem loading rnaseq data: " + error);
+                        });
+                    promises.push(p);
+                }
+
+                if (self.hasAtacSeqData) {
+                    let p = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.ATACSEQ_TYPE)
+                        .then(function() {
+                            self.setCoverage(null, null, self.globalApp.ATACSEQ_TYPE);
+                        }).catch(error => {
+                            console.log("Problem loading atacseq data: " + error);
+                        });
+                    promises.push(p);
+                }
+
+                // todo: if we have CNV data - load here
 
                 Promise.all(promises)
                     .then(function () {
@@ -1234,26 +1252,30 @@ class CohortModel {
         });
     }
 
-    // todo: update PoC for this
     setCoverage(regionStart, regionEnd, bamType) {
         const self = this;
         self.getCanonicalModels().forEach(function (model) {
             let bamData = model.getBamData(bamType);
+            let coverageType = model.getResultType(bamType);
             if (bamData) {
                 if (regionStart && regionEnd) {
-                    model.coverage = bamData.coverage.filter(function (depth) {
+                    // todo: do we need to change .coverage here?
+                    model[coverageType] = bamData.coverage.filter(function (depth) {
                         return depth[0] >= regionStart && depth[0] <= regionEnd;
                     })
                 } else {
-                    model.coverage = bamData.coverage;
+                    model[coverageType] = bamData.coverage;
                 }
-                if (model.coverage) {
-                    var max = self.globalApp.d3.max(model.coverage, function (d) {
+                if (model[coverageType]) {
+                    let max = self.globalApp.d3.max(model[coverageType], function (d) {
                         return d[1]
                     });
-                    if (max > self.maxDepth) {
+                    if (bamType === self.globalApp.COVERAGE_TYPE && max > self.maxDepth)
                         self.maxDepth = max;
-                    }
+                    else if (bamType === self.globalApp.RNASEQ_TYPE && max > self.maxRnaSeqDepth)
+                        self.maxRnaSeqDepth = max;
+                     else if (bamType === self.globalApp.ATACSEQ_TYPE && max > self.maxAtacSeqDepth)
+                         self.atacSeqDepth = max;
                 }
             }
         })
@@ -1281,7 +1303,6 @@ class CohortModel {
         return new Promise(function (resolve, reject) {
             let annotatePromises = [];
             let theResultMap = {};
-            // self.featureMatrixModel.inProgress.loadingVariants = true;
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
             let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, [self.getNormalModel()], isMultiSample, isBackground)
@@ -1580,12 +1601,12 @@ class CohortModel {
     }
 
     // TODO: need to know when this is called and why
-    promiseSummarizeDanger(geneObject, theTranscript, theVcfData) {
+    promiseSummarizeDanger(geneObject, theTranscript, bamType, theVcfData) {
         let self = this;
 
         return new Promise(function (resolve, reject) {
 
-            self.promiseGetCachedGeneCoverage(geneObject, theTranscript, false)
+            self.promiseGetCachedGeneCoverage(geneObject, theTranscript, bamType, false)
                 .then(function (data) {
                     let geneCoverageAll = data.geneCoverage;
                     let theOptions = null;
@@ -1639,7 +1660,7 @@ class CohortModel {
     }
 
 
-    promiseGetCachedGeneCoverage(geneObject, transcript, showProgress = false) {
+    promiseGetCachedGeneCoverage(geneObject, transcript, bamType, showProgress = false) {
         let self = this;
         return new Promise(function (resolve, reject) {
             let geneCoverageAll = {gene: geneObject, transcript: transcript, geneCoverage: {}};
@@ -1650,7 +1671,7 @@ class CohortModel {
                     if (showProgress) {
                         //vc.showBamProgress("Analyzing coverage in coding regions");
                     }
-                    let promise = model.promiseGetGeneCoverage(geneObject, transcript)
+                    let promise = model.promiseGetGeneCoverage(geneObject, transcript, bamType)
                         .then(function (data) {
                             var gc = data.geneCoverage;
                             geneCoverageAll.geneCoverage[data.model.getId()] = gc;
@@ -1721,30 +1742,59 @@ class CohortModel {
                         let currId = sampleIds[i];
                         feature.geneCoverage[currId] = false;
                     }
-                    //feature.geneCoverage = {proband: false, mother: false, father: false};
+                }
+                const rnaSeqKey = 'gene' + self.globalApp.RNASEQ_TYPE + 'Coverage';
+                if (self.hasRnaSeqData && !feature.hasOwnProperty(rnaSeqKey)) {
+                    feature[rnaSeqKey] = {};
+                    let sampleIds = Object.keys(self.sampleMap);
+                    for (let i = 0; i < sampleIds.length; i++) {
+                        let currId = sampleIds[i];
+                        feature[rnaSeqKey][currId] = false;
+                    }
+                }
+                const atacSeqKey = 'gene' + self.globalApp.ATACSEQ_TYPE + 'Coverage';
+                if (!feature.hasOwnProperty(atacSeqKey)) {
+                    feature[atacSeqKey] = {};
+                    let sampleIds = Object.keys(self.sampleMap);
+                    for (let i = 0; i < sampleIds.length; i++) {
+                        let currId = sampleIds[i];
+                        feature[atacSeqKey][currId] = false;
+                    }
                 }
 
-                self.getCanonicalModels().forEach(function (model) {
-                    let promise = model.promiseGetCachedGeneCoverage(geneObject, transcript)
-                        .then(function (geneCoverage) {
-                            if (geneCoverage) {
-                                let matchingFeatureCoverage = geneCoverage.filter(function (gc) {
-                                    return feature.start === gc.start && feature.end === gc.end;
-                                });
-                                if (matchingFeatureCoverage.length > 0) {
-                                    let gc = matchingFeatureCoverage[0];
-                                    feature.geneCoverage[model.getId()] = gc;
-                                    // feature.danger[model.getId()] = self.filterModel.isLowCoverage(gc);
+                let bamTypes = [self.globalApp.COVERAGE_TYPE];
+                if (self.hasRnaSeqData)
+                    bamTypes.push(self.globalApp.RNASEQ_TYPE);
+                if (self.hasAtacSeqData)
+                    bamTypes.push(self.globalApp.ATACSEQ_TYPE);
+
+                bamTypes.forEach(bamType => {
+                    self.getCanonicalModels().forEach(function (model) {
+                        let promise = model.promiseGetCachedGeneCoverage(geneObject, transcript, bamType)
+                            .then(function (geneCoverage) {
+                                if (geneCoverage) {
+                                    let matchingFeatureCoverage = geneCoverage.filter(function (gc) {
+                                        return feature.start === gc.start && feature.end === gc.end;
+                                    });
+                                    if (matchingFeatureCoverage.length > 0) {
+                                        let gc = matchingFeatureCoverage[0];
+                                        let coverageKey = 'geneCoverage';
+                                        if (bamType !== self.globalApp.COVERAGE_TYPE) {
+                                            coverageKey = 'gene' + bamType + 'Coverage';
+                                        }
+                                        feature[coverageKey][model.getId()] = gc;
+                                        // todo: update danger fields too
+                                        // feature.danger[][model.getId()] = self.filterModel.isLowCoverage(gc);
+                                    } else {
+                                        feature.danger[model.getId()] = false;
+                                    }
                                 } else {
                                     feature.danger[model.getId()] = false;
                                 }
-                            } else {
-                                feature.danger[model.getId()] = false;
-                            }
-
-                        });
-                    exonPromises.push(promise);
-                })
+                            });
+                        exonPromises.push(promise);
+                    })
+                });
             });
 
             Promise.all(exonPromises)

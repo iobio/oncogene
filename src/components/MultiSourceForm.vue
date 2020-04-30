@@ -1,6 +1,6 @@
 <template>
     <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
-        <v-card-title class="justify-center">
+        <v-card-title class="justify-center function-card-title">
             {{ dataType }} Data
         </v-card-title>
         <v-divider class="mx-12"></v-divider>

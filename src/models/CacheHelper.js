@@ -33,6 +33,9 @@ CacheHelper.BAM_DATA            = "bamData";
 CacheHelper.FB_DATA             = "fbData";
 CacheHelper.DANGER_SUMMARY_DATA = "dangerSummary";
 CacheHelper.GENE_COVERAGE_DATA  = "geneCoverage";
+CacheHelper.RNASEQ_COVERAGE_DATA  = "genernaSeqCoverage";
+CacheHelper.ATACSEQ_COVERAGE_DATA  = "geneatacSeqCoverage";
+
 
 CacheHelper.prototype.analyzeAll = function(cohort, analyzeCalledVariants = false) {
   var me = this;
@@ -285,6 +288,9 @@ CacheHelper.prototype.cacheGenes = function(analyzeCalledVariants, callback) {
 CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariants) {
   var me = this;
 
+  // todo: change to dynamic type of bam
+  let bamType = 'coverage';
+
   return new Promise(function(cacheResolve, cacheReject) {
     var theGeneName = geneName;
     var geneObject = null;
@@ -306,7 +312,7 @@ CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariant
         transcript = me.cohort.geneModel.getCanonicalTranscript(geneObject);
       }
 
-      return me.cohort.promiseMarkCodingRegions(geneObject, transcript);
+      return me.cohort.promiseMarkCodingRegions(geneObject, transcript, bamType);
     })
     .then(function() {
       // Find out if this gene has already been analyzed
@@ -319,7 +325,7 @@ CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariant
         cacheResolve(geneObject);
       } else {
         // Get the gene coverage stats
-        return me.cohort.promiseGetCachedGeneCoverage(geneObject, transcript, false);
+        return me.cohort.promiseGetCachedGeneCoverage(geneObject, transcript, bamType, false);
       }
     })
     .then(function() {
@@ -358,7 +364,7 @@ CacheHelper.prototype.promiseCacheGene = function(geneName, analyzeCalledVariant
     .then(function() {
 
       // Now summarize the danger for the  gene
-      return me.cohort.promiseSummarizeDanger(geneObject, transcript, trioVcfData.proband, {'CALLED': analyzeCalledVariants})
+      return me.cohort.promiseSummarizeDanger(geneObject, transcript, bamType, trioVcfData.proband, {'CALLED': analyzeCalledVariants})
     })
     .then(function() {
       // Now clear out mother and father from cache (localStorage browser cache only)
@@ -485,6 +491,10 @@ CacheHelper.prototype.refreshGeneBadges = function(callback) {
 
 CacheHelper.prototype.refreshNextGeneBadge = function(keys, callback) {
   var me = this;
+  console.log('Update bamType in refreshNextGeneBadge');
+  let bamType = 'coverage';
+
+
   if (keys.length == 0) {
     callback();
   } else {
@@ -499,7 +509,7 @@ CacheHelper.prototype.refreshNextGeneBadge = function(keys, callback) {
       var theKeyObject  = cachedData.keyObject;
       var theGeneObject = me.cohort.geneModel.geneObjects[theKeyObject.gene];
       var theTranscript = {transcript_id: theKeyObject.transcript};
-      me.cohort.promiseSummarizeDanger(theGeneObject, theTranscript, theVcfData, {})
+      me.cohort.promiseSummarizeDanger(theGeneObject, theTranscript, bamType, theVcfData, {})
       .then(function() {
         me.refreshNextGeneBadge(keys, callback);
       })

@@ -24,7 +24,9 @@ class SampleModel {
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
         this.loadedVariants = null;
         this.variantHistoData = null;
-        this.coverage = [[]];       // Coverage pulled from bamData (now coverageData, rnaseqData, etc... todo: need coverage var for each of these to pass into depth-viz
+        this.coverage = [[]];       // Coverage pulled from bamData
+        this.rnaSeqCoverage = [[]];
+        this.atacSeqCoverage = [[]];
         this.somaticVarCoverage = [[]]; // List of [start site, read depth] corresponding to sites in tumor samples but not in normal samples - aka this is only used in normal SampleModel
 
         // vcf data
@@ -440,7 +442,7 @@ class SampleModel {
         return exonBins;
     }
 
-    promiseGetGeneCoverage(geneObject, transcript) {
+    promiseGetGeneCoverage(geneObject, transcript, bamType) {
         const me = this;
 
         return new Promise(function (resolve, reject) {
@@ -452,10 +454,10 @@ class SampleModel {
                             if (transcript.features == null || transcript.features.length == 0) {
                                 resolve({model: me, gene: geneObject, transcript: transcript, 'geneCoverage': []});
                             } else {
-                                // todo: this PoC needs to be udpated with which type of bam
                                 me.bam.getGeneCoverage(geneObject,
                                     transcript,
                                     [me.bam],
+                                    bamType,
                                     function (theData, trRefName, theGeneObject, theTranscript) {
                                         var geneCoverageObjects = me._parseGeneCoverage(theData);
                                         if (geneCoverageObjects.length > 0) {
@@ -541,8 +543,17 @@ class SampleModel {
         return geneCoverageObjects;
     }
 
-    promiseGetCachedGeneCoverage(geneObject, selectedTranscript) {
-        return this._promiseGetData(CacheHelper.GENE_COVERAGE_DATA, geneObject.gene_name, selectedTranscript);
+    promiseGetCachedGeneCoverage(geneObject, selectedTranscript, bamType) {
+        let dataType = '';
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
+            dataType = CacheHelper.GENE_COVERAGE_DATA;
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            dataType = CacheHelper.RNASEQ_COVERAGE_DATA;
+        } else if (bamType === this.globalApp.ATACSEQ_TYPE) {
+            dataType = CacheHelper.ATACSEQ_COVERAGE_DATA;
+        }
+
+        return this._promiseGetData(dataType, geneObject.gene_name, selectedTranscript);
     }
 
     setGeneCoverageForGene(geneCoverage, geneObject, transcript) {
@@ -1175,7 +1186,7 @@ class SampleModel {
                 regions.push({name: feature.chrom, start: feature['start'] - 1, end: feature['end']});
             });
 
-            self.bam.getCoverageForRegion(featureList[0]['chrom'], bamType, featureList[0]['start'], featureList[featureList.length-1]['end'], regions, null, null,
+            self.bam.getCoverageForRegion(featureList[0]['chrom'], bamType, featureList[0]['start'], featureList[featureList.length - 1]['end'], regions, null, null,
                 function (coverageForRegion, coverageForPoints) {
                     if (coverageForPoints != null) {
                         resolve(coverageForPoints);
@@ -1268,7 +1279,9 @@ class SampleModel {
 
                                         // Use browser cache for storage coverage data if app is not relying on
                                         // server-side cache
-                                        if (!me.globalApp.useServerCache) {
+                                        let useBrowserCache = false;
+                                        // todo: SJG not using cache currently
+                                        if (!me.globalApp.useServerCache && useBrowserCache) {
                                             me._promiseCacheData(data, CacheHelper.BAM_DATA, gene.gene_name)
                                                 .then(function () {
                                                     performCallback(regions, theVcfData, coverageForRegion, coverageForPoints);
@@ -1309,7 +1322,7 @@ class SampleModel {
                 (theVcfData.loadState['inheritance'] === true) &&
                 theVcfData.loadState['clinvar'] === true &&
                 (!me.isBamLoaded() || theVcfData.loadState['coverage'] === true)) {
-                    resolve();
+                resolve();
             } else {
                 reject();
             }
@@ -1580,7 +1593,7 @@ class SampleModel {
 
             // Check to see if we've stored the IDs in the cache
             sampleModel._promiseGetData(CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
-                .then(function(ids) {
+                .then(function (ids) {
                     if (ids != null && ids !== '') {
                         resultMap[sampleModel.id + '-ids'] = ids;
                         inCache = true;
@@ -1599,7 +1612,7 @@ class SampleModel {
                             null,   // regions
                             'LEGACY_ID'
                         );
-                    }).then(function(data) {
+                    }).then(function (data) {
                     if (data) {
                         if (Object.keys(data).length === 0) {
                             console.log('Warning: no cosmic variants found for this gene.');
@@ -1610,7 +1623,7 @@ class SampleModel {
                     } else {
                         reject('Warning: no result obtained from getting variant ids for ' + self.id);
                     }
-                }).catch(function(err) {
+                }).catch(function (err) {
                     reject('Could not obtain variant ids for ' + self.id + ' because: ' + err);
                 })
             }
@@ -1774,7 +1787,7 @@ class SampleModel {
                                         me.id
                                     );
                                 })
-                                .then(function(data) {
+                                .then(function (data) {
                                         let results = data[1];
 
                                         if (!isMultiSample) {
@@ -2136,7 +2149,7 @@ class SampleModel {
             });
 
             // Include all of the sample names for the proband
-            me.getAffectedInfo().forEach(function(info) {
+            me.getAffectedInfo().forEach(function (info) {
                 if (info.model == me) {
                     // ignore the affected info for this sample.  We already added it
                     // to the list of samples to retrieve
@@ -2166,7 +2179,7 @@ class SampleModel {
     _getSampleIndex(list) {
         let self = this;
         let idxCount = 0;
-        let idx =  list.filter((item) => {
+        let idx = list.filter((item) => {
             if (item.sampleName === self.getSelectedSample()) {
                 return idxCount;
             } else {
@@ -2959,7 +2972,6 @@ class SampleModel {
     }
 
 
-
     classifyByImpact(d, annotationScheme, inTumorTrack, inKnownTrack) {
         let self = this;
 
@@ -2992,9 +3004,9 @@ class SampleModel {
         if (d.isInherited != null && d.isInherited === false && inTumorTrack && !inKnownTrack) {
             colorimpacts += " " + "impact_SOMATIC";
         } else {
-        var colorImpactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToColor]);
-        for (key in colorImpactList) {
-            colorimpacts += " " + 'impact_' + key;
+            var colorImpactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToColor]);
+            for (key in colorImpactList) {
+                colorimpacts += " " + 'impact_' + key;
             }
         }
 
@@ -3019,6 +3031,7 @@ class SampleModel {
 
         return 'variant ' + d.type.toLowerCase() + ' ' + d.zygosity.toLowerCase() + ' ' + (d.inheritance ? d.inheritance.toLowerCase() : "") + ' ' + d.clinvar + ' ' + impacts + ' ' + effects + ' ' + d.consensus + ' ' + colorimpacts + ' ' + filterStatus;
     }
+
     promiseCompareVariants(theVcfData, compareAttribute, matchAttribute, matchFunction, noMatchFunction) {
         var me = this;
 
@@ -3180,16 +3193,25 @@ class SampleModel {
 
     getBamData(bamType) {
         const me = this;
-        if (bamType === this.globalApp.COVERAGE_TYPE) {
+        if (bamType === me.globalApp.COVERAGE_TYPE) {
             return me.coverageData;
-        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+        } else if (bamType === me.globalApp.RNASEQ_TYPE) {
             return me.rnaSeqData;
         } else {
             return me.atacSeqData;
         }
     }
-}
 
+    getResultType(bamType) {
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
+            return 'coverage';
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            return 'rnaSeqCoverage';
+        } else {
+            return 'atacSeqCoverage';
+        }
+    }
+}
 
 SampleModel._summarizeDanger = function (geneName, theVcfData, options = {}, geneCoverageAll, filterModel, translator) {
     const me = this;

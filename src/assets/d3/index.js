@@ -13,7 +13,7 @@ import {
     active
 } from 'd3-transition';
 
-import { axisBottom, axisTop, axisRight } from 'd3-axis';
+import { axisBottom, axisTop, axisRight, axisLeft } from 'd3-axis';
 
 import { easeBounce } from 'd3-ease';
 
@@ -44,6 +44,7 @@ export default {
     axisBottom,
     axisTop,
     axisRight,
+    axisLeft,
     brushX,
     line,
     area,

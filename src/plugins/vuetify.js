@@ -15,8 +15,13 @@ export default new Vuetify({
             appColor: "#7f1010",
             appHighlight: '#965757',
             appGray: "#888888",
+            appLightGray: '#969696',
             appDarkGray: '#686868',
-            altRowColor: "#c6c6c8"
+            altRowColor: "#c6c6c8",
+            highColor: '#E0292B',
+            moderColor: '#F49A73',
+            lowColor: '#b5cf6a',
+            modifColor: '#f9e4b5'
         },
       },
       icons: {

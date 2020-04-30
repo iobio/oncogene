@@ -93,7 +93,7 @@
                                 light>
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
-                                <v-card-title>
+                                <v-card-title class="about-title">
                                     Required Inputs
                                 </v-card-title>
                                 <v-card-text class="about-text">
@@ -101,14 +101,14 @@
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
-                                <v-card-title class="justify-center">
+                                <v-card-title class="justify-center function-card-title">
                                     What types of data do you have?
                                 </v-card-title>
                                 <v-card-subtitle class="about-subtitle">
                                     (Select all that apply)
                                 </v-card-subtitle>
                                 <v-divider class="mx-12"></v-divider>
-                                <v-card-actions>
+                                <v-card-actions class="function-card-body">
                                     <v-container fluid>
                                         <v-row v-for="i in DATA_MODELS.length"
                                                :key="'checkbox-' + i"
@@ -133,7 +133,7 @@
                                 light>
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
-                                <v-card-title>
+                                <v-card-title class="about-title">
                                     Somatic Calling
                                 </v-card-title>
                                 <v-card-text class="about-text">
@@ -141,7 +141,7 @@
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
-                                <v-card-title class="justify-center">
+                                <v-card-title class="justify-center function-card-title">
                                     Does your VCF file contain somatic variants only?
                                 </v-card-title>
                                 <v-divider class="mx-12"></v-divider>
@@ -174,7 +174,7 @@
                                 light>
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
-                                <v-card-title>
+                                <v-card-title class="about-title">
                                     Gene Loci Selections
                                 </v-card-title>
                                 <v-card-text class="about-text">
@@ -182,7 +182,7 @@
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
-                                <v-card-title class="justify-center">
+                                <v-card-title class="justify-center function-card-title">
                                     What type of cancer are you examining?
                                 </v-card-title>
                                 <v-card-subtitle class="about-subtitle">
@@ -222,7 +222,7 @@
                                 light>
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
-                                <v-card-title>
+                                <v-card-title class="about-title">
                                     {{ getCardTitle(i) }}
                                 </v-card-title>
                                 <v-card-text class="about-text">
@@ -266,11 +266,11 @@
                             </multi-source-form>
                             <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                                     width="70%">
-                                <v-card-title class="justify-center">
+                                <v-card-title class="justify-center function-card-title">
                                     Data Summary
                                 </v-card-title>
                                 <v-divider class="mx-12"></v-divider>
-                                <v-card-actions>
+                                <v-card-actions class="function-card">
                                     <v-stepper class="summary-stepper"
                                                light
                                                vertical
@@ -696,7 +696,7 @@
                 if (this.clearGeneListFlag) {
                     this.listInput = '';
                     this.clearGeneListFlag = false;
-                }
+                }``
             },
             displayConfigUploadSlide: function () {
                 this.showUploadEntry = true;
@@ -780,9 +780,23 @@
                         self.uploadedVcfUrl = firstSample.vcfUrl;
                         self.uploadedTbiUrl = firstSample.tbiUrl;
 
+                        // if we have optional data types, set flags
+                        if (firstSample['rnaSeqBamUrl']) {
+                            self.updateStepProp('rnaSeq', 'active', true);
+                        }
+                        if (firstSample['atacSeqBamUrl']) {
+                            self.updateStepProp('atacSeq', 'active', true);
+                        }
+                        if (firstSample['cnvUrl']) {
+                            self.updateStepProp('cnv', 'active', true);
+                        }
                         let selectedSamples = [];
                         self.modelInfoIdx = 0;
                         let modelInfoCount = 0;
+
+                        // todo: we need to check for cnv, rnaseq, and atacseq here and call updateStepProp
+                        // to get rid of 'Not Selected' badge for summary card for optional data
+
                         self.modelInfoList.forEach((modelInfo) => {
                             modelInfoCount++;
                             selectedSamples.push(modelInfo.selectedSample);
@@ -841,8 +855,7 @@
 
 <style lang="sass">
     .start-carousel
-        font-family: "Open Sans"
-        font-size: 14px
+        color: #888888
 
         .v-carousel__controls
             background: #7f1010
@@ -874,6 +887,7 @@
             background: transparent
 
         .carousel-btn
+            font-family: Quicksand
             color: white
             font-weight: 500
             font-size: 18px
@@ -885,13 +899,20 @@
             margin-top: 10px
 
         .about-card
+            font-family: 'Open Sans'
             background-color: white
             color: #4a4a4a
 
             .v-card__title
                 font-size: 16px
 
+        .about-title
+            font-family: Quicksand !important
+            font-size: 18px !important
+            color: #888888
+
         .about-text
+            font-family: 'Open Sans'
             height: 375px
             overflow: scroll
             justify-content: center
@@ -900,8 +921,14 @@
             color: #888888 !important
             text-align: center !important
 
+        .function-card-title
+            font-family: 'Quicksand'
+            font-size: 22px
+            color: #888888
+
         .function-card
-            color: #4a4a4a
+            color: #888888
+            font-family: 'Open Sans'
 
         .summary-stepper
             width: 50%
