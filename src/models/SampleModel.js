@@ -51,7 +51,8 @@ class SampleModel {
         this.order = -1;            // The order in which the track is displayed vertically, relative to all other tracks, both normal and tumor
         this.categoryOrder = -1;    // The order of this model relative to the other models in the same category e.g., if this is track s1 but the first tumor track, this val will be 0
         this.displayName = '';      // Display name entered in filesMenu
-        this.selectedSample = '';   // The sample id corresponding to vcf column we're analyzing
+        this.selectedSample = '';   // The sample id listed as the vcf column header
+        this.selectedSampleIdx = -1;    // The 0-based index corresponding to the column in the vcf for this sample
         this.isGeneratedSampleName = false;
         this.defaultSampleName = null;
         this.isTumor = true;

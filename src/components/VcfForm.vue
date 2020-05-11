@@ -197,6 +197,8 @@
                                 for (let i = 0; i < sampleNames.length; i++) {
                                     self.vcfSampleNames.push(sampleNames[i]);
                                 }
+                                self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
+
                                 // Update verified urls in model info objects
                                 self.$emit('update-model-info', 'vcfUrl', vcfUrl);
                                 self.$emit('update-model-info', 'tbiUrl', tbiUrl);
@@ -220,7 +222,7 @@
                                 // Create modelInfo per sample
                                 let infoList = [];
                                 for (let i = 0; i < sampleNames.length; i++) {
-                                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                                    let modelInfo = self.createModelInfo(sampleNames[i],i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
                                     infoList.push(modelInfo);
                                     self.$emit('set-model-info', infoList);
                                     self.vcfSampleNames.push(sampleNames[i]);
@@ -228,6 +230,7 @@
                                 }
                                 // Toggle display flags
                                 self.urlsVerified = true;
+                                self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
                                 resolve();
                             }
                         } else {
@@ -253,6 +256,7 @@
                 modelInfo.id = 's' + modelInfoIdx;
                 modelInfo.order = modelInfoIdx;
                 modelInfo.selectedSample = selectedSample;
+                modelInfo.selectedSampleIdx = -1;
                 modelInfo.isTumor = isTumor;
                 modelInfo.vcfUrl = vcfUrl;
                 modelInfo.tbiUrl = tbiUrl;
@@ -271,7 +275,7 @@
                 return modelInfo;
             },
             addTrack: function () {
-                let newInfo = this.createModelInfo(null, true, null, null, this.modelInfoIdx);
+                let newInfo = this.createModelInfo(null,true, null, null, this.modelInfoIdx);
                 this.modelInfoList.push(newInfo);
                 this.modelInfoIdx++;
             },

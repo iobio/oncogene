@@ -464,6 +464,7 @@ class CohortModel {
             vm.order = modelInfo.order;
             vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
+            vm.selectedSampleIdx = modelInfo.selectedSampleIdx;
 
             let filePromises = [];
             if (modelInfo.vcfUrl) {
@@ -916,18 +917,27 @@ class CohortModel {
     promiseAnnotateSomaticVariants() {
         const self = this;
         return new Promise((resolve, reject) => {
-            const somaticCriteria = self.filterModel.getSomaticCallingCriteria();
+            let normalSelectedSampleIdxs = [];
+            let tumorSelectedSampleIdxs = [];
+            self.getCanonicalModels().forEach(model => {
+                if (model.isTumor)
+                tumorSelectedSampleIdxs.push(model.selectedSampleIdx);
+                else
+                    normalSelectedSampleIdxs.push(model.selectedSampleIdx);
+            });
+            const somaticFilterPhrase = self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
             let selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
                 selectedSamples.push(model.selectedSample);
             });
-            let regions = self.geneModel.getFormattedGeneRegions();
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticCriteria, selectedSamples, regions)
+            const regions = self.geneModel.getFormattedGeneRegions();
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, selectedSamples, regions)
                 .then((somaticVariants) => {
                     resolve(somaticVariants);
                 }).catch((error) => {
                 reject('Problem pulling back somatic variants: ' + error);
             });
+
         });
     }
 

@@ -690,7 +690,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseAnnotateSomaticVariants = function (somaticCriteria, selectedSamples, regions) {
+    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions) {
         const self = this;
         return new Promise((resolve, reject) => {
                 if (!vcfURL) {
@@ -700,7 +700,7 @@ export default function vcfiobio(theGlobalApp) {
                     let cmd = self.getEndpoint().annotateSomaticVariants({
                         'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl,
-                    }, selectedSamples, regions, somaticCriteria);
+                    }, selectedSamples, regions, somaticFilterPhrase);
 
                     let annotatedData = '';
                     cmd.on('data', function (data) {

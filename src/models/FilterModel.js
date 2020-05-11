@@ -21,7 +21,7 @@ class FilterModel {
 
         /* Quality settings */
         this.DEFAULT_QUALITY_FILTERING_CRITERIA = {
-            'totalCountCutoff': 15,
+            'totalCountCutoff': 10,
             'qualScoreCutoff': 20
         };
 
@@ -29,9 +29,6 @@ class FilterModel {
             'genotypeDepth': this.DEFAULT_QUALITY_FILTERING_CRITERIA.totalCountCutoff,
             'qual': this.DEFAULT_QUALITY_FILTERING_CRITERIA.qualScoreCutoff
         };
-
-        /* Any fields we want to send to the server to call somatic variants with */
-        //this.SOMATIC_CALLING_FIELDS = ['somatic', 'quality'];
 
         // The categories by which the filters are grouped
         this.filterCategories =
@@ -600,15 +597,66 @@ class FilterModel {
         }
     }
 
-    getSomaticCallingCriteria() {
-        //const self = this;
+    /* Takes in arrays of normal and tumor selected sample idxs (see Sample Model constructor for definitions). */
+    getSomaticCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs) {
+        const self = this;
 
-        // TODO: just put in values for now - logic should be hardcoded anyways...
-        // self.SOMATIC_CALLING_FIELDS.forEach((field) => {
-        //
-        // })
+        // todo: put these string literal keys into constants in this constructor
+        return {
+            'totalReadCutoff': self.qualityFilterSettings['genotypeDepth'],
+            'qualCutoff': self.qualityFilterSettings['qual'],
+            'normalCountCutoff': self.somaticFilterSettings['normalAltCount'],
+            'normalAfCutoff': self.somaticFilterSettings['normalAltFreq'],
+            'tumorCountCutoff': self.somaticFilterSettings['tumorAltCount'],
+            'tumorAfCutoff': self.somaticFilterSettings['tumorAltFreq'],
+            'normalSampleIdxs': normalSelSampleIdxs,
+            'tumorSampleIdxs': tumorSelSampleIdxs,
+            'totalSampleNum': normalSelSampleIdxs.length + tumorSelSampleIdxs.length
+        };
+    }
 
-        return { 'totalReadCutoff': 15, 'qualCutoff': 20, 'normalCountCutoff': 2, 'normalAfCutoff': 0.01, 'tumorCountCutoff': 5, 'tumorAfCutoff': 0.10, 'normalSampleIdx': 0, 'totalSampleNum': 4 };
+    /* Returns final filtering phrase, including depth and quality, for filtering somatic variants. */
+    getSomaticFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
+        const somaticCriteria = this.getSomaticCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
+        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria);
+        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria);
+        const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
+        const qualPhrase = '(QUAL>' + somaticCriteria['qualCutoff'] + ')';
+
+        console.log(qualPhrase + '&&' + samplePhrase);
+        return qualPhrase + '&&' + samplePhrase;
+    }
+
+    /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
+     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
+    getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria) {
+        let normalPhrase = '';
+        for (let i = 0; i < normalSelSampleIdxs.length; i++) {
+            const idx = normalSelSampleIdxs[i];
+            if (i > 0) {
+                normalPhrase += '||';
+            }
+            normalPhrase += '(FORMAT/AO[' + idx + ':0]<=' + somaticCriteria['normalCountCutoff'];
+            normalPhrase += '&FORMAT/DP[' + idx + ':0]>=' + somaticCriteria['totalReadCutoff'] + ')';
+            //normalPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]<=' + (somaticCriteria['normalAfCutoff']).toFixed(2);
+        }
+        return normalPhrase;
+    }
+
+    /* Returns tumor filtering phrase for normal samples based on current somatic criteria.
+     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
+    getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria) {
+        let tumorPhrase = '';
+        for (let i = 0; i < tumorSelSampleIdxs.length; i++) {
+            const idx = tumorSelSampleIdxs[i];
+            if (i > 0) {
+                tumorPhrase += '||';
+            }
+            tumorPhrase += '(FORMAT/AO[' + idx + ':0]>=' + somaticCriteria['tumorCountCutoff'];
+            tumorPhrase += '&FORMAT/DP[' + idx + ':0]>=' + somaticCriteria['totalReadCutoff'] + ')';
+            //tumorPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]>=' + (somaticCriteria['tumorAfCutoff']).toFixed(2);
+        }
+        return tumorPhrase;
     }
 
 //

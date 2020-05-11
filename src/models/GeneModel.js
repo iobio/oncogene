@@ -135,15 +135,8 @@ class GeneModel {
     promiseCopyPasteGenes(genesString, options = {replace: true, warnOnDup: true}) {
         const me = this;
         return new Promise(function (resolve, reject) {
-
-            let promises = [];
             me.copyPasteGenes(genesString, options);
-            me.geneNames.forEach(function (geneName) {
-                promises.push(me.promiseGetGeneObject(geneName));
-                // promises.push(me.promiseGetGenePhenotypes(geneName));
-                // promises.push(me.promiseGetNCBIGeneSummary(geneName));  //todo: if we want to reincorporate this, need to get ncbi api key
-            });
-            Promise.all(promises)
+            me.promiseGetGeneObjects(me.geneNames)
                 .then(function () {
                     resolve();
                 })
@@ -700,6 +693,56 @@ class GeneModel {
             }
 
         });
+    }
+
+    /* Takes in array of genes, does a single call to  */
+    promiseGetGeneObjects(geneNames) {
+        const me = this;
+        return new Promise((resolve, reject) => {
+            let url = me.geneInfoServer + 'api/genes?genes=' + geneNames.join();
+
+            var buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
+            me.globalApp.$('#build-link').text(buildName);
+
+            url += "&source=" + (me.geneSource ? me.geneSource : 'gencode');
+            url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
+            url += "&build=" + buildName;
+
+            me.globalApp.$.ajax({
+                url: url,
+                jsonp: "callback",
+                type: "GET",
+                dataType: "json",
+                crossDomain: true,
+                success: function (response) {
+                    let listObj = response[0];
+                    Object.keys(listObj).forEach(geneName => {
+                        let theGeneObject = listObj[geneName];
+
+                        theGeneObject.somaticVariantList = [];
+                        theGeneObject.score = -1;
+                        theGeneObject.cosmicHighCount = 0;
+                        theGeneObject.cosmicModerCount = 0;
+                        theGeneObject.cosmicLowCount = 0;
+                        theGeneObject.cosmicModifCount = 0;
+                        theGeneObject.highCount = 0;
+                        theGeneObject.moderCount = 0;
+                        theGeneObject.lowCount = 0;
+                        theGeneObject.modifCount = 0;
+
+                        me.geneObjects[geneName] = theGeneObject;
+                    });
+                    resolve();
+                },
+                error: function (xhr, status, errorThrown) {
+                    console.log("Could not retrieve gene objects for provided list.");
+                    console.log("Error: " + errorThrown);
+                    console.log("Status: " + status);
+                    console.log(xhr);
+                    reject("Error " + errorThrown + " occurred when attempting to get gene models for gene list.");
+                }
+            });
+        })
     }
 
 
@@ -1373,6 +1416,19 @@ class GeneModel {
             regions.push(chr + ':' + obj.start + '-' + obj.end);
         }
         return regions;
+    }
+
+    /* Returns first gene object in geneObjects. If geneObjects is null, returns null. */
+    getFirstGeneObject() {
+        let firstGene = null;
+        if (!this.geneObjects) {
+            return firstGene;
+        }
+        for (var geneName in this.geneObjects) {
+            firstGene = this.geneObjects[geneName];
+            break;
+        }
+        return firstGene;
     }
 
 }

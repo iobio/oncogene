@@ -10,7 +10,7 @@ export default class EndpointCmd {
         this.launchedFromUtah = this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        this.api = new Client('backend.iobio.io', {secure: false});
+        this.api = new Client('backend.iobio.io', {secure: true});
         this.devApi = new Client('dev.backend.iobio.io:9002', {secure: false});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
@@ -129,30 +129,23 @@ export default class EndpointCmd {
     /* Returns somatic variants for the given selectedSamples and regions.
      * The somaticCriteria object contains filters for defining 'somaticness'/
      */
-    annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticCriteria) {
+    annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
         const me = this;
         let cmd = null;
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-
         if (this.gruBackend) {
             // todo: renamed getSomaticVar -> annotateSomaticVar + param updates
-            // put in PR to gru
+            // todo: put in PR to gru
+
             cmd = me.devApi.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,
-                    selectedSamplesStr: selectedSamplesStr,
-                    geneRegionsStr: geneRegionsStr,
-                    qualCutoff: somaticCriteria.qualCutoff,
-                    totalReadCutoff: somaticCriteria.totalReadCutoff,
-                    normalCountCutoff: somaticCriteria.normalCountCutoff,
-                    tumorCountCutoff: somaticCriteria.tumorCountCutoff,
-                    normalAfCutoff: somaticCriteria.normalAfCutoff,
-                    tumorAfCutoff: somaticCriteria.tumorAfCutoff,
-                    normalSampleIdx: somaticCriteria.normalSampleIdx,
-                    totalSampleNum: somaticCriteria.totalSampleNum,
-                    genomeBuildName: genomeBuildName
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
                 });
         } else {
             console.log('getSomaticVariants is not implemented for old backend yet');

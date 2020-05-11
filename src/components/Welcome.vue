@@ -249,7 +249,8 @@
                                       @urls-verified="onUploadedUrlsVerified"
                                       @upload-fail="onUploadFail"
                                       @on-build-change="updateBuild"
-                                      @show-alert="displayAlert">
+                                      @show-alert="displayAlert"
+                                      @vcf-sample-names-updated="setVcfSampleNames">
                             </vcf-form>
                             <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
@@ -554,7 +555,8 @@
                 somaticCallsOnly: false,
                 selectedBuild: null,
                 listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
-                modelInfoList: []
+                modelInfoList: [],
+                vcfSampleNames: []
             }
         },
         computed: {
@@ -654,6 +656,9 @@
                 // Trick vue into update
                 this.modelInfoList.push('foo');
                 this.modelInfoList.pop();
+            },
+            setVcfSampleNames: function(vcfSampleNames) {
+                this.vcfSampleNames = vcfSampleNames;
             },
             updateModelInfo: function (propName, propVal) {
                 this.modelInfoList.forEach((modelInfo) => {
@@ -842,6 +847,9 @@
                 this.cohortModel.setInputDataTypes(this.userData);
                 this.cohortModel.setBuild(this.selectedBuild);
                 this.cohortModel.setCallType(this.somaticCallsOnly);
+                this.modelInfoList.forEach(modelInfo => {
+                    modelInfo.selectedSampleIdx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+                });
                 this.$emit('launched', this.modelInfoList, this.listInput);
             }
         },
