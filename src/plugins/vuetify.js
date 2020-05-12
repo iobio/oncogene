@@ -21,7 +21,8 @@ export default new Vuetify({
             highColor: '#E0292B',
             moderColor: '#F49A73',
             lowColor: '#b5cf6a',
-            modifColor: '#f9e4b5'
+            modifColor: '#f9e4b5',
+            somaticColor: '#7f107f'
         },
       },
       icons: {

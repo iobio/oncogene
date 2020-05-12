@@ -81,7 +81,9 @@
                 } else {
                     let feat = self.sampleMap[sampleId];
                     if (!feat) {
-                        console.log('Error: unrecognized sample id when fetching reads');
+                        // If we don't have a feature here, it was not reported in the vcf so assuming 0 reads
+                        // NOTE: alternative option would be to fetch reads from bam, but then would be incongruous w/ rest of reads reported here
+                        return 0;
                     } else {
                         if (feat.genotypeDepth === 0) {
                             return 0;
@@ -95,7 +97,7 @@
                 if (this.selectedVariant == null) return "-";
                 else {
                     let feat = this.sampleMap[sampleId];
-                    if (!feat) {
+                    if (!feat || !feat.genotypeDepth) {
                         return '-';
                     }
                     let numMutantAlleles = feat.genotypeAltCount;

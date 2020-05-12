@@ -6,7 +6,8 @@ import {
 import {
     scaleLinear,
     scaleQuantile,
-    scaleOrdinal
+    scaleOrdinal,
+    scaleBand
 } from 'd3-scale';
 
 import {
@@ -40,6 +41,7 @@ export default {
     scaleLinear,
     scaleQuantile,
     scaleOrdinal,
+    scaleBand,
     range, extent,
     axisBottom,
     axisTop,

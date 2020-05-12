@@ -105,6 +105,7 @@
                                             :cohortModel="cohortModel"
                                             :hasRnaSeq="cohortModel.hasRnaSeqData"
                                             :hasAtacSeq="cohortModel.hasAtacSeqData"
+                                            @fetch-reads="fetchSeqReads"
                                             @summary-mounted="onSummaryMounted"
                                             @summaryCardVariantDeselect="deselectVariant">
                                     </variant-summary-card>
@@ -498,72 +499,77 @@
                         self.cohortModel.clearLoadedData(geneName);
                         self.cohortModel.setLoaders(true);
                     }
-                    // if (self.featureMatrixModel) {
-                    //     self.featureMatrixModel.clearRankedVariants();
-                    // }
-                    geneModel.promiseAddGeneName(geneName)
-                        .then(function () {
-                            geneModel.promiseGetGeneObject(geneName)
-                                .then(function (theGeneObject) {
-                                    if (self.bringAttention === 'gene') {
-                                        self.bringAttention = null;
-                                    }
-                                    geneModel.adjustGeneRegion(theGeneObject);
-                                    self.geneRegionStart = theGeneObject.start;
-                                    self.geneRegionEnd = theGeneObject.end;
-                                    self.selectedGene = theGeneObject;
 
-                                    if (theTranscript) {
-                                        // If we have selected a flagged variant, we want to use the flagged
-                                        // variant's transcript
-                                        self.selectedTranscript = theTranscript;
-                                    } else {
-                                        // Determine the transcript that should be selected for this gene
-                                        // If the transcript wasn't previously selected for this gene,
-                                        // set it to the canonical transcript
-                                        let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
-                                        if (latestTranscript == null) {
-                                            self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-                                            geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
-                                        } else {
-                                            self.selectedTranscript = latestTranscript;
-                                        }
-                                    }
-
-                                    if (self.$refs.scrollButtonRefGene) {
-                                        self.$refs.scrollButtonRefGene.showScrollButtons();
-                                    }
-                                    if (self.cohortModel.isLoaded) {
-                                        self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
-                                        .then(() => {
-                                            self.promiseLoadData(self.selectedGene, self.selectedTranscript)
-                                                .then(function () {
-                                                    self.clearZoom = false;
-                                                    self.showVarViz = true;
-                                                    self.applyFilters = true;
-                                                    resolve();
-                                                })
-                                                .catch(function (err) {
-                                                    console.log(err);
-                                                    reject(err);
-                                                })
-                                        }).catch(error => {
-                                            Promise.reject('Problem getting cosmic variant IDS: ' + error);
-                                        })
-
-                                    } else {
-                                        resolve();
-                                    }
+                    let p = Promise.resolve();
+                    let theGeneObject = geneModel.geneObjects[geneName];
+                    if (!theGeneObject) {
+                        p = geneModel.promiseAddGeneName(geneName)
+                            .then(function () {
+                                geneModel.promiseGetGeneObject(geneName)
+                                    .then(geneObj => {
+                                        theGeneObject = geneObj;
+                                    })
+                            }).catch(function (error) {
+                                console.log(error);
+                                geneModel.removeGene(geneName);
+                                self.onShowSnackbar({
+                                    message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
+                                    timeout: 60000
                                 })
-                        })
-                        .catch(function (error) {
-                            console.log(error);
-                            geneModel.removeGene(geneName);
-                            self.onShowSnackbar({
-                                message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
-                                timeout: 60000
+                            });
+                    }
+                    p.then(() => {
+                            if (self.bringAttention === 'gene') {
+                                self.bringAttention = null;
+                            }
+                            geneModel.adjustGeneRegion(theGeneObject);
+                            self.geneRegionStart = theGeneObject.start;
+                            self.geneRegionEnd = theGeneObject.end;
+                            self.selectedGene = theGeneObject;
+
+                            if (theTranscript) {
+                                // If we have selected a flagged variant, we want to use the flagged
+                                // variant's transcript
+                                self.selectedTranscript = theTranscript;
+                            } else {
+                                // Determine the transcript that should be selected for this gene
+                                // If the transcript wasn't previously selected for this gene,
+                                // set it to the canonical transcript
+                                let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
+                                if (latestTranscript == null) {
+                                    self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                                    geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
+                                } else {
+                                    self.selectedTranscript = latestTranscript;
+                                }
+                            }
+
+                            if (self.$refs.scrollButtonRefGene) {
+                                self.$refs.scrollButtonRefGene.showScrollButtons();
+                            }
+
+                        if (self.cohortModel.isLoaded) {
+                            self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                                .then(() => {
+                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                        .then(function () {
+                                            self.clearZoom = false;
+                                            self.showVarViz = true;
+                                            self.applyFilters = true;
+                                            resolve();
+                                        })
+                                        .catch(function (err) {
+                                            console.log(err);
+                                            reject(err);
+                                        })
+                                }).catch(error => {
+                                Promise.reject('Problem getting cosmic variant IDS: ' + error);
                             })
-                        })
+
+                        } else {
+                            resolve();
+                        }
+                    })
                 })
             },
             // todo: this needs to be updated for somatic calling entry point
@@ -627,7 +633,16 @@
             onSummaryMounted: function() {
                 if (this.selectedVariant) {
                     this.$refs.variantSummaryCardRef.hideGetStartedBanner();
-                    // this.$refs.variantSummaryCardRef.drawBars();
+                }
+            },
+            fetchSeqReads: function(bamType) {
+                console.log('About to fetch seq reads');
+                const self = this;
+                if (self.selectedVariant) {
+                    self.cohortModel.promiseFetchSeqReads(self.selectedVariant, bamType)
+                        .then(() => {
+                            self.$refs.variantSummaryCardRef.updateSeqCharts(bamType);
+                        })
                 }
             }
         },

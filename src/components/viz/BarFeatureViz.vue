@@ -1,14 +1,6 @@
 <!-- Displays sample zygosity, affected status, and sample depth histograms -->
 
 <style>
-    .bar--positive {
-        fill: steelblue;
-    }
-
-    .bar--negative {
-        fill: darkorange;
-    }
-
     .axis text {
         font: 10px sans-serif;
     }
@@ -20,6 +12,10 @@
         shape-rendering: crispEdges;
     }
 </style>
+<style lang="sass">
+    .bar-label
+        font: 12px Quicksand
+</style>
 
 <template>
     <v-flex xs12>
@@ -28,7 +24,16 @@
         </v-layout>
         <v-layout row>
             <v-flex xs2 class="summary-field-label">{{ chartLabel }}:</v-flex>
-            <v-flex xs9 :id="bamType + 'bar'" style="padding-bottom:5px"></v-flex>
+            <v-flex xs9 v-show="!showLoader" :id="bamType + 'Bar'" style="padding-bottom:5px"></v-flex>
+            <v-flex xs9 v-show="showLoader">
+                <div style="text-align: center; clear: both">
+                    <div class="loader vcfloader"
+                         style="display: inline-block">
+                        <span class="loader-label">Fetching reads</span>
+                        <img src="../../assets/images/wheel.gif">
+                    </div>
+                </div>
+            </v-flex>
         </v-layout>
     </v-flex>
 </template>
@@ -40,7 +45,8 @@
         name: 'bar-feature-viz',
         data() {
             return {
-                chart: null
+                chart: null,
+                showLoader: false
             }
         },
         props: {
@@ -64,42 +70,50 @@
             }
         },
         methods: {
-            drawCharts() {
+            drawCharts(updatedCounts) {
                 const self = this;
+                let counts = updatedCounts ? updatedCounts : self.counts;
 
                 // Don't draw charts until we have counts
-                if (self.counts == null) {
+                if (counts == null || Object.values(counts)[0] < 0) {
+                    self.showLoader = true;
                     return;
                 }
 
+                self.showLoader = false;
                 let maxCount = 0;
                 let sampleCount = 0;
-                Object.values(self.counts).forEach(count => {
+                Object.values(counts).forEach(count => {
                     if (count > maxCount)
                         maxCount = count;
                     sampleCount++;
                 });
 
-                let options = {
-                    'parentId': self.bamType + 'bar',
-                    'yValMax': maxCount,
-                    'yTicks': self.getTicks(sampleCount)
-                };
-                self.chart = barChart(self.d3, options);
-            },
-            fillCharts() {
-                let self = this;
                 let objs = [];
-                for (var count in self.counts) {
-                    let obj = { label: count, value: self.counts[count] };
+                for (var count in counts) {
+                    let obj = { label: count, value: counts[count] };
                     objs.push(obj);
                 }
 
+                let options = {
+                    'parentId': self.bamType + 'Bar',
+                    'yValMax': maxCount,
+                    'yTicks': self.getTicks(sampleCount),
+                    'dataMap': objs
+                };
+                self.chart = barChart(self.d3, options);
+                self.chart();
+                self.fillCharts(objs);
+            },
+            fillCharts(objs) {
+                let self = this;
                 self.chart.fillChart(objs);
             },
             clear() {
                 let self = this;
-                self.chart.fillChart();
+                if (self.chart) {
+                    self.chart.fillChart();
+                }
             },
             getTicks(sampleCount) {
                 let maxTicks = 5;
@@ -113,7 +127,6 @@
         watch: {
             selectedVariant: function () {
                 this.drawCharts();
-                this.fillCharts();
             }
         }
     }

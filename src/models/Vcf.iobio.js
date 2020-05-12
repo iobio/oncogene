@@ -1921,7 +1921,9 @@ export default function vcfiobio(theGlobalApp) {
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
-                                    'sampleModelId': sampleModelId   // Used for feature matrix tracking
+                                    'sampleModelId': sampleModelId,   // Used for feature matrix tracking
+                                    'rnaSeqPtCov': -1,                // Marker values used for bar chart viz updating
+                                    'atacSeqPtCov': -1
                                 };
 
                                 for (var key in clinvarResult) {

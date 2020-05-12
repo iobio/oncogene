@@ -1,4 +1,4 @@
-/*
+/**
 SJG Jan2019
 Adapted from http://bl.ocks.org/d3noob/8952219
 
@@ -12,7 +12,8 @@ export default function barChart(d3, options) {
     var parentId = options.parentId ? options.parentId: 'div',
         barColor = '#7f1010',
         yValueMax = options.yValMax ? options.yValMax : 500,
-        yTicks = options.yTicks ? options.yTicks : 10;
+        yTicks = options.yTicks ? options.yTicks : 10,
+        dataMap = options.dataMap;
 
     // Private variables (can be made public if necessary except for _x and _y)
     var _x, _y,
@@ -23,7 +24,11 @@ export default function barChart(d3, options) {
 
 
     /* Draws outline of chart and axes */
-    function chart(dataMap) {
+    function chart() {
+        // Remove any old chart
+        d3.select('#' + parentId).select('svg').remove();
+
+        // Draw new chart
         var svg = d3.select('#' + parentId).append('svg')
             .attr('height', height + margin.top + margin.bottom)
             .attr('width', width + margin.left + margin.right)
@@ -31,7 +36,10 @@ export default function barChart(d3, options) {
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
         // Define axes data
-        _x = d3.scaleOrdinal().rangeRoundBands([0, width], .05);
+        _x = d3.scaleBand()
+            .range([0, width])
+            .round(.05)
+            .padding(0.1);
         _y = d3.scaleLinear().range([height, 0]);
 
         var xAxis = d3.axisBottom()
@@ -51,7 +59,7 @@ export default function barChart(d3, options) {
         _x.domain(dataMap.map(function (d) {
             return d.label;
         }));
-        _y.domain([0, yValueMax]);
+        _y.domain([0, yValueMax + 100]);
 
         // Draw axes and labels
         svg.append("g")
@@ -60,7 +68,8 @@ export default function barChart(d3, options) {
             .call(xAxis)
             .selectAll("text")
             .style("text-anchor", "end")
-            .attr("dx", "-.3em")
+            .style("text-overflow", "ellipsis")
+            .attr("dx", "1.0em")
             .attr("transform", "rotate(-35)");
 
         svg.append("g")
@@ -89,20 +98,38 @@ export default function barChart(d3, options) {
                 .attr("x", function (d) {
                     return _x(d.label);
                 })
-                .attr("width", _x.rangeBand())
+                .attr("width", _x.bandwidth())
                 .attr("y", function (d) {
                     return _y(d.value);
                 })
                 .attr("height", function (d) {
                     return height - _y(d.value);
                 });
+
+            // Draw labels
+            svg.selectAll("bar")
+                .data(dataMap)
+                .enter()
+                .append("text")
+                .attr('id', function (d) {
+                    return 'label_' + d.label.replace(' ', '_');
+                })
+                .attr('class', "bar-label")
+                .attr("width", _x.bandwidth())
+                .attr("text-anchor", "start")
+                .attr("x", ( d => { return _x(d.label) + (_x.bandwidth() / 2) - 9 ; }))
+                .attr("y", function (d) {
+                    return _y(d.value);
+                });
         }
     }
 
+    /*** OUTWARD FACING FUNCTIONS ***/
+
     /* Takes in array of maps with {label:, value:} entries and draws bars based on provided values.
-   Providing an empty data array will zero out all bars.
-   NOTE: newDataMap MUST have an identical number of entries as the original dataMap, in the exact same order
- */
+       Providing an empty data array will zero out all bars.
+       NOTE: newDataMap MUST have an identical number of entries as the original dataMap, in the exact same order
+     */
     chart.fillChart = function (newDataMap) {
         var svg = d3.select('#' + parentId).select('svg');
 
@@ -119,19 +146,33 @@ export default function barChart(d3, options) {
         else {
             newDataMap.forEach(function (dataBar) {
                 var barId = "#bar_" + dataBar.label.replace(' ', '_');
+                var labelId = "#label_" + dataBar.label.replace(' ', '_');
                 var barHeight = dataBar.value ? dataBar.value : 0;
                 var column = svg.select(barId);
+                var label = svg.select(labelId);
 
                 if (column) {
-                    column.transition()
-                        .duration(700)
-                        .style('fill', barColor)
-                        .attr("y", function () {
-                            return _y(barHeight);
+                    column.style("fill", () => { return barColor; })
+                        .attr("y",  () => { return _y(0); })
+                        .attr("height", 0)
+                        .transition()
+                        .duration(750)
+                        .delay(function (d, i) {
+                            return i * 250;
                         })
-                        .attr('height', function () {
-                            return height - _y(barHeight);
-                        });
+                        .attr("y", () => { return _y(barHeight); })
+                        .attr("height",  () => { return height - _y(barHeight); })
+                }
+
+                if (label) {
+                    label.attr("y",  () => { return _y(0); })
+                        .attr("height", 0)
+                        .transition()
+                        .duration(750)
+                        .delay((d, i) => { return i * 250; })
+                        .text(() => { return dataBar.value; })
+                        .attr("y",  () => { return _y(barHeight) + .1; })
+                        .attr("dy", "-.7em");
                 }
             })
         }

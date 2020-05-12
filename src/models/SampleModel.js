@@ -21,7 +21,7 @@ class SampleModel {
         this.atacSeqData = null;
 
         // variant & coverage data
-        this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model
+        this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model - MAY contain variant objects with only rnaSeqPtCoverage/atacSeqPtCoverage if missing from vcf
         this.loadedVariants = null;
         this.variantHistoData = null;
         this.coverage = [[]];       // Coverage pulled from bamData
@@ -450,9 +450,10 @@ class SampleModel {
             me.promiseGetCachedGeneCoverage(geneObject, transcript)
                 .then(function (cachedGeneCoverage) {
                         if (cachedGeneCoverage) {
+                            // todo: change this to bamType key
                             resolve({model: me, 'geneCoverage': cachedGeneCoverage})
                         } else {
-                            if (transcript.features == null || transcript.features.length == 0) {
+                            if (transcript.features == null || transcript.features.length === 0) {
                                 resolve({model: me, gene: geneObject, transcript: transcript, 'geneCoverage': []});
                             } else {
                                 me.bam.getGeneCoverage(geneObject,
@@ -463,7 +464,7 @@ class SampleModel {
                                         var geneCoverageObjects = me._parseGeneCoverage(theData);
                                         if (geneCoverageObjects.length > 0) {
                                             me._setGeneCoverageExonNumbers(transcript, geneCoverageObjects);
-                                            me.setGeneCoverageForGene(geneCoverageObjects, theGeneObject, theTranscript);
+                                            me.setGeneCoverageForGene(geneCoverageObjects, theGeneObject, theTranscript, bamType);
                                             resolve({
                                                 model: me,
                                                 gene: theGeneObject,
@@ -557,10 +558,19 @@ class SampleModel {
         return this._promiseGetData(dataType, geneObject.gene_name, selectedTranscript);
     }
 
-    setGeneCoverageForGene(geneCoverage, geneObject, transcript) {
+    setGeneCoverageForGene(geneCoverage, geneObject, transcript, bamType) {
         geneObject = geneObject ? geneObject : window.gene;
         transcript = transcript ? transcript : window.selectedTranscript;
-        this._promiseCacheData(geneCoverage, CacheHelper.GENE_COVERAGE_DATA, geneObject.gene_name, transcript);
+
+        let dataType = '';
+        if (bamType === this.globalApp.COVERAGE_TYPE) {
+            dataType = CacheHelper.GENE_COVERAGE_DATA;
+        } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            dataType = CacheHelper.RNASEQ_COVERAGE_DATA;
+        } else if (bamType === this.globalApp.ATACSEQ_TYPE) {
+            dataType = CacheHelper.ATACSEQ_COVERAGE_DATA;
+        }
+        this._promiseCacheData(geneCoverage, dataType, geneObject.gene_name, transcript);
     }
 
     promiseGetBamData(geneObject, bamType) {
@@ -1876,9 +1886,7 @@ class SampleModel {
                         reject(error);
                     });
         });
-
     }
-
 
     determineAffectedStatus(data, theGene, theTranscript, affectedInfo, callback) {
         var me = this;

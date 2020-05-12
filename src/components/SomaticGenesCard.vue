@@ -6,10 +6,12 @@
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
 
     .variant-text
-        font-size: 14px !important
+        font-size: 15px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
         display: inline
         padding-left: 10px
+        text-overflow: ellipsis
+
 </style>
 
 <template>
@@ -23,14 +25,21 @@
                     <v-expansion-panel
                             v-for="(geneObj,i) in rankedGeneList"
                             :key="'gene-' + i">
-                        <v-expansion-panel-header>
+                        <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#ebebeb' : 'transparent'}">
                             <v-row>
                                 <template class="d-inline">
                                     <v-icon color="primary" v-show="!isSelectedGene(geneObj)" @click="loadGene(geneObj)">reply</v-icon>
-                                    <v-icon color="primary" v-show="isSelectedGene(geneObj)">double_arrow</v-icon>
-                                    <div style="padding-left: 5px; padding-top: 5px; padding-right: 5px">
+                                    <v-icon color="secondary" v-show="isSelectedGene(geneObj)">double_arrow</v-icon>
+                                    <div style="padding-left: 5px; padding-top: 5px; padding-right: 5px; font-size: 17px">
                                         {{ getGeneText(geneObj) }}
                                     </div>
+                                    <v-avatar style="margin-top: 2px"
+                                            size="20"
+                                            color="somaticColor">
+                                        <span style="color: white; font-family: Quicksand; font-size: 15px">
+                                            {{getTotalVarCount(geneObj)}}
+                                        </span>
+                                    </v-avatar>
                                     <v-icon v-if="getHighCount(geneObj)>0" color="highColor">bookmark</v-icon>
                                     <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
                                     <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
@@ -43,8 +52,8 @@
                                 <v-list-item-group v-model="selectedVarIdx" color="primary">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
                                             <v-list-item-content style="padding: 0">
-                                                <v-row style="padding: 0" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">
-                                                    <v-col xs12 style="padding-top: 0; padding-bottom: 0">
+                                                <v-row style="padding-bottom: 2px" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">
+                                                    <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
                                                     <span class="d-inline">
                                                        <svg v-if="feat.type === 'mnp' || feat.type === 'snp'" class="impact-badge" height="14" width="12">
                                                          <g transform="translate(1,3)" class="filter-symbol" :class="getImpactColor(feat)">
@@ -117,14 +126,35 @@
                 return geneObj.gene_name;
             },
             getImpactColor: function(feat) {
-                if (feat != null && feat.vepImpact != null) {
-                    var impactLevel = Object.keys(feat.vepImpact)[0].toUpperCase();
+                if (feat != null && feat.highestImpactVep != null) {
+                    var impactLevel = Object.keys(feat.highestImpactVep)[0].toUpperCase();
                     return "impact_" + impactLevel;
                 }
                 return "";
             },
             getVarText: function(feat) {
-                return this.getReadableType(feat.type);
+                let type = this.getReadableType(feat.type);
+                let impact = Object.keys(feat.highestImpactVep)[0].toLowerCase();
+                let aaChange = feat.ref + '->' + feat.alt;
+                return type + ' ' + impact + ' ' + aaChange;
+            },
+            getReadableType(type) {
+                if (type === 'snp') {
+                    return 'SNP';
+                } else if (type === 'del') {
+                    return 'deletion';
+                } else if (type === 'ins') {
+                    return 'insertion';
+                } else if (type === 'complex') {
+                    return 'complex';
+                }
+            },
+            getTotalVarCount: function(geneObj) {
+                let count = 0;
+                if (geneObj) {
+                    count = geneObj.highCount + geneObj.moderCount + geneObj.lowCount + geneObj.modifCount;
+                }
+                return count;
             },
             getHighCount: function(geneObj) {
                 let count = 0;
@@ -153,17 +183,6 @@
                     count = geneObj.modifCount;
                 }
                 return count;
-            },
-            getReadableType(type) {
-                if (type === 'snp') {
-                    return 'SNP';
-                } else if (type === 'del') {
-                    return 'deletion';
-                } else if (type === 'ins') {
-                    return 'insertion';
-                } else if (type === 'complex') {
-                    return 'complex';
-                }
             },
             onVariantSelected: function(feature) {
                 this.$emit('variant-selected', feature, this, 'rankedList');

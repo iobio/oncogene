@@ -268,7 +268,21 @@
         },
         data() {
             return {
-                cohortFieldsValid: true
+                cohortFieldsValid: true,
+                rnaSeqCounts: null,
+                atacSeqCounts: null
+            }
+        },
+        watch: {
+            variant: function() {
+                if (this.variant) {
+                    if (this.cohortModel.hasRnaSeqData) {
+                        this.setRnaSeqCounts();
+                    }
+                    if (this.cohortModel.hasAtacSeqData) {
+                        this.setAtacSeqCounts();
+                    }
+                }
             }
         },
         computed: {
@@ -277,28 +291,6 @@
                 let map = {};
                 if (this.cohortModel && this.variant) {
                     map = this.cohortModel.getMatchingVariants(this.variant.id);
-                }
-                return map;
-            },
-            rnaSeqCounts: function() {
-                // Get rnaseq counts from each sample
-                let map = {};
-                if (this.cohortModel && this.cohortModel.hasRnaSeqData && this.variant) {
-                    map = this.cohortModel.getMatchingVariants(this.variant.id);
-                }
-                for (var feat in map) {
-                    map[feat] = map[feat].genernaSeqCoverage;
-                }
-                return map;
-            },
-            atacSeqCounts: function() {
-                // Get atacseq counts from each sample
-                let map = {};
-                if (this.cohortModel && this.cohortModel.hasAtacSeqData && this.variant) {
-                    map = this.cohortModel.getMatchingVariants(this.variant.id);
-                }
-                for (var feat in map) {
-                    map[feat] = map[feat].geneatacSeqCoverage;
                 }
                 return map;
             },
@@ -380,7 +372,7 @@
             variantSelected: function () {
                 let self = this;
                 return self.variant != null;
-            }
+            },
         },
         methods: {
             summaryCardVariantDeselect: function () {
@@ -391,7 +383,69 @@
             hideGetStartedBanner: function() {
                 this.$('#getStartedBlock').hide();
                 this.$('.summary-viz').css({'filter': 'none', '-webkit-filter': 'none'});
-            }
+            },
+            updateSeqCharts: function(bamType) {
+                console.log('about to update seq charts');
+                if (bamType === this.cohortModel.globalApp.RNASEQ_TYPE) {
+                    this.setRnaSeqCounts();
+                } else if (bamType === this.cohortModel.globalApp.ATACSEQ_TYPE) {
+                   this.setAtacSeqCounts();
+                }
+            },
+            setRnaSeqCounts: function() {
+                // Get rnaseq counts from each sample
+                let map = {};
+                let countMap = {};
+                if (this.cohortModel && this.cohortModel.hasRnaSeqData && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+
+                let notFetched = 1;
+                for (var feat in map) {
+                    if (map[feat] && map[feat].rnaSeqPtCov) {
+                        notFetched &= map[feat].rnaSeqPtCov < 0;
+                        countMap[feat] = map[feat].rnaSeqPtCov;
+                    } else {
+                        countMap[feat] = 0;
+                    }
+                }
+                this.rnaSeqCounts =  countMap;
+
+                // If we have marker values still here for our variant, signal to fetch reads from bam
+                if (notFetched === 1) {
+                    this.$emit('fetch-reads', this.cohortModel.globalApp.RNASEQ_TYPE);
+                    this.$refs.summaryBarFeatureViz.clear();
+                } else {
+                    this.$refs.summaryBarFeatureViz.drawCharts(this.rnaSeqCounts);
+                }
+            },
+            setAtacSeqCounts: function() {
+                // Get atacseq counts from each sample
+                let map = {};
+                let countMap = {};
+
+                if (this.cohortModel && this.cohortModel.hasAtacSeqData && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+                let notFetched = 1;
+                for (var feat in map) {
+                    if (map[feat] && map[feat].atacSeqPtCov) {
+                        notFetched &= map[feat].atacSeqPtCov < 0;
+                        countMap[feat] = map[feat].atacSeqPtCov;
+                    } else {
+                        countMap[feat] = 0;
+                    }
+                }
+                this.atacSeqCounts = countMap;
+
+                // If we have marker values still here for our variant, signal to fetch reads from bam
+                if (notFetched === 1) {
+                    this.$emit('fetch-reads', this.cohortModel.globalApp.ATACSEQ_TYPE);
+                    this.$refs.summaryBarFeatureViz.clear();
+                } else {
+                    this.$refs.summaryBarFeatureViz.drawCharts(this.atacSeqCounts);
+                }
+            },
         },
         mounted: function() {
             this.$emit('summary-mounted');
