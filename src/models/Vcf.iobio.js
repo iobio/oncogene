@@ -1922,7 +1922,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'sampleModelId': sampleModelId,   // Used for feature matrix tracking
-                                    'rnaSeqPtCov': -1,                // Marker values used for bar chart viz updating
+                                    'rnaSeqPtCov': -1,                // Marker values used for bar chart viz
                                     'atacSeqPtCov': -1
                                 };
 

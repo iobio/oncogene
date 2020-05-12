@@ -1781,22 +1781,27 @@ class SampleModel {
                             me._promiseVcfRefName(theGene.chr)
                                 .then(function () {
                                     let samplesInFile = me._getSamplesToRetrieve();
-                                    return me.vcf.promiseGetVariants(
-                                        me.getVcfRefName(theGene.chr),
-                                        theGene,
-                                        theTranscript,
-                                        null,   // regions
-                                        isMultiSample, // is multi-sample
-                                        samplesInFile,
-                                        me.getAnnotationScheme().toLowerCase(),
-                                        me.getTranslator().clinvarMap,
-                                        me.getGeneModel().geneSource === 'refseq',
-                                        me.isBasicMode || me.globalApp.getVariantIdsForGene,  // hgvs notation
-                                        me.globalApp.getVariantIdsForGene,  // rsid
-                                        me.globalApp.vepAF,   // vep af
-                                        null,   // cache
-                                        me.id
-                                    );
+
+                                    // todo: compose region param w/ current gene
+                                    let regions = [];
+                                    return me.vcf.promiseAnnotateSomaticVariants('', samplesInFile, regions);
+
+                                    // return me.vcf.promiseGetVariants(
+                                    //     me.getVcfRefName(theGene.chr),
+                                    //     theGene,
+                                    //     theTranscript,
+                                    //     null,   // regions
+                                    //     isMultiSample, // is multi-sample
+                                    //     samplesInFile,
+                                    //     me.getAnnotationScheme().toLowerCase(),
+                                    //     me.getTranslator().clinvarMap,
+                                    //     me.getGeneModel().geneSource === 'refseq',
+                                    //     me.isBasicMode || me.globalApp.getVariantIdsForGene,  // hgvs notation
+                                    //     me.globalApp.getVariantIdsForGene,  // rsid
+                                    //     me.globalApp.vepAF,   // vep af
+                                    //     null,   // cache
+                                    //     me.id
+                                    // );
                                 })
                                 .then(function (data) {
                                         let results = data[1];

@@ -1341,7 +1341,7 @@ class CohortModel {
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
-                self.filterModel.markFilteredVariants(sampleModel.vcfData.features, sampleModel.isTumor);
+                self.filterModel.markFilteredVariants(sampleModel.vcfData.features);
                 resolve();
             });
         });

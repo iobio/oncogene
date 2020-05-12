@@ -142,6 +142,7 @@ export default function barChart(d3, options) {
                 .attr('height', function () {
                     return height - _y(0);
                 });
+            svg.selectAll("text").remove();
         }
         else {
             newDataMap.forEach(function (dataBar) {

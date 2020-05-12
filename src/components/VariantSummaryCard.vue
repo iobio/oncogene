@@ -6,7 +6,7 @@
         position: absolute
         width: 100%
         height: 100%
-        top: 20%
+        top: 30%
         left: 50%
         transform: translate(-50%,-50%)
         -ms-transform: translate(-50%,-50%)
@@ -181,18 +181,19 @@
         <v-flex xl9 offset-xl2 lg12>
             <div class='form-inline'>
                 <div class='form-group'>
-                    <v-chip v-if="variant" v-bind:style="{margin: 0}" small outlined
+                    <v-chip v-if="variant" outlined
                             color="appColor"
                             @input="summaryCardVariantDeselect()">
-                            <span style="padding-right: 10px; font-size: 14px; text-align:center;"
+                            <span style="padding-right: 10px; font-size: 16px; text-align:center;"
                                   v-bind:class="{hide: geneName === ''}">{{geneName}}</span>
-                        <span style="padding-top: 1px; font-size: 12px; padding-right: 4px">{{selectedVariantLocation}}</span>
+                        <span style="padding-top: 1px; font-size: 14px; padding-right: 4px">{{selectedVariantLocation}}</span>
                     </v-chip>
                 </div>
             </div>
         </v-flex>
         <v-container fluid grid-list-md style="overflow-y: scroll !important">
             <v-layout row wrap >
+<!--                todo: replace this w/ an overlay to get rid of stuck bug-->
                 <div id="getStartedBlock">
                     <span class="getStartedText">Click on a variant for details</span>
                 </div>
@@ -282,6 +283,10 @@
                     if (this.cohortModel.hasAtacSeqData) {
                         this.setAtacSeqCounts();
                     }
+                } else {
+                    if (this.cohortModel.hasRnaSeqData || this.cohortModel.hasAtacSeqData) {
+                        this.$refs.summaryBarFeatureViz.clear();
+                    }
                 }
             }
         },
@@ -300,14 +305,14 @@
                 return "-";
             },
             impactText: function () {
-                if (this.variantInfo != null) {
-                    return this.variantInfo.vepImpact;
+                if (this.variant != null) {
+                    return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
                 }
                 return "-";
             },
             impactColor: function () {
-                if (this.variantInfo != null && this.variant.vepImpact != null) {
-                    var impactLevel = this.variantInfo.vepImpact.toUpperCase();
+                if (this.variant != null) {
+                    var impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
                     return "impact_" + impactLevel;
                 }
                 return "";
@@ -415,7 +420,7 @@
                 if (notFetched === 1) {
                     this.$emit('fetch-reads', this.cohortModel.globalApp.RNASEQ_TYPE);
                     this.$refs.summaryBarFeatureViz.clear();
-                } else {
+                } else if (this.$refs.summaryBarFeatureViz) {
                     this.$refs.summaryBarFeatureViz.drawCharts(this.rnaSeqCounts);
                 }
             },
@@ -442,7 +447,7 @@
                 if (notFetched === 1) {
                     this.$emit('fetch-reads', this.cohortModel.globalApp.ATACSEQ_TYPE);
                     this.$refs.summaryBarFeatureViz.clear();
-                } else {
+                } else if (this.$refs.summaryBarFeatureViz) {
                     this.$refs.summaryBarFeatureViz.drawCharts(this.atacSeqCounts);
                 }
             },

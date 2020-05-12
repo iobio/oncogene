@@ -127,7 +127,7 @@
                 const self = this;
                 if (newVal && oldVal && newVal.text !== oldVal.text) {
                     self.logicObj.active = true;
-                    self.$emit('update-slider-logic', self.logicObj.name, newVal.text);
+                    self.$emit('update-slider-logic', self.logicObj.name, newVal.text, self.logicObj.recallFilter);
                 } else if (newVal == null) {
                     self.logicObj.active = false;
                 }

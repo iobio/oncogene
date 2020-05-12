@@ -126,7 +126,8 @@
         },
         watch: {
             selectedVariant: function () {
-                this.drawCharts();
+                if (this.selectedVariant)
+                    this.drawCharts();
             }
         },
         mounted: function() {

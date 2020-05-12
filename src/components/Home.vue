@@ -54,9 +54,9 @@
                     </v-card>
                 </v-flex>
                 <v-flex xs3 v-if="dataEntered || debugMode">
-                    <v-card class="px-2">
+                    <v-card class="px-0">
                         <v-tabs v-model="selectedTab" class="px-1">
-                            <v-tabs-slider style="max-width: 120px" color="primary"></v-tabs-slider>
+                            <v-tabs-slider style="padding-left: 10px" color="primary"></v-tabs-slider>
                             <v-tab href="#genes-tab">
                                 Ranked Genes
                                 <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
@@ -122,6 +122,7 @@
                                             :showCoverageCutoffs="showCoverageCutoffs"
                                             :annotationComplete="annotationComplete"
                                             :applyFilters="applyFilters"
+                                            @recall-somatic-variants="callSomaticVariants"
                                             @filter-change="onFilterChange">
                                     </filter-panel-menu>
                                 </v-container>
@@ -254,11 +255,8 @@
             }
         },
         methods: {
-            onLaunch: function(modelInfos, userGeneList) {
-                this.callSomaticVariants(modelInfos, userGeneList);
-            },
             // Point of entry for launch and filter changes
-            callSomaticVariants: function(modelInfos, userGeneList) {
+            onLaunch: function(modelInfos, userGeneList) {
                 const self = this;
                 self.dataEntered = true;
                 self.displayLoader = true;
@@ -273,48 +271,45 @@
                             self.sampleIds.push(model.id);
                             self.selectedSamples.push(model.selectedSample);
                         });
-
-                        this.cohortModel.promiseAnnotateGlobalSomatics()
-                            .then(rankObj => {
-                                let totalSomaticVarCount = rankObj.count;
-                                let topRankedGene = rankObj.gene;
-
-                                let geneModel = self.cohortModel.geneModel;
-                                self.totalSomaticVarCount = totalSomaticVarCount;
-
-                                // Get rid of global loader
-                                self.displayLoader = false;
-
-                                // Turn on track loaders
-                                self.cohortModel.setLoaders(true);
-
-                                self.rankedGeneList = geneModel.rankedGeneList;
-                                self.selectedGene = topRankedGene;
-                                self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-                                self.geneRegionStart = self.selectedGene.start;
-                                self.geneRegionEnd = self.selectedGene.end;
-
-                                self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
-                                .then(() => {
-                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript)
-                                        .then(() => {
-                                            // todo: appeasing linter, get rid of
-                                            console.log('Successfully loaded top gene');
-                                        })
-                                        .catch(error => {
-                                            Promise.reject('Could not load data: ' + error);
-                                        })
-                                })
-                                .catch(error => {
-                                    Promise.reject('Problem getting cosmic variant IDS: ' + error);
-                                })
-                            }).catch(error => {
-                            console.log('There was a problem calling global somatics: ' + error);
-                        });
-                    })
-                    .catch(error => {
+                        self.callSomaticVariants();
+                    }).catch(error => {
                         console.log('There was a problem initializing cohort model: ' + error);
                     })
+            },
+            callSomaticVariants: function() {
+                const self = this;
+                self.cohortModel.promiseAnnotateGlobalSomatics()
+                    .then(rankObj => {
+                        let totalSomaticVarCount = rankObj.count;
+                        let topRankedGene = rankObj.gene;
+
+                        let geneModel = self.cohortModel.geneModel;
+                        self.totalSomaticVarCount = totalSomaticVarCount;
+
+                        // Get rid of global loader
+                        self.displayLoader = false;
+
+                        // Turn on track loaders
+                        self.cohortModel.setLoaders(true);
+
+                        self.rankedGeneList = geneModel.rankedGeneList;
+                        self.selectedGene = topRankedGene;
+                        self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                        self.geneRegionStart = self.selectedGene.start;
+                        self.geneRegionEnd = self.selectedGene.end;
+
+                        self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                            .then(() => {
+                                self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                    .catch(error => {
+                                        Promise.reject('Could not load data: ' + error);
+                                    })
+                            }).catch(error => {
+                                Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                            })
+                    }).catch(error => {
+                    console.log('There was a problem calling global somatics: ' + error);
+                });
             },
             promiseLoadData: function(selectedGene, selectedTranscript) {
                 const self = this;
@@ -358,11 +353,11 @@
                     self.selectedVariantInterpretation = variant.interpretation;
 
                     self.$refs.variantCardRef.forEach(function (variantCard) {
-                        if (sourceComponent == null || variantCard != sourceComponent) {
+                        // if (sourceComponent == null || variantCard != sourceComponent) {
                             variantCard.hideVariantCircle(true);
                             variantCard.showVariantCircle(variant, true);
                             variantCard.showCoverageCircle(variant);
-                        }
+                        // }
                     });
                     // Tab to summary card
                     self.selectedTab = 'summary-tab';
@@ -408,7 +403,6 @@
             onVariantsFilterChange: function (selectedCategories, trackId) {
                 console.log(selectedCategories);
                 console.log(trackId);
-                // todo: will have to fetch somatic variants again here
 
             },
             deselectVariant: function () {
@@ -422,6 +416,9 @@
                         variantCard.hideVariantCircle(true);
                         variantCard.hideCoverageCircle();
                     })
+                }
+                if (self.$refs.somaticGenesCard) {
+                    self.$refs.somaticGenesCard.deselectListVar();
                 }
             },
             showVariantExtraAnnots: function (parentSampleId, variant) {
@@ -566,17 +563,12 @@
                     })
                 })
             },
-            // todo: this needs to be updated for somatic calling entry point
             onFilterChange: function() {
                 const self = this;
-
-                // TODO: figure out why this is taking so long to refresh...
 
                 // Only annotate once we are guaranteed that our DOM update is done for all tracks
                 self.cohortModel.promiseFilterVariants()
                     .then(() => {
-                        console.log('Done promiseFilterVariants');
-                        // todo: this doesn't need to be done now since filter recall will go through global somatic route
                         self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
                             .then((inheritanceObj) => {
                                 self.cohortModel.setLoadedVariants(self.selectedGene);
@@ -590,9 +582,9 @@
                                 self.cohortModel.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
 
                                 // Draw feature matrix after somatic field filled
-                                let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
-                                self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
-                                    self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
+                                // let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
+                                // self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
+                                    // self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
 
                                 // Then we need to update coloring for tumor tracks only
                                 // TODO: we should be able to get rid of this once they're drawn post inheritance sorting

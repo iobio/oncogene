@@ -4,20 +4,23 @@
     .ranked-genes-card
         font-size: 14px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
+        color: rgb(113,113,113)
+        padding: 0
 
     .variant-text
         font-size: 15px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
         display: inline
-        padding-left: 10px
         text-overflow: ellipsis
+        color: rgb(113,113,113)
+        padding-left: 5px
 
 </style>
 
 <template>
     <v-container height="100%" class="ranked-genes-card">
         <v-row justify="center">
-            <v-chip v-if="totalSomaticVarCount >= 0" outlined color="appColor">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>
+            <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="appColor">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>
         </v-row>
         <v-container fluid grid-list-md style="overflow-y: scroll !important">
             <v-row justify="center">
@@ -51,7 +54,7 @@
                             <v-list dense>
                                 <v-list-item-group v-model="selectedVarIdx" color="primary">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
-                                            <v-list-item-content style="padding: 0">
+                                            <v-list-item-content>
                                                 <v-row style="padding-bottom: 2px" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">
                                                     <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
                                                     <span class="d-inline">
@@ -117,9 +120,9 @@
                 selectedVarIdx: null
             }
         },
-        computed: {
+        mounted: function() {
+            this.selectedVarIdx = -1;
         },
-        watch: {},
         methods: {
             getGeneText: function(geneObj) {
                 if (!geneObj) return '';
@@ -201,6 +204,9 @@
             },
             onVariantHoverExit: function() {
                 this.$emit('variant-hover-exit');
+            },
+            deselectListVar: function() {
+                this.selectedVarIdx = -1;
             }
         },
     }

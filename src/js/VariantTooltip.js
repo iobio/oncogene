@@ -792,19 +792,6 @@ export default class VariantTooltip {
         let cosmicRow = variant.inCosmic == null || variant.inCosmic === false ? ''
             : me._tooltipHeaderRow('<span class="tooltip-cosmic-label">' + me.translator.getCosmicLabel(variant.inCosmic) + ' </span>', '', '', '', null, 'padding-top:0px;');
 
-        // Sift and PolyPhen information
-        // let siftLabel = info.sift !== '' && info.sift !== 'unknown' ? 'SIFT ' + info.sift : "";
-        // let polyphenLabel = info.polyphen !== '' && info.polyphen !== 'unknown' ? 'PolyPhen ' + info.polyphen : "";
-        // let sep = siftLabel !== '' && polyphenLabel !== '' ? '&nbsp;&nbsp;&nbsp;&nbsp;' : '';
-        // let siftPolyphenRow = '';
-        // if (siftLabel || polyphenLabel) {
-        //     siftPolyphenRow = me._tooltipClassedRow(polyphenLabel + sep, 'polyphen', siftLabel, 'sift', 'padding-top:2px;');
-        // }
-        // let polyphenRowSimple = info.polyphen !== "" ? me._tooltipWideHeadingRow('Predicted effect', info.polyphen + ' to protein', '2px') : "";
-        //
-        // // Genotype information
-        // let genotypeRow = me.isEduMode && me.tourNumber === 2 ? me._tooltipHeaderRow('Genotype', me.globalApp.utility.switchGenotype(variant.eduGenotype), '', '') : "";
-
         // AF information
         let sampleAf = 0;
         if (parseInt(variant.genotypeDepth) > 0) {
@@ -937,6 +924,7 @@ export default class VariantTooltip {
 
     _tooltipHeaderRow(value1, value2, value3, value4, clazz, style) {
         var theStyle = style ? style : '';
+        theStyle += ' margin: 0; padding: 0';
         var clazzList = "col-md-12 tooltip-title";
         if (clazz) {
             clazzList += " " + clazz;

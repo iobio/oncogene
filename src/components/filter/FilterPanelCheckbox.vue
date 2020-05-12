@@ -47,37 +47,9 @@
         methods: {
             boxChecked: function(filterObj) {
                 let self = this;
-
                 filterObj.model = !filterObj.model;
-
-
-                // TODO: cleanup
-                // let updatedState = filterObj.model;
-                // let filterName = filterObj.name;
-                // if (self.parentFilterName === 'impact') {
-                //     filterName = filterObj.name;
-                // }
-                // let anyFilterInParentActive = false;
-                // self.checkboxLists[self.parentFilterName].forEach((filter) => {
-                //     anyFilterInParentActive |= !filter.model;
-                // });
-                // self.$emit('filter-toggled', filterName, updatedState, self.parentFilterName, self.grandparentFilterName, anyFilterInParentActive, filterObj.displayName);
                 self.$emit('filter-toggled');
-            },
-            // clearFilters: function() {
-            //     const self = this;
-            //     for (var listName in self.checkboxLists) {
-            //         let currList = self.checkboxLists[listName];
-            //         currList.forEach((filt) => {
-            //             filt.model = true;
-            //         })
-            //     }
-            //     // (Object.values(self.checkboxLists)).forEach((checkList) => {
-            //     //     checkList.forEach((filt) => {
-            //     //         filt.model = true;
-            //     //     });
-            //     // })
-            // }
+            }
         }
     }
 </script>
