@@ -13,9 +13,9 @@
         </v-layout>
         <v-layout row v-for="(id, i) in sampleIds" :key="id">
             <v-flex xs2 class="summary-field-label">{{ selectedSamples[i] }}</v-flex>
-            <v-flex xs3 class="summary-field-value">{{ getPercentageDisplay(id) }}
+            <v-flex xs3 class="summary-field-value">{{ getPercentageDisplay(selectedSamples[i]) }}
             </v-flex>
-            <v-flex xs7 :id="id + 'Progress'" style="padding: 0px"></v-flex>
+            <v-flex xs7 :id="'progress_' + selectedSamples[i]" style="padding: 0px"></v-flex>
         </v-layout>
     </v-flex>
 </template>
@@ -55,8 +55,8 @@
             drawAfBars() {
                 const self = this;
                 self.bars = [];
-                self.sampleIds.forEach((id) => {
-                    let currBar = progressBar(self.d3, id);
+                self.selectedSamples.forEach((ss) => {
+                    let currBar = progressBar(self.d3, ss);
                     currBar();
                     self.bars.push(currBar);
                 });
@@ -74,13 +74,13 @@
                     bar.moveProgressBar(0);
                 });
             },
-            getMatchingAp(sampleId) {
+            getMatchingAp(selectedSample) {
                 const self = this;
                 if (!self.sampleMap) {
                     console.log('Error: need samplereads map to populate bars');
                 } else {
-                    let feat = self.sampleMap[sampleId];
-                    if (!feat) {
+                    let feat = self.sampleMap[selectedSample];
+                    if (!feat || !feat.genotypeDepth) {
                         // If we don't have a feature here, it was not reported in the vcf so assuming 0 reads
                         // NOTE: alternative option would be to fetch reads from bam, but then would be incongruous w/ rest of reads reported here
                         return 0;
@@ -93,10 +93,10 @@
                     }
                 }
             },
-            getPercentageDisplay(sampleId) {
+            getPercentageDisplay(selectedSample) {
                 if (this.selectedVariant == null) return "-";
                 else {
-                    let feat = this.sampleMap[sampleId];
+                    let feat = this.sampleMap[selectedSample];
                     if (!feat || !feat.genotypeDepth) {
                         return '-';
                     }

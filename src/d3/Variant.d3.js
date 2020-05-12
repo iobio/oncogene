@@ -541,7 +541,6 @@ export default function variantD3(d3, vizSettings) {
             circle.attr("cx", mousex + margin.left + 2)
                 .attr("cy", mousey + margin.top + 4);
 
-
             var matrix = circle.node()
                 .getScreenCTM()
                 .translate(+circle.node().getAttribute("cx"), +circle.node().getAttribute("cy"));

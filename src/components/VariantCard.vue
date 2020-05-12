@@ -511,18 +511,9 @@
                     }
                 }
                 if (this.showVariantViz) {
-                    // const tipType = "click";
                     if (variant) {
                         this.hideVariantCircle(true);
                         this.showVariantCircle(variant, true);
-
-                        // todo: getting rid of tooltip and using summary card instead
-                        // Hide hover tip and show click tip
-                        //     this.hideVariantTooltip("hover");
-                        //     this.showVariantTooltip(variant, tipType, false);
-                        // } else {
-                        //     this.hideVariantTooltip(tipType);
-                        // }
                     }
                 }
                 this.$emit('cohort-variant-click', variant, this, this.sampleModel.id);

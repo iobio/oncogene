@@ -357,12 +357,6 @@
                     self.selectedVariantNotes = variant.notes;
                     self.selectedVariantInterpretation = variant.interpretation;
 
-                    // todo: took this out for now, not sure exactly what it does for oncogene
-                    // self.showVariantExtraAnnots(sampleModelId, variant);
-
-                    // if (self.$refs.navRef && sourceComponent != self.$refs.navRef) {
-                    //     self.$refs.navRef.selectVariant(variant, 'current');
-                    // }
                     self.$refs.variantCardRef.forEach(function (variantCard) {
                         if (sourceComponent == null || variantCard != sourceComponent) {
                             variantCard.hideVariantCircle(true);

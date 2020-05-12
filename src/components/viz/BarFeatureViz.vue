@@ -128,6 +128,9 @@
             selectedVariant: function () {
                 this.drawCharts();
             }
+        },
+        mounted: function() {
+            this.drawCharts();
         }
     }
 </script>

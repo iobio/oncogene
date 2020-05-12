@@ -11,7 +11,7 @@ export default function progressBar(d3, id) {
         barId = id;
 
     function bar() {
-        var svg = d3.select('#' + barId + 'Progress')
+        var svg = d3.select('#progress_' + barId)
             .append('svg')
             .attr('height', height)
             .attr('width', '100%')
@@ -40,7 +40,7 @@ export default function progressBar(d3, id) {
             .attr('fill', blueFill);
 
         // Ghost fill this to get rid of initial funky outline
-        var bar = d3.select('#' + barId + 'Progress').select('svg').select('.progress-rect');
+        var bar = d3.select('#progress_' + barId).select('svg').select('.progress-rect');
         bar.transition()
             .duration(700)
             .attr('fill', blueFill)
@@ -53,7 +53,7 @@ export default function progressBar(d3, id) {
 
     /*** OUTWARD FACING FUNCTIONS ***/
     bar.moveProgressBar = function (frequency) {
-        var svg = d3.select('#' + barId + 'Progress').select('svg');
+        var svg = d3.select('#progress_' + barId).select('svg');
         var progBar = svg.select('.progress-rect');
 
         // Fill bar if we have a frequency coming in

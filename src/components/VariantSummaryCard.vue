@@ -449,6 +449,12 @@
         },
         mounted: function() {
             this.$emit('summary-mounted');
+            if (this.cohortModel.hasRnaSeqData) {
+                this.setRnaSeqCounts();
+            }
+            if (this.cohortModel.hasAtacSeqData) {
+                this.setAtacSeqCounts();
+            }
         }
     }
 </script>
