@@ -219,14 +219,24 @@
                                       :sampleMap="sampleReadsMap"
                                       :d3="d3">
                 </allele-frequency-viz>
+                <v-layout row class="summary-viz" style="min-height: 0; padding-top: 10px">
+                    <v-flex xs12 class="field-label-header" style="text-align:left">Raw Bam Counts</v-flex>
+                </v-layout>
+                <bar-feature-viz id="coverage-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
+                                 ref="coverageBarFeatureViz"
+                                 :counts="coverageCounts"
+                                 :selectedVariant="variant"
+                                 :bamType="'coverage'"
+                                 :d3="d3">
+                </bar-feature-viz>
                 <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
-                                 ref="summaryBarFeatureViz"
+                                 ref="rnaSeqBarFeatureViz"
                                  :counts="rnaSeqCounts"
                                  :bamtype="'rnaSeq'"
                                  :d3="d3">
                 </bar-feature-viz>
                 <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
-                                 ref="summaryBarFeatureViz"
+                                 ref="atacSeqBarFeatureViz"
                                  :counts="atacSeqCounts"
                                  :selectedVariant="variant"
                                  :bamType="'atacSeq'"
@@ -270,6 +280,7 @@
         data() {
             return {
                 cohortFieldsValid: true,
+                coverageCounts: null,
                 rnaSeqCounts: null,
                 atacSeqCounts: null
             }
@@ -277,6 +288,8 @@
         watch: {
             variant: function() {
                 if (this.variant) {
+                    this.setCoverageCounts();
+
                     if (this.cohortModel.hasRnaSeqData) {
                         this.setRnaSeqCounts();
                     }
@@ -284,8 +297,12 @@
                         this.setAtacSeqCounts();
                     }
                 } else {
-                    if (this.cohortModel.hasRnaSeqData || this.cohortModel.hasAtacSeqData) {
-                        this.$refs.summaryBarFeatureViz.clear();
+                    this.$refs.coverageBarFeatureViz.clear();
+                    if (this.cohortModel.hasRnaSeqData && this.$refs.rnaSeqBarFeatureViz) {
+                        this.$refs.rnaSeqBarFeatureViz.clear();
+                    }
+                    if (this.cohortModel.hasAtacSeqData && this.$refs.atacSeqBarFeatureViz) {
+                        this.$refs.atacSeqBarFeatureViz.clear();
                     }
                 }
             }
@@ -390,11 +407,39 @@
                 this.$('.summary-viz').css({'filter': 'none', '-webkit-filter': 'none'});
             },
             updateSeqCharts: function(bamType) {
-                console.log('about to update seq charts');
                 if (bamType === this.cohortModel.globalApp.RNASEQ_TYPE) {
                     this.setRnaSeqCounts();
                 } else if (bamType === this.cohortModel.globalApp.ATACSEQ_TYPE) {
                    this.setAtacSeqCounts();
+                } else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
+                    this.setCoverageCounts();
+                }
+            },
+            setCoverageCounts: function() {
+                // Get coverage counts from each sample
+                let map = {};
+                let countMap = {};
+                if (this.cohortModel && this.variant) {
+                    map = this.cohortModel.getMatchingVariants(this.variant.id);
+                }
+
+                let notFetched = 1;
+                for (var feat in map) {
+                    if (map[feat] && map[feat].readPtCov) {
+                        notFetched &= map[feat].readPtCov < 0;
+                        countMap[feat] = map[feat].readPtCov;
+                    } else {
+                        countMap[feat] = 0;
+                    }
+                }
+                this.coverageCounts =  countMap;
+
+                // If we have marker values still here for our variant, signal to fetch reads from bam
+                if (notFetched === 1) {
+                    this.$emit('fetch-reads', this.cohortModel.globalApp.COVERAGE_TYPE);
+                    this.$refs.coverageBarFeatureViz.clear();
+                } else if (this.$refs.coverageBarFeatureViz) {
+                    this.$refs.coverageBarFeatureViz.drawCharts(this.coverageCounts);
                 }
             },
             setRnaSeqCounts: function() {
@@ -419,9 +464,9 @@
                 // If we have marker values still here for our variant, signal to fetch reads from bam
                 if (notFetched === 1) {
                     this.$emit('fetch-reads', this.cohortModel.globalApp.RNASEQ_TYPE);
-                    this.$refs.summaryBarFeatureViz.clear();
-                } else if (this.$refs.summaryBarFeatureViz) {
-                    this.$refs.summaryBarFeatureViz.drawCharts(this.rnaSeqCounts);
+                    this.$refs.rnaSeqBarFeatureViz.clear();
+                } else if (this.$refs.rnaSeqBarFeatureViz) {
+                    this.$refs.rnaSeqBarFeatureViz.drawCharts(this.rnaSeqCounts);
                 }
             },
             setAtacSeqCounts: function() {
@@ -446,14 +491,15 @@
                 // If we have marker values still here for our variant, signal to fetch reads from bam
                 if (notFetched === 1) {
                     this.$emit('fetch-reads', this.cohortModel.globalApp.ATACSEQ_TYPE);
-                    this.$refs.summaryBarFeatureViz.clear();
-                } else if (this.$refs.summaryBarFeatureViz) {
-                    this.$refs.summaryBarFeatureViz.drawCharts(this.atacSeqCounts);
+                    this.$refs.atacSeqBarFeatureViz.clear();
+                } else if (this.$refs.atacSeqBarFeatureViz) {
+                    this.$refs.atacSeqBarFeatureViz.drawCharts(this.atacSeqCounts);
                 }
             },
         },
         mounted: function() {
             this.$emit('summary-mounted');
+            this.setCoverageCounts();
             if (this.cohortModel.hasRnaSeqData) {
                 this.setRnaSeqCounts();
             }

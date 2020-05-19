@@ -20,9 +20,6 @@
 <template>
     <v-flex xs12>
         <v-layout row>
-            <v-flex xs12 class="field-label-header" style="text-align:left">Raw Bam Counts</v-flex>
-        </v-layout>
-        <v-layout row>
             <v-flex xs2 class="summary-field-label">{{ chartLabel }}:</v-flex>
             <v-flex xs9 v-show="!showLoader" :id="bamType + 'Bar'" style="padding-bottom:5px"></v-flex>
             <v-flex xs9 v-show="showLoader">
@@ -66,7 +63,7 @@
         },
         computed: {
             chartLabel: function() {
-                return this.bamType === 'rnaSeq' ? 'Rna-Seq' : 'Atac-Seq';
+                return this.bamType === 'coverage' ? 'Coverage' : this.bamType === 'rnaSeq' ? 'Rna-Seq' : 'Atac-Seq';
             }
         },
         methods: {
@@ -79,7 +76,6 @@
                     self.showLoader = true;
                     return;
                 }
-
                 self.showLoader = false;
                 let maxCount = 0;
                 let sampleCount = 0;

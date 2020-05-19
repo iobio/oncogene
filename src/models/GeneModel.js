@@ -1405,9 +1405,10 @@ class GeneModel {
     /* Returns an array of gene regions strings found in geneObjects formatted for bcftools calls
      * ex: ['chrA:startA-endA', 'chrB:startB-endB', ...]
      * NOTE: positions inclusive */
-    getFormattedGeneRegions() {
+    getFormattedGeneRegions(geneObjectMap) {
         let regions = [];
-        for (var geneName in this.geneObjects) {
+        let genes = geneObjectMap ? geneObjectMap : this.geneObjects;
+        for (var geneName in genes) {
             let obj = this.geneObjects[geneName];
             let chr = obj.chr;
             if (chr.startsWith('chr')) {

@@ -448,8 +448,6 @@ export default class EndpointCmd {
 
     getBamCoverage(bamSource, refName, regionStart, regionEnd, regions, maxPoints, useServerCache, serverCacheKey) {
         if (this.gruBackend) {
-            // TODO: gru version of this is broken with multiple regions...
-            // TODO: left off needing to determine why this doesn't work
             const url = bamSource.bamUrl;
             const samtoolsRegion = {refName, start: regionStart, end: regionEnd};
             const indexUrl = bamSource.baiUrl;
@@ -540,9 +538,9 @@ export default class EndpointCmd {
         if (this.gruBackend) {
             const url = bamUrl;
             const indexUrl = baiUrl;
-            const region = ref + ":1-2"; // TODO: THIS NEEDS TO BE DYNAMIC FOR GRCH38 CHR1 instead of 1
+            const region = ref + ':1-2'; // TODO: THIS NEEDS TO BE DYNAMIC FOR GRCH38 CHR1 instead of 1
 
-            return this.api.streamCommand('checkBamBai', {
+            return this.devApi.streamCommand('checkBamBai', {
                 url,
                 indexUrl,
                 region

@@ -179,7 +179,7 @@ export default class bamiobio {
     *  region objects to get the coverage at exact positions.  Also, this method takes an
     *  optional argument of maxPoints that will specify how many data points should be returned
     *  for the region.  If not specified, all data points are returned.  The callback method
-    *  will send back to arrays; one for the coverage points, reduced down to the maxPoints, and
+    *  will send back two arrays; one for the coverage points, reduced down to the maxPoints, and
     *  the second for coverage of specific positions.  The latter can then be matched to vcf records
     *  , for example, to obtain the coverage for each variant.
     */

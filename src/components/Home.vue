@@ -54,7 +54,7 @@
                     </v-card>
                 </v-flex>
                 <v-flex xs3 v-if="dataEntered || debugMode">
-                    <v-card class="px-0">
+                    <v-card class="px-0" style="overflow: scroll">
                         <v-tabs v-model="selectedTab" class="px-1">
                             <v-tabs-slider style="padding-left: 10px" color="primary"></v-tabs-slider>
                             <v-tab href="#genes-tab">
@@ -569,6 +569,7 @@
                 // Only annotate once we are guaranteed that our DOM update is done for all tracks
                 self.cohortModel.promiseFilterVariants()
                     .then(() => {
+                        // todo: this needs to change w/ global mode
                         self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
                             .then((inheritanceObj) => {
                                 self.cohortModel.setLoadedVariants(self.selectedGene);

@@ -1617,7 +1617,6 @@ export default function vcfiobio(theGlobalApp) {
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
-                            // let cssFormattedAlt = getCssSafeAlt(alt);
 
                             // Keep the variant if we are just parsing a single sample (parseMultiSample=false)
                             // or we are parsing multiple samples and this sample's genotype is het or hom
@@ -1767,7 +1766,7 @@ export default function vcfiobio(theGlobalApp) {
             if (rec.pos && rec.id) {
                 var alts = [];
                 if (rec.alt.indexOf(',') > -1) {
-                    // Done split apart multiple alt alleles for education edition
+                    // Don't split apart multiple alt alleles for education edition
                     if (isEduMode) {
                         alts.push(rec.alt);
                     } else {
@@ -1922,7 +1921,8 @@ export default function vcfiobio(theGlobalApp) {
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'sampleModelId': sampleModelId,   // Used for feature matrix tracking
-                                    'rnaSeqPtCov': -1,                // Marker values used for bar chart viz
+                                    'readPtCov': -1,                  // Marker values used for bar chart viz
+                                    'rnaSeqPtCov': -1,
                                     'atacSeqPtCov': -1
                                 };
 
@@ -2449,23 +2449,21 @@ export default function vcfiobio(theGlobalApp) {
         return result;
     };
 
-    /*
-     *
-     * Parse the genotype field from in the vcf rec
-     *
-     */
-    exports._parseGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames) {
+
+    /* Parses genotypes for somatic records. Behaves similarly to _parseGenotypes but accounts for multi-allelics or multiple bi-allelics
+     * at a single site. */
+    exports._parseSomaticGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames) {
         var me = this;
 
         // The result returned will be an object representing all
         // genotypes for the sample indices provided.
         //
-        //  all      the alternate for which these genotype(s) apply
+        //  alt      the alternate for which these genotype(s) apply
         //  keep     a boolean indicating if any of the sample genotypes
         //           contains this alternate.  For example, if this is a
         //           multiallelic, if none of the samples contains this
         //           alternate, keep will be set to false.
-        //  gtNumber Normally, the gtNumber for an alterate will equal
+        //  gtNumber Normally, the gtNumber for an alternate will equal
         //           1.  For multi-allelics, this number ranges from
         //           1 to the number of alternate alleles.
         //
@@ -2481,11 +2479,8 @@ export default function vcfiobio(theGlobalApp) {
 
 
         // The results will contain an array of genotype objects for
-        // each sample index provided.  The first element in the
-        // array is assumed to be the "target" genotype.  For example,
-        // if we are parsing the genotypes for a trio, the first
-        // genotype will be for the proband, followed by 2 more elements
-        // for the mother and father's genotypes.
+        // each sample index provided. The first element in the
+        // array is assumed to be the normal genotype.
         result.genotypes = sampleIndices.map(function (sampleIndex) {
             return {sampleIndex: sampleIndex, zygosity: null, phased: null};
         });
@@ -2530,12 +2525,299 @@ export default function vcfiobio(theGlobalApp) {
         result.genotypes.forEach(function (gt) {
             var genotype = rec.genotypes.length > gt.sampleIndex ? rec.genotypes[gt.sampleIndex] : null;
 
-            if (genotype == null || genotype === "" || genotype === '.') {
+            if (genotype == null || genotype === "" || genotype === '.' || genotype.startsWith('.')) {
                 gt.zygosity = 'gt_unknown';
                 gt.keep = rec.genotypes.length === 0;
                 gt.absent = rec.genotypes.length === 0;
             } else {
+                var tokens = genotype.split(":");
+                var gtFieldIndex = gtTokens["GT"];
+                gt.gt = tokens[gtFieldIndex];
 
+                var gtDepthIndex = gtTokens["DP"];
+                if (gtDepthIndex) {
+                    gt.filteredDepth = tokens[gtDepthIndex];
+                } else {
+                    gt.filteredDepths = null;
+                }
+
+                var gtAlleleCountIndex = gtTokens["AD"];
+                var gtAltCountIndex = gtTokens["AO"];
+                if (gtAlleleCountIndex) {
+                    //
+                    // GATK allele counts
+                    //
+                    var countTokens = tokens[gtAlleleCountIndex].split(",");
+                    if (countTokens.length >= 2) {
+                        var refAlleleCount = countTokens[0];
+                        var altAlleleCounts = countTokens.slice(1).join(",");
+
+                        var totalAllelicDepth = 0;
+                        countTokens.forEach(function (allelicDepth) {
+                            if (allelicDepth) {
+                                totalAllelicDepth += +allelicDepth;
+                            }
+                        });
+
+                        gt.altCount = altAlleleCounts;
+                        gt.refCount = refAlleleCount;
+                        gt.genotypeDepth = totalAllelicDepth;
+                    } else {
+                        gt.altCount = null;
+                        gt.refCount = null;
+                        gt.genotypeDepth = null;
+                    }
+                } else if (gtAltCountIndex) {
+                    //
+                    // Freebayes allele counts
+                    //
+                    totalAllelicDepth = 0;
+
+                    gt.altCount = tokens[gtAltCountIndex];
+
+                    var altCountTokens = gt.altCount.split(",");
+                    altCountTokens.forEach(function (allelicDepth) {
+                        if (allelicDepth) {
+                            totalAllelicDepth += +allelicDepth;
+                        }
+                    });
+
+                    var gtRefCountIndex = gtTokens["RO"];
+                    if (gtRefCountIndex) {
+                        gt.refCount = tokens[gtRefCountIndex];
+                        totalAllelicDepth += +gt.refCount;
+                    } else {
+                        gt.refCount = null;
+                    }
+
+                    gt.genotypeDepth = totalAllelicDepth;
+
+
+                } else {
+                    gt.altCount = null;
+                    gt.refCount = null;
+                }
+
+                gt.altCount = me._parseMultiAllelic(result.gtNumber - 1, gt.altCount, ",");
+
+                var strandAlleleCountIndex = gtTokens["SAC"]; // GATK
+                var strandRefForwardIndex = gtTokens["SRF"]; // Freebayes
+                var strandRefReverseIndex = gtTokens["SRR"]; // Freebayes
+                var strandAltForwardIndex = gtTokens["SAF"]; // Freebayes
+                var strandAltReverseIndex = gtTokens["SAR"]; // Freebayes
+                if (strandAlleleCountIndex) {
+                    //
+                    // GATK Strand allele counts, comma separated
+                    //
+                    countTokens = tokens[strandAlleleCountIndex].split(",");
+                    if (countTokens.length == 4) {
+                        gt.refForwardCount = tokens[0];
+                        gt.refReverseCount = tokens[1];
+                        gt.altForwardCount = tokens[2];
+                        gt.altReverseCount = tokens[3];
+                    } else {
+                        gt.refForwardCount = null;
+                        gt.refReverseCount = null;
+                        gt.altForwardCount = null;
+                        gt.altReverseCount = null;
+                    }
+                } else if (strandRefForwardIndex && strandRefReverseIndex && strandAltForwardIndex && strandAltReverseIndex) {
+                    //
+                    // Freebayes Strand bias counts (SRF, SRR, SAF, SAR)
+                    //
+                    gt.refForwardCount = tokens[strandRefForwardIndex];
+                    gt.refReverseCount = tokens[strandRefReverseIndex];
+                    gt.altForwardCount = tokens[strandAltForwardIndex];
+                    gt.altReverseCount = tokens[strandAltReverseIndex];
+                } else {
+                    gt.refForwardCount = null;
+                    gt.refReverseCount = null;
+                    gt.altForwardCount = null;
+                    gt.altReverseCount = null;
+                }
+
+
+                // Only keep the alt if we have a genotype that matches.
+                // For example
+                // A->G    0|1 keep
+                // A->G,C  0|1 keep A->G, but bypass A->C
+                // A->G,C  0|2 bypass A->G, keep A->C
+                // A->G,C  1|2 keep A->G, keep A->C
+                // unknown .   bypass
+                var delim = null;
+
+                if (gt.gt.indexOf("|") > 0) {
+                    delim = "|";
+                    gt.phased = true;
+                } else if (gt.gt.indexOf("/") > 0) {
+                    delim = "/";
+                    gt.phased = false;
+                } else {
+                    gt.keep = false;
+                    gt.zygosity = "gt_unknown";
+                }
+                if (delim) {
+                    tokens = gt.gt.split(delim);
+                    if (tokens.length == 2) {
+                        if (isEduMode && alt.indexOf(",") > 0) {
+                            if ((tokens[0] == 1) && (tokens[1] == 2)) {
+                                gt.keep = true;
+                            }
+                            if (tokens[0] == tokens[1]) {
+                                gt.keep = true;
+                                let theAltIdx = tokens[0] - 1;
+                                result.alt = alt.split(',')[theAltIdx] + ',' + alt.split(',')[theAltIdx];
+                            } else if (tokens[0] == 0 && tokens[1] != 0) {
+                                let theAltIdx = +tokens[1] - 1;
+                                result.alt = alt.split(',')[theAltIdx]
+                            } else if (tokens[1] == 0 && tokens[0] != 0) {
+                                let theAltIdx = +tokens[0] - 1;
+                                result.alt = alt.split(',')[theAltIdx]
+                            }
+                            if (gt.keep) {
+                                if (tokens[0] == tokens[1]) {
+                                    gt.zygosity = "HOM";
+                                } else {
+                                    gt.zygosity = "HET";
+                                }
+                            }
+
+                        } else if (tokens[0] == result.gtNumber || tokens[1] == result.gtNumber) {
+                            gt.keep = true;
+                            if (tokens[0] == tokens[1]) {
+                                gt.zygosity = "HOM";
+                            } else {
+                                gt.zygosity = "HET";
+                            }
+                        } else if (tokens[0] == "0" && tokens[1] == "0") {
+                            gt.keep = false;
+                            gt.zygosity = "HOMREF"
+                        }
+                    }
+
+                    gt.eduGenotype = "";
+                    if (isEduMode) {
+                        var alts = alt.split(",");
+                        var gtIdx1 = +tokens[0];
+                        var gtIdx2 = +tokens[1];
+                        if (gt.zygosity == "HET" && gtIdx1 == 0) {
+                            gt.eduGenotype = rec.ref + " " + alts[altIdx];
+                        } else if (gt.zygosity == "HET" && gtIdx1 > 0) {
+                            gt.eduGenotype = alts[gtIdx1 - 1] + " " + alts[gtIdx2 - 1];
+                        } else if (gt.zygosity == "HOM") {
+                            gt.eduGenotype = alts[gtIdx1 - 1] + " " + alts[gtIdx1 - 1];
+                        } else if (gt.zygosity == "HOMREF") {
+                            gt.eduGenotype = rec.ref + " " + rec.ref;
+                        }
+                    }
+                    gt.eduGenotypeReversed = globalApp.utility.switchGenotype(gt.eduGenotype);
+
+                }
+            }
+
+        });
+
+
+        result.genotypes.forEach(function (gt) {
+            if (gt.keep) {
+                result.keep = true;
+            }
+        });
+
+        // The 'target' genotype will be the first genotype in the array
+        // For example, if the sampleIndex of '1' was sent in (sampleIndices = [1]),
+        // the first element in the the array will be the second genotype
+        // column in the vcf record (sample index is 0 based).
+        if (result.genotypes.length > 0) {
+            result.genotype = result.genotypes[0];
+        }
+
+        return result;
+    };
+
+    /*
+     *
+     * Parse the genotype field from in the vcf rec
+     *
+     */
+    exports._parseGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames) {
+        var me = this;
+
+        // The result returned will be an object representing all
+        // genotypes for the sample indices provided.
+        //
+        //  all      the alternate for which these genotype(s) apply
+        //  keep     a boolean indicating if any of the sample genotypes
+        //           contains this alternate.  For example, if this is a
+        //           multiallelic, if none of the samples contains this
+        //           alternate, keep will be set to false.
+        //  gtNumber Normally, the gtNumber for an alternate will equal
+        //           1.  For multi-allelics, this number ranges from
+        //           1 to the number of alternate alleles.
+        //
+        //
+        var result = {
+            alt: alt,
+            keep: false,
+            gtNumber: altIdx + 1,
+            genotype: {},
+            genotypes: [],
+            genotypeMap: {}
+        };
+
+
+        // The results will contain an array of genotype objects for
+        // each sample index provided. The first element in the
+        // array is assumed to be the normal genotype.
+        result.genotypes = sampleIndices.map(function (sampleIndex) {
+            return {sampleIndex: sampleIndex, zygosity: null, phased: null};
+        });
+
+        // The results will also contain a map to obtain
+        // the genotype by sample name.  If sample names were not provided,
+        // we will use the index as the key to the map.
+        result.genotypes.forEach(function (gt) {
+            var key = sampleNames ? sampleNames[gt.sampleIndex] : gt.sampleIndex.toString();
+            result.genotypeMap[key] = gt;
+        });
+
+        // Determine the format of the genotype fields
+        var gtTokens = {};
+        var idx = 0;
+        if (rec.format && rec.format !== '') {
+            var tokens = rec.format.split(":");
+            tokens.forEach(function (token) {
+                gtTokens[token] = idx;
+                idx++;
+            })
+        }
+
+        //
+        // For each applicable genotype (of the sample indices provided),
+        // parse the genotype field of the vcf record, creating an
+        // object with the following fields:
+        //    sampleIndex         - The applicable genotype column (for a sample)
+        //    gt                  - The genotype field (e.g. 0|1)
+        //    zygosity            - The zygosity (e.g. het, hom, homref)
+        //    depth               - The total observations at this position
+        //    filteredDepth       - The total observations considered at this position
+        //    altCount            - The number of observations where the alternate allele was observed
+        //    refCount            - The number of observations where the reference allele was observed
+        //    altForwardCount,    - The alternate counts for the strands
+        //    altReverseCount
+        //    refForwardCount,    - The reference counts for the strands
+        //    refReverseCount
+        //    eduGenotype         - The simplified format for showing genotype (e.g. C->T)
+        //    eduGenotypeReversed - For reverse strand, show the compliment of the simplified genotype (e.g. A->G)
+        //
+        result.genotypes.forEach(function (gt) {
+            var genotype = rec.genotypes.length > gt.sampleIndex ? rec.genotypes[gt.sampleIndex] : null;
+
+            if (genotype == null || genotype === "" || genotype === '.' || genotype.startsWith('.')) {
+                gt.zygosity = 'gt_unknown';
+                gt.keep = rec.genotypes.length === 0;
+                gt.absent = rec.genotypes.length === 0;
+            } else {
                 var tokens = genotype.split(":");
                 var gtFieldIndex = gtTokens["GT"];
                 gt.gt = tokens[gtFieldIndex];

@@ -7,7 +7,7 @@ class FilterModel {
         /* Somatic settings */
         this.DEFAULT_SOMATIC_CUTOFFS = {
             'normalAltFreq': 0.01,      // Must be between 0-1
-            'normalAltCount': 2,
+            'normalAltCount': 5,
             'tumorAltFreq': 0.10,       // Must be between 0-1
             'tumorAltCount': 5
         };
@@ -177,7 +177,7 @@ class FilterModel {
             impact: [
                 {name: 'HIGH', displayName: 'HIGH', model: true},
                 {name: 'MODERATE', displayName: 'MODERATE', model: true},
-                {name: 'MODIFIER', displayName: 'MODIFIER', model: true},
+                {name: 'MODIFIER', displayName: 'MODIFIER', model: false},
                 {name: 'LOW', displayName: 'LOW', model: true}
             ],
             type: [
@@ -223,8 +223,203 @@ class FilterModel {
      *
      *  The normal track contains the variant with quality thresholds met AND the tumor track contains the variant with quality thresholds met but not somatic ones
      *
-     *  Returns a dictionary of somatic variant IDs from all tumor tracks combined.
+     *  If globalMode is true, returns a map of selectedSampleId: somaticFeatureList.
+     *  Otherwise, returns a dictionary of somatic variant IDs from all tumor tracks combined.
      */
+    promiseAnnotateVariantInheritance(resultMap, featuresList, globalMode) {
+        const self = this;
+
+        return new Promise((resolve, reject) => {
+            let normalSamples = [];
+            let tumorSamples = [];
+            let tumorSampleModelIds = [];
+            let somaticVarLookup = {};
+            let inheritedVarLookup = {};
+            let somaticVarMap = {};
+            let i = 0;
+
+            // Classify samples
+            for (i = 0; i < Object.keys(resultMap).length; i++) {
+                let sampleId = Object.keys(resultMap)[i];
+                let currData = self.$.extend({}, Object.values(resultMap)[i].vcfData);
+                let sampleObj = {'currData': currData, 'model': Object.values(resultMap)[i]};
+                if (!(resultMap[sampleId].isTumor) && sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
+                    normalSamples.push(sampleObj);
+                    somaticVarMap[sampleObj.model.selectedSample] = { 'name': sampleObj.model.selectedSample, 'features': [] };
+                } else if (sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
+                    tumorSamples.push(sampleObj);    // Don't need reference to model for tumor
+                    tumorSampleModelIds.push(sampleId);
+                    somaticVarMap[sampleObj.model.selectedSample] = { 'name': sampleObj.model.selectedSample, 'features': [] };
+                }
+            }
+
+            // Make normal variant hash table
+            let passesNormalFiltersLookup = {};   // Hash of variants that pass the Normal somatic filters ONLY (normal alt count and normal alt freq)
+            let normalContainsLookup = {};        // Hash of all variants in normal sample
+            let passesOtherFiltersLookup = {};    // Hash of variants in normal track ONLY that pass any active filters except somatic related (this includes quality)
+            normalSamples.forEach((currNorm) => {
+                if (currNorm && (globalMode || (currNorm.currData && (currNorm.currData.features.length > 0)))) {
+                    let normFeatures = [];
+                    if (globalMode) {
+                        let matchingFeatureList = featuresList.filter(list => {
+                            return list.name === currNorm.model.selectedSample;
+                        });
+                        normFeatures = matchingFeatureList[0].features;
+                    } else {
+                        normFeatures = currNorm.currData.features;
+                    }
+
+                    // See if normal features pass applied, non-somatic filters (ex: impact, effect, etc)
+                    let filteredNormFeatures = [];
+                    normFeatures.forEach((feature) => {
+                        feature.isInherited = true;   // Need to mark all normal variants as inherited from null
+                        normalContainsLookup[feature.id] = true;
+                        if (feature.passesFilters === true) {
+                            filteredNormFeatures.push(feature);
+                            inheritedVarLookup[feature.id] = true;
+                            passesOtherFiltersLookup[feature.id] = true;
+                        }
+                    });
+
+                    // See if normal features pass somatic criteria
+                    for (i = 0; i < filteredNormFeatures.length; i++) {
+                        let currFeat = filteredNormFeatures[i];
+                        let passesNormalCount = false;
+
+                        // If we're pulling back from annotateSomaticVars, we've already filtered based on counts
+                        if (globalMode) {
+                            passesNormalCount = true;
+                        } else {
+                            passesNormalCount = self.matchAndPassFilter(self.getFilterField('somatic', 'normalAltCount', 'currLogic'), currFeat.genotypeAltCount, self.getFilterField('somatic', 'normalAltCount', 'currVal'));
+                        }
+                        let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
+                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField('somatic', 'normalAltFreq', 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField('somatic', 'normalAltFreq', 'currVal'), 'normalAltFreq'));
+                        if (currFeat.id != null && passesNormalCount && passesNormalAf) {
+                            passesNormalFiltersLookup[currFeat.id] = true;
+                        }
+                    }
+                }
+            });
+
+            // Mark somatic and inherited variants
+            let coverageCheckFeatures = [];
+            for (i = 0; i < tumorSamples.length; i++) {
+                let currTumor = tumorSamples[i];
+                if (globalMode || (currTumor.currData && currTumor.currData.features && currTumor.currData.features.length > 0)) {
+                    let tumorFeatures = [];
+                    if (globalMode) {
+                        let matchingFeatureList = featuresList.filter(list => {
+                            return list.name === currTumor.model.selectedSample;
+                        });
+                        tumorFeatures = matchingFeatureList[0].features;
+                    } else {
+                        tumorFeatures = currTumor.currData.features;
+                    }
+                    // Don't need to look at tumor features that don't pass other filters
+                    let filteredTumorFeatures = tumorFeatures.filter((feature) => {
+                        return feature.passesFilters === true;
+                    });
+                    filteredTumorFeatures.forEach((feature) => {
+                        let passesTumorCount = false;
+
+                        // If we're pulling back from annotateSomaticVars, we've already filtered based on counts
+                        if (globalMode) {
+                            passesTumorCount = true;
+                        } else {
+                            passesTumorCount = self.matchAndPassFilter(self.getFilterField('somatic', 'tumorAltCount', 'currLogic'), feature.genotypeAltCount, self.getFilterField('somatic', 'tumorAltCount', 'currVal'));
+                        }
+                        let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;
+                        let passesTumorAf = self.matchAndPassFilter(self.getFilterField('somatic', 'tumorAltFreq', 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField('somatic', 'tumorAltFreq', 'currVal'), 'tumorAltFreq'));
+
+                        if (passesNormalFiltersLookup[feature.id] && passesTumorAf && passesTumorCount) {
+                            // Found a somatic variant
+                            feature.isInherited = false;
+                            somaticVarLookup[feature.id] = true;
+                            (somaticVarMap[currTumor.model.selectedSample].features).push(feature);
+                            inheritedVarLookup[feature.id] = false;
+                        } else if (normalContainsLookup[feature.id] == null && passesTumorAf && passesTumorCount) {
+                            if (globalMode) {
+                                feature.isInherited = false;
+                                somaticVarLookup[feature.id] = true;
+                                (somaticVarMap[currTumor.model.selectedSample].features).push(feature);
+                                inheritedVarLookup[feature.id] = false;
+                            } else {
+                                coverageCheckFeatures.push({
+                                    'chrom': feature.chrom,
+                                    'start': feature.start,
+                                    'end': feature.end,
+                                    'id': feature.id
+                                });
+                            }
+                        } else if (passesOtherFiltersLookup[feature.id]) {
+                            // We have an inherited variant
+                            feature.isInherited = true;
+                            inheritedVarLookup[feature.id] = true;
+                        } else {
+                            // Else, we don't pass some sort of quality filter
+                            // Or we aren't in the normal lookup
+                            // Or we are in the normal lookup but we don't pass Tumor criteria
+
+                            feature.isInherited = null;
+                            inheritedVarLookup[feature.id] = false;
+
+                            // Have to mark actual variant in normal sample as null b/c that's what feature matrix tooltips look at
+                            if (normalContainsLookup[feature.id]) {
+                                normalSamples[0].model.variantIdHash[feature.id].isInherited = null;
+                            }
+                        }
+                    })
+                }
+            }
+            // If we're in global mode, we don't have the bandwidth to get reads for all vars at once
+            // Instead, these will be pulled in piece-meal like rnaseq/atacseq
+            if (globalMode) {
+                coverageCheckFeatures = [];
+            }
+            if (coverageCheckFeatures.length > 0) {
+                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckFeatures, self.translator.globalApp.COVERAGE_TYPE, false)
+                    .then((depthList) => {
+                        for (let i = 0; i < depthList.length; i++) {
+                            let feature = coverageCheckFeatures[i];
+                            // let depth = depthList[i];
+                            let depth = self.getMatchingDepth(feature.start, depthList);
+                            if (depth >= self.DEFAULT_QUALITY_FILTERING_CRITERIA['totalCountCutoff']) {
+                                // Have to check to see if all of the tumor samples have this variant
+                                tumorSamples.forEach((sample) => {
+                                    let tumorModel = sample.model;
+                                    let matchingFeature = tumorModel.variantIdHash[feature.id];
+                                    if (matchingFeature) {
+                                        matchingFeature.isInherited = false;
+                                        (somaticVarMap[tumorModel.selectedSample].features).push(feature);
+                                    }
+                                });
+                                somaticVarLookup[feature.id] = true;
+                                inheritedVarLookup[feature.id] = false;
+                            } else {
+                                feature.isInherited = null;
+                                inheritedVarLookup[feature.id] = false;  // Still need to mark this as false to display as undetermined in feature matrix
+                            }
+                            // Save the read count in the normal model for tooltip use so we don't have to access BAM again
+                            normalSamples[0].model.somaticVarCoverage.push(depthList[i]);
+                        }
+                        if (globalMode) {
+                            resolve(somaticVarMap);
+                        }
+                        resolve({'somaticLookup': somaticVarLookup, 'inheritedLookup': inheritedVarLookup});
+                    }).catch((error) => {
+                    reject('Something went wrong in promiseAnnotateVariantInheritance: ' + error);
+                })
+            } else {
+                if (globalMode) {
+                    resolve(somaticVarMap);
+                }
+                resolve({'somaticLookup': somaticVarLookup, 'inheritedLookup': inheritedVarLookup});
+            }
+        })
+    }
+
+
+    /* todo: old version, get rid of
     promiseAnnotateVariantInheritance(resultMap) {
         const self = this;
 
@@ -361,11 +556,28 @@ class FilterModel {
             }
         })
     }
+    */
+
+    getMatchingDepth(startCoord, depthList) {
+        let lastDepth = 0;
+        for (let i = 0; i < depthList.length; i++) {
+            let listStart = depthList[i][0];
+            let listDepth = depthList[i][1];
+            if (startCoord === listStart) {
+                lastDepth = listDepth;
+                break;
+            } else if (startCoord > listStart) {
+                break;
+            }
+            lastDepth = listDepth;
+        }
+        return lastDepth;
+    }
 
     matchAndPassFilter(logic, varVal, cutoffVal) {
         let passesFilter = false;
-        varVal = parseInt(varVal);
-        cutoffVal = parseInt(cutoffVal);
+        varVal = parseFloat(varVal);
+        cutoffVal = parseFloat(cutoffVal);
         switch (logic) {
             case '<': {
                 passesFilter = varVal < cutoffVal;
@@ -415,21 +627,22 @@ class FilterModel {
         // Get active filters
         let checkboxFilters = self.getCheckboxFilters();
 
-        for (let variant of variants) {
+        variants.forEach(variant => {
             // Innocent until proven guilty
             variant.passesFilters = true;
 
             // Checkbox filters
-            for (let filter of checkboxFilters) {
-                const field = filter[0];
-                const value = filter[1];
+            for (let i = 0; i < checkboxFilters.length; i++) {
+                let filter = checkboxFilters[i];
+                let field = filter[0];
+                let value = filter[1];
 
                 if (self.getVarField(variant, field) === value) {
                     variant.passesFilters = false;
                     break;
                 }
             }
-        }
+        });
     }
 
     /* Marks if filter is active or inactive. Used to control indicators in filter drawer. */
@@ -572,13 +785,15 @@ class FilterModel {
     /* Returns the value of the variant according to the field name argument.
      * Sometimes these need a bit of translating - if not, returns simple value according to key. */
     getVarField(variant, fieldName) {
-        if (!variant || variant[fieldName] == null) {
+        if (!variant) {
             console.log('Could not retrieve field from variant');
         } else {
             if (fieldName === 'impact') {
                 let impactObj = variant['highestImpactVep'];
                 let keys = Object.keys(impactObj);
                 return (impactObj && keys.length > 0) ? keys[0] : null;
+            } else if (variant[fieldName] == null) {
+                console.log('Could not retrieve field from variant');
             } else {
                 return variant[fieldName];
             }
@@ -611,7 +826,6 @@ class FilterModel {
         const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
         const qualPhrase = '(QUAL>' + somaticCriteria['qualCutoff'] + ')';
 
-        console.log(qualPhrase + '&&' + samplePhrase);
         return qualPhrase + '&&' + samplePhrase;
     }
 
@@ -626,6 +840,8 @@ class FilterModel {
             }
             normalPhrase += '(FORMAT/AO[' + idx + ':0]<=' + somaticCriteria['normalCountCutoff'];
             normalPhrase += '&FORMAT/DP[' + idx + ':0]>=' + somaticCriteria['totalReadCutoff'] + ')';
+            normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';
+            // todo: get rid of
             //normalPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]<=' + (somaticCriteria['normalAfCutoff']).toFixed(2);
         }
         return normalPhrase;
@@ -642,6 +858,7 @@ class FilterModel {
             }
             tumorPhrase += '(FORMAT/AO[' + idx + ':0]>=' + somaticCriteria['tumorCountCutoff'];
             tumorPhrase += '&FORMAT/DP[' + idx + ':0]>=' + somaticCriteria['totalReadCutoff'] + ')';
+            // todo: get rid of
             //tumorPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]>=' + (somaticCriteria['tumorAfCutoff']).toFixed(2);
         }
         return tumorPhrase;

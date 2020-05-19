@@ -888,10 +888,6 @@ class SampleModel {
 
     onBamUrlEntered(bamUrl, baiUrl, bamType, callback) {
         const self = this;
-        // self.coverageData = null; todo: do I really need to clear data
-        // self.rnaSeqData = null;
-        // self.atacSeqData= null;
-        // self.fbData = null;
 
         if (bamUrl == null || bamUrl === "") {
             self._markBamUrlEntered(bamType, false);
@@ -1186,7 +1182,7 @@ class SampleModel {
     }
 
     /* Gets coverage depth at a specific site. */
-    promiseGetBamDepthForVariants(featureList, bamType) {
+    promiseGetBamDepthForVariants(featureList, bamType, getRegion) {
         const self = this;
         return new Promise((resolve, reject) => {
             if (featureList.length === 0) {
@@ -1199,6 +1195,9 @@ class SampleModel {
 
             self.bam.getCoverageForRegion(featureList[0]['chrom'], bamType, featureList[0]['start'], featureList[featureList.length - 1]['end'], regions, null, null,
                 function (coverageForRegion, coverageForPoints) {
+                    if (getRegion) {
+                        resolve(coverageForRegion);
+                    }
                     if (coverageForPoints != null) {
                         resolve(coverageForPoints);
                     } else {
@@ -1780,12 +1779,10 @@ class SampleModel {
                             // and annotate them.
                             me._promiseVcfRefName(theGene.chr)
                                 .then(function () {
-                                    let samplesInFile = me._getSamplesToRetrieve();
+                                    let regions = me.getGeneModel().getFormattedGeneRegions({ 'gene' : theGene });
+                                    return me.vcf.promiseAnnotateSomaticVariants('', me.cohortModel.selectedSamples, regions);
 
-                                    // todo: compose region param w/ current gene
-                                    let regions = [];
-                                    return me.vcf.promiseAnnotateSomaticVariants('', samplesInFile, regions);
-
+                                    //let samplesInFile = me._getSamplesToRetrieve();
                                     // return me.vcf.promiseGetVariants(
                                     //     me.getVcfRefName(theGene.chr),
                                     //     theGene,
