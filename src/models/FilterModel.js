@@ -274,6 +274,7 @@ class FilterModel {
                     normFeatures.forEach((feature) => {
                         feature.isInherited = true;   // Need to mark all normal variants as inherited from null
                         normalContainsLookup[feature.id] = true;
+                        // todo: not sure this is filled in yet when doing global somatic annotation
                         if (feature.passesFilters === true) {
                             filteredNormFeatures.push(feature);
                             inheritedVarLookup[feature.id] = true;
@@ -302,7 +303,7 @@ class FilterModel {
             });
 
             // Mark somatic and inherited variants
-            let coverageCheckFeatures = [];
+            let coverageCheckFeatures = {};
             for (i = 0; i < tumorSamples.length; i++) {
                 let currTumor = tumorSamples[i];
                 if (globalMode || (currTumor.currData && currTumor.currData.features && currTumor.currData.features.length > 0)) {
@@ -344,12 +345,12 @@ class FilterModel {
                                 (somaticVarMap[currTumor.model.selectedSample].features).push(feature);
                                 inheritedVarLookup[feature.id] = false;
                             } else {
-                                coverageCheckFeatures.push({
+                                coverageCheckFeatures[feature.id] = {
                                     'chrom': feature.chrom,
                                     'start': feature.start,
                                     'end': feature.end,
                                     'id': feature.id
-                                });
+                                };
                             }
                         } else if (passesOtherFiltersLookup[feature.id]) {
                             // We have an inherited variant
@@ -374,33 +375,37 @@ class FilterModel {
             // If we're in global mode, we don't have the bandwidth to get reads for all vars at once
             // Instead, these will be pulled in piece-meal like rnaseq/atacseq
             if (globalMode) {
-                coverageCheckFeatures = [];
+                coverageCheckFeatures = {};
             }
-            if (coverageCheckFeatures.length > 0) {
-                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckFeatures, self.translator.globalApp.COVERAGE_TYPE, false)
-                    .then((depthList) => {
-                        for (let i = 0; i < depthList.length; i++) {
-                            let feature = coverageCheckFeatures[i];
-                            // let depth = depthList[i];
-                            let depth = self.getMatchingDepth(feature.start, depthList);
+            let coverageCheckList = Object.values(coverageCheckFeatures);
+            if (coverageCheckList.length > 0) {
+                const qualityCutoff = self.translator.globalApp.INDIV_QUALITY_CUTOFF;
+                // Check coverage in normal sample (todo: update for multiple normal samples in the future)
+                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckList, self.translator.globalApp.COVERAGE_TYPE, qualityCutoff)
+                    .then(coverageMap => {
+                        for (var featId in coverageMap) {
+                            let depth = coverageMap[featId];    // coverageMap respects order
                             if (depth >= self.DEFAULT_QUALITY_FILTERING_CRITERIA['totalCountCutoff']) {
-                                // Have to check to see if all of the tumor samples have this variant
+                                // Have to check to see if all of the tumor samples have this variant`
                                 tumorSamples.forEach((sample) => {
                                     let tumorModel = sample.model;
-                                    let matchingFeature = tumorModel.variantIdHash[feature.id];
+                                    let matchingFeature = tumorModel.variantIdHash[featId];
                                     if (matchingFeature) {
                                         matchingFeature.isInherited = false;
-                                        (somaticVarMap[tumorModel.selectedSample].features).push(feature);
+                                        (somaticVarMap[tumorModel.selectedSample].features).push(matchingFeature);
                                     }
                                 });
-                                somaticVarLookup[feature.id] = true;
-                                inheritedVarLookup[feature.id] = false;
+                                somaticVarLookup[featId] = true;
+                                inheritedVarLookup[featId] = false;
                             } else {
-                                feature.isInherited = null;
-                                inheritedVarLookup[feature.id] = false;  // Still need to mark this as false to display as undetermined in feature matrix
+                                let feature = coverageCheckList.filter(feat => {
+                                    return feat.id === featId;
+                                });
+                                feature[0].isInherited = null;
+                                inheritedVarLookup[featId] = false;  // Still need to mark this as false to display as undetermined in feature matrix
                             }
                             // Save the read count in the normal model for tooltip use so we don't have to access BAM again
-                            normalSamples[0].model.somaticVarCoverage.push(depthList[i]);
+                            normalSamples[0].model.somaticVarCoverage.push(coverageMap[featId]);
                         }
                         if (globalMode) {
                             resolve(somaticVarMap);

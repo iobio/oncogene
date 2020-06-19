@@ -1181,25 +1181,18 @@ class SampleModel {
         this.atacSeqData = null;
     }
 
-    /* Gets coverage depth at a specific site. */
-    promiseGetBamDepthForVariants(featureList, bamType, getRegion) {
+    /* Takes in a list of variants for which coverage is retrieved for, from a bam file.
+     * Returns an array in the same sorted order. */
+    promiseGetBamDepthForVariants(featureList, bamType, qualityCutoff) {
         const self = this;
         return new Promise((resolve, reject) => {
             if (featureList.length === 0) {
                 reject('No features to return depth for');
             }
-            let regions = [];
-            featureList.forEach((feature) => {
-                regions.push({name: feature.chrom, start: feature['start'] - 1, end: feature['end']});
-            });
-
-            self.bam.getCoverageForRegion(featureList[0]['chrom'], bamType, featureList[0]['start'], featureList[featureList.length - 1]['end'], regions, null, null,
-                function (coverageForRegion, coverageForPoints) {
-                    if (getRegion) {
-                        resolve(coverageForRegion);
-                    }
-                    if (coverageForPoints != null) {
-                        resolve(coverageForPoints);
+            self.bam.getFilteredCoverageForRegion(featureList, bamType, qualityCutoff,
+                function (countMap) {
+                    if (countMap) {
+                        resolve(countMap);
                     } else {
                         reject("Could not get coverage info for provided variant");
                     }
@@ -1207,7 +1200,6 @@ class SampleModel {
         });
     }
 
-    // todo: this PoC needs to be updated to include bamType
     getBamDepth(gene, selectedTranscript, bamType, callbackDataLoaded) {
         const me = this;
         if (!this.isBamLoaded(bamType)) {

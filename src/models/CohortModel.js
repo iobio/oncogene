@@ -850,23 +850,22 @@ class CohortModel {
 
                 self.assignCategoryOrders();
 
-                // var resultMap = null;
+                const qualityCutoff = self.globalApp.INDIV_QUALITY_CUTOFF;
                 let p1 = self.promiseLoadVariants(theGene, theTranscript, options)
                     .then(() => {
                         // Have to wait until each track is processed to add ptCov annotations
                         let geneObj = self.geneModel.geneObjects[theGene.gene_name];
                         // Get coverage point data (non-sampled) for somatic variants
                         self.getCanonicalModels().forEach(model => {
-                            model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.COVERAGE_TYPE)
-                                .then(coverage => {
-                                    for (let i = 0; i < coverage.length; i++) {
-                                        let featId = geneObj.somaticVariantList[i].id;
+                            model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.COVERAGE_TYPE, qualityCutoff)
+                                .then(coverageMap => {
+                                    for (var featId in coverageMap) {
                                         if (model.variantIdHash[featId]) {
-                                            model.variantIdHash[featId]['readPtCov'] = coverage[i][1];
+                                            model.variantIdHash[featId]['readPtCov'] = coverageMap[featId];
                                         } else {
                                             // We still want to add this data in, even if variant not reported in vcf
                                             // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                            model.variantIdHash[featId] = {'readPtCov': coverage[i][1]};
+                                            model.variantIdHash[featId] = {'readPtCov': coverageMap[featId]};
                                         }
                                     }
                                 }).catch(error => {
@@ -877,16 +876,15 @@ class CohortModel {
                         if (self.hasRnaSeqData) {
                             // Get rnaseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
-                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE)
-                                    .then(coverage => {
-                                        for (let i = 0; i < coverage.length; i++) {
-                                            let featId = geneObj.somaticVariantList[i].id;
+                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE, qualityCutoff)
+                                    .then(coverageMap => {
+                                        for (var featId in coverageMap) {
                                             if (model.variantIdHash[featId]) {
-                                                model.variantIdHash[featId]['rnaSeqPtCov'] = coverage[i][1];
+                                                model.variantIdHash[featId]['rnaSeqPtCov'] = coverageMap[featId];
                                             } else {
                                                 // We still want to add this data in, even if variant not reported in vcf
                                                 // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                                model.variantIdHash[featId] = {'rnaSeqPtCov': coverage[i][1]};
+                                                model.variantIdHash[featId] = {'rnaSeqPtCov': coverageMap[featId]};
                                             }
                                         }
                                     }).catch(error => {
@@ -898,16 +896,15 @@ class CohortModel {
                         if (self.hasAtacSeqData) {
                             // Get atacseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
-                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE)
-                                    .then(coverage => {
-                                        for (let i = 0; i < coverage.length; i++) {
-                                            let featId = geneObj.somaticVariantList[i].id;
+                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE, qualityCutoff)
+                                    .then(coverageMap => {
+                                        for (var featId in coverageMap) {
                                             if (model.variantIdHash[featId]) {
-                                                model.variantIdHash[featId]['atacSeqPtCov'] = coverage[i][1];
+                                                model.variantIdHash[featId]['atacSeqPtCov'] = coverageMap[featId];
                                             } else {
                                                 // We still want to add this data in, even if variant not reported in vcf
                                                 // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                                model.variantIdHash[featId] = {'atacSeqPtCov': coverage[i][1]};
+                                                model.variantIdHash[featId] = {'atacSeqPtCov': coverageMap[featId]};
                                             }
                                         }
                                     }).catch(error => {
@@ -962,7 +959,10 @@ class CohortModel {
 
                         self.promiseFilterVariants()
                             .then(() => {
-                                self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap)
+                                const globalMode = false;
+                                // todo: I think I need ptcoverage here before annotating inheritance
+                                // todo: currently not enforcing these promises be resolved...
+                                self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, null, globalMode)
                                     .then((inheritanceObj) => {
                                         let geneChanged = options.loadFromFlag;
                                         self.setLoadedVariants(theGene, null, geneChanged, options.loadFeatureMatrix);
@@ -1003,14 +1003,11 @@ class CohortModel {
             const regions = self.geneModel.getFormattedGeneRegions();
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, selectedSamples, regions)
                 .then((somaticVariants) => {
-                    let allFeatures = [];
+                    // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in somaticVariants) {
-                        allFeatures = allFeatures.concat(somaticVariants[objKey].features)
+                        self.filterModel.markFilteredVariants(somaticVariants[objKey].features);
                     }
-                    self.filterModel.markFilteredVariants(allFeatures);
                     self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, somaticVariants, true)
-
-                        // todo: need to return selSample: featureList map here instead of array of all combined features
                         .then((somaticVarList) => {
                             resolve(somaticVarList);
                         }).catch(error => {
@@ -1023,28 +1020,26 @@ class CohortModel {
     }
 
     /* Appends the readPtCov, rnaSeqPtCov, or atacSeqPtCov data to the selected variant within each sample model's variant hash.
-     * Assumes only a single variant provided. */
+     * Currently only works if a SINGLE variant provided. */
     promiseFetchSeqReads(selectedVariant, bamType) {
         const self = this;
         const ptCovKey = bamType === self.globalApp.COVERAGE_TYPE ? 'readPtCov' : bamType === self.globalApp.RNASEQ_TYPE ? 'rnaSeqPtCov' : 'atacSeqPtCov';
 
         return new Promise((resolve, reject) => {
             let promises = [];
+            const qualityCutoff = self.globalApp.INDIV_QUALITY_CUTOFF;
             self.getCanonicalModels().forEach(model => {
-                let p = model.promiseGetBamDepthForVariants([selectedVariant], bamType)
-                    .then(coverage => {
-                        if (coverage.length === 0) {
-                            resolve();
-                        }
+                let p = model.promiseGetBamDepthForVariants([selectedVariant], bamType, qualityCutoff)
+                    .then(coverageArr => {
                         if (model.variantIdHash[selectedVariant.id]) {
-                            model.variantIdHash[selectedVariant.id][ptCovKey] = coverage[0][1];
+                            model.variantIdHash[selectedVariant.id][ptCovKey] = coverageArr[0];
                         } else {
                             // We still want to add this data in, even if variant not reported in vcf
                             // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                            model.variantIdHash[selectedVariant.id] = {ptCovKey: coverage[0][1]};
+                            model.variantIdHash[selectedVariant.id] = {ptCovKey: coverageArr[0]};
                         }
-                        resolve();
                     }).catch(error => {
+                        console.log('Something went wrong fetching ' + bamType + ' depth for variant in model ' + model.selectedSample);
                         reject(error);
                     });
                 promises.push(p);

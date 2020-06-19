@@ -249,6 +249,85 @@ export default class bamiobio {
         });
     }
 
+    /* Retrieves number of reads covering that position from the provided bam source, that pass the provided mapping quality argument.
+     * Takes in an array of regions to check coverage for, and returns an array of corresponding length with coverage counts. */
+    getFilteredCoverageForRegion(featureList, bamType, qualityCutoff, callback) {
+        const me = this;
+
+        // Get correct source
+        let bamSource = {};
+        if (bamType === me.globalApp.COVERAGE_TYPE) {
+            bamSource.bamUrl = me.coverageBam;
+            bamSource.baiUrl = me.coverageBai;
+        } else if (bamType === me.globalApp.RNASEQ_TYPE) {
+            bamSource.bamUrl = me.rnaSeqBam;
+            bamSource.baiUrl = me.rnaSeqBai;
+        } else if (bamType === me.globalApp.ATACSEQ_TYPE) {
+            bamSource.bamUrl = me.atacSeqBam;
+            bamSource.baiUrl = me.atacSeqBai;
+        } else {
+            console.log("Need to provide bam type to getFilteredCoverageForRegion");
+        }
+
+        // Get transformed chrom name (build dep)
+        let trRefName = null;
+        const ref = featureList[0].chrom;
+        me._transformRefName(ref, bamType, function(refName) {
+            trRefName = refName;
+        });
+
+        // Get bounding region for all features & populate regions argument
+        let regions = [];
+        let regionStart = featureList[0].start;
+        let regionEnd = -1;
+        featureList.forEach(feat => {
+            if (feat.start < regionStart)
+                regionStart = feat.start;
+            if (feat.end > regionEnd)
+                regionEnd = feat.end;
+            // todo: other call is from start -1 to start: not sure if coverage can handle small ins/del or just snps
+            regions.push({name: trRefName, start: feat.start - 1, end: feat.end})
+        });
+
+        // Call command
+        let cmd = me.endpoint.getBamCoverage(bamSource, trRefName, regionStart, regionEnd,
+            regions, featureList.length, false, false, qualityCutoff);
+        let countData = "";
+        cmd.on('data', function (data) {
+            if (data == null) {
+                return;
+            }
+            countData += data;
+        });
+        cmd.on('end', function () {
+            if (countData !== "") {
+                let countMap = {};
+                let intLines = countData.split('\n');
+                // Pop off last empty line
+                intLines.pop();
+                // Count data in respective order as fed in
+                for (let i = 0; i < intLines.length; i++) {
+                    let line = intLines[i];
+                    if (!line.startsWith('#')) {
+                        let data = line.split("\t");
+                        const count = parseInt(data[1]);
+                        countMap[featureList[i-1].id] = count;  // Account for first #specific_points line
+                    } else if (line.startsWith('#red')) {
+                        // we don't care about reduced points for coverage of entire region
+                        break;
+                    }
+                }
+                callback(countMap);
+            } else {
+                console.log('Problem retrieving filtered counts: no count data returned');
+            }
+        });
+        cmd.on('error', function (error) {
+            console.log(error);
+        });
+        cmd.run();
+    }
+
     /*
      * SETTERS
      */
@@ -298,6 +377,8 @@ export default class bamiobio {
     /*
      * OTHERS
      */
+
+    getFilteredBamReadsCount
 
     /* Checks that both the bam and bai urls can be fetched. */
     checkBamBaiUrls(url, baiUrl, ref, callback) {

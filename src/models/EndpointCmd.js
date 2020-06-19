@@ -446,19 +446,24 @@ export default class EndpointCmd {
         }
     }
 
-    getBamCoverage(bamSource, refName, regionStart, regionEnd, regions, maxPoints, useServerCache, serverCacheKey) {
+    /* Returns an array of position: point coverage objects based on a python program by TDS.
+     * If qualityCutoff is provided, only includes reads that meet or exceed that MAPQ value. */
+    getBamCoverage(bamSource, refName, regionStart, regionEnd, regions, maxPoints, useServerCache, serverCacheKey, qualityCutoff) {
         if (this.gruBackend) {
             const url = bamSource.bamUrl;
             const samtoolsRegion = {refName, start: regionStart, end: regionEnd};
             const indexUrl = bamSource.baiUrl;
             maxPoints = maxPoints ? maxPoints : 0;
 
-            return this.api.streamCommand('alignmentCoverage', {
+            // todo: change to api once PR merged
+            return this.devApi.streamCommand('alignmentCoverage', {
                 url,
                 indexUrl,
                 samtoolsRegion,
                 maxPoints,
-                coverageRegions: regions
+                coverageRegions: regions,
+                qualityCutoff
+
             });
         } else {
             const me = this;
@@ -538,9 +543,9 @@ export default class EndpointCmd {
         if (this.gruBackend) {
             const url = bamUrl;
             const indexUrl = baiUrl;
-            const region = ref + ':1-2'; // TODO: THIS NEEDS TO BE DYNAMIC FOR GRCH38 CHR1 instead of 1
+            const region = ref + ':1-2';
 
-            return this.devApi.streamCommand('checkBamBai', {
+            return this.api.streamCommand('checkBamBai', {
                 url,
                 indexUrl,
                 region

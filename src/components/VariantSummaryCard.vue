@@ -439,6 +439,7 @@
                     this.$emit('fetch-reads', this.cohortModel.globalApp.COVERAGE_TYPE);
                     this.$refs.coverageBarFeatureViz.clear();
                 } else if (this.$refs.coverageBarFeatureViz) {
+                    this.$refs.coverageBarFeatureViz.clear();
                     this.$refs.coverageBarFeatureViz.drawCharts(this.coverageCounts);
                 }
             },
@@ -466,6 +467,7 @@
                     this.$emit('fetch-reads', this.cohortModel.globalApp.RNASEQ_TYPE);
                     this.$refs.rnaSeqBarFeatureViz.clear();
                 } else if (this.$refs.rnaSeqBarFeatureViz) {
+                    this.$refs.rnaSeqBarFeatureViz.clear();
                     this.$refs.rnaSeqBarFeatureViz.drawCharts(this.rnaSeqCounts);
                 }
             },
@@ -493,6 +495,7 @@
                     this.$emit('fetch-reads', this.cohortModel.globalApp.ATACSEQ_TYPE);
                     this.$refs.atacSeqBarFeatureViz.clear();
                 } else if (this.$refs.atacSeqBarFeatureViz) {
+                    this.$refs.atacSeqBarFeatureViz.clear();
                     this.$refs.atacSeqBarFeatureViz.drawCharts(this.atacSeqCounts);
                 }
             },

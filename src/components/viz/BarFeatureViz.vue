@@ -69,11 +69,11 @@
         methods: {
             drawCharts(updatedCounts) {
                 const self = this;
+                self.showLoader = true;
                 let counts = updatedCounts ? updatedCounts : self.counts;
 
                 // Don't draw charts until we have counts
                 if (counts == null || Object.values(counts)[0] < 0) {
-                    self.showLoader = true;
                     return;
                 }
                 self.showLoader = false;
@@ -120,12 +120,12 @@
                 }
             }
         },
-        watch: {
-            selectedVariant: function () {
-                if (this.selectedVariant)
-                    this.drawCharts();
-            }
-        },
+        // watch: {
+        //     selectedVariant: function () {
+        //         if (this.selectedVariant)
+        //             this.drawCharts();
+        //     }
+        // },
         mounted: function() {
             this.drawCharts();
         }

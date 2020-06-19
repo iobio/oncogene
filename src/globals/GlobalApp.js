@@ -91,6 +91,8 @@ class GlobalApp {
     this.COVERAGE_TYPE = 'coverage';
     this.RNASEQ_TYPE = 'rnaSeq';
     this.ATACSEQ_TYPE = 'atacSeq';
+
+    this.INDIV_QUALITY_CUTOFF = 10; // ~99% assurance of read alignment
   }
 
     getClinvarUrl(build, forVizTrack = false) {
