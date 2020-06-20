@@ -118,6 +118,9 @@
                 } else {
                     return maxTicks;
                 }
+            },
+            setLoader(isLoading) {
+                this.showLoader = isLoading;
             }
         },
         // watch: {

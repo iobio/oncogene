@@ -623,8 +623,9 @@
                 }
             },
             fetchSeqReads: function(bamType) {
-                console.log('About to fetch seq reads');
                 const self = this;
+                const isLoading = true;
+                self.$refs.variantSummaryCardRef.markSeqChartsLoading(bamType, isLoading);
                 if (self.selectedVariant) {
                     self.cohortModel.promiseFetchSeqReads(self.selectedVariant, bamType)
                         .then(() => {

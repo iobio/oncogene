@@ -1030,13 +1030,15 @@ class CohortModel {
             const qualityCutoff = self.globalApp.INDIV_QUALITY_CUTOFF;
             self.getCanonicalModels().forEach(model => {
                 let p = model.promiseGetBamDepthForVariants([selectedVariant], bamType, qualityCutoff)
-                    .then(coverageArr => {
-                        if (model.variantIdHash[selectedVariant.id]) {
-                            model.variantIdHash[selectedVariant.id][ptCovKey] = coverageArr[0];
-                        } else {
-                            // We still want to add this data in, even if variant not reported in vcf
-                            // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                            model.variantIdHash[selectedVariant.id] = {ptCovKey: coverageArr[0]};
+                    .then(coverageMap => {
+                        for (var featId in coverageMap) {
+                            if (model.variantIdHash[featId]) {
+                                model.variantIdHash[featId][ptCovKey] = coverageMap[featId];
+                            } else {
+                                // We still want to add this data in, even if variant not reported in vcf
+                                // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                                model.variantIdHash[selectedVariant.id] = {ptCovKey: coverageMap[featId]};
+                            }
                         }
                     }).catch(error => {
                         console.log('Something went wrong fetching ' + bamType + ' depth for variant in model ' + model.selectedSample);

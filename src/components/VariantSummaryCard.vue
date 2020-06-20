@@ -415,6 +415,15 @@
                     this.setCoverageCounts();
                 }
             },
+            markSeqChartsLoading: function(bamType, isLoading) {
+                if (bamType === this.cohortModel.globalApp.RNASEQ_TYPE) {
+                    this.updateRnaSeqLoader(isLoading);
+                } else if (bamType === this.cohortModel.globalApp.ATACSEQ_TYPE) {
+                    this.updateAtacSeqLoader(isLoading);
+                } else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
+                    this.updateCoverageLoader(isLoading);
+                }
+            },
             setCoverageCounts: function() {
                 // Get coverage counts from each sample
                 let map = {};
@@ -499,6 +508,15 @@
                     this.$refs.atacSeqBarFeatureViz.drawCharts(this.atacSeqCounts);
                 }
             },
+            updateRnaSeqLoader: function(isLoading) {
+                this.$refs.rnaSeqBarFeatureViz.setLoader(isLoading);
+            },
+            updateAtacSeqLoader: function(isLoading) {
+                this.$refs.atacSeqBarFeatureViz.setLoader(isLoading);
+            },
+            updateCoverageLoader: function(isLoading) {
+                this.$refs.coverageBarFeatureViz.setLoader(isLoading);
+            }
         },
         mounted: function() {
             this.$emit('summary-mounted');
