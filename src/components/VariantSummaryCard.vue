@@ -204,6 +204,7 @@
                              :impactColor="impactColor"
                              :type="variantType"
                              :refAlt="variantRefAlt"
+                             :aaText="variantAaChange"
                              :clinVarText="clinVarText"
                              :clinVarColor="clinVarColor"
                              :cosmicText="cosmicText"
@@ -344,6 +345,16 @@
                     return this.variant.ref + '->' + this.variant.alt;
                 }
                 return "-";
+            },
+            variantAaChange: function() {
+                if (this.variant != null && this.variant.vepAminoAcids) {
+                    let changeString = Object.values(this.variant.vepAminoAcids)[0];
+                    let acids = changeString.split('/');
+                    let expectAa = this.cohortModel.globalApp.convertAa(acids[0]);
+                    let actualAa = this.cohortModel.globalApp.convertAa(acids[1]);
+                    return expectAa + '->' + actualAa;
+                }
+                return "N/A";
             },
             clinVarText: function () {
                 if (this.variantInfo != null && this.variantInfo.clinvarSig != null)

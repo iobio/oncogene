@@ -136,9 +136,6 @@ export default class EndpointCmd {
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
         if (this.gruBackend) {
-            // todo: renamed getSomaticVar -> annotateSomaticVar + param updates
-            // todo: put in PR to gru
-
             cmd = me.devApi.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,

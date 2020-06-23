@@ -12,66 +12,6 @@
 
 <template>
     <v-flex xs12>
-<!--        <v-layout row>-->
-<!--            <v-flex xs12 class="field-label-header" style="text-align: left; margin-top: 5px">Cohort Details-->
-<!--            </v-flex>-->
-<!--        </v-layout>-->
-<!--        <v-layout row>-->
-<!--            <v-flex xl3 lg4 md6 class="summary-field-label">-->
-<!--                <span>Raw p-value:</span>-->
-<!--                <v-menu open-on-hover offset-y transition="slide-y-transition" max-width="300px">-->
-<!--                    <v-btn flat icon small color="cohortBlue" slot="activator" class="info-button">-->
-<!--                        <v-icon small>info_outline</v-icon>-->
-<!--                    </v-btn>-->
-<!--                    <v-card>-->
-<!--                        <v-card-title style="font-family: Poppins; font-size: 16px; font-weight: 500; padding-top: 2px">-->
-<!--                            Raw p-value-->
-<!--                        </v-card-title>-->
-<!--                        <v-divider></v-divider>-->
-<!--                        <v-card-text>-->
-<!--                            This value represents statistically-significant enrichment, with values closer to-->
-<!--                            zero indicating a higher amount of enrichment of a variant within the subset cohort relative-->
-<!--                            to the larger proband group. This number is calculated via a Cochran Armitage Trend Test.-->
-<!--                        </v-card-text>-->
-<!--                    </v-card>-->
-<!--                </v-menu>-->
-<!--            </v-flex>-->
-<!--            <v-flex xl7 md6 v-bind:class="{hide: loadingExtraAnnotations === true}" class="cohort-summary-field-value">-->
-<!--                <span>{{ pValueInfo }}</span>-->
-<!--            </v-flex>-->
-<!--            <div class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">-->
-<!--                <img src="../../../assets/images/wheel.gif">-->
-<!--            </div>-->
-<!--        </v-layout>-->
-<!--        <v-layout row>-->
-<!--            <v-flex xl3 lg4 md6 class="summary-field-label">-->
-<!--                <span>-log<sub>10</sub>(p-val):</span>-->
-<!--                <v-menu open-on-hover offset-y transition="slide-y-transition" max-width="300px">-->
-<!--                    <v-btn text icon small color="appColor" slot="activator" class="info-button">-->
-<!--                        <v-icon small>info_outline</v-icon>-->
-<!--                    </v-btn>-->
-<!--                    <v-card>-->
-<!--                        <v-card-title style="font-family: Poppins; font-size: 16px; font-weight: 500; padding-top: 2px">-->
-<!--                            -log<sub>10</sub>(p-value)-->
-<!--                        </v-card-title>-->
-<!--                        <v-divider></v-divider>-->
-<!--                        <v-card-text>-->
-<!--                            This value represents statstically-significant enrichment, with higher values indicating-->
-<!--                            a higher amount of enrichment of a variant within the subset cohort relative to the-->
-<!--                            larger proband group. This number is calculated by taking the -log(base 10) of the-->
-<!--                            raw p-value above, and is the y-coordinate by which the variants are displayed-->
-<!--                            within the cohort track.-->
-<!--                        </v-card-text>-->
-<!--                    </v-card>-->
-<!--                </v-menu>-->
-<!--            </v-flex>-->
-<!--            <v-flex lg7 md6 v-bind:class="{hide: loadingExtraAnnotations === true}" class="cohort-summary-field-value">-->
-<!--                <span>{{ log10pValueInfo }}</span>-->
-<!--            </v-flex>-->
-<!--            <div class="loader" v-bind:class="{ hide: loadingExtraAnnotations === false }">-->
-<!--                <img src="/src/assets/images/wheel.gif">-->
-<!--            </div>-->
-<!--        </v-layout>-->
         <v-layout row style="padding-top: 10px">
             <v-flex xs12 class="field-label-header" style="text-align: left">Annotation Details</v-flex>
         </v-layout>
@@ -176,10 +116,10 @@
                     <img src="../../assets/images/wheel.gif">
                 </div>
             </v-flex>
-            <v-flex xs6 md2 class="summary-field-label">COSMIC:</v-flex>
+            <v-flex xs6 md2 class="summary-field-label">AA:</v-flex>
             <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>
-                    {{ cosmicText || '-' }}
+                    {{ aaText || '-' }}
                 </span>
             </v-flex>
             <div class="loader" v-if="loadingExtraAnnotations">
@@ -198,10 +138,10 @@
                     <img src="../../assets/images/wheel.gif">
                 </div>
             </v-flex>
-            <v-flex xs6 md2 class="summary-field-label">REVEL:</v-flex>
+            <v-flex xs6 md2 class="summary-field-label">COSMIC:</v-flex>
             <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>
-                    {{ revelText || '-' }}
+                    {{ cosmicText || '-' }}
                 </span>
             </v-flex>
             <v-flex xs5 md4 v-if="loadingExtraAnnotations">
@@ -235,6 +175,10 @@
                 type: String
             },
             refAlt: {
+                default: "",
+                type: String
+            },
+            aaText: {
                 default: "",
                 type: String
             },
