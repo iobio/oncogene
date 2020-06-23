@@ -31,8 +31,15 @@
                         <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#ebebeb' : 'transparent'}">
                             <v-row>
                                 <template class="d-inline">
-                                    <v-icon color="primary" v-show="!isSelectedGene(geneObj)" @click="loadGene(geneObj)">reply</v-icon>
-                                    <v-icon color="secondary" v-show="isSelectedGene(geneObj)">double_arrow</v-icon>
+<!--                                    <v-icon color="primary" v-show="!isSelectedGene(geneObj)" @click="loadGene(geneObj)">reply</v-icon>-->
+<!--                                    <v-icon color="secondary" v-show="isSelectedGene(geneObj)">double_arrow</v-icon>-->
+                                     <v-btn small
+                                            outlined
+                                            color="primary"
+                                            :disabled="isSelectedGene(geneObj)"
+                                            @click="loadGene(geneObj)"
+                                            style="padding-left: 3px; padding-right: 3px; margin-right: 5px">
+                                        <v-icon color="primary">reply</v-icon>Load</v-btn>
                                     <div style="padding-left: 5px; padding-top: 5px; padding-right: 5px; font-size: 17px">
                                         {{ getGeneText(geneObj) }}
                                     </div>
