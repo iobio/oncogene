@@ -313,7 +313,7 @@ export default function vcfiobio(theGlobalApp) {
     exports.ignoreErrorMessage = function (error) {
         var ignore = false;
         ignoreMessages.forEach(function (regExp) {
-            if (error.match(regExp)) {
+            if (error && error.text && error.text.match(regExp)) {
                 ignore = true;
             }
         });
@@ -324,7 +324,7 @@ export default function vcfiobio(theGlobalApp) {
         var message = null;
         for (var key in errorMessageMap) {
             var errMsg = errorMessageMap[key];
-            if (message == null && error.match(errMsg.regExp)) {
+            if (message == null && error && error.text && error.text.match(errMsg.regExp)) {
                 message = errMsg.message;
             }
         }

@@ -7,17 +7,33 @@
         >
             <!--Static main page-->
             <v-layout>
+                <v-flex xs3 v-if="dataEntered">
+                    <v-navigation-drawer absolute left permanent>
+                            <v-card class="px-0" style="overflow: scroll">
+                                <!--todo: put in progress loading text here + glyph-->
+                                <somatic-genes-card
+                                        ref="somaticGenesCard"
+                                        :rankedGeneList="rankedGeneList"
+                                        :selectedGeneName="selectedGeneName"
+                                        :totalSomaticVarCount="totalSomaticVarCount"
+                                        @variant-hover="onCohortVariantHover"
+                                        @variant-hover-exit="onCohortVariantHoverEnd"
+                                        @variant-selected="onCohortVariantClick"
+                                        @gene-selected-from-list="onGeneSelected">
+                                </somatic-genes-card>
+                            </v-card>
+                    </v-navigation-drawer>
+                </v-flex>
                 <Welcome v-if="!dataEntered && !debugMode"
                          :d3="d3"
                          :cohortModel="cohortModel"
                          :welcomeWidth="screenWidth"
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
-                         @upload-config="$emit('upload-config')"
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-flex xs9 v-if="dataEntered || debugMode">
+                <v-flex xs6 v-if="dataEntered || debugMode">
                     <v-card outlined :height="700">
                         <variant-card
                                 ref="variantCardRef"
@@ -57,10 +73,10 @@
                     <v-card class="px-0" style="overflow: scroll">
                         <v-tabs v-model="selectedTab" class="px-1">
                             <v-tabs-slider style="padding-left: 10px" color="primary"></v-tabs-slider>
-                            <v-tab href="#genes-tab">
-                                Ranked Genes
-                                <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
-                            </v-tab>
+<!--                            <v-tab href="#genes-tab">-->
+<!--                                Ranked Genes-->
+<!--                                <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>-->
+<!--                            </v-tab>-->
                             <v-tab href="#summary-tab">
                                 Summary
                                 <v-icon style="margin-bottom: 0; padding-left: 5px">bar_chart</v-icon>
@@ -73,22 +89,22 @@
 <!--                                History-->
 <!--                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
 <!--                            </v-tab>-->
-                            <v-tab-item
-                                    :key="'genesTab'"
-                                    :id="'genes-tab'">
-                                <v-container>
-                                    <somatic-genes-card
-                                            ref="somaticGenesCard"
-                                            :rankedGeneList="rankedGeneList"
-                                            :selectedGeneName="selectedGeneName"
-                                            :totalSomaticVarCount="totalSomaticVarCount"
-                                            @variant-hover="onCohortVariantHover"
-                                            @variant-hover-exit="onCohortVariantHoverEnd"
-                                            @variant-selected="onCohortVariantClick"
-                                            @gene-selected-from-list="onGeneSelected">
-                                    </somatic-genes-card>
-                                </v-container>
-                            </v-tab-item>
+<!--                            <v-tab-item-->
+<!--                                    :key="'genesTab'"-->
+<!--                                    :id="'genes-tab'">-->
+<!--                                <v-container>-->
+<!--                                    <somatic-genes-card-->
+<!--                                            ref="somaticGenesCard"-->
+<!--                                            :rankedGeneList="rankedGeneList"-->
+<!--                                            :selectedGeneName="selectedGeneName"-->
+<!--                                            :totalSomaticVarCount="totalSomaticVarCount"-->
+<!--                                            @variant-hover="onCohortVariantHover"-->
+<!--                                            @variant-hover-exit="onCohortVariantHoverEnd"-->
+<!--                                            @variant-selected="onCohortVariantClick"-->
+<!--                                            @gene-selected-from-list="onGeneSelected">-->
+<!--                                    </somatic-genes-card>-->
+<!--                                </v-container>-->
+<!--                            </v-tab-item>-->
                             <v-tab-item
                                     :key="'summaryTab'"
                                     :id="'summary-tab'">
@@ -221,7 +237,7 @@
                 geneRegionStart: null,
                 geneRegionEnd: null,
                 lastClickCard: null,
-                selectedTab: 'genes-tab',
+                selectedTab: 'summary-tab',
                 totalSomaticVarCount: -1,
 
                 // models & model data
@@ -361,6 +377,13 @@
                     });
                     // Tab to summary card
                     self.selectedTab = 'summary-tab';
+
+                    // Hide banner
+                    if (self.$refs.variantSummaryCardRef) {
+                        self.$refs.variantSummaryCardRef.forEach(ref => {
+                            ref.hideGetStartedBanner();
+                        })
+                    }
                 }
             },
             onCohortVariantHover: function (variant, sourceComponent) {

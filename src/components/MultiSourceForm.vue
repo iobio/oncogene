@@ -157,6 +157,7 @@
             checkBam: function (modelInfoIdx, bamUrl, baiUrl) {
                 const self = this;
                 return new Promise((resolve) => {
+                    self.$emit('hide-alerts');
                     self.displayLoader = true;
                     self.cohortModel.sampleModelUtil.onBamUrlEntered(bamUrl, baiUrl, self.dataType, function (success) {
                         self.displayLoader = false;
@@ -174,6 +175,7 @@
             checkCnv: function (modelInfoIdx, cnvUrl) {
                 const self = this;
                 return new Promise((resolve) => {
+                    self.$emit('hide-alerts');
                     self.displayLoader = true;
                     self.modelInfoList[modelInfoIdx][self.verifiedKey] = true;
                     self.cohortModel.sampleModelUtil.onCnvUrlEntered(cnvUrl, function (success, errType) {

@@ -891,7 +891,6 @@ class SampleModel {
 
         if (bamUrl == null || bamUrl === "") {
             self._markBamUrlEntered(bamType, false);
-            self.bam = null;
             if (callback) {
                 callback(false)
             }
@@ -901,7 +900,6 @@ class SampleModel {
             self.bam.checkBamBaiUrls(bamUrl, baiUrl, ref, function (success, errorMsg) {
                 if (!success) {
                     self._markBamUrlEntered(bamType, false);
-                    self.bam = null;
                     console.log("Problem opening bam/bai file: " + errorMsg);
                 }
                 if (callback) {

@@ -18,7 +18,7 @@
 </style>
 
 <template>
-    <v-container height="100%" class="ranked-genes-card">
+    <v-container height="100%" width="100%" class="ranked-genes-card">
         <v-row justify="center">
             <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="appColor">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>
         </v-row>

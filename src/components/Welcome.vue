@@ -230,6 +230,7 @@
                                 </v-card-text>
                             </v-card>
                             <vcf-form v-if="userData[i-1] === 'vcf'"
+                                      ref="vcfFormRef"
                                       :cohortModel="cohortModel"
                                       :dataType="getDataType(userData[i-1])"
                                       :fileType="getFileType(userData[i-1])"
@@ -250,7 +251,9 @@
                                       @upload-fail="onUploadFail"
                                       @on-build-change="updateBuild"
                                       @show-alert="displayAlert"
-                                      @vcf-sample-names-updated="setVcfSampleNames">
+                                      @hide-alerts="hideAlerts"
+                                      @vcf-sample-names-updated="setVcfSampleNames"
+                                      @vcf-form-mounted="vcfFormMounted=true">
                             </vcf-form>
                             <multi-source-form v-else-if="userData[i-1] !== 'summary'"
                                                ref="multiRef"
@@ -263,7 +266,8 @@
                                                :maxSamples="MAX_SAMPLES"
                                                @update-status="updateMultiStatus"
                                                @upload-fail="onUploadFail"
-                                               @show-alert="displayAlert">
+                                               @show-alert="displayAlert"
+                                               @hide-alerts="hideAlerts">
                             </multi-source-form>
                             <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                                     width="70%">
@@ -375,6 +379,7 @@
                 clearGeneListFlag: true,
                 showUploadEntry: false,
                 configFile: [],
+                vcfFormMounted: false,
                 uploadedVcfUrl: null,
                 uploadedTbiUrl: null,
                 uploadedSelectedSamples: [],
@@ -706,6 +711,12 @@
             displayConfigUploadSlide: function () {
                 this.showUploadEntry = true;
             },
+            hideAlerts: function() {
+                this.errorText = '';
+                this.showError = false;
+                this.warningText = '';
+                this.showWarning = false;
+            },
             displayAlert: function(whichAlert, alertText) {
                 if (whichAlert === 'error') {
                     this.errorText = alertText;
@@ -819,6 +830,11 @@
                         self.clearGeneListFlag = false;
 
                         // Have to mount vcf slide to do actual checks
+                        if (self.vcfFormMounted && self.$refs.vcfFormRef) {
+                            self.$refs.vcfFormRef.forEach(ref => {
+                                ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
+                            });
+                        }
                         self.mountVcfSlide();
                     }
                 };

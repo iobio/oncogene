@@ -512,7 +512,7 @@ export default class bamiobio {
         const me = this;
         let ignore = false;
         me.ignoreMessages.forEach(function (regExp) {
-            if (error.match(regExp)) {
+            if (error && error.text && error.text.match(regExp)) {
                 ignore = true;
             }
         });
@@ -524,7 +524,7 @@ export default class bamiobio {
         let message = null;
         for (var key in me.errorMessageMap) {
             let errMsg = me.errorMessageMap[key];
-            if (message == null && error.match(errMsg.regExp)) {
+            if (message == null && error && error.text && error.text.match(errMsg.regExp)) {
                 message = errMsg.message;
             }
         }

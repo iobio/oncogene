@@ -179,6 +179,7 @@
                     self.$emit('clear-model-info', null);
                 }
                 return new Promise((resolve, reject) => {
+                    self.$emit('hide-alerts');
                     self.displayLoader = true;
                     self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames, hdrBuild) {
                         self.displayLoader = false;
@@ -189,7 +190,7 @@
                                 reject();
                             } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
                                 // Check for correct build
-                                if (hdrBuild !== self.selectedBuild) {
+                                if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
                                     let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
                                     self.$emit('show-alert', 'warning', warningText);
                                 }
@@ -213,7 +214,7 @@
                                     self.$emit('show-alert', 'error', alertText);
                                 }
                                 // Check that build is correct
-                                if (hdrBuild !== self.selectedBuild) {
+                                if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
                                     let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
                                     self.$emit('show-alert', 'warning', warningText);
                                     resolve();
@@ -292,6 +293,13 @@
             },
             isRemovable: function(i) {
                 return i > 1;
+            },
+            uploadConfigInfo: function(uploadedUrl, uploadedIndexUrl, uploadedBuild, uploadedSelectedSamples) {
+                this.url = uploadedUrl ? uploadedUrl : this.uploadedUrl;
+                this.indexUrl = uploadedIndexUrl ? uploadedIndexUrl: this.uploadedIndexUrl;
+                this.selectedBuild = uploadedBuild ? uploadedBuild : this.uploadedBuild;
+                const selectedSamples = uploadedSelectedSamples ? uploadedSelectedSamples : this.uploadedSelectedSamples;
+                this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
             }
         },
         watch: {
@@ -300,14 +308,12 @@
             }
         },
         mounted: function() {
+            // Coordinate with carousel to behave correctly for navigating then uploading
+            this.$emit('vcf-form-mounted');
+
             // Check to see if we have info uploaded
-            // NOTE: can't use $ref in Welcome component because of carousel mounting
-            if (this.uploadedUrl && this.uploadedIndexUrl && this.uploadedBuild) {
-                this.url = this.uploadedUrl;
-                this.indexUrl = this.uploadedIndexUrl;
-                this.selectedBuild = this.uploadedBuild;
-                this.onVcfUrlEntered(this.url, this.indexUrl, this.uploadedSelectedSamples);
-            }
+            // NOTE: vcf-form may or may not be mounted yet
+            this.uploadConfigInfo();
         }
     }
 </script>

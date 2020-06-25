@@ -57,7 +57,6 @@
                   :filterModel="filterModel"
                   :hoverTooltip="hoverTooltip"
                   :navbarHeight="navBarHeight"
-                  @upload-config="onUploadConfig"
                   @load-demo="onLoadDemo"
                   @gene-changed="onGeneChanged"
             >
@@ -155,9 +154,6 @@
                 } else {
                     self.globalApp.$('main.content .container').addClass("small");
                 }
-            },
-            onUploadConfig: function () {
-                alert('Upload config not implemented in app yet');
             },
             onLoadDemo: function () {
                 alert('Load demo not implemented in app yet');
