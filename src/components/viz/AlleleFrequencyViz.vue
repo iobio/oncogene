@@ -26,9 +26,7 @@
         name: 'allele-frequency-viz',
         data() {
             return {
-                bars: null,
-                barsDrawn: false,
-                waitingToFill: true
+                bars: null
             }
         },
         props: {
@@ -45,11 +43,6 @@
         },
         mounted: function () {
             this.drawAfBars();
-            if (this.waitingToFill) {
-                this.fillProgressBars();
-                this.waitingToFill = false;
-            }
-            this.barsDrawn = true;
         },
         methods: {
             drawAfBars() {
@@ -114,11 +107,7 @@
         },
         watch: {
             selectedVariant: function () {
-                if (this.barsDrawn) {
-                    this.fillProgressBars();
-                } else {
-                    this.waitingToFill = true;
-                }
+                this.fillProgressBars();
             },
         }
     }

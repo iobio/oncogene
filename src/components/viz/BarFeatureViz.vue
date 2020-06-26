@@ -123,12 +123,6 @@
                 this.showLoader = isLoading;
             }
         },
-        // watch: {
-        //     selectedVariant: function () {
-        //         if (this.selectedVariant)
-        //             this.drawCharts();
-        //     }
-        // },
         mounted: function() {
             this.drawCharts();
         }

@@ -452,8 +452,7 @@ export default class EndpointCmd {
             const indexUrl = bamSource.baiUrl;
             maxPoints = maxPoints ? maxPoints : 0;
 
-            // todo: change to api once PR merged
-            return this.devApi.streamCommand('alignmentCoverage', {
+            return this.api.streamCommand('alignmentCoverage', {
                 url,
                 indexUrl,
                 samtoolsRegion,

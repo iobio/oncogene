@@ -7,22 +7,20 @@
         >
             <!--Static main page-->
             <v-layout>
-                <v-flex xs3 v-if="dataEntered">
-                    <v-navigation-drawer absolute left permanent>
-                            <v-card class="px-0" style="overflow: scroll">
-                                <!--todo: put in progress loading text here + glyph-->
-                                <somatic-genes-card
-                                        ref="somaticGenesCard"
-                                        :rankedGeneList="rankedGeneList"
-                                        :selectedGeneName="selectedGeneName"
-                                        :totalSomaticVarCount="totalSomaticVarCount"
-                                        @variant-hover="onCohortVariantHover"
-                                        @variant-hover-exit="onCohortVariantHoverEnd"
-                                        @variant-selected="onCohortVariantClick"
-                                        @gene-selected-from-list="onGeneSelected">
-                                </somatic-genes-card>
-                            </v-card>
-                    </v-navigation-drawer>
+                <v-flex xs3 md2 v-if="dataEntered">
+                        <v-card class="px-0" style="overflow: scroll">
+                            <!--todo: put in progress loading text here + glyph-->
+                            <somatic-genes-card
+                                    ref="somaticGenesCard"
+                                    :rankedGeneList="rankedGeneList"
+                                    :selectedGeneName="selectedGeneName"
+                                    :totalSomaticVarCount="totalSomaticVarCount"
+                                    @variant-hover="onCohortVariantHover"
+                                    @variant-hover-exit="onCohortVariantHoverEnd"
+                                    @variant-selected="onCohortVariantClick"
+                                    @gene-selected-from-list="onGeneSelected">
+                            </somatic-genes-card>
+                        </v-card>
                 </v-flex>
                 <Welcome v-if="!dataEntered && !debugMode"
                          :d3="d3"
@@ -33,7 +31,7 @@
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-flex xs6 v-if="dataEntered || debugMode">
+                <v-flex xs6 md7 v-if="dataEntered || debugMode">
                     <v-card outlined :height="700">
                         <variant-card
                                 ref="variantCardRef"
@@ -110,6 +108,7 @@
                                     :id="'summary-tab'">
                                 <v-container>
                                     <variant-summary-card
+                                            v-if="selectedSamples"
                                             ref="variantSummaryCardRef"
                                             :sampleIds="sampleIds"
                                             :selectedSamples="selectedSamples"
@@ -380,9 +379,7 @@
 
                     // Hide banner
                     if (self.$refs.variantSummaryCardRef) {
-                        self.$refs.variantSummaryCardRef.forEach(ref => {
-                            ref.hideGetStartedBanner();
-                        })
+                        self.$refs.variantSummaryCardRef.hideGetStartedBanner();
                     }
                 }
             },

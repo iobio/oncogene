@@ -77,7 +77,7 @@
                                                 </v-btn>
                                             </v-row>
                                             <v-row :hidden="!showUploadEntry" justify="center" class="pa-3">
-                                                <v-file-input v-model="configFile" accept="text/json"
+                                                <v-file-input v-model="configFile" accept=".json"
                                                               label="Click to Select File"
                                                               @change="checkAndUploadConfig"></v-file-input>
                                             </v-row>
@@ -178,7 +178,7 @@
                                     Gene Loci Selections
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ geneListText }}
+                                    <p v-html="geneListText"></p>
                                 </v-card-text>
                             </v-card>
                             <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
@@ -472,8 +472,9 @@
                 geneListText: 'Using the provided list, oncogene.iobio will find somatic variants ' +
                     'and provide a ranked list of impactful loci for inspection. Each provided list contains ' +
                     'genes implicated in the corresponding type of cancer. If the type of cancer is ' +
-                    'unknown, or not provided in the dropdown, UCSF500 is a good place to start. ' +
-                    'Uploading your own list, or adding to the provided ones is also an option.',
+                    'unknown, or not provided in the dropdown, UCSF500 is a good place to start, or visit' +
+                    ' <a target="_blank" href="https://genepanel.iobio.io">genepanel.iobio.io</a>' +
+                    ' to curate your own custom list.',
                 reqSteps: [
                     {
                         step: 'variantType',
