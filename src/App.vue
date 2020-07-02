@@ -1,36 +1,9 @@
 <template>
     <v-app>
-        <v-app-bar app dark color=appColor>
+        <v-app-bar flat app dark color=appColor>
             <v-toolbar-title class="headline text-uppercase">
                 <span id="title">Oncogene.iobio</span>
             </v-toolbar-title>
-<!--            <v-toolbar-title style="padding-bottom:15px">-->
-<!--                <span id="beta-title">2.0</span>-->
-<!--            </v-toolbar-title>-->
-            <v-toolbar-items>
-                <v-autocomplete v-model="lookupGene"
-                                :items="allGeneNames"
-                                prepend-icon="search"
-                                :allow-overflow="false"
-                                outlined
-                                dense
-                                single-line
-                                :search-input="searchVal"
-                                :eager="true"
-                                :readonly="false"
-                                label="Enter gene..."
-                                style="padding-top: 10px; padding-left: 30px; font-family: Quicksand; color: white">
-                </v-autocomplete>
-                <div id="nav-chips" v-show="selectedGeneDisplay"
-                     style="text-align: center; padding-top: 3px; padding-left: 8px">
-                    <v-chip color="lightPrimary" class="app-toolbar-chip">
-                        {{ selectedGeneDisplay }}
-                    </v-chip>
-                    <v-chip color="lightPrimary" class="app-toolbar-chip">
-                        {{ selectedBuild }}
-                    </v-chip>
-                </div>
-            </v-toolbar-items>
             <v-spacer></v-spacer>
             <files-menu
                     v-if="cohortModel"
@@ -49,7 +22,7 @@
                 <span class="mr-2 ml-2">an iobio project</span>
             </v-btn>
         </v-app-bar>
-        <v-content>
+        <v-content style="background-color: #7f1010">
             <Home v-if="filterModel"
                   :d3="globalApp.d3"
                   :$="globalApp.$"
@@ -57,6 +30,7 @@
                   :filterModel="filterModel"
                   :hoverTooltip="hoverTooltip"
                   :navbarHeight="navBarHeight"
+                  :geneList="allGenes"
                   @load-demo="onLoadDemo"
                   @gene-changed="onGeneChanged"
             >
@@ -117,25 +91,10 @@
                 enteredGene: null,
 
                 // static data
-                allGenes: allGenesData,
-                allGeneNames: ['test', 'moo', 'oink'],
-                lookupGene: null,
-                searchVal: ''
+                allGenes: allGenesData
             }
         },
-        computed: {
-            // allGeneNames: function() {
-            //     let geneNames = ['test', 'oink', 'moo'];
-            //     // this.allGenes.forEach(geneObj => {
-            //     //     geneNames.push(geneObj.gene_name);
-            //     // });
-            //     return geneNames;
-            // }
-        },
         methods: {
-            filterGenes: function() {
-
-            },
             onLoadDemoData: function (loadAction) {
                 this.$emit("load-demo-data", loadAction);
             },
@@ -179,6 +138,7 @@
                 })
             },
             onGeneChanged: function(geneDisplay) {
+                // todo: can get rid of this with redesign
                 this.selectedGeneDisplay = geneDisplay;
                 this.selectedBuild = this.genomeBuildHelper.currentBuild.name;
                 this.dataLoaded = true;
@@ -308,6 +268,7 @@
     #title
         font-family: Quicksand
         font-weight: 300
+        padding-left: 20px
 
     #beta-title
         font-size: 14px

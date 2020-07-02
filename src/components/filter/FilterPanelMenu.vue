@@ -1,26 +1,32 @@
 <!--Adapted from gene.iobio and TDS 17Aug2018-->
 
 <style lang="sass">
+    .section-title
+        font-family: 'Quicksand'
+        color: white
+        background-color: #7f1010
+        padding-bottom: 5px
+
     .filter-settings-form
+        background-color: transparent !important
+
         .filter-category
             font-size: 18px
             font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif'
             vertical-align: top
-            color: $text-color
+            background-color: transparent
 
         .filter-title
             font-size: 14px
             font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif'
             vertical-align: top
             margin-left: 6px
-            color: $text-color
         svg
             width: 22px
             height: 18px
         .remove-custom-filter
             margin: 0px
             float: right
-            color: $text-color
 
         .recall-btn
             font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif'
@@ -30,11 +36,11 @@
         color: $app-color
 </style>
 
-<template>
-    <v-flex xs12 style="padding-top: 10px" class="filter-settings-form">
+<template class="pa-0">
+    <v-card flat tile dark width="100%" class="filter-settings-form mx-1">
         <div class="text-center px-1 py-1">
             <div>
-                <v-btn class="mx-1 recall-btn" color="secondary" v-if="recallCriteriaSet" @click="recallSomaticVariants">
+                <v-btn class="mx-1 recall-btn" color="brightPrimary" v-if="recallCriteriaSet" @click="recallSomaticVariants">
                     Recall Somatic Variants
                 </v-btn>
                 <v-btn class="mx-1 recall-btn" v-if="recallCriteriaSet" @click="clearRecallCriteria">
@@ -43,12 +49,13 @@
             </div>
         </div>
         <v-card flat
+                color="transparent"
                 v-for="category in filterModel.filterCategories"
                 :ref="category.name + 'ExpansionRef'"
                 :key="category.name"
                 :value="category.custom">
             <v-card-title class="filter-category px-0">
-                <v-icon small style="padding-left: 5px; padding-right: 5px" color="primary">
+                <v-icon small style="padding-left: 5px; padding-right: 5px" color="white">
                     {{category.icon}}
                 </v-icon>
                 {{ category.display }}
@@ -65,7 +72,7 @@
                     @filter-change="onFilterChange">
             </filter-panel>
         </v-card>
-    </v-flex>
+    </v-card>
 </template>
 
 

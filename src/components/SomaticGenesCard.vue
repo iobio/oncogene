@@ -4,60 +4,70 @@
     .ranked-genes-card
         font-size: 14px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
-        color: rgb(113,113,113)
         padding: 0
+        background-color: transparent
 
     .variant-text
         font-size: 15px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
         display: inline
         text-overflow: ellipsis
-        color: rgb(113,113,113)
         padding-left: 5px
 
 </style>
 
 <template>
-    <v-container height="100%" width="100%" class="ranked-genes-card">
-        <v-row justify="center">
-            <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="appColor">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>
-        </v-row>
+    <v-card flat
+            tile
+            dark
+            color="transparent"
+            width="100%"
+            class="ranked-genes-card">
+        <v-card-title class="section-title">
+            Ranked Genes
+        </v-card-title>
+<!--        <v-row justify="center">-->
+<!--        todo: move this to top nav bar?-->
+<!--            <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="white">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>-->
+<!--        </v-row>-->
         <v-container fluid grid-list-md style="overflow-y: scroll !important">
             <v-row justify="center">
-                <v-expansion-panels inset>
-                    <v-expansion-panel
+                <v-expansion-panels class="mx-1" style="background-color: transparent !important"
+                        inset
+                        v-if="rankedGeneList">
+                    <v-expansion-panel style="background-color: transparent"
                             v-for="(geneObj,i) in rankedGeneList"
                             :key="'gene-' + i">
-                        <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#ebebeb' : 'transparent'}">
+                        <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#965757' : 'transparent'}">
                             <v-row>
                                 <template class="d-inline">
-<!--                                    <v-icon color="primary" v-show="!isSelectedGene(geneObj)" @click="loadGene(geneObj)">reply</v-icon>-->
-<!--                                    <v-icon color="secondary" v-show="isSelectedGene(geneObj)">double_arrow</v-icon>-->
-                                     <v-btn small
-                                            outlined
-                                            color="primary"
-                                            :disabled="isSelectedGene(geneObj)"
-                                            @click="loadGene(geneObj)"
-                                            style="padding-left: 3px; padding-right: 3px; margin-right: 5px">
-                                        <v-icon color="primary">reply</v-icon>Load</v-btn>
-                                    <div style="padding-left: 5px; padding-top: 5px; padding-right: 5px; font-size: 17px">
-                                        {{ getGeneText(geneObj) }}
-                                    </div>
-                                    <v-avatar style="margin-top: 2px"
-                                            size="20"
-                                            color="somaticColor">
-                                        <span style="color: white; font-family: Quicksand; font-size: 15px">
-                                            {{getTotalVarCount(geneObj)}}
-                                        </span>
-                                    </v-avatar>
                                     <v-icon v-if="getHighCount(geneObj)>0" color="highColor">bookmark</v-icon>
                                     <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
                                     <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
                                     <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
+                                    <v-avatar style="margin-top: 3px; margin-left: 5px"
+                                              size="20"
+                                              color="somaticColor">
+                                        <span style="color: white; font-family: Quicksand; font-size: 15px">
+                                            {{getTotalVarCount(geneObj)}}
+                                        </span>
+                                    </v-avatar>
+                                    <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
+                                        {{ getGeneText(geneObj) }}
+                                    </div>
+                                    <v-btn small
+                                           outlined
+                                           color="brightPrimary"
+                                           v-show="!isSelectedGene(geneObj)"
+                                           @click="loadGene(geneObj)"
+                                           style="padding-left: 3px; padding-right: 3px; margin-left: 5px">
+                                        Load
+                                        <v-icon color="brightPrimary">arrow_right_alt</v-icon>
+                                    </v-btn>
                                 </template>
                             </v-row>
                         </v-expansion-panel-header>
-                        <v-expansion-panel-content>
+                        <v-expansion-panel-content style="background-color: transparent !important;">
                             <v-list dense>
                                 <v-list-item-group v-model="selectedVarIdx" color="primary">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
@@ -101,7 +111,7 @@
                 </v-expansion-panels>
             </v-row>
         </v-container>
-    </v-container>
+    </v-card>
 </template>
 
 <script>
@@ -111,7 +121,7 @@
         props: {
             rankedGeneList: {
                 type: Array,
-                default: () => { return []; }
+                default: () => { return null; }
             },
             selectedGeneName: {
                 type: String,

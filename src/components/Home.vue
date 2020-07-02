@@ -6,130 +6,70 @@
                 style="position: relative;"
         >
             <!--Static main page-->
-            <v-layout>
-                <v-flex xs3 md2 v-if="dataEntered">
-                        <v-card class="px-0" style="overflow: scroll">
-                            <!--todo: put in progress loading text here + glyph-->
-                            <somatic-genes-card
-                                    ref="somaticGenesCard"
-                                    :rankedGeneList="rankedGeneList"
-                                    :selectedGeneName="selectedGeneName"
-                                    :totalSomaticVarCount="totalSomaticVarCount"
-                                    @variant-hover="onCohortVariantHover"
-                                    @variant-hover-exit="onCohortVariantHoverEnd"
-                                    @variant-selected="onCohortVariantClick"
-                                    @gene-selected-from-list="onGeneSelected">
-                            </somatic-genes-card>
-                        </v-card>
-                </v-flex>
-                <Welcome v-if="!dataEntered && !debugMode"
-                         :d3="d3"
-                         :cohortModel="cohortModel"
-                         :welcomeWidth="screenWidth"
-                         :welcomeHeight="screenHeight"
-                         :navBarHeight="navBarHeight"
-                         @load-demo="$emit('load-demo')"
-                         @launched="onLaunch">
-                </Welcome>
-                <v-flex xs6 md7 v-if="dataEntered || debugMode">
-                    <v-card outlined :height="700">
-                        <variant-card
-                                ref="variantCardRef"
-                                v-for="model in sampleModelsToDisplay"
-                                :key="model.id"
-                                v-bind:class="[ { 'full-width': true}, model.id ]"
-                                :globalAppProp="globalApp"
-                                :sampleModel="model"
-                                :canonicalSampleIds="canonicalSampleIds"
-                                :classifyVariantSymbolFunc="model.classifyByImpact"
-                                :hoverTooltip="hoverTooltip"
-                                :selectedGene="selectedGene"
-                                :selectedTranscript="analyzedTranscript"
-                                :selectedVariant="selectedVariant"
-                                :regionStart="geneRegionStart"
-                                :regionEnd="geneRegionEnd"
-                                :width="screenWidth"
-                                :height="screenHeight"
-                                :showGeneViz="true"
-                                :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
-                                :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
-                                :geneVizShowXAxis="false"
-                                :annotationComplete="annotationComplete"
-                                :d3="d3"
-                                :$="$"
-                                @cohort-variant-click="onCohortVariantClick"
-                                @cohort-variant-hover="onCohortVariantHover"
-                                @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                                @variants-viz-change="onVariantsVizChange"
-                                @variants-filter-change="onVariantsFilterChange"
-                                @show-coverage-cutoffs="showCoverageCutoffs = true"
-                        >
-                        </variant-card>
-                    </v-card>
-                </v-flex>
-                <v-flex xs3 v-if="dataEntered || debugMode">
-                    <v-card class="px-0" style="overflow: scroll">
-                        <v-tabs v-model="selectedTab" class="px-1">
-                            <v-tabs-slider style="padding-left: 10px" color="primary"></v-tabs-slider>
-<!--                            <v-tab href="#genes-tab">-->
-<!--                                Ranked Genes-->
-<!--                                <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>-->
-<!--                            </v-tab>-->
-                            <v-tab href="#summary-tab">
-                                Summary
-                                <v-icon style="margin-bottom: 0; padding-left: 5px">bar_chart</v-icon>
+            <v-layout fill-height>
+                <v-flex md3 v-if="dataEntered || debugMode">
+                    <v-card flat
+                            tile
+                            id="nav-card"
+                            style="overflow: scroll; height: 100%; background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)">
+                        <v-toolbar style="background-color: transparent" flat class="mb-3">
+                            <v-toolbar-items class="justify-center">
+                                <v-autocomplete v-model="lookupGene"
+                                                @change="onGeneSelected"
+                                                :items="geneList"
+                                                :allow-overflow="false"
+                                                :eager="true"
+                                                :readonly="false"
+                                                item-text="gene_name"
+                                                item-value="gene_name"
+                                                label="Enter gene..."
+                                                prepend-icon="search"
+                                                color="white"
+                                                style="font-family: Quicksand"
+                                                filled
+                                                outlined
+                                                dense
+                                                single-line
+                                                dark>
+                                </v-autocomplete>
+                            </v-toolbar-items>
+                        </v-toolbar>
+                        <v-tabs show-arrows
+                                dark
+                                optional
+                                centered
+                                icons-and-text
+                                v-model="selectedTab"
+                                style="padding-top: 5px"
+                                background-color="transparent">
+                            <v-tabs-slider></v-tabs-slider>
+                            <v-tab href="#genes-tab" style="font-size: 10px">
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
                             </v-tab>
-                            <v-tab href="#filter-tab">
-                                Filters
-                                <v-icon style="margin-bottom: 0; padding-left: 5px">bubble_chart</v-icon>
+                            <v-tab href="#filter-tab" style="font-size: 10px">
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
                             </v-tab>
-<!--                            <v-tab href="#history-tab">-->
-<!--                                History-->
-<!--                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
-<!--                            </v-tab>-->
-<!--                            <v-tab-item-->
-<!--                                    :key="'genesTab'"-->
-<!--                                    :id="'genes-tab'">-->
-<!--                                <v-container>-->
-<!--                                    <somatic-genes-card-->
-<!--                                            ref="somaticGenesCard"-->
-<!--                                            :rankedGeneList="rankedGeneList"-->
-<!--                                            :selectedGeneName="selectedGeneName"-->
-<!--                                            :totalSomaticVarCount="totalSomaticVarCount"-->
-<!--                                            @variant-hover="onCohortVariantHover"-->
-<!--                                            @variant-hover-exit="onCohortVariantHoverEnd"-->
-<!--                                            @variant-selected="onCohortVariantClick"-->
-<!--                                            @gene-selected-from-list="onGeneSelected">-->
-<!--                                    </somatic-genes-card>-->
-<!--                                </v-container>-->
-<!--                            </v-tab-item>-->
-                            <v-tab-item
-                                    :key="'summaryTab'"
-                                    :id="'summary-tab'">
-                                <v-container>
-                                    <variant-summary-card
-                                            v-if="selectedSamples"
-                                            ref="variantSummaryCardRef"
-                                            :sampleIds="sampleIds"
-                                            :selectedSamples="selectedSamples"
-                                            :selectedGene="selectedGeneName"
-                                            :variant="selectedVariant"
-                                            :variantInfo="selectedVariantInfo"
-                                            :$="globalApp.$"
-                                            :d3="globalApp.d3"
-                                            :cohortModel="cohortModel"
-                                            :hasRnaSeq="cohortModel.hasRnaSeqData"
-                                            :hasAtacSeq="cohortModel.hasAtacSeqData"
-                                            @fetch-reads="fetchSeqReads"
-                                            @summary-mounted="onSummaryMounted"
-                                            @summaryCardVariantDeselect="deselectVariant">
-                                    </variant-summary-card>
-                                </v-container>
-                            </v-tab-item>
-                            <v-tab-item
-                                    :key="'filterTab'"
-                                    :id="'filter-tab'">
-                                <v-container>
+                            <v-tab href="#history-tab" style="font-size: 10px">
+                                <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>
+                            </v-tab>
+                            <v-tabs-items v-model="selectedTab" style="background-color: transparent">
+                                <v-tab-item
+                                        :key="'genesTab'"
+                                        :id="'genes-tab'">
+                                    <somatic-genes-card
+                                            ref="somaticGenesCard"
+                                            :rankedGeneList="rankedGeneList"
+                                            :selectedGeneName="selectedGeneName"
+                                            :totalSomaticVarCount="totalSomaticVarCount"
+                                            @variant-hover="onCohortVariantHover"
+                                            @variant-hover-exit="onCohortVariantHoverEnd"
+                                            @variant-selected="onCohortVariantClick"
+                                            @gene-selected-from-list="onGeneSelected">
+                                    </somatic-genes-card>
+                                </v-tab-item>
+                                <v-tab-item
+                                        :key="'filterTab'"
+                                        :id="'filter-tab'">
                                     <filter-panel-menu
                                             v-if="filterModel"
                                             ref="filterSettingsMenuRef"
@@ -140,22 +80,97 @@
                                             @recall-somatic-variants="callSomaticVariants"
                                             @filter-change="onFilterChange">
                                     </filter-panel-menu>
-                                </v-container>
-                            </v-tab-item>
-<!--                            <v-tab-item-->
-<!--                                    :key="'historyTab'"-->
-<!--                                    :id="'history-tab'">-->
-<!--                                <v-container>-->
-<!--                                    <history-tab-->
-<!--                                            ref="historyTabRef"-->
-<!--                                            :geneHistoryList="geneHistoryList"-->
-<!--                                            @reload-gene-history="reloadGene">-->
-<!--                                    </history-tab>-->
-<!--                                </v-container>-->
-<!--                            </v-tab-item>-->
+                                </v-tab-item>
+                                <v-tab-item
+                                        :key="'historyTab'"
+                                        :id="'history-tab'">
+                                    <v-container>
+                                        <history-tab
+                                                ref="historyTabRef"
+                                                :geneHistoryList="geneHistoryList"
+                                                @reload-gene-history="reloadGene">
+                                        </history-tab>
+                                    </v-container>
+                                </v-tab-item>
+                            </v-tabs-items>
                         </v-tabs>
                     </v-card>
                 </v-flex>
+                <Welcome v-if="!dataEntered && !debugMode"
+                         :d3="d3"
+                         :cohortModel="cohortModel"
+                         :welcomeWidth="screenWidth"
+                         :welcomeHeight="screenHeight"
+                         :navBarHeight="navBarHeight"
+                         @load-demo="$emit('load-demo')"
+                         @launched="onLaunch">
+                </Welcome>
+                <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0">
+                    <v-row no-gutters>
+                        <v-card width="100%">
+                            <v-toolbar>
+                                <v-toolbar-title>
+                                    Gene Card
+                                </v-toolbar-title>
+                            </v-toolbar>
+                        </v-card>
+                    </v-row>
+                    <v-row no-gutters>
+                        <v-col cols="8">
+                            <variant-card
+                                    ref="variantCardRef"
+                                    v-for="model in sampleModelsToDisplay"
+                                    :key="model.id"
+                                    v-bind:class="[ { 'full-width': true}, model.id ]"
+                                    :globalAppProp="globalApp"
+                                    :sampleModel="model"
+                                    :canonicalSampleIds="canonicalSampleIds"
+                                    :classifyVariantSymbolFunc="model.classifyByImpact"
+                                    :hoverTooltip="hoverTooltip"
+                                    :selectedGene="selectedGene"
+                                    :selectedTranscript="analyzedTranscript"
+                                    :selectedVariant="selectedVariant"
+                                    :regionStart="geneRegionStart"
+                                    :regionEnd="geneRegionEnd"
+                                    :width="screenWidth"
+                                    :height="screenHeight"
+                                    :showGeneViz="true"
+                                    :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
+                                    :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
+                                    :geneVizShowXAxis="false"
+                                    :annotationComplete="annotationComplete"
+                                    :d3="d3"
+                                    :$="$"
+                                    @cohort-variant-click="onCohortVariantClick"
+                                    @cohort-variant-hover="onCohortVariantHover"
+                                    @cohort-variant-hover-end="onCohortVariantHoverEnd"
+                                    @variants-viz-change="onVariantsVizChange"
+                                    @variants-filter-change="onVariantsFilterChange"
+                                    @show-coverage-cutoffs="showCoverageCutoffs = true"
+                            >
+                            </variant-card>
+                        </v-col>
+                        <v-col cols="4" class="summary-card">
+                            <variant-summary-card
+                                    v-if="selectedSamples"
+                                    ref="variantSummaryCardRef"
+                                    :sampleIds="sampleIds"
+                                    :selectedSamples="selectedSamples"
+                                    :selectedGene="selectedGeneName"
+                                    :variant="selectedVariant"
+                                    :variantInfo="selectedVariantInfo"
+                                    :$="globalApp.$"
+                                    :d3="globalApp.d3"
+                                    :cohortModel="cohortModel"
+                                    :hasRnaSeq="cohortModel.hasRnaSeqData"
+                                    :hasAtacSeq="cohortModel.hasAtacSeqData"
+                                    @fetch-reads="fetchSeqReads"
+                                    @summary-mounted="onSummaryMounted"
+                                    @summaryCardVariantDeselect="deselectVariant">
+                            </variant-summary-card>
+                        </v-col>
+                    </v-row>
+                </v-container>
             </v-layout>
         </v-sheet>
         <v-overlay :value="displayLoader">
@@ -208,6 +223,10 @@
             hoverTooltip: {
                 type: Object,
                 default: null
+            },
+            geneList: {
+                type: Array,
+                default: () => { return [];}
             }
         },
         data: () => {
@@ -236,7 +255,7 @@
                 geneRegionStart: null,
                 geneRegionEnd: null,
                 lastClickCard: null,
-                selectedTab: 'summary-tab',
+                selectedTab: '',
                 totalSomaticVarCount: -1,
 
                 // models & model data
@@ -245,6 +264,9 @@
                 sampleModels: null,
                 geneHistoryList: [],
                 rankedGeneList: [],
+
+                allGeneNames: ['test', 'moo', 'oink'],
+                lookupGene: null,
 
                 debugMode: false
             };
@@ -257,21 +279,22 @@
                     this.displayDrawerWidth = 0;
                 }
             },
-            'cohortModel.annotationComplete': function() {
+            'cohortModel.annotationComplete': function () {
                 if (this.cohortModel && this.cohortModel.getNormalModel()) {
                     this.annotationComplete = !this.cohortModel.getNormalModel().inProgress.loadingVariants;
                 } else {
                     this.annotationComplete = false;
                 }
             },
-            selectedGene: function() {
+            selectedGene: function () {
                 let selectedGeneDisplay = this.selectedGene.gene_name + " " + this.selectedGene.chr;
                 this.$emit('gene-changed', selectedGeneDisplay);
+                this.selectedTab = 'genes-tab';
             }
         },
         methods: {
             // Point of entry for launch and filter changes
-            onLaunch: function(modelInfos, userGeneList) {
+            onLaunch: function (modelInfos, userGeneList) {
                 const self = this;
                 self.dataEntered = true;
                 self.displayLoader = true;
@@ -288,10 +311,10 @@
                         });
                         self.callSomaticVariants();
                     }).catch(error => {
-                        console.log('There was a problem initializing cohort model: ' + error);
-                    })
+                    console.log('There was a problem initializing cohort model: ' + error);
+                })
             },
-            callSomaticVariants: function() {
+            callSomaticVariants: function () {
                 const self = this;
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
@@ -320,13 +343,13 @@
                                         Promise.reject('Could not load data: ' + error);
                                     })
                             }).catch(error => {
-                                Promise.reject('Problem getting cosmic variant IDS: ' + error);
-                            })
+                            Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                        })
                     }).catch(error => {
                     console.log('There was a problem calling global somatics: ' + error);
                 });
             },
-            promiseLoadData: function(selectedGene, selectedTranscript) {
+            promiseLoadData: function (selectedGene, selectedTranscript) {
                 const self = this;
 
                 return new Promise(function (resolve, reject) {
@@ -337,7 +360,7 @@
                     self.cohortModel.promiseLoadData(selectedGene,
                         selectedTranscript,
                         options)
-                        .then(function() {
+                        .then(function () {
                             self.cohortModel.promiseMarkCodingRegions(selectedGene, selectedTranscript)
                                 .then(function (data) {
                                     self.analyzedTranscript = data.transcript;
@@ -369,13 +392,11 @@
 
                     self.$refs.variantCardRef.forEach(function (variantCard) {
                         // if (sourceComponent == null || variantCard != sourceComponent) {
-                            variantCard.hideVariantCircle(true);
-                            variantCard.showVariantCircle(variant, true);
-                            variantCard.showCoverageCircle(variant);
+                        variantCard.hideVariantCircle(true);
+                        variantCard.showVariantCircle(variant, true);
+                        variantCard.showCoverageCircle(variant);
                         // }
                     });
-                    // Tab to summary card
-                    self.selectedTab = 'summary-tab';
 
                     // Hide banner
                     if (self.$refs.variantSummaryCardRef) {
@@ -530,34 +551,34 @@
                             });
                     }
                     p.then(() => {
-                            if (self.bringAttention === 'gene') {
-                                self.bringAttention = null;
-                            }
-                            geneModel.adjustGeneRegion(theGeneObject);
-                            self.geneRegionStart = theGeneObject.start;
-                            self.geneRegionEnd = theGeneObject.end;
-                            self.selectedGene = theGeneObject;
+                        if (self.bringAttention === 'gene') {
+                            self.bringAttention = null;
+                        }
+                        geneModel.adjustGeneRegion(theGeneObject);
+                        self.geneRegionStart = theGeneObject.start;
+                        self.geneRegionEnd = theGeneObject.end;
+                        self.selectedGene = theGeneObject;
 
-                            if (theTranscript) {
-                                // If we have selected a flagged variant, we want to use the flagged
-                                // variant's transcript
-                                self.selectedTranscript = theTranscript;
+                        if (theTranscript) {
+                            // If we have selected a flagged variant, we want to use the flagged
+                            // variant's transcript
+                            self.selectedTranscript = theTranscript;
+                        } else {
+                            // Determine the transcript that should be selected for this gene
+                            // If the transcript wasn't previously selected for this gene,
+                            // set it to the canonical transcript
+                            let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
+                            if (latestTranscript == null) {
+                                self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                                geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
                             } else {
-                                // Determine the transcript that should be selected for this gene
-                                // If the transcript wasn't previously selected for this gene,
-                                // set it to the canonical transcript
-                                let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
-                                if (latestTranscript == null) {
-                                    self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-                                    geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
-                                } else {
-                                    self.selectedTranscript = latestTranscript;
-                                }
+                                self.selectedTranscript = latestTranscript;
                             }
+                        }
 
-                            if (self.$refs.scrollButtonRefGene) {
-                                self.$refs.scrollButtonRefGene.showScrollButtons();
-                            }
+                        if (self.$refs.scrollButtonRefGene) {
+                            self.$refs.scrollButtonRefGene.showScrollButtons();
+                        }
 
                         if (self.cohortModel.isLoaded) {
                             self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
@@ -583,7 +604,7 @@
                     })
                 })
             },
-            onFilterChange: function() {
+            onFilterChange: function () {
                 const self = this;
 
                 // Only annotate once we are guaranteed that our DOM update is done for all tracks
@@ -605,7 +626,7 @@
                                 // Draw feature matrix after somatic field filled
                                 // let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
                                 // self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
-                                    // self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
+                                // self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
 
                                 // Then we need to update coloring for tumor tracks only
                                 // TODO: we should be able to get rid of this once they're drawn post inheritance sorting
@@ -622,7 +643,7 @@
                 });
             },
             // todo: this needs to be updated to work without navref
-            reloadGene: function(geneToReload) {
+            reloadGene: function (geneToReload) {
                 let self = this;
                 if (geneToReload !== self.selectedGene.gene_name) {
                     // Load gene
@@ -633,16 +654,19 @@
             },
             onGeneSelected: function (geneName) {
                 const self = this;
+                let gene = geneName;
+                if (!geneName) {
+                    gene = self.lookupGene;
+                }
                 self.deselectVariant();
-                self.promiseLoadGene(geneName, null, false);
-                //self.activeGeneVariantTab = "feature-matrix-tab";
+                self.promiseLoadGene(gene, null, false);
             },
-            onSummaryMounted: function() {
+            onSummaryMounted: function () {
                 if (this.selectedVariant) {
                     this.$refs.variantSummaryCardRef.hideGetStartedBanner();
                 }
             },
-            fetchSeqReads: function(bamType) {
+            fetchSeqReads: function (bamType) {
                 const self = this;
                 const isLoading = true;
                 self.$refs.variantSummaryCardRef.markSeqChartsLoading(bamType, isLoading);
@@ -655,10 +679,10 @@
             }
         },
         computed: {
-            overlayWidth: function() {
+            overlayWidth: function () {
                 return this.screenWidth * 0.8;
             },
-            canonicalSampleIds: function() {
+            canonicalSampleIds: function () {
                 if (this.cohortModel) {
                     let models = this.cohortModel.getCanonicalModels();
                     return models.filter(model => {
@@ -681,7 +705,7 @@
                     return null;
                 }
             },
-            sampleModelsToDisplay: function() {
+            sampleModelsToDisplay: function () {
                 let filteredModels = [];
                 if (this.sampleModels) {
                     this.sampleModels.forEach(model => {
@@ -697,11 +721,30 @@
                     })
                 }
                 return filteredModels;
-            }
-        },
+            },
+            tabTitle: function () {
+                if (this.selectedTab === 'genes-tab') {
+                    return 'Ranked Genes';
+                } else if (this.selectedTab === 'filter-tab') {
+                    return 'Variant Filters';
+                } else if (this.selectedTab === 'history-tab') {
+                    return 'History';
+                } else {
+                    return '';
+                }
+            },
+        }
     }
 </script>
 
-<style scoped>
+<style lang="sass">
+    .summary-card
+        padding-top: 15px
+        font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
 
+    .section-title
+        font-family: 'Quicksand'
+        color: white
+        background-color: #7f1010
+        padding-bottom: 5px
 </style>

@@ -1,6 +1,6 @@
 <style lang="sass" >
 
-@import ../../../assets/sass/variables
+@import ../../assets/sass/variables
 
 .filter-settings-form
   .filter-title

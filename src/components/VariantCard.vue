@@ -155,213 +155,215 @@
 </style>
 
 <template>
-    <v-expansion-panels v-model="openState" multiple>
-        <v-expansion-panel class="app-card" id="variant-card" :key="0">
-            <v-expansion-panel-header>
-                <div>
-                    <div class="text-center d-inline">
-                        <v-badge v-if="sampleModel.isCosmic" class="sample mr-8 mb-1">
-                            <span slot="badge">C</span>
+    <v-card outlined class="my-1">
+        <v-expansion-panels v-model="openState" multiple>
+            <v-expansion-panel class="app-card" id="variant-card" :key="0">
+                <v-expansion-panel-header>
+                    <div>
+                        <div class="text-center d-inline">
+                            <v-badge v-if="sampleModel.isCosmic" class="sample mr-8 mb-1">
+                                <span slot="badge">C</span>
+                            </v-badge>
+                            <v-badge v-else-if="sampleModel.isTumor" class="sample mr-8 mb-1">
+                                <span slot="badge">T</span>
+                            </v-badge>
+                            <v-badge v-else-if="!sampleModel.isTumor" class="sample mr-8 mb-1">
+                                <span slot="badge">N</span>
+                            </v-badge>
+                        </div>
+                        <div id="sample-label" class="d-inline">
+                            {{ sampleLabel }}
+                        </div>
+                        <div class="text-center d-inline">
+                            <v-chip v-if="annotationComplete && sampleModel.loadedVariants" small outlined color="appColor" class="ma-2">
+                                {{ sampleModel.loadedVariants.features.length + ' Variants' }}
+                            </v-chip>
+                        </div>
+                        <v-badge v-if="sampleModel.loadedVariants && coverageDangerRegions.length > 0"
+                                 class="ml-4 mr-4 mt-1 coverage-problem">
+                            <span slot="badge"> {{ coverageDangerRegions.length }} </span>
+                            Exons with insufficient coverage
                         </v-badge>
-                        <v-badge v-else-if="sampleModel.isTumor" class="sample mr-8 mb-1">
-                            <span slot="badge">T</span>
-                        </v-badge>
-                        <v-badge v-else-if="!sampleModel.isTumor" class="sample mr-8 mb-1">
-                            <span slot="badge">N</span>
-                        </v-badge>
+                        <!--                    <known-variants-toolbar-->
+                        <!--                            v-if="sampleModel.isCosmic"-->
+                        <!--                            :id="sampleModel.id"-->
+                        <!--                            :annotationType="'vep'"-->
+                        <!--                            @variantsVizChange="onVariantsVizChange"-->
+                        <!--                            @variantsFilterChange="onVariantsFilterChange"-->
+                        <!--                    >-->
+                        <!--                    </known-variants-toolbar>-->
+                        <!--                    todo: add these <div class="text-center d-inline" style="float: right;" id="cnv-ideo"></div>-->
+                        <!--                    <div class="text-center d-inline" style="float: right;" id="loh-ideo"></div>-->
                     </div>
-                    <div id="sample-label" class="d-inline">
-                        {{ sampleLabel }}
-                    </div>
-                    <div class="text-center d-inline">
-                        <v-chip v-if="annotationComplete && sampleModel.loadedVariants" small outlined color="appColor" class="ma-2">
-                            {{ sampleModel.loadedVariants.features.length + ' Variants' }}
-                        </v-chip>
-                    </div>
-                    <v-badge v-if="sampleModel.loadedVariants && coverageDangerRegions.length > 0"
-                             class="ml-4 mr-4 mt-1 coverage-problem">
-                        <span slot="badge"> {{ coverageDangerRegions.length }} </span>
-                        Exons with insufficient coverage
-                    </v-badge>
-<!--                    <known-variants-toolbar-->
-<!--                            v-if="sampleModel.isCosmic"-->
-<!--                            :id="sampleModel.id"-->
-<!--                            :annotationType="'vep'"-->
-<!--                            @variantsVizChange="onVariantsVizChange"-->
-<!--                            @variantsFilterChange="onVariantsFilterChange"-->
-<!--                    >-->
-<!--                    </known-variants-toolbar>-->
-<!--                    todo: add these <div class="text-center d-inline" style="float: right;" id="cnv-ideo"></div>-->
-<!--                    <div class="text-center d-inline" style="float: right;" id="loh-ideo"></div>-->
-                </div>
-            </v-expansion-panel-header>
-            <v-expansion-panel-content :value="openState">
-                <v-card outlined :style="{padding: '5px 10px'}" id="card-viz">
-<!--                    <stacked-bar-chart-viz-->
-<!--                            id="known-variants-chart"-->
-<!--                            style="width:100%"-->
-<!--                            v-if="(sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants') || (sampleModel.id === 'cosmic-variants' && cosmicVariantsViz !== 'variants')"-->
-<!--                            :data="sampleModel.variantHistoData"-->
-<!--                            :width="width"-->
-<!--                            :xStart="selectedGene.start"-->
-<!--                            :xEnd="selectedGene.end"-->
-<!--                            :regionStart="regionStart"-->
-<!--                            :regionEnd="regionEnd"-->
-<!--                            :categories="getCategories(sampleModel.id)"-->
-<!--                            :d3="d3"-->
-<!--                            :$="$"-->
-<!--                    >-->
-<!--                    </stacked-bar-chart-viz>-->
-                    <div style="width:100%">
-                        <div style="text-align: center; clear: both">
-                            <div v-show="loadingVars" class="loader vcfloader"
-                                 style="display: inline-block;padding-bottom:10px">
-                                <span class="loader-label">Annotating variants</span>
-                                <img src="../assets/images/wheel.gif">
-                            </div>
-                            <div v-show="callingVars" class="loader fbloader"
-                                 style="display: inline-block; padding-left: 20px; padding-bottom:10px">
-                                <span class="loader-label">Calling variants</span>
-                                <img src="../assets/images/wheel.gif">
-                            </div>
-                            <div v-show="loadingCov" class="loader covloader"
-                                 style="display: inline-block; padding-left: 20px; padding-bottom:10px">
-                                <span class="loader-label">Analyzing gene coverage</span>
-                                <img src="../assets/images/wheel.gif">
+                </v-expansion-panel-header>
+                <v-expansion-panel-content :value="openState">
+                    <v-card outlined :style="{padding: '5px 10px'}" id="card-viz">
+                        <!--                    <stacked-bar-chart-viz-->
+                        <!--                            id="known-variants-chart"-->
+                        <!--                            style="width:100%"-->
+                        <!--                            v-if="(sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants') || (sampleModel.id === 'cosmic-variants' && cosmicVariantsViz !== 'variants')"-->
+                        <!--                            :data="sampleModel.variantHistoData"-->
+                        <!--                            :width="width"-->
+                        <!--                            :xStart="selectedGene.start"-->
+                        <!--                            :xEnd="selectedGene.end"-->
+                        <!--                            :regionStart="regionStart"-->
+                        <!--                            :regionEnd="regionEnd"-->
+                        <!--                            :categories="getCategories(sampleModel.id)"-->
+                        <!--                            :d3="d3"-->
+                        <!--                            :$="$"-->
+                        <!--                    >-->
+                        <!--                    </stacked-bar-chart-viz>-->
+                        <div style="width:100%">
+                            <div style="text-align: center; clear: both">
+                                <div v-show="loadingVars" class="loader vcfloader"
+                                     style="display: inline-block;padding-bottom:10px">
+                                    <span class="loader-label">Annotating variants</span>
+                                    <img src="../assets/images/wheel.gif">
+                                </div>
+                                <div v-show="callingVars" class="loader fbloader"
+                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">
+                                    <span class="loader-label">Calling variants</span>
+                                    <img src="../assets/images/wheel.gif">
+                                </div>
+                                <div v-show="loadingCov" class="loader covloader"
+                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">
+                                    <span class="loader-label">Analyzing gene coverage</span>
+                                    <img src="../assets/images/wheel.gif">
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div style="width:100%" id="viz-div">
-                        <div class="chart-label"
-                             v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features.length > 0 && sampleModel.id !== 'known-variants'"
-                        >
-                            all variants
-                        </div>
-                        <variant-viz id="loaded-variant-viz"
-                                     ref="variantVizRef"
-                                     v-show="showVariantViz"
-                                     :modelId="sampleModel.getId()"
-                                     :model="sampleModel"
-                                     :regionStart="regionStart"
-                                     :regionEnd="regionEnd"
-                                     :annotationScheme="annotationScheme"
-                                     :width="width"
-                                     :margin="variantVizMargin"
-                                     :variantHeight="variantSymbolHeight"
-                                     :variantPadding="variantSymbolPadding"
-                                     :showBrush="false"
-                                     :showXAxis="true"
-                                     :classifySymbolFunc="classifyVariantSymbolFunc"
-                                     :isTumorTrack="sampleModel.isTumor"
-                                     :isKnownOrCosmicTrack="isKnownOrCosmicTrack"
-                                     :d3="d3"
-                                     @variantClick="onVariantClick"
-                                     @variantHover="onVariantHover"
-                                     @variantHoverEnd="onVariantHoverEnd"
-                                     @apply-active-filters="applyActiveFilters">
-                        </variant-viz>
-                        <div class="chart-label" v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
-                            coverage
-                        </div>
-                        <div id="bam-track">
-                            <depth-viz
-                                    v-if="showDepthViz"
-                                    ref="depthVizRef"
-                                    :coverage="sampleModel.coverage"
-                                    :coverageMedian="geneCoverageMedian"
-                                    :coverageDangerRegions="coverageDangerRegions"
-                                    :currentPoint="coveragePoint"
-                                    :maxDepth="sampleModel.cohort.maxDepth"
-                                    :regionStart="regionStart"
-                                    :regionEnd="regionEnd"
-                                    :width="width"
-                                    :margin="depthVizMargin"
-                                    :height="60"
-                                    :showTooltip="false"
-                                    :showXAxis="false"
-                                    :regionGlyph="depthVizRegionGlyph"
-                                    :d3="d3"
-                                    :$="$"
-                                    @region-selected="showExonTooltip"
+                        <div style="width:100%" id="viz-div">
+                            <div class="chart-label"
+                                 v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features.length > 0 && sampleModel.id !== 'known-variants'"
                             >
-                            </depth-viz>
-                        </div>
-                        <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
-                            rna-seq
-                        </div>
-                        <div id="rna-bam-track">
-                            <depth-viz
-                                    v-if="showDepthViz"
-                                    ref="depthVizRef"
-                                    :coverage="sampleModel.rnaSeqCoverage"
-                                    :coverageMedian="geneCoverageMedian"
-                                    :coverageDangerRegions="coverageDangerRegions"
-                                    :currentPoint="coveragePoint"
-                                    :maxDepth="sampleModel.cohort.maxRnaSeqDepth"
-                                    :regionStart="regionStart"
-                                    :regionEnd="regionEnd"
-                                    :width="width"
-                                    :margin="depthVizMargin"
-                                    :height="60"
-                                    :showTooltip="false"
-                                    :showXAxis="false"
-                                    :regionGlyph="depthVizRegionGlyph"
-                                    :d3="d3"
-                                    :$="$"
-                                    @region-selected="showExonTooltip"
+                                all variants
+                            </div>
+                            <variant-viz id="loaded-variant-viz"
+                                         ref="variantVizRef"
+                                         v-show="showVariantViz"
+                                         :modelId="sampleModel.getId()"
+                                         :model="sampleModel"
+                                         :regionStart="regionStart"
+                                         :regionEnd="regionEnd"
+                                         :annotationScheme="annotationScheme"
+                                         :width="width"
+                                         :margin="variantVizMargin"
+                                         :variantHeight="variantSymbolHeight"
+                                         :variantPadding="variantSymbolPadding"
+                                         :showBrush="false"
+                                         :showXAxis="true"
+                                         :classifySymbolFunc="classifyVariantSymbolFunc"
+                                         :isTumorTrack="sampleModel.isTumor"
+                                         :isKnownOrCosmicTrack="isKnownOrCosmicTrack"
+                                         :d3="d3"
+                                         @variantClick="onVariantClick"
+                                         @variantHover="onVariantHover"
+                                         @variantHoverEnd="onVariantHoverEnd"
+                                         @apply-active-filters="applyActiveFilters">
+                            </variant-viz>
+                            <div class="chart-label" v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
+                                coverage
+                            </div>
+                            <div id="bam-track">
+                                <depth-viz
+                                        v-if="showDepthViz"
+                                        ref="depthVizRef"
+                                        :coverage="sampleModel.coverage"
+                                        :coverageMedian="geneCoverageMedian"
+                                        :coverageDangerRegions="coverageDangerRegions"
+                                        :currentPoint="coveragePoint"
+                                        :maxDepth="sampleModel.cohort.maxDepth"
+                                        :regionStart="regionStart"
+                                        :regionEnd="regionEnd"
+                                        :width="width"
+                                        :margin="depthVizMargin"
+                                        :height="60"
+                                        :showTooltip="false"
+                                        :showXAxis="false"
+                                        :regionGlyph="depthVizRegionGlyph"
+                                        :d3="d3"
+                                        :$="$"
+                                        @region-selected="showExonTooltip"
+                                >
+                                </depth-viz>
+                            </div>
+                            <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
+                                rna-seq
+                            </div>
+                            <div id="rna-bam-track">
+                                <depth-viz
+                                        v-if="showDepthViz"
+                                        ref="depthVizRef"
+                                        :coverage="sampleModel.rnaSeqCoverage"
+                                        :coverageMedian="geneCoverageMedian"
+                                        :coverageDangerRegions="coverageDangerRegions"
+                                        :currentPoint="coveragePoint"
+                                        :maxDepth="sampleModel.cohort.maxRnaSeqDepth"
+                                        :regionStart="regionStart"
+                                        :regionEnd="regionEnd"
+                                        :width="width"
+                                        :margin="depthVizMargin"
+                                        :height="60"
+                                        :showTooltip="false"
+                                        :showXAxis="false"
+                                        :regionGlyph="depthVizRegionGlyph"
+                                        :d3="d3"
+                                        :$="$"
+                                        @region-selected="showExonTooltip"
+                                >
+                                </depth-viz>
+                            </div>
+                            <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
+                                atac-seq
+                            </div>
+                            <div id="atac-bam-track">
+                                <depth-viz
+                                        v-if="showDepthViz"
+                                        ref="depthVizRef"
+                                        :coverage="sampleModel.atacSeqCoverage"
+                                        :coverageMedian="geneCoverageMedian"
+                                        :coverageDangerRegions="coverageDangerRegions"
+                                        :currentPoint="coveragePoint"
+                                        :maxDepth="sampleModel.cohort.maxAtacSeqDepth"
+                                        :regionStart="regionStart"
+                                        :regionEnd="regionEnd"
+                                        :width="width"
+                                        :margin="depthVizMargin"
+                                        :height="60"
+                                        :showTooltip="false"
+                                        :showXAxis="false"
+                                        :regionGlyph="depthVizRegionGlyph"
+                                        :d3="d3"
+                                        :$="$"
+                                        @region-selected="showExonTooltip"
+                                >
+                                </depth-viz>
+                            </div>
+                            <gene-viz id="gene-viz"
+                                      v-bind:class="{ hide: !showGeneViz }"
+                                      :data="[selectedTranscript]"
+                                      :margin="geneVizMargin"
+                                      :width="width"
+                                      :height="80"
+                                      :trackHeight="geneVizTrackHeight"
+                                      :cdsHeight="geneVizCdsHeight"
+                                      :regionStart="regionStart"
+                                      :regionEnd="regionEnd"
+                                      :showXAxis="geneVizShowXAxis"
+                                      :featureClass="getExonClass"
+                                      :isZoomTrack="false"
+                                      :$="$"
+                                      :d3="d3"
+                                      @feature-selected="showExonTooltip"
                             >
-                            </depth-viz>
+                            </gene-viz>
                         </div>
-                        <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
-                            atac-seq
-                        </div>
-                        <div id="atac-bam-track">
-                            <depth-viz
-                                    v-if="showDepthViz"
-                                    ref="depthVizRef"
-                                    :coverage="sampleModel.atacSeqCoverage"
-                                    :coverageMedian="geneCoverageMedian"
-                                    :coverageDangerRegions="coverageDangerRegions"
-                                    :currentPoint="coveragePoint"
-                                    :maxDepth="sampleModel.cohort.maxAtacSeqDepth"
-                                    :regionStart="regionStart"
-                                    :regionEnd="regionEnd"
-                                    :width="width"
-                                    :margin="depthVizMargin"
-                                    :height="60"
-                                    :showTooltip="false"
-                                    :showXAxis="false"
-                                    :regionGlyph="depthVizRegionGlyph"
-                                    :d3="d3"
-                                    :$="$"
-                                    @region-selected="showExonTooltip"
-                            >
-                            </depth-viz>
-                        </div>
-                        <gene-viz id="gene-viz"
-                                  v-bind:class="{ hide: !showGeneViz }"
-                                  :data="[selectedTranscript]"
-                                  :margin="geneVizMargin"
-                                  :width="width"
-                                  :height="80"
-                                  :trackHeight="geneVizTrackHeight"
-                                  :cdsHeight="geneVizCdsHeight"
-                                  :regionStart="regionStart"
-                                  :regionEnd="regionEnd"
-                                  :showXAxis="geneVizShowXAxis"
-                                  :featureClass="getExonClass"
-                                  :isZoomTrack="false"
-                                  :$="$"
-                                  :d3="d3"
-                                  @feature-selected="showExonTooltip"
-                        >
-                        </gene-viz>
-                    </div>
-                </v-card>
-            </v-expansion-panel-content>
-        </v-expansion-panel>
-    </v-expansion-panels>
+                    </v-card>
+                </v-expansion-panel-content>
+            </v-expansion-panel>
+        </v-expansion-panels>
+    </v-card>
 </template>
 
 <script>

@@ -18,12 +18,13 @@
 <template>
     <v-layout row wrap>
         <v-flex id="name" xs12 class="mb-3">
-            <v-expansion-panels multiple>
+            <v-expansion-panels multiple style="background-color: transparent !important">
                 <v-expansion-panel v-for="filter in filterModel.filters[filterName]"
                                    :ref="filter.name + 'ExpansionRef'"
                                    :key="filter.name"
-                                   :value="filter.open">
-                    <v-expansion-panel-header>
+                                   :value="filter.open"
+                                    style="background-color: transparent">
+                    <v-expansion-panel-header style="background-color: transparent">
                         <div>
                             <div class="text-center d-inline">
                                 <v-avatar v-if="filter.active" size="12px" color="appHighlight"
@@ -40,7 +41,7 @@
                         </div>
                     </v-expansion-panel-header>
                     <v-expansion-panel-content>
-                        <v-card flat>
+                        <v-card flat color="transparent">
                             <filter-panel-checkbox
                                     v-if="filter.type==='checkbox'"
                                     ref="filtCheckRef"
