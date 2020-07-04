@@ -18,11 +18,18 @@
 </style>
 
 <template>
-    <v-flex xs12>
-        <v-layout row>
-            <v-flex xs2 class="summary-field-label">{{ chartLabel }}:</v-flex>
-            <v-flex xs9 v-show="!showLoader" :id="bamType + 'Bar'" style="padding-bottom:5px"></v-flex>
-            <v-flex xs9 v-show="showLoader">
+    <v-container>
+        <v-row no-gutters>
+            <v-col cols="12" sm="12" xl="3" class="summary-field-label">
+                {{ chartLabel }}:
+            </v-col>
+            <v-col v-show="!showLoader"
+                   cols="12" sm="12" xl="9"
+                   :id="bamType + 'Bar'"
+                   style="padding-bottom: 5px">
+            </v-col>
+            <v-col v-show="showLoader"
+                    cols="12" sm="12" xl="9">
                 <div style="text-align: center; clear: both">
                     <div class="loader vcfloader"
                          style="display: inline-block">
@@ -30,9 +37,9 @@
                         <img src="../../assets/images/wheel.gif">
                     </div>
                 </div>
-            </v-flex>
-        </v-layout>
-    </v-flex>
+            </v-col>
+        </v-row>
+    </v-container>
 </template>
 
 <script>
@@ -124,7 +131,7 @@
             }
         },
         mounted: function() {
-            this.drawCharts();
+            //this.drawCharts();
         }
     }
 </script>

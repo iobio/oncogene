@@ -27,7 +27,9 @@
         -webkit-box-shadow: 6px 11px 48px -7px rgba(0, 0, 0, 0.60)
         box-shadow: 6px 11px 48px -7px rgba(0, 0, 0, 0.60)
 
-    .summary-header
+    .summary-card
+        filter: blur(1px)
+        -webkit-filter: blur(1px)
 
     .summary-viz
         min-height: 100px
@@ -56,13 +58,14 @@
             font-style: italic
             font-size: 12px
             padding-left: 2px
-            text-align: right
+            text-align: left
 
         .field-label-header
             color: #7f7f7f
             font-style: italic
-            padding-left: 6px
-            text-align: right
+            padding-left: 2px
+            text-align: left
+            font-family: 'Quicksand'
 
         .subtitle-label
             color: #7f7f7f
@@ -81,6 +84,7 @@
             padding-left: 1px
             padding-right: 1px
             color: #888888
+            text-align: left
 
         .cohort-summary-field-value
             font-size: 12px
@@ -212,28 +216,25 @@
 
 <template>
     <v-card class="px-0 mx-1 my-1" style="overflow: scroll" outlined>
-        <v-container height="100%" class="summary-card">
-            <v-toolbar flat>
-                <v-toolbar-title>
+        <v-container class="summary-card">
+            <v-row no-gutters flat style="font-family: Quicksand">
+                <v-col cols="12" sm="12" xl="4" style="font-size: 22px">
                     Variant Details
-                </v-toolbar-title>
-            </v-toolbar>
-            <v-flex xl9 offset-xl2 lg12>
-                <div class='form-inline'>
-                    <div class='form-group'>
-                        <v-chip v-if="variant" outlined
-                                color="appColor"
-                                @input="summaryCardVariantDeselect()">
-                            <span style="padding-right: 10px; font-size: 16px; text-align:center;"
-                                  v-bind:class="{hide: geneName === ''}">{{geneName}}</span>
-                            <span style="padding-top: 1px; font-size: 14px; padding-right: 4px">{{selectedVariantLocation}}</span>
-                        </v-chip>
-                    </div>
-                </div>
-            </v-flex>
-            <v-container fluid grid-list-md style="overflow-y: scroll !important">
-                <v-layout row wrap>
-                    <!--                todo: replace this w/ an overlay to get rid of stuck bug-->
+                </v-col>
+                <v-col v-if="variant" cols="12" sm="12" xl="8">
+                    <v-chip outlined
+                            small
+                            color="appColor"
+                            style="margin-top: 4px"
+                            @input="summaryCardVariantDeselect()">
+                        <span style="padding-right: 10px; font-size: 16px; text-align:center;"
+                              v-bind:class="{hide: geneName === ''}">{{geneName}}</span>
+                        <span style="padding-top: 1px; font-size: 14px; padding-right: 4px">{{selectedVariantLocation}}</span>
+                    </v-chip>
+                </v-col>
+            </v-row>
+            <v-container fluid grid-list-md style="overflow-y: scroll !important; padding-top: 0">
+                <v-row wrap>
                     <div id="getStartedBlock">
                         <span class="getStartedText">Click on a variant for details</span>
                     </div>
@@ -260,9 +261,11 @@
                                           :sampleMap="sampleReadsMap"
                                           :d3="d3">
                     </allele-frequency-viz>
-                    <v-layout row class="summary-viz" style="min-height: 0; padding-top: 10px">
-                        <v-flex xs12 class="field-label-header" style="text-align:left">Raw Bam Counts</v-flex>
-                    </v-layout>
+                    <v-container>
+                        <v-row no-gutters class="summary-viz" style="min-height: 0; padding-top: 10px">
+                            <v-col sm="12" class="field-label-header">Raw Bam Counts</v-col>
+                        </v-row>
+                    </v-container>
                     <bar-feature-viz id="coverage-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
                                      ref="coverageBarFeatureViz"
                                      :counts="coverageCounts"
@@ -285,7 +288,7 @@
                                      :bamType="'atacSeq'"
                                      :d3="d3">
                     </bar-feature-viz>
-                </v-layout>
+                </v-row>
             </v-container>
         </v-container>
     </v-card>
@@ -460,6 +463,7 @@
             hideGetStartedBanner: function () {
                 this.$('#getStartedBlock').hide();
                 this.$('.summary-viz').css({'filter': 'none', '-webkit-filter': 'none'});
+                this.$('.summary-card').css({'filter': 'none', '-webkit-filter': 'none'});
             },
             updateSeqCharts: function (bamType) {
                 if (bamType === this.cohortModel.globalApp.RNASEQ_TYPE) {

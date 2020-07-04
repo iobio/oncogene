@@ -10,6 +10,9 @@
         padding-bottom: 2px
 
     #variant-card
+        .sample
+            font-size: 24px !important
+
         .variant-chip
             font-size: 12px
             margin-top: 0
@@ -19,8 +22,9 @@
         #sample-label
             max-width: 200px
             color: $text-color
-            margin-top: -1px
-            font-size: 18px
+            font-size: 22px
+            padding-top: 5px
+            font-family: 'Quicksand'
             &.known-variants
                 min-width: 100px
                 max-width: 100px
@@ -161,22 +165,22 @@
                 <v-expansion-panel-header>
                     <div>
                         <div class="text-center d-inline">
-                            <v-badge v-if="sampleModel.isCosmic" class="sample mr-8 mb-1">
-                                <span slot="badge">C</span>
-                            </v-badge>
-                            <v-badge v-else-if="sampleModel.isTumor" class="sample mr-8 mb-1">
-                                <span slot="badge">T</span>
-                            </v-badge>
-                            <v-badge v-else-if="!sampleModel.isTumor" class="sample mr-8 mb-1">
-                                <span slot="badge">N</span>
-                            </v-badge>
+                            <v-avatar v-if="sampleModel.isCosmic" color="primary" size="28" class="mr-1 mb-1">
+                                <span class="white--text">C</span>
+                            </v-avatar>
+                            <v-avatar v-else-if="sampleModel.isTumor" color="primary" size="28" class="mr-1 mb-1">
+                                <span class="white--text" style="font-size: 18px">T</span>
+                            </v-avatar>
+                            <v-avatar v-else-if="!sampleModel.isTumor" color="secondary" size="28" class="mr-1 mb-1">
+                                <span class="white--text" style="font-size: 18px">N</span>
+                            </v-avatar>
                         </div>
                         <div id="sample-label" class="d-inline">
                             {{ sampleLabel }}
                         </div>
                         <div class="text-center d-inline">
-                            <v-chip v-if="annotationComplete && sampleModel.loadedVariants" small outlined color="appColor" class="ma-2">
-                                {{ sampleModel.loadedVariants.features.length + ' Variants' }}
+                            <v-chip v-if="annotationComplete && sampleModel.loadedVariants" small outlined color="appColor" class="mb-2 ml-2" style="font-size: 14px; font-family: 'Raleway'">
+                                {{ sampleModel.loadedVariants.features.length + (sampleModel.loadedVariants.features.length > 1 ? ' Variants' : ' Variant') }}
                             </v-chip>
                         </div>
                         <v-badge v-if="sampleModel.loadedVariants && coverageDangerRegions.length > 0"

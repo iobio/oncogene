@@ -39,11 +39,11 @@
 <template class="pa-0">
     <v-card flat tile dark width="100%" class="filter-settings-form mx-1">
         <div class="text-center px-1 py-1">
-            <div>
-                <v-btn class="mx-1 recall-btn" color="brightPrimary" v-if="recallCriteriaSet" @click="recallSomaticVariants">
+            <div class="mt-5" v-if="recallCriteriaSet">
+                <v-btn class="mx-1 recall-btn" color="brightPrimary" @click="recallSomaticVariants">
                     Recall Somatic Variants
                 </v-btn>
-                <v-btn class="mx-1 recall-btn" v-if="recallCriteriaSet" @click="clearRecallCriteria">
+                <v-btn class="mx-1 recall-btn" @click="clearRecallCriteria">
                     Cancel
                 </v-btn>
             </div>

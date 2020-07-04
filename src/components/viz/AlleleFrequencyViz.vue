@@ -7,17 +7,16 @@
 </style>
 
 <template>
-    <v-flex xs12>
-        <v-layout row>
-            <v-flex xs12 class="field-label-header" style="text-align: left">Alternate Allele Frequencies</v-flex>
-        </v-layout>
-        <v-layout row v-for="(id, i) in sampleIds" :key="id">
-            <v-flex xs2 class="summary-field-label">{{ selectedSamples[i] }}</v-flex>
-            <v-flex xs3 class="summary-field-value">{{ getPercentageDisplay(selectedSamples[i]) }}
-            </v-flex>
-            <v-flex xs7 :id="'progress_' + selectedSamples[i]" style="padding: 0px"></v-flex>
-        </v-layout>
-    </v-flex>
+    <v-container>
+        <v-row no-gutters>
+            <div class="field-label-header pb-2" style="text-align: left">Alternate Allele Frequencies</div>
+        </v-row>
+        <v-row v-for="(id, i) in sampleIds" :key="id" no-gutters>
+            <v-col cols="12" sm="3" xl="2" class="summary-field-label">{{ selectedSamples[i] }}</v-col>
+            <v-col cols="12" sm="9" xl="3" class="summary-field-value">{{ getPercentageDisplay(selectedSamples[i]) }}</v-col>
+            <v-col cols="12" sm="12" xl="7" :id="'progress_' + selectedSamples[i]" class="mt-1"></v-col>
+        </v-row>
+    </v-container>
 </template>
 
 <script>

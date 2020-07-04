@@ -1,19 +1,13 @@
 <style lang="sass">
 </style>
 
-
 <template>
-    <div class="stacked-barchart">
-
-    </div>
+    <div class="stacked-barchart"></div>
 </template>
 
 <script>
-
 import stackedBarChartD3 from '../../d3/StackedBarChart.d3.js'
-
 export default {
-
     name: 'stacked-bar-chart-viz',
     props: {
       data: {},
@@ -147,7 +141,6 @@ export default {
       update: function() {
         var self = this;
         if (self.data) {
-
           self.barchart.xStart(self.xStart);
           self.barchart.xEnd(self.xEnd);
           self.barchart.barWidth(self.barWidth);
@@ -159,14 +152,11 @@ export default {
       setBarChart: function() {
         this.$emit('updateChart', this.barchart);
       },
-
     },
     watch: {
       data: function() {
         this.update();
       }
-
     }
-
 }
 </script>

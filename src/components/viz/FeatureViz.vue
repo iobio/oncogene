@@ -11,22 +11,22 @@
 </style>
 
 <template>
-    <v-flex xs12>
-        <v-layout row style="padding-top: 10px">
-            <v-flex xs12 class="field-label-header" style="text-align: left">Annotation Details</v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs1 md2 class="summary-field-label">Effect:</v-flex>
-            <v-flex xs5 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+    <v-container>
+        <v-row style="padding-top: 10px" class="no-gutters mb-3">
+            <div class="field-label-header" style="text-align: left">Annotation Details</div>
+        </v-row>
+        <v-row class="no-gutters mb-3">
+            <v-col cols="12" sm="6" md="1" lg="2" class="summary-field-label">Effect:</v-col>
+            <v-col cols="12" sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 {{effect}}
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col cols="12" sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-            <v-flex xs1 md2 class="summary-field-label">Impact:</v-flex>
-            <v-flex xs5 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+            </v-col>
+            <v-col sm="6" md="1" lg="2" class="summary-field-label">Impact:</v-col>
+            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                  <span v-bind:class="{hide: impactText === ''}">
                    <svg v-if="type === 'mnp' || type === 'snp'" class="impact-badge" height="12" width="12">
                      <g transform="translate(1,3)" class="filter-symbol" v-bind:class="impactColor">
@@ -55,16 +55,16 @@
                 <span>
                    {{impactText}}
                  </span>
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs1 md2 class="summary-field-label">Type:</v-flex>
-            <v-flex xs5 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+            </v-col>
+        </v-row>
+        <v-row class="no-gutters mb-3">
+            <v-col sm="6" md="1" lg="2" class="summary-field-label">Type:</v-col>
+            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span v-bind:class="{hide: type === ''}">
                     <svg v-if="type==='snp'" id="snp" class="legend-element" height="12" width="12" transform="translate(1,2)">
                         <rect class="legend-symbol snp" rx="2" ry="1" x="1" width="10" y="1" height="10" style="opacity: 1; fill: none; stroke: rgb(0, 0, 0); stroke-width: 1px;">
@@ -92,65 +92,65 @@
                 <span>
                     {{type}}
                 </span>
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-            <v-flex xs1 md2 class="summary-field-label">Bases:</v-flex>
-            <v-flex xs5 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+            </v-col>
+            <v-col sm="6" md="1" lg="2" class="summary-field-label">Bases:</v-col>
+            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 {{ refAlt }}
-            </v-flex>
+            </v-col>
             <div class="loader" v-if="loadingExtraAnnotations">
                 <img src="../../assets/images/wheel.gif">
             </div>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs6 md2 class="summary-field-label">Status:</v-flex>
-            <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+        </v-row>
+        <v-row class="no-gutters mb-3">
+            <v-col sm="6" lg="2" class="summary-field-label">Status:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>{{ somaticText || '-' }}</span>
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-            <v-flex xs6 md2 class="summary-field-label">AA:</v-flex>
-            <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+            </v-col>
+            <v-col sm="6" lg="2" class="summary-field-label">AA:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>
                     {{ aaText || '-' }}
                 </span>
-            </v-flex>
+            </v-col>
             <div class="loader" v-if="loadingExtraAnnotations">
                 <img src="../../assets/images/wheel.gif">
             </div>
-        </v-layout>
-        <v-layout row>
-            <v-flex xs6 md2 class="summary-field-label">ClinVar:</v-flex>
-            <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+        </v-row>
+        <v-row class="no-gutters mb-3">
+            <v-col sm="6" lg="2" class="summary-field-label">ClinVar:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>
                    {{ clinVarText || '-' }}
                  </span>
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-            <v-flex xs6 md2 class="summary-field-label">COSMIC:</v-flex>
-            <v-flex xs6 md4 v-if="!loadingExtraAnnotations" class="summary-field-value">
+            </v-col>
+            <v-col sm="6" lg="2" class="summary-field-label">COSMIC:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span>
                     {{ cosmicText || '-' }}
                 </span>
-            </v-flex>
-            <v-flex xs5 md4 v-if="loadingExtraAnnotations">
+            </v-col>
+            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
-            </v-flex>
-        </v-layout>
-    </v-flex>
+            </v-col>
+        </v-row>
+    </v-container>
 </template>
 
 

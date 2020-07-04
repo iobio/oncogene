@@ -14,6 +14,9 @@
         text-overflow: ellipsis
         padding-left: 5px
 
+    .section-title
+        font-size: 22px
+
 </style>
 
 <template>
@@ -68,7 +71,7 @@
                             </v-row>
                         </v-expansion-panel-header>
                         <v-expansion-panel-content style="background-color: transparent !important;">
-                            <v-list dense>
+                            <v-list style="background-color: transparent" dense>
                                 <v-list-item-group v-model="selectedVarIdx" color="primary">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
                                             <v-list-item-content>

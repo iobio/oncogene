@@ -12,7 +12,7 @@
                             tile
                             id="nav-card"
                             style="overflow: scroll; height: 100%; background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)">
-                        <v-toolbar style="background-color: transparent" flat class="mb-3">
+                        <v-toolbar style="background-color: transparent" flat>
                             <v-toolbar-items class="justify-center">
                                 <v-autocomplete v-model="lookupGene"
                                                 @change="onGeneSelected"
@@ -109,7 +109,7 @@
                     <v-row no-gutters>
                         <v-card width="100%">
                             <v-toolbar>
-                                <v-toolbar-title>
+                                <v-toolbar-title style="font-family: Quicksand; font-size: 22px">
                                     Gene Card
                                 </v-toolbar-title>
                             </v-toolbar>
@@ -642,7 +642,6 @@
                     console.log('There was a problem applying variant filter: ' + err);
                 });
             },
-            // todo: this needs to be updated to work without navref
             reloadGene: function (geneToReload) {
                 let self = this;
                 if (geneToReload !== self.selectedGene.gene_name) {
