@@ -11,8 +11,8 @@
         background-color: transparent !important
 
         .filter-category
-            font-size: 18px
-            font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif'
+            font-size: 22px
+            font-family: 'Quicksand'
             vertical-align: top
             background-color: transparent
 
@@ -40,10 +40,10 @@
     <v-card flat tile dark width="100%" class="filter-settings-form mx-1">
         <div class="text-center px-1 py-1">
             <div class="mt-5" v-if="recallCriteriaSet">
-                <v-btn class="mx-1 recall-btn" color="brightPrimary" @click="recallSomaticVariants">
+                <v-btn class="mx-1 mt-1 recall-btn" color="secondary" @click="recallSomaticVariants">
                     Recall Somatic Variants
                 </v-btn>
-                <v-btn class="mx-1 recall-btn" @click="clearRecallCriteria">
+                <v-btn color="appGray" class="mx-1 mt-1 recall-btn" @click="clearRecallCriteria">
                     Cancel
                 </v-btn>
             </div>

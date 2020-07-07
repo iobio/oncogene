@@ -21,9 +21,9 @@
                             :label="item.displayName"
                             v-bind:disabled="!annotationComplete"
                             v-model="item.model"
-                            color="appColor"
+                            dark
                             style="padding-left: 15px; margin-top: 0; margin-bottom: 0; max-height: 30px"
-                            @click="boxChecked(item)">
+                            @click.stop="boxChecked(item)">
                 </v-checkbox>
             </v-container>
         </v-flex>
@@ -46,9 +46,8 @@
         },
         methods: {
             boxChecked: function(filterObj) {
-                let self = this;
                 filterObj.model = !filterObj.model;
-                self.$emit('filter-toggled');
+                this.$emit('filter-toggled');
             }
         }
     }

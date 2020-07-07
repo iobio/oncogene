@@ -35,7 +35,7 @@ class FilterModel {
             [
                 {
                     name: 'annotation',
-                    display: 'ANNOTATION FILTERS',
+                    display: 'Annotation Filters',
                     active: false,
                     custom: false,
                     description: 'Filter by variant effect, impact, or type',
@@ -43,7 +43,7 @@ class FilterModel {
                 },
                 {
                     name: 'somatic',
-                    display: 'SOMATIC FILTERS',
+                    display: 'Somatic Filters',
                     active: false,
                     custom: false,
                     description: 'Select a threshold for allele frequencies and observation counts by which to identify somatic variants',
@@ -51,7 +51,7 @@ class FilterModel {
                 },
                 {
                     name: 'quality',
-                    display: 'QUALITY FILTERS',
+                    display: 'Quality Filters',
                     active: false,
                     custom: false,
                     description: 'Filter variants by observation counts',

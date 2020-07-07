@@ -110,7 +110,7 @@
                         <v-card width="100%">
                             <v-toolbar>
                                 <v-toolbar-title style="font-family: Quicksand; font-size: 22px">
-                                    Gene Card
+                                    Gene Details
                                 </v-toolbar-title>
                             </v-toolbar>
                         </v-card>
@@ -622,11 +622,6 @@
 
                                 self.cohortModel.allSomaticFeaturesLookup = inheritanceObj.somaticLookup;
                                 self.cohortModel.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
-
-                                // Draw feature matrix after somatic field filled
-                                // let allVariantsPassingFilters = self.cohortModel.getAllFilterPassingVariants();
-                                // self.featureMatrixModel.promiseRankVariants(self.cohortModel.allUniqueFeaturesObj,
-                                // self.cohortModel.allSomaticFeaturesLookup, self.cohortModel.allInheritedFeaturesLookup, allVariantsPassingFilters);
 
                                 // Then we need to update coloring for tumor tracks only
                                 // TODO: we should be able to get rid of this once they're drawn post inheritance sorting

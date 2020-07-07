@@ -27,9 +27,9 @@
                     <v-expansion-panel-header style="background-color: transparent">
                         <div>
                             <div class="text-center d-inline">
-                                <v-avatar v-if="filter.active" size="12px" color="appHighlight"
+                                <v-avatar v-if="filter.active" size="12px" color="secondary"
                                           style="margin-right: 10px"></v-avatar>
-                                <v-avatar v-else-if="!filter.active || !annotationComplete" size="10px" color="white"
+                                <v-avatar v-else-if="!filter.active || !annotationComplete" size="10px" color="translucent"
                                           style="margin-right: 12px"></v-avatar>
                                 <span v-bind:hidden="annotationComplete" class="filter-loader">
                                 <img src="/src/assets/images/wheel.gif">

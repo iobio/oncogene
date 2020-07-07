@@ -71,12 +71,12 @@
                                       :items="dropDownOptions"
                                       v-model="currLogic"
                                       single-line
-                                      color="appColor"
+                                      color="white"
                                       :disabled="disableLogicDropdown">
                             </v-select>
                         </v-flex>
                         <v-flex d-flex xs9 class="slider-top-row">
-                            <v-slider :min="logicObj.minValue" :max="logicObj.maxValue" v-model="logicObj.currVal" color="appColor" class="slider-bar" @input="onSliderChange">
+                            <v-slider dark :min="logicObj.minValue" :max="logicObj.maxValue" v-model="logicObj.currVal" class="slider-bar" @input="onSliderChange">
                             </v-slider>
                         </v-flex>
                 </v-layout>

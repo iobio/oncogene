@@ -579,13 +579,13 @@
         },
         mounted: function () {
             this.$emit('summary-mounted');
-            this.setCoverageCounts();
-            if (this.cohortModel.hasRnaSeqData) {
-                this.setRnaSeqCounts();
-            }
-            if (this.cohortModel.hasAtacSeqData) {
-                this.setAtacSeqCounts();
-            }
+            // this.setCoverageCounts();
+            // if (this.cohortModel.hasRnaSeqData) {
+            //     this.setRnaSeqCounts();
+            // }
+            // if (this.cohortModel.hasAtacSeqData) {
+            //     this.setAtacSeqCounts();
+            // }
         }
     }
 </script>

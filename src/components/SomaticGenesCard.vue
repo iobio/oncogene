@@ -29,6 +29,9 @@
         <v-card-title class="section-title">
             Ranked Genes
         </v-card-title>
+        <v-card-subtitle style="font-style: italic" class="pt-2 pb-1">
+            The following loci contain somatic variants
+        </v-card-subtitle>
 <!--        <v-row justify="center">-->
 <!--        todo: move this to top nav bar?-->
 <!--            <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="white">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>-->
@@ -50,7 +53,7 @@
                                     <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
                                     <v-avatar style="margin-top: 3px; margin-left: 5px"
                                               size="20"
-                                              color="somaticColor">
+                                              color="secondary">
                                         <span style="color: white; font-family: Quicksand; font-size: 15px">
                                             {{getTotalVarCount(geneObj)}}
                                         </span>

@@ -1,5 +1,4 @@
 <style lang="sass" >
-
 @import ../../assets/sass/variables
 
 .filter-settings-form
@@ -22,8 +21,6 @@
   font-size: 20px
   color: $app-color
 
-
-
 </style>
 
 <template>
@@ -33,16 +30,11 @@
   :close-on-content-click="false"
   :close-on-click="false"
   :nudge-width="470"
-  v-model="showMenu"
-  >
-
+  v-model="showMenu">
     <v-btn slot="activator" raised  medium flat>
       <v-icon id="filter-settings-icon">settings</v-icon>
     </v-btn>
-
-
     <v-layout row wrap class="filter-settings-form mt-3 mx-2 px-2" style="max-width:500px;min-width:500px;">
-
       <v-expansion-panel>
         <v-expansion-panel-content
         v-for="filter in filters"
@@ -53,7 +45,7 @@
           <div slot="header">
             <filter-icon :icon="filter.name">
             </filter-icon>
-            <span class="filter-title">
+            <span class="filter-title">∂
               {{ filter.display }}
             </span>
             <v-btn small flat
@@ -78,29 +70,20 @@
           </v-card>
         </v-expansion-panel-content>
       </v-expansion-panel>
-
-
-
       <v-flex xs12 class="mt-1 text-xs-right">
         <v-btn style="float:left"
           @click="onNewFilter">
           New filter
         </v-btn>
-
-
-
         <v-btn
           @click="onApply">
           Apply
         </v-btn>
-
         <v-btn @click="onCancel">
          Cancel
        </v-btn>
       </v-flex>
-
-    </v-layout>
-
+    </v-layout>∂
   </v-menu>
 </template>
 
