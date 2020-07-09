@@ -7,7 +7,7 @@
         >
             <!--Static main page-->
             <v-layout fill-height>
-                <v-flex md3 v-if="dataEntered || debugMode">
+                <v-flex md3 v-if="dataEntered || debugMode"  :class="{ 'blur-content': displayCarousel }">
                     <v-card flat
                             tile
                             id="nav-card"
@@ -96,16 +96,18 @@
                         </v-tabs>
                     </v-card>
                 </v-flex>
-                <Welcome v-if="!dataEntered && !debugMode"
+                <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
                          :d3="d3"
                          :cohortModel="cohortModel"
                          :welcomeWidth="screenWidth"
                          :welcomeHeight="screenHeight"
                          :navBarHeight="navBarHeight"
+                         :firstLoadComplete="firstLoadComplete"
+                         @toggle-carousel="toggleCarousel"
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0">
+                <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0"  :class="{ 'blur-content': displayCarousel }">
                     <v-row no-gutters>
                         <v-card width="100%">
                             <v-toolbar>
@@ -238,6 +240,7 @@
                 // view state
                 globalMode: false,
                 dataEntered: false,
+                displayCarousel: false,
                 displayLoader: false,
                 showKnownVariantsCard: false,
                 showCosmicVariantsCard: false,
@@ -245,6 +248,7 @@
                 annotationComplete: false,
                 showCoverageCutoffs: false,
                 applyFilters: false,
+                firstLoadComplete: false,
 
                 // selection state
                 selectedGene: null,
@@ -297,6 +301,8 @@
             onLaunch: function (modelInfos, userGeneList) {
                 const self = this;
                 self.dataEntered = true;
+                self.displayCarousel = false;
+                self.firstLoadComplete = true;
                 self.displayLoader = true;
                 self.cohortModel.promiseInit(modelInfos, userGeneList)
                     .then(() => {
@@ -316,13 +322,23 @@
             },
             callSomaticVariants: function () {
                 const self = this;
+                self.selectedVariant = null;
+                self.displayLoader = true;
+
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
                         let totalSomaticVarCount = rankObj.count;
+                        let totalSomaticGenes = rankObj.geneCount;
                         let topRankedGene = rankObj.gene;
 
                         let geneModel = self.cohortModel.geneModel;
                         self.totalSomaticVarCount = totalSomaticVarCount;
+                        let chipInfo = {
+                            'variantCount' : totalSomaticVarCount,
+                            'geneCount' : totalSomaticGenes,
+                            'filters' : self.filterModel.getActiveImplementedFilters()
+                        };
+                        self.$emit('set-global-display', chipInfo);
 
                         // Get rid of global loader
                         self.displayLoader = false;
@@ -670,6 +686,9 @@
                             self.$refs.variantSummaryCardRef.updateSeqCharts(bamType);
                         })
                 }
+            },
+            toggleCarousel: function(display) {
+                this.displayCarousel = display;
             }
         },
         computed: {
@@ -741,4 +760,8 @@
         color: white
         background-color: #7f1010
         padding-bottom: 5px
+
+    .blur-content
+        filter: blur(1px)
+        -webkit-filter: blur(1px)
 </style>

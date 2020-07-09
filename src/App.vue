@@ -1,19 +1,21 @@
 <template>
     <v-app>
         <v-app-bar flat app dark color=appColor>
-            <v-toolbar-title class="headline text-uppercase">
+            <v-toolbar-title style="width: 300px" class="headline text-uppercase">
                 <span id="title">Oncogene.iobio</span>
             </v-toolbar-title>
             <v-spacer></v-spacer>
-            <files-menu
-                    v-if="cohortModel"
-                    ref="fileMenuRef"
-                    :cohortModel="cohortModel"
-                    @update-samples="onUpdateSamples"
-                    @on-files-loaded="onFilesLoaded"
-                    @load-demo-data="onLoadDemoData"
-            >
-            </files-menu>
+            <v-chip v-if="numSomaticVars != null" class="var-chip" color="white" outlined> {{ numSomaticVars + ' SomaticVariants Found in ' + numSomaticGenes + ' Genes' }}
+            </v-chip>
+            <v-select v-if="activeFilters.length > 0"
+                      dense
+                      :items="activeFilters"
+                      label="Active Filters"
+                      outlined
+                      class="mt-6 pa-2"
+                      style="width: 100px"
+            ></v-select>
+            <v-btn color="secondary" v-if="filesLoaded" @click="displayFilesCarousel">Files</v-btn>
             <v-btn
                     text
                     href="http://iobio.io"
@@ -24,6 +26,7 @@
         </v-app-bar>
         <v-content style="background-color: #7f1010">
             <Home v-if="filterModel"
+                  ref="homePanel"
                   :d3="globalApp.d3"
                   :$="globalApp.$"
                   :cohortModel="cohortModel"
@@ -33,6 +36,7 @@
                   :geneList="allGenes"
                   @load-demo="onLoadDemo"
                   @gene-changed="onGeneChanged"
+                  @set-global-display="setGlobalDisplay"
             >
 
             </Home>
@@ -42,7 +46,6 @@
 
 <script>
     // vue components
-    import FilesMenu from './components/FilesMenu'
     import Home from './components/Home';
 
     // js components
@@ -67,7 +70,6 @@
         name: 'App',
         components: {
             Home,
-            FilesMenu
         },
         data: () => {
             return {
@@ -89,6 +91,10 @@
                 navBarHeight: 0,
                 dataLoaded: false,
                 enteredGene: null,
+                numSomaticVars: null,
+                numSomaticGenes: null,
+                activeFilters: [],
+                filesLoaded: false,
 
                 // static data
                 allGenes: allGenesData
@@ -137,12 +143,23 @@
                         })
                 })
             },
-            onGeneChanged: function(geneDisplay) {
-                // todo: can get rid of this with redesign
+            onGeneChanged: function (geneDisplay) {
+                // todo: can get rid of this with redesign?
                 this.selectedGeneDisplay = geneDisplay;
                 this.selectedBuild = this.genomeBuildHelper.currentBuild.name;
                 this.dataLoaded = true;
             },
+            setGlobalDisplay: function (chipData) {
+                this.numSomaticVars = chipData.variantCount;
+                this.numSomaticGenes = chipData.geneCount;
+                chipData.filters.forEach(filter => {
+                    this.activeFilters.push(filter.display + ' ' + filter.currLogic + ' ' + filter.currVal);
+                });
+                this.filesLoaded = true;
+            },
+            displayFilesCarousel: function () {
+                this.$refs.homePanel.toggleCarousel(true);
+            }
         },
         mounted: function () {
             const self = this;
@@ -280,4 +297,14 @@
         .chip
             background: #965757
             color: white
+
+    .filter-chip
+        font-family: Quicksand
+        font-size: 12px
+
+    .var-chip
+        font-family: Quicksand
+        font-size: 14px
+        margin-left: 150px
+
 </style>

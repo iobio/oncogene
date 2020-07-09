@@ -1,11 +1,11 @@
 <template>
     <div :id="divId">
-        <svg :width="welcomeWidth" :height="welcomeHeight">
+        <svg v-if="!firstLoadComplete" :width="welcomeWidth" :height="welcomeHeight">
             <g :transform="translation"></g>
         </svg>
         <v-overlay
                 :absolute="absolute"
-                :value="overlay"
+                :value="true"
                 :opacity="opacity"
         >
             <v-card
@@ -15,6 +15,10 @@
                     class="mx-auto"
                     :style="'background: ' + slideBackground"
             >
+                <v-system-bar class="mb-2 pt-3" color="white" v-if="firstLoadComplete">
+                    <v-spacer></v-spacer>
+                    <v-icon class="pt-2" large color="appGray" @click="$emit('toggle-carousel', false)">close</v-icon>
+                </v-system-bar>
                 <v-alert v-model="showError"
                          prominent
                          outlined
@@ -362,6 +366,10 @@
             navBarHeight: {
                 type: Number,
                 default: 0
+            },
+            firstLoadComplete: {
+                type: Boolean,
+                default: false
             }
         },
         data: function () {
@@ -371,7 +379,7 @@
                 cycle: false,
                 continuous: false,
                 absolute: false,
-                opacity: 0.1,
+                opacity: 0.3,
                 overlay: true,
                 slideBackground: 'white',
                 aboutElevation: 4,
@@ -874,6 +882,7 @@
             // this.makeItRain();
             this.populateValidGenesMap();
             this.populateGeneLists();
+            // todo: if we've already loaded, populate data here
         }
     }
 </script>

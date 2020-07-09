@@ -34,8 +34,6 @@
 
     export default {
         name: 'filter-panel-checkbox',
-        components: {
-        },
         props: {
             parentFilterName: null,
             annotationComplete: {

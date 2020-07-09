@@ -3,6 +3,8 @@
     .filter-form
         .slider-select
             padding-top: 0
+            margin-top: -2px
+            font-family: Quicksand
 
             .input-group__input
                 i
@@ -20,13 +22,14 @@
             padding-right: 0
 
     .slider-bottom-row
-        height: 15px
         float: right
         text-align: right
+        margin-top: -15px
+        padding-right: 8px !important
 
         .slider-display
             padding-top: 0
-            max-width: 35px
+            max-width: 45px
             height: 35px
 
             .input-group__input
@@ -44,7 +47,8 @@
 
         .slider-bar-input
             padding-top: 0
-            padding-left: 15px
+            width: 100px
+            font-family: Quicksand
 
             .input-group__input
                 margin-top: -5px
@@ -63,39 +67,36 @@
 
 <template>
     <v-layout row wrap class="filter-form mx-2" style="max-width:500px;">
-        <v-flex xs12>
-            <v-container fluid>
-                <v-layout :style="{'height': '40px'}">
-                        <v-flex d-flex xs3>
-                            <v-select class="slider-select"
-                                      :items="dropDownOptions"
-                                      v-model="currLogic"
-                                      single-line
-                                      color="white"
-                                      :disabled="disableLogicDropdown">
-                            </v-select>
-                        </v-flex>
-                        <v-flex d-flex xs9 class="slider-top-row">
-                            <v-slider dark :min="logicObj.minValue" :max="logicObj.maxValue" v-model="logicObj.currVal" class="slider-bar" @input="onSliderChange">
-                            </v-slider>
-                        </v-flex>
-                </v-layout>
-                <v-layout :style="{'height': '20px', 'margin-top': '-5px'}">
-                    <v-flex xs9>
-                        <!--Spacing-->
-                    </v-flex>
-                    <v-flex xs3 class="slider-bottom-row">
-                        <v-text-field v-model="logicObj.currVal" class="slider-bar-input" color="appColor" :suffix="logicObj.labelSuffix" type="number" @input="onSliderChange"></v-text-field>
-                    </v-flex>
-                </v-layout>
-            </v-container>
-        </v-flex>
+        <v-container>
+            <v-row no-gutters>
+                <v-col sm="6" md="3">
+                    <v-select class="slider-select"
+                              :items="dropDownOptions"
+                              v-model="currLogic"
+                              single-line
+                              color="white"
+                              style="margin-top: -15px"
+                              :disabled="disableLogicDropdown">
+                    </v-select>
+                </v-col>
+                <v-col sm="6" md="9" class="slider-top-row">
+                    <v-slider dark :min="logicObj.minValue" :max="logicObj.maxValue" v-model="logicObj.currVal" class="slider-bar" @input="onSliderChange">
+                    </v-slider>
+                </v-col>
+            </v-row>
+            <v-row no-gutters style="margin-top: -15px">
+                <v-col sm="6" md="9">
+                    <!--Spacing-->
+                </v-col>
+                <v-col sm="6" md="3" class="slider-bottom-row">
+                    <v-text-field v-model="logicObj.currVal" class="slider-bar-input" color="appColor" :suffix="logicObj.labelSuffix" type="number" @input="onSliderChange"></v-text-field>
+                </v-col>
+            </v-row>
+        </v-container>
     </v-layout>
 </template>
 
 <script>
-    import _ from 'lodash'
-
     export default {
         name: 'filter-panel-slider',
         components: {},
@@ -107,7 +108,7 @@
             annotationComplete: {
                 default: false,
                 type: Boolean
-            }
+            },
         },
         data() {
             return {
@@ -119,7 +120,8 @@
                     { text: '>' }
                 ],
                 disableLogicDropdown: false,
-                currLogic: null,    // Note: have to use local prop and not model-backed one here because needs to be in dropDownOptions list
+                currLogic: null,        // Note: have to use local prop and not model-backed one here because needs to be in dropDownOptions list
+                firstExpansion: true    // Used to control slider mount preventing filter change
             }
         },
         watch: {
@@ -134,21 +136,23 @@
             }
         },
         methods: {
-            onSliderChange: _.debounce(function() {
+            onSliderChange: function() {
                 const self = this;
-                self.logicObj.active = self.logicObj.currVal > 0;
-                self.$emit('filter-slider-changed')
-            }, 500),
-            clearLogic: function() {
-                const self = this;
-                self.currLogic = null;
+                if (self.firstExpansion) {
+                    self.firstExpansion = false;
+                } else {
+                    self.logicObj.active = self.logicObj.currVal > 0;
+                    self.logicObj.stagedLogic = self.logicObj.currLogic;
+                    self.logicObj.stagedVal = self.logicObj.currVal;
+                    self.$emit('filter-slider-changed');
+                }
             }
         },
         mounted: function() {
             const self = this;
-            if (self.logicObj && self.logicObj.initLogic) {
+            if (self.logicObj && self.logicObj.defaultLogic) {
                 const matchingLogic = self.dropDownOptions.filter((option) => {
-                    return option.text === self.logicObj.initLogic;
+                    return option.text === self.logicObj.defaultLogic;
                 });
                 self.currLogic = matchingLogic[0];
             }

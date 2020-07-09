@@ -1334,7 +1334,7 @@ class GeneModel {
                 .then(() => {
                     self.promiseRankGenes()
                         .then(topGene => {
-                            resolve({'gene': topGene, "count": totalSomaticVarCount});
+                            resolve({'gene': topGene, "count": totalSomaticVarCount, "geneCount": Object.keys(genesWithVars).length });
                         }).catch(error => {
                         reject('There was a problem ranking genes: ' + error);
                     })

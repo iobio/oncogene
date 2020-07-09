@@ -31,6 +31,9 @@
         .recall-btn
             font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif'
 
+        .staged-filters
+            font-family: 'Quicksand'
+
     #filter-settings-icon
         font-size: 20px
         color: $app-color
@@ -38,16 +41,30 @@
 
 <template class="pa-0">
     <v-card flat tile dark width="100%" class="filter-settings-form mx-1">
-        <div class="text-center px-1 py-1">
-            <div class="mt-5" v-if="recallCriteriaSet">
-                <v-btn class="mx-1 mt-1 recall-btn" color="secondary" @click="recallSomaticVariants">
-                    Recall Somatic Variants
-                </v-btn>
-                <v-btn color="appGray" class="mx-1 mt-1 recall-btn" @click="clearRecallCriteria">
-                    Cancel
-                </v-btn>
+        <v-card v-if="activeRecallFilters.length > 0" class="pb-2">
+            <div class="mt-5 staged-filters">
+                <v-card-title style="font-size: 22px">
+                    <v-icon class="pr-1" color="white">warning</v-icon>
+                    Staged filter changes:
+                </v-card-title>
+                <v-card-text>
+                    <v-chip color="white" class="my-1" outlined close
+                            v-for="stagedFilter in activeRecallFilters"
+                            :key="stagedFilter.name"
+                            @click:close="removeStagedFilter(stagedFilter.name)">
+                        {{ stagedFilter.display + ' ' + stagedFilter.stagedLogic + ' ' + stagedFilter.stagedVal }}
+                    </v-chip>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn class="mx-1 mt-1 recall-btn" color="secondary" @click="recallSomaticVariants">
+                        Recall Somatic Variants
+                    </v-btn>
+                    <v-btn color="appGray" class="mx-1 mt-1 recall-btn" @click="clearRecallCriteria">
+                        Cancel
+                    </v-btn>
+                </v-card-actions>
             </div>
-        </div>
+        </v-card>
         <v-card flat
                 color="transparent"
                 v-for="category in filterModel.filterCategories"
@@ -99,22 +116,29 @@
         data() {
             return {
                 showMenu: true,
-                recallCriteriaSet: false
+                activeRecallFilters: []
             }
         },
         methods: {
             onFilterChange: function(recallFilter) {
                 if (recallFilter) {
-                    this.recallCriteriaSet = true;
+                    this.activeRecallFilters = this.filterModel.getActiveRecallFilters();
                 } else {
                     this.$emit('filter-change');
                 }
             },
             recallSomaticVariants: function() {
+                this.filterModel.commitStagedChanges();
+                this.activeRecallFilters = [];
                 this.$emit('recall-somatic-variants');
             },
             clearRecallCriteria: function() {
-                // todo: keep record of last called in filterModel and pull from there
+                this.filterModel.clearAllStagedChanges();
+                this.activeRecallFilters = [];
+            },
+            removeStagedFilter: function(filterName) {
+                this.filterModel.removeStagedFilter(filterName);
+                this.activeRecallFilters = this.filterModel.getActiveRecallFilters();
             }
         },
     }
