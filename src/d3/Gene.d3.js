@@ -1,5 +1,5 @@
 export default function geneD3(d3, options) {
-    // todo: took selection out of here...
+
     var dispatch = d3.dispatch("d3selected", "d3featuretooltip", "d3featureglyphtooltip", "d3brush");
 
     // defaults
@@ -7,7 +7,7 @@ export default function geneD3(d3, options) {
     var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
     // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
-    // var selectedTranscript = null;
+    var selectedTranscript = null;
     var color = options.color ? options.color : '#969696';
 
     // dimensions
@@ -30,6 +30,8 @@ export default function geneD3(d3, options) {
     var transcriptClass = function () {
         return 'transcript';
     };
+    var displayOnly = options.displayOnly ? options.displayOnly : false;
+
     var geneD3_utrHeight = undefined,
         geneD3_cdsHeight = 12,
         geneD3_arrowHeight = 8,
@@ -275,15 +277,17 @@ export default function geneD3(d3, options) {
 
                 })
                 .on("click", function (d) {
-                    // select the transcript
-                    // svg.selectAll('.transcript.current').classed("current", false);
-                    // d3.select(this.parentNode).classed("current", true);
-                    // selectedTranscript = d3.select(this.parentNode)[0][0].__data__;
-                    // dispatch.call('d3selected', selectedTranscript);
+                    if (!displayOnly) {
+                        // select the transcript
+                        svg.selectAll('.transcript.current').classed("current", false);
+                        d3.select(this.parentNode).classed("current", true);
+                        selectedTranscript = d3.select(this.parentNode)['_groups'][0][0].__data__;
+                        dispatch.call('d3selected', this, selectedTranscript);
 
-                    // show the tooltip
-                    var featureObject = d3.select(this);
-                    dispatch.call('d3featuretooltip', this, featureObject, d, true);
+                        // show the tooltip
+                        var featureObject = d3.select(this);
+                        dispatch.call('d3featuretooltip', this, featureObject, d, true);
+                    }
                 });
 
 
@@ -469,159 +473,6 @@ export default function geneD3(d3, options) {
 
     // Call chart
     // chart(selection);    // todo: needs to be moved to component level
-
-
-    // chart.transcriptClass = function (_) {
-    //     if (!arguments.length) return transcriptClass;
-    //     transcriptClass = _;
-    //     return chart;
-    // };
-    //
-    // chart.featureClass = function (_) {
-    //     if (!arguments.length) return featureClass;
-    //     featureClass = _;
-    //     return chart;
-    // };
-    //
-    // chart.featureGlyphHeight = function (_) {
-    //     if (!arguments.length) return featureGlyphHeight;
-    //     featureGlyphHeight = _;
-    //     return chart;
-    // };
-    //
-    // chart.featureGlyph = function (_) {
-    //     if (!arguments.length) return featureGlyph;
-    //     featureGlyph = _;
-    //     return chart;
-    // };
-    //
-    // chart.margin = function (_) {
-    //     if (!arguments.length) return margin;
-    //     margin = _;
-    //     return chart;
-    // };
-    //
-    // chart.width = function (_) {
-    //     if (!arguments.length) return geneD3_width;
-    //     geneD3_width = _;
-    //     return chart;
-    // };
-    //
-    // chart.height = function (_) {
-    //     if (!arguments.length) return geneD3_height;
-    //     geneD3_height = _;
-    //     return chart;
-    // };
-    //
-    // chart.widthPercent = function (_) {
-    //     if (!arguments.length) return geneD3_widthPercent;
-    //     geneD3_widthPercent = _;
-    //     return chart;
-    // };
-    //
-    // chart.heightPercent = function (_) {
-    //     if (!arguments.length) return geneD3_heightPercent;
-    //     geneD3_heightPercent = _;
-    //     return chart;
-    // };
-    //
-    // chart.x = function (_) {
-    //     if (!arguments.length) return x;
-    //     x = _;
-    //     return chart;
-    // };
-    //
-    // chart.y = function (_) {
-    //     if (!arguments.length) return y;
-    //     y = _;
-    //     return chart;
-    // };
-    //
-    // chart.xAxis = function (_) {
-    //     if (!arguments.length) return xAxis;
-    //     xAxis = _;
-    //     return chart;
-    // };
-    //
-    // chart.yAxis = function (_) {
-    //     if (!arguments.length) return yAxis;
-    //     yAxis = _;
-    //     return chart;
-    // };
-    // chart.trackHeight = function (_) {
-    //     if (!arguments.length) return geneD3_trackHeight;
-    //     geneD3_trackHeight = _;
-    //     return chart;
-    // };
-    //
-    // chart.utrHeight = function (_) {
-    //     if (!arguments.length) return geneD3_utrHeight;
-    //     geneD3_utrHeight = _;
-    //     return chart;
-    // };
-    //
-    // chart.cdsHeight = function (_) {
-    //     if (!arguments.length) return geneD3_cdsHeight;
-    //     geneD3_cdsHeight = _;
-    //     return chart;
-    // };
-    //
-    // chart.arrowHeight = function (_) {
-    //     if (!arguments.length) return geneD3_arrowHeight;
-    //     geneD3_arrowHeight = _;
-    //     return chart;
-    // };
-    //
-    // chart.showXAxis = function (_) {
-    //     if (!arguments.length) return geneD3_showXAxis;
-    //     geneD3_showXAxis = _;
-    //     return chart;
-    // };
-    //
-    // chart.regionStart = function (_) {
-    //     if (!arguments.length) return geneD3_regionStart;
-    //     geneD3_regionStart = _;
-    //     return chart;
-    // };
-    // chart.regionEnd = function (_) {
-    //     if (!arguments.length) return geneD3_regionEnd;
-    //     geneD3_regionEnd = _;
-    //     return chart;
-    // };
-    //
-    // chart.showBrush = function (_) {
-    //     if (!arguments.length) return geneD3_showBrush;
-    //     geneD3_showBrush = _;
-    //     return chart;
-    // }
-    //
-    // chart.drawBrush = function (_) {
-    //     if (!arguments.length) return geneD3_drawBrush;
-    //     geneD3_drawBrush = _;
-    //     return chart;
-    // };
-    //
-    // chart.selectedTranscript = function (_) {
-    //     if (!arguments.length) return selectedTranscript;
-    //     selectedTranscript = _;
-    //     return chart;
-    // };
-    //
-    // chart.showLabel = function (_) {
-    //     if (!arguments.length) return geneD3_showLabel;
-    //     geneD3_showLabel = _;
-    //     return chart;
-    // };
-    //
-    // chart.toggleBrush = function (_) {
-    //     if (!arguments.length) return toggleBrush;
-    //     toggleBrush = _;
-    //     return chart;
-    // };
-    //
-    //
-    // // This adds the "on" methods to our custom exports
-    // d3.rebind(chart, dispatch, "on");
 
     return chart;
 }

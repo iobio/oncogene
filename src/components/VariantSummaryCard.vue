@@ -31,6 +31,13 @@
         filter: blur(1px)
         -webkit-filter: blur(1px)
 
+    .summary-field-label
+        color: #b4b3b3
+        font-style: italic
+        font-size: 12px
+        padding-left: 2px
+        text-align: left
+
     .summary-viz
         min-height: 100px
         max-height: 600px
@@ -52,13 +59,6 @@
             font-style: italic
             padding-left: 6px
             text-align: right
-
-        .summary-field-label
-            color: #b4b3b3
-            font-style: italic
-            font-size: 12px
-            padding-left: 2px
-            text-align: left
 
         .field-label-header
             color: #7f7f7f
@@ -263,16 +263,23 @@
                     </allele-frequency-viz>
                     <v-container>
                         <v-row no-gutters class="summary-viz" style="min-height: 0; padding-top: 10px">
-                            <v-col sm="12" class="field-label-header">Raw Bam Counts</v-col>
+                            <v-col sm="6" class="field-label-header">Raw Bam Counts</v-col>
+                            <v-col sm="4"></v-col>
+                            <v-col sm="2" style="float: right">
+                                <v-btn v-show="variantSelected" fab dark small color="secondary" class="mx-2"
+                                    @click="onIgvClick">
+                                    <v-icon>clear_all</v-icon>
+                                </v-btn>
+                            </v-col>
                         </v-row>
                     </v-container>
-                    <bar-feature-viz id="coverage-bar-feature-viz" class="summary-viz" style="padding-top: 10px"
-                                     ref="coverageBarFeatureViz"
-                                     :counts="coverageCounts"
-                                     :selectedVariant="variant"
-                                     :bamType="'coverage'"
-                                     :d3="d3">
-                    </bar-feature-viz>
+<!--                    <bar-feature-viz id="coverage-bar-feature-viz" class="summary-viz" style="padding-top: 10px"-->
+<!--                                     ref="coverageBarFeatureViz"-->
+<!--                                     :counts="coverageCounts"-->
+<!--                                     :selectedVariant="variant"-->
+<!--                                     :bamType="'coverage'"-->
+<!--                                     :d3="d3">-->
+<!--                    </bar-feature-viz>-->
                     <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz"
                                      style="padding-top: 10px"
                                      ref="rnaSeqBarFeatureViz"
@@ -336,7 +343,7 @@
         watch: {
             variant: function () {
                 if (this.variant) {
-                    this.setCoverageCounts();
+                    //this.setCoverageCounts();
 
                     if (this.cohortModel.hasRnaSeqData) {
                         this.setRnaSeqCounts();
@@ -394,14 +401,17 @@
                 return "-";
             },
             variantAaChange: function () {
+                let aaChange = 'N/A';
                 if (this.variant != null && this.variant.vepAminoAcids) {
                     let changeString = Object.values(this.variant.vepAminoAcids)[0];
-                    let acids = changeString.split('/');
-                    let expectAa = this.cohortModel.globalApp.convertAa(acids[0]);
-                    let actualAa = this.cohortModel.globalApp.convertAa(acids[1]);
-                    return expectAa + '->' + actualAa;
+                    if (changeString) {
+                        let acids = changeString.split('/');
+                        let expectAa = this.cohortModel.globalApp.convertAa(acids[0]);
+                        let actualAa = this.cohortModel.globalApp.convertAa(acids[1]);
+                        aaChange = expectAa + '->' + actualAa;
+                    }
                 }
-                return "N/A";
+                return aaChange;
             },
             clinVarText: function () {
                 if (this.variantInfo != null && this.variantInfo.clinvarSig != null)
@@ -470,18 +480,22 @@
                     this.setRnaSeqCounts();
                 } else if (bamType === this.cohortModel.globalApp.ATACSEQ_TYPE) {
                     this.setAtacSeqCounts();
-                } else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
-                    this.setCoverageCounts();
                 }
+                //
+                // else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
+                //     this.setCoverageCounts();
+                // }
             },
             markSeqChartsLoading: function (bamType, isLoading) {
                 if (bamType === this.cohortModel.globalApp.RNASEQ_TYPE) {
                     this.updateRnaSeqLoader(isLoading);
                 } else if (bamType === this.cohortModel.globalApp.ATACSEQ_TYPE) {
                     this.updateAtacSeqLoader(isLoading);
-                } else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
-                    this.updateCoverageLoader(isLoading);
                 }
+
+                // else if (bamType === this.cohortModel.globalApp.COVERAGE_TYPE) {
+                //     this.updateCoverageLoader(isLoading);
+                // }
             },
             setCoverageCounts: function () {
                 // Get coverage counts from each sample
@@ -575,6 +589,9 @@
             },
             updateCoverageLoader: function (isLoading) {
                 this.$refs.coverageBarFeatureViz.setLoader(isLoading);
+            },
+            onIgvClick: function() {
+                this.$emit('show-pileup');
             }
         },
         mounted: function () {

@@ -45,7 +45,6 @@ class GlobalApp {
 
     // config files
     this.siteConfigUrl         =  "https://s3.amazonaws.com/gene.iobio.config/site-config.json";
-//    this.siteConfigUrl         =  "https://s3.amazonaws.com/gene.iobio.config/site-config-dev.json";
     this.clinvarGenesUrl       =  "https://s3.amazonaws.com/gene.iobio.config/clinvar-counts.txt";
 
     // Get clinvar annotations from 'eutils' or 'vcf'

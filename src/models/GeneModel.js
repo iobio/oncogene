@@ -5,11 +5,11 @@ class GeneModel {
         this.limitGenes = limitGenes;
         this.geneInfoServer = this.globalApp.HTTP_SERVICES + "geneinfo/";
         this.geneToPhenoServer = this.globalApp.HTTP_SERVICES + "gene2pheno/";
-        this.phenolyzerServer = "https://7z68tjgpw4.execute-api.us-east-1.amazonaws.com/dev/phenolyzer/";
-        this.phenolyzerOnlyServer = this.globalApp.HTTP_SERVICES + "phenolyzer/";
+        this.phenolyzerServer = "https://services.backend.iobio.io/phenolyzer/";
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
         this.NCBI_GENE_SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
+        this.retried = false;   // Sometimes eutils craps out
 
 
         this.linkTemplates = {
@@ -45,6 +45,7 @@ class GeneModel {
         this.geneDangerSummaries = {};
         this.sortedGeneNames = [];
 
+        this.pendingNCBIRequests = {};
         this.geneNCBISummaries = {};
         this.genePhenotypes = {};
         this.geneObjects = {};
@@ -72,18 +73,27 @@ class GeneModel {
 
     promiseAddGeneName(theGeneName) {
         let me = this;
+        let promises = [];
 
-        return new Promise(function (resolve) {
+        return new Promise(function (resolve, reject) {
             let geneName = theGeneName.toUpperCase();
 
             if (!me.geneObjects[geneName]) {
-                me.promiseGetGeneObject(geneName)
-                    .then(() => {
-                        resolve();
-                    })
-            } else {
-                resolve();
+                let objP = me.promiseGetGeneObject(geneName);
+                promises.push(objP);
             }
+
+            if (!me.geneNCBISummaries[geneName]) {
+                let sumP = me.promiseGetNCBIGeneSummary(geneName);
+                promises.push(sumP);
+            }
+
+            Promise.all(promises)
+                .then(() => {
+                    resolve();
+                }).catch(error => {
+                    reject(error);
+            });
 
             // if (me.geneNames.indexOf(geneName) < 0) {
             //     me.geneNames.push(geneName);
@@ -123,7 +133,7 @@ class GeneModel {
         me.allKnownGenes = allKnownGenes;
         me.allKnownGeneNames = {};
         me.allKnownGenes.forEach(function (gene) {
-            me.allKnownGeneNames[gene.gene_name] = true;
+            me.allKnownGeneNames[gene.gene_name] = gene;
         })
     }
 
@@ -131,6 +141,23 @@ class GeneModel {
         this.copyPasteGenes(this.ACMG_GENES.join(","));
     }
 
+    promiseIsValidGene(geneName) {
+        let self = this;
+        return new Promise(function(resolve) {
+            if (self.isKnownGene(geneName)) {
+                self.promiseGetGeneObject(geneName)
+                    .then(function() {
+                        resolve(true);
+                    })
+                    .catch(function(error) {
+                        console.log(error);
+                        resolve(false);
+                    })
+            } else {
+                resolve(false);
+            }
+        })
+    }
 
     promiseCopyPasteGenes(genesString, options = {replace: true, warnOnDup: true}) {
         const me = this;
@@ -504,7 +531,7 @@ class GeneModel {
 
                 return compare * strandMultiplier;
 
-            })
+            });
 
         var exonCount = 0;
         sortedExons.forEach(function () {
@@ -515,68 +542,162 @@ class GeneModel {
         sortedExons.forEach(function (exon) {
             exon.exon_number = exonNumber + "/" + exonCount;
             exonNumber++;
-        })
+        });
         return sortedExons;
+    }
+
+    promiseGetNCBIGeneSummaries(geneNames) {
+        let me = this;
+        let waitSeconds = 0;
+        if (Object.keys(me.geneNCBISummaries).length > 0) {
+            waitSeconds = 5000;
+        }
+        setTimeout(function() {
+            return me.promiseGetNCBIGeneSearchesImpl(geneNames);
+        }, waitSeconds);
+    }
+
+    promiseGetNCBIGeneSearchesImpl(geneNames) {
+        const me = this;
+        return new Promise( function(resolve, reject) {
+            let theGeneNames = geneNames.filter(function(geneName) {
+                return me.geneNCBISummaries[geneName] == null;
+            });
+
+            if (theGeneNames.length === 0) {
+                resolve();
+            } else {
+                let searchGeneExpr = "";
+                theGeneNames.forEach(function(geneName) {
+                    var geneInfo = me.geneNCBISummaries[geneName];
+                    if (geneInfo == null) {
+                        if (searchGeneExpr.length > 0) {
+                            searchGeneExpr += " OR ";
+                        }
+                        searchGeneExpr += geneName + "[Gene name]";
+                    }
+                });
+                var searchUrl = me.NCBI_GENE_SEARCH_URL + "&term=" + "(9606[Taxonomy ID] AND (" + searchGeneExpr + "))" + "&api_key=2ce5a212af98a07c6e770d1e95b99a2fef09";
+                me.pendingNCBIRequests[theGeneNames] = true;
+
+                me.globalApp.$.ajax(searchUrl)
+                    .done(function(data) {
+                        setTimeout(() => {
+                            me.promiseGetNCBIGeneSummariesImpl(data, theGeneNames)
+                        }, 5000);
+                    })
+                    .fail(function() {
+                        delete me.pendingNCBIRequests[theGeneNames];
+                        console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
+                        if (!me.retried) {
+                            me.retried = true;
+                            console.log('Had to retry NCBI eutils');
+                            return me.promiseGetNCBIGeneSummaries(geneNames);
+                        } else {
+                            reject();
+                        }
+                    })
+            }
+        })
+    }
+
+    promiseGetNCBIGeneSummariesImpl(data, theGeneNames) {
+        const me = this;
+
+        return new Promise((resolve, reject) => {
+            // Now that we have the gene ID, get the NCBI gene summary
+            var webenv = data["esearchresult"]["webenv"];
+            var queryKey = data["esearchresult"]["querykey"];
+            var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv + "&api_key=2ce5a212af98a07c6e770d1e95b99a2fef09";
+            me.globalApp.$.ajax(summaryUrl)
+                .done(function(sumData) {
+                    if (sumData.result == null || sumData.result.uids.length === 0) {
+                        if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
+                            sumData.esummaryresult.forEach( function(message) {
+                                console.log("Unable to get NCBI gene summary from eutils esummary");
+                                console.log(message);
+                            });
+                        }
+                        delete me.pendingNCBIRequests[theGeneNames];
+                        reject();
+                    } else {
+                        sumData.result.uids.forEach(function(uid) {
+                            var geneInfo = sumData.result[uid];
+                            me.geneNCBISummaries[geneInfo.name] = geneInfo;
+                            let currObj = me.geneObjects[geneInfo.name];
+                            if (currObj)
+                                currObj.geneInfo = geneInfo;
+                        });
+                        delete me.pendingNCBIRequests[theGeneNames];
+                        resolve();
+                    }
+                })
+                .fail(function() {
+                    delete me.pendingNCBIRequests[theGeneNames];
+                    console.log("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
+                    if (!me.retried) {
+                        me.retried = true;
+                        console.log('Had to retry NCBI eutils');
+                        return me.promiseGetNCBIGeneSummaries(data, theGeneNames);
+                    } else {
+                        reject();
+                    }
+                })
+        })
     }
 
 
     promiseGetNCBIGeneSummary(geneName) {
         let me = this;
-        return new Promise(function (resolve, reject) {
+        return new Promise( function(resolve) {
 
             var geneInfo = me.geneNCBISummaries[geneName];
-            let unknownGeneInfo = {description: '?', summary: '?'};
+            let unknownGeneInfo = {description: ' ', summary: ' '};
 
-            if (geneInfo != null) {
+            if (geneInfo != null && geneInfo.summary !== " ") {
                 resolve(geneInfo);
             } else {
                 // Search NCBI based on the gene name to obtain the gene ID
                 var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
-                me.globalApp.$.ajax({
-                        url: url,
-                        type: "GET",
-                        dataType: "json",
-                        crossDomain: true
-                    }
-                ).done(function (data) {
-                    // Now that we have the gene ID, get the NCBI gene summary
-                    var webenv = data["esearchresult"]["webenv"];
-                    var queryKey = data["esearchresult"]["querykey"];
-                    var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
-                    me.globalApp.$.ajax({
-                            url: summaryUrl,
-                            type: 'GET',
-                            dataType: 'json',
-                            crossDomain: true
-                        }
-                    ).done(function (sumData) {
-                        if (sumData.result == null || sumData.result.uids.length === 0) {
-                            if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
-                                sumData.esummaryresult.forEach(function (message) {
-                                    console.log("Unable to get NCBI gene summary from eutils esummary");
-                                    console.log(message);
-                                });
-                            }
-                            me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                            resolve(unknownGeneInfo);
+                me.globalApp.$.ajax( url )
+                    .done(function(data) {
 
-                        } else {
-                            var uid = sumData.result.uids[0];
-                            var geneInfo = sumData.result[uid];
-                            me.geneNCBISummaries[geneName] = geneInfo;
-                            resolve(geneInfo)
-                        }
+                        // Now that we have the gene ID, get the NCBI gene summary
+                        var webenv = data["esearchresult"]["webenv"];
+                        var queryKey = data["esearchresult"]["querykey"];
+                        var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
+                        me.globalApp.$.ajax( summaryUrl )
+                            .done(function(sumData) {
+                                if (sumData.result == null || sumData.result.uids.length === 0) {
+                                    if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
+                                        sumData.esummaryresult.forEach( function(message) {
+                                            console.log("Unable to get NCBI gene summary from eutils esummary");
+                                            console.log(message);
+                                        });
+                                    }
+                                    me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                                    resolve(unknownGeneInfo);
+
+                                } else {
+
+                                    var uid = sumData.result.uids[0];
+                                    var geneInfo = sumData.result[uid];
+
+                                    me.geneNCBISummaries[geneName] = geneInfo;
+                                    resolve(geneInfo)
+                                }
+                            })
+                            .fail(function() {
+                                console.log("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
+                                me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                                resolve(unknownGeneInfo);
+                            })
+
                     })
-                        .fail(function () {
-                            me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                            reject("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
-                            // resolve(unknownGeneInfo);
-                        })
-                })
-                    .fail(function () {
+                    .fail(function() {
+                        console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
                         me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                        reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
-                        // resolve(geneInfo);
+                        resolve(geneInfo);
                     })
             }
         });
@@ -695,7 +816,15 @@ class GeneModel {
         });
     }
 
-    /* Takes in array of genes, does a single call to  */
+    getKnownGene(geneName) {
+        if (this.allKnownGenes[geneName]) {
+            return this.allKnownGeneNames[geneName];
+        } else {
+            return this.allKnownGeneNames[geneName.toUpperCase()]
+        }
+    }
+
+    /* Takes in array of genes, does a single call to gene info server. */
     promiseGetGeneObjects(geneNames) {
         const me = this;
         return new Promise((resolve, reject) => {
@@ -718,7 +847,6 @@ class GeneModel {
                     let listObj = response[0];
                     Object.keys(listObj).forEach(geneName => {
                         let theGeneObject = listObj[geneName];
-
                         theGeneObject.somaticVariantList = [];
                         theGeneObject.score = -1;
                         theGeneObject.cosmicHighCount = 0;
@@ -729,6 +857,7 @@ class GeneModel {
                         theGeneObject.moderCount = 0;
                         theGeneObject.lowCount = 0;
                         theGeneObject.modifCount = 0;
+                        theGeneObject.ncbiSummary = '';
 
                         me.geneObjects[geneName] = theGeneObject;
                     });
@@ -747,63 +876,65 @@ class GeneModel {
 
 
     promiseGetGeneObject(geneName) {
-        const me = this;
-
+        var me = this;
         return new Promise(function (resolve, reject) {
 
-            // If we've already fetched the gene object for somatic list, just return it
-            if (me.geneObjects[geneName]) {
-                resolve(me.geneObjects[geneName]);
-            }
-
-            var url = me.geneInfoServer + 'api/gene/' + geneName;
+            var url = me.geneInfoServer + geneName;
 
             // If current build not specified, default to GRCh37
             var buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
             me.globalApp.$('#build-link').text(buildName);
 
-            url += "?source=" + (me.geneSource ? me.geneSource : 'gencode');
-            url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
-            url += "&build=" + buildName;
+            var defaultGeneSource = me.geneSource ? me.geneSource : 'gencode';
+            let knownGene = me.getKnownGene(geneName);
+            let theGeneSource = null;
+            if (knownGene && knownGene[defaultGeneSource]) {
+                theGeneSource = defaultGeneSource
+            } else if (knownGene && knownGene.refseq) {
+                theGeneSource = 'refseq';
+            } else if (knownGene && knownGene.gencode) {
+                theGeneSource === 'gencode';
+            }
 
-            me.globalApp.$.ajax({
-                url: url,
-                jsonp: "callback",
-                type: "GET",
-                dataType: "jsonp",
-                crossDomain: true,
-                success: function (response) {
-                    if (response.length > 0 && response[0].hasOwnProperty('gene_name')) {
-                        var theGeneObject = response[0];
-                        // Oncogene adds
-                        theGeneObject.somaticVariantList = [];
-                        theGeneObject.score = -1;
-                        theGeneObject.cosmicHighCount = 0;
-                        theGeneObject.cosmicModerCount = 0;
-                        theGeneObject.cosmicLowCount = 0;
-                        theGeneObject.cosmicModifCount = 0;
-                        theGeneObject.highCount = 0;
-                        theGeneObject.moderCount = 0;
-                        theGeneObject.lowCount = 0;
-                        theGeneObject.modifCount = 0;
+            if (theGeneSource) {
+                url += "?source=" + theGeneSource;
+                url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
+                url += "&build=" + buildName;
 
-                        me.geneObjects[theGeneObject.gene_name] = theGeneObject;
-                        resolve(theGeneObject);
-                    } else {
-                        console.log("Gene model for " + geneName + " not found.  Empty results returned from " + url);
-                        reject("Gene model for " + geneName + " not found.");
-                    }
-                },
-                error: function (xhr, status, errorThrown) {
 
-                    console.log("Gene model for " + geneName + " not found.  Error occurred.");
-                    console.log("Error: " + errorThrown);
-                    console.log("Status: " + status);
-                    console.log(xhr);
-                    reject("Error " + errorThrown + " occurred when attempting to get gene model for gene " + geneName);
-                }
-            });
+                fetch(url).then(r => r.json())
+                    .then((response) => {
+                        if (response.length > 0 && response[0].hasOwnProperty('gene_name')) {
+                            var theGeneObject = response[0];
+                            theGeneObject.somaticVariantList = [];
+                            theGeneObject.score = -1;
+                            theGeneObject.cosmicHighCount = 0;
+                            theGeneObject.cosmicModerCount = 0;
+                            theGeneObject.cosmicLowCount = 0;
+                            theGeneObject.cosmicModifCount = 0;
+                            theGeneObject.highCount = 0;
+                            theGeneObject.moderCount = 0;
+                            theGeneObject.lowCount = 0;
+                            theGeneObject.modifCount = 0;
+                            theGeneObject.ncbiSummary = '';
 
+                            me.geneObjects[theGeneObject.gene_name] = theGeneObject;
+                            resolve(theGeneObject);
+                        } else {
+                            let msg = "Gene model for " + geneName + " not found.  Empty results returned from " + url;
+                            console.log(msg);
+                            reject(msg);
+                        }
+                    })
+                    .catch((errorThrown) => {
+                        console.log("Gene model for " + geneName + " not found.  Error occurred.");
+                        console.log("Error: " + errorThrown);
+                        reject("Error " + errorThrown + " occurred when attempting to get gene model for gene " + geneName);
+                    });
+
+            } else {
+                reject("No known gene source for gene " + geneName);
+            }
         });
     }
 
@@ -1302,11 +1433,13 @@ class GeneModel {
      * Takes in a list of unique, somatic variants. Each variant contains a boolean
      * representing if a sample contains it or not. Annotates each gene object to append
      * which variants occur within it (for use when a user clicks on a gene).
+     *
+     * Adds NCBI summary to each gene with a somatic variant.
      */
     promiseGroupAndRank(somaticVars) {
         const self = this;
         let genesWithVars = {};
-        let scorePromises = [];
+        let promises = [];
         let totalSomaticVarCount = 0;
 
         return new Promise((resolve, reject) => {
@@ -1316,21 +1449,25 @@ class GeneModel {
                 if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
                     self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
                     totalSomaticVarCount++;
+                    genesWithVars[feat.geneSymbol] = true;
                 } else {
                     // VEP might call gene something else than what gene service does
-                    // TODO: need to figure out what to do here if we don't find a match...
-                    console.log('Could not match VEP gene symbol to ClinGen');
+                    // TODO: alert user to not finding match
+                    console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
                 }
-                genesWithVars[feat.geneSymbol] = true;
             });
             // Once each variant is assigned to its gene object, we can score them
             Object.keys(genesWithVars).forEach(geneName => {
                 let scoreP = self.promiseScoreGene(geneName);
-                scorePromises.push(scoreP);
+                promises.push(scoreP);
             });
 
+            // Fetch NCBI summary for all somatic genes
+            let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
+            promises.push(summaryP);
+
             // Once each gene is scored we can rank them
-            Promise.all(scorePromises)
+            Promise.all(promises)
                 .then(() => {
                     self.promiseRankGenes()
                         .then(topGene => {
@@ -1342,7 +1479,7 @@ class GeneModel {
         })
     }
 
-    // todo: incorporate CiVIC into this
+    // todo: incorporate CiVIC into this, incorporate M Bailey TCGA stuff into this
     promiseScoreGene(geneName) {
         const self = this;
         const VEP_HIGH = 'HIGH';

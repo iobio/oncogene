@@ -769,7 +769,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId) {
+    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
         var me = this;
 
         return new Promise(function (resolve, reject) {
@@ -797,7 +797,7 @@ export default function vcfiobio(theGlobalApp) {
                         } else {
                             reject();
                         }
-                    }, null, sampleModelId);
+                    }, null, sampleModelId, hasRnaSeqData, hasAtacSeqData);
             } else {
                 //me._getLocalStats(refName, geneObject.start, geneObject.end, sampleName);
 
@@ -872,7 +872,7 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId) {
+    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
 
         var me = this;
 
@@ -939,7 +939,7 @@ export default function vcfiobio(theGlobalApp) {
             });
 
             // Parse the vcf object into a variant object that is visualized by the client.
-            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId);
+            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData);
 
             callback(annotatedRecs, results);
         });
@@ -1715,7 +1715,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId) {
+    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
 
         var me = this;
         var selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
@@ -1922,8 +1922,8 @@ export default function vcfiobio(theGlobalApp) {
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'sampleModelId': sampleModelId,   // Used for feature matrix tracking
                                     'readPtCov': -1,                  // Marker values used for bar chart viz
-                                    'rnaSeqPtCov': -1,
-                                    'atacSeqPtCov': -1
+                                    'rnaSeqPtCov':  hasRnaSeqData ? -1 : 0,
+                                    'atacSeqPtCov': hasAtacSeqData ? -1 : 0
                                 };
 
                                 for (var key in clinvarResult) {

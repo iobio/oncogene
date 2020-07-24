@@ -1366,7 +1366,9 @@ class SampleModel {
                         true,  // rsid
                         true, // vep af
                         me.globalApp.useServerCache, // serverside cache
-                        me.id
+                        me.id,
+                        me.rnaSeqUrlEntered,
+                        me.atacSeqUrlEntered
                     ).then(function (data) {
 
                         var rawVcfRecords = data[0];
@@ -1542,7 +1544,9 @@ class SampleModel {
                                 true,  // rsid
                                 false, // vep af
                                 me.globalApp.useServerCache, // serverside cache
-                                me.id
+                                me.id,
+                                me.rnaSeqUrlEntered,
+                                me.atacSeqUrlEntered
                             ).then(function (data) {
 
                                 var annotVcfData = data[1];
@@ -1660,7 +1664,9 @@ class SampleModel {
                                     me.globalApp.getVariantIdsForGene,  // rsid
                                     me.globalApp.vepAF,   // vep af
                                     null,   // cache
-                                    me.id
+                                    me.id,
+                                    me.rnaSeqUrlEntered,
+                                    me.atacSeqUrlEntered
                                 );
                             })
                             .then(data => {

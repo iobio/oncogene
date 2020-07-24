@@ -121,6 +121,8 @@
         },
         methods: {
             onFilterChange: function(recallFilter) {
+                // todo: here, need to update active status of parent in filterModel class
+
                 if (recallFilter) {
                     this.activeRecallFilters = this.filterModel.getActiveRecallFilters();
                 } else {

@@ -10,12 +10,9 @@
             stroke: #000
             fill-opacity: .125
             shape-rendering: crispEdges
-
 </style>
 
 <style type="text/css">
-
-
     .ibo-gene .cds, .ibo-gene .exon, .ibo-gene .utr {
         fill: rgba(167, 167, 167, 0.63);
         stroke: rgb(159, 159, 159);
@@ -153,7 +150,6 @@
 
 <template>
     <div id="gene-viz">
-
     </div>
 </template>
 
@@ -226,6 +222,10 @@
                 type: Boolean,
                 default: false
             },
+            displayOnly: {
+                type: Boolean,
+                default: false
+            },
             $: {
                 type: Function,
                 default: null
@@ -253,7 +253,7 @@
                 let options = {
                     regionStart: self.regionStart,
                     regionEnd: self.regionEnd,
-                    width: self.fixedWidth > 0 ? self.fixedWidth : this.width,
+                    width: self.fixedWidth > 0 ? self.fixedWidth : self.width,
                     widthPercent: '100%',
                     heightPercent: '100%',
                     margin: self.margin,
@@ -264,7 +264,8 @@
                     cdsHeight: self.cdsHeight,
                     showLabel: self.showLabel,
                     transcriptClass: self.transcriptClass,
-                    color: '#7f1010'
+                    color: '#7f1010',
+                    displayOnly: self.displayOnly
                 };
                 self.geneChart = geneD3(self.d3, options);
 

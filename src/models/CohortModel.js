@@ -404,8 +404,6 @@ class CohortModel {
 
             self.geneModel.promiseCopyPasteGenes(userGeneList, {replace: true, warnOnDup: false})
                 .then(() => {
-                    // add all modelInfo to sample models
-                    // add cosmic sample model
                     let samplePromises = [];
                     modelInfos.forEach(modelInfo => {
                         samplePromises.push(self.promiseAddSample(modelInfo, modelInfo.order));
@@ -789,7 +787,7 @@ class CohortModel {
                                     reject('Something went wrong ranking genes by variants ' + error);
                                 });
                         }).catch(error => {
-                            reject('Somthing went wrong populating somatic variant map: ' + error);
+                            reject('Something went wrong populating somatic variant map: ' + error);
                         });
                 })
                 .catch(error => {
@@ -831,6 +829,7 @@ class CohortModel {
     /* Loads data for all samples for a single gene */
     promiseLoadData(theGene, theTranscript, options) {
         const self = this;
+        const transcriptChange = options.transcriptChange;
         let promises = [];
 
         return new Promise(function (resolve, reject) {
@@ -873,43 +872,47 @@ class CohortModel {
                             });
                         });
 
-                        if (self.hasRnaSeqData) {
+                        if (self.hasRnaSeqData && !transcriptChange) {
                             // Get rnaseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
-                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE, qualityCutoff)
-                                    .then(coverageMap => {
-                                        for (var featId in coverageMap) {
-                                            if (model.variantIdHash[featId]) {
-                                                model.variantIdHash[featId]['rnaSeqPtCov'] = coverageMap[featId];
-                                            } else {
-                                                // We still want to add this data in, even if variant not reported in vcf
-                                                // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                                model.variantIdHash[featId] = {'rnaSeqPtCov': coverageMap[featId]};
+                                if (model.rnaSeqUrlEntered) {
+                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE, qualityCutoff)
+                                        .then(coverageMap => {
+                                            for (var featId in coverageMap) {
+                                                if (model.variantIdHash[featId]) {
+                                                    model.variantIdHash[featId]['rnaSeqPtCov'] = coverageMap[featId];
+                                                } else {
+                                                    // We still want to add this data in, even if variant not reported in vcf
+                                                    // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                                                    model.variantIdHash[featId] = {'rnaSeqPtCov': coverageMap[featId]};
+                                                }
                                             }
-                                        }
-                                    }).catch(error => {
-                                    reject('Problem fetching rnaSeq depth for specific variants: ' + error);
-                                });
+                                        }).catch(error => {
+                                        reject('Problem fetching rnaSeq depth for specific variants: ' + error);
+                                    });
+                                }
                             });
                         }
 
-                        if (self.hasAtacSeqData) {
+                        if (self.hasAtacSeqData && !transcriptChange) {
                             // Get atacseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
-                                model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE, qualityCutoff)
-                                    .then(coverageMap => {
-                                        for (var featId in coverageMap) {
-                                            if (model.variantIdHash[featId]) {
-                                                model.variantIdHash[featId]['atacSeqPtCov'] = coverageMap[featId];
-                                            } else {
-                                                // We still want to add this data in, even if variant not reported in vcf
-                                                // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                                model.variantIdHash[featId] = {'atacSeqPtCov': coverageMap[featId]};
+                                if (model.atacSeqUrlEntered) {
+                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE, qualityCutoff)
+                                        .then(coverageMap => {
+                                            for (var featId in coverageMap) {
+                                                if (model.variantIdHash[featId]) {
+                                                    model.variantIdHash[featId]['atacSeqPtCov'] = coverageMap[featId];
+                                                } else {
+                                                    // We still want to add this data in, even if variant not reported in vcf
+                                                    // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                                                    model.variantIdHash[featId] = {'atacSeqPtCov': coverageMap[featId]};
+                                                }
                                             }
-                                        }
-                                    }).catch(error => {
-                                    reject('Problem fetching atacSeq depth for specific variants: ' + error);
-                                });
+                                        }).catch(error => {
+                                        reject('Problem fetching atacSeq depth for specific variants: ' + error);
+                                    });
+                                }
                             });
                         }
                     });

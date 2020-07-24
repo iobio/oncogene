@@ -171,7 +171,7 @@
                             <v-avatar v-else-if="sampleModel.isTumor" color="primary" size="28" class="mr-1 mb-1">
                                 <span class="white--text" style="font-size: 18px">T</span>
                             </v-avatar>
-                            <v-avatar v-else-if="!sampleModel.isTumor" color="secondary" size="28" class="mr-1 mb-1">
+                            <v-avatar v-else-if="!sampleModel.isTumor" color="primary" size="28" class="mr-1 mb-1">
                                 <span class="white--text" style="font-size: 18px">N</span>
                             </v-avatar>
                         </div>
@@ -374,17 +374,13 @@
     import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
     import DepthViz from "./viz/DepthViz.vue"
-    // import StackedBarChartViz from "./viz/StackedBarChartViz.vue"
-    // import KnownVariantsToolbar from "./viz/KnownVariantsToolbar.vue"
 
     export default {
         name: 'variant-card',
         components: {
             VariantViz,
             GeneViz,
-            DepthViz,
-            // KnownVariantsToolbar,
-            // StackedBarChartViz
+            DepthViz
         },
         props: {
             globalAppProp: null,  //For some reason, global mixin not working on variant card.  possible cause for-item?

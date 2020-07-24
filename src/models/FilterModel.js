@@ -80,7 +80,7 @@ class FilterModel {
         // The actual filters that can be applied
         this.filters = {
             'annotation': [
-                {name: 'impact', display: 'Impact', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
+                {name: 'impact', display: 'Impact', active: true, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
                 {name: 'type', display: 'Type', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false}],
             'somatic': [
                 {
@@ -206,16 +206,16 @@ class FilterModel {
         // but staged property could easily be added in the future
         this.checkboxLists = {
             impact: [
-                {name: 'HIGH', displayName: 'HIGH', model: true, default: true},
-                {name: 'MODERATE', displayName: 'MODERATE', model: true, default: true},
-                {name: 'MODIFIER', displayName: 'MODIFIER', model: false, default: false},
-                {name: 'LOW', displayName: 'LOW', model: true, default: true}
+                {name: 'HIGH', displayName: 'HIGH', excludeName: 'High Impact Variants', model: true, default: true},
+                {name: 'MODERATE', displayName: 'MODERATE', excludeName: 'Moderate Impact Variants', model: true, default: true},
+                {name: 'MODIFIER', displayName: 'MODIFIER', excludeName: 'Modifier Impact Variants', model: false, default: false},
+                {name: 'LOW', displayName: 'LOW', excludeName: 'Low Impact Variants', model: true, default: true}
             ],
             type: [
-                {name: 'del', displayName: 'DELETION', model: true, default: true},
-                {name: 'ins', displayName: 'INSERTION', model: true, default: true},
-                {name: 'mnp', displayName: 'MNP', model: true, default: true},
-                {name: 'snp', displayName: 'SNP', model: true, default: true}
+                {name: 'del', displayName: 'DELETION', excludeName: 'Deletions', model: true, default: true},
+                {name: 'ins', displayName: 'INSERTION', excludeName: 'Insertions', model: true, default: true},
+                {name: 'mnp', displayName: 'MNP', excludeName: 'MNPs', model: true, default: true},
+                {name: 'snp', displayName: 'SNP', excludeName: 'SNPs', model: true, default: true}
             ]
         };
 
@@ -764,7 +764,14 @@ class FilterModel {
         let activeFilters = [];
         Object.values(this.filters).forEach(filterList => {
             filterList.forEach(filter => {
-                if (filter.active) {
+                if (filter.active && filter.type !== 'checkbox') {
+                    activeFilters.push(filter);
+                }
+            })
+        });
+        Object.values(this.checkboxLists).forEach(list => {
+            list.forEach(filter => {
+                if (!filter.model) {
                     activeFilters.push(filter);
                 }
             })

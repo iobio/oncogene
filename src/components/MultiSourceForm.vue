@@ -144,7 +144,7 @@
                 if (self.fileType === 'bam' && url != null && url !== "" && indexUrl != null && indexUrl !== "") {
                     self.checkBam(i, url, indexUrl)
                         .then(() => {
-                            self.$emit('update-status', self.modelType, self.getAllInputStatus());
+                            self.$emit('update-status', self.modelType, self.getAllInputStatus(), self.getInputFinishedStatus());
                         });
                 } else if (self.fileType === 'cnv' && url != null && url !== '') {
                     // Check cnv file
@@ -219,9 +219,22 @@
                 let allVerified = true;
                 // Only want to check slots that are active
                 this.modelInfoList.forEach((modelInfo) => {
-                    allVerified &= modelInfo[this.verifiedKey];
+                    // Only require bams for every sample if coverage type
+                    if (this.modelType === 'coverage') {
+                        allVerified &= modelInfo[this.verifiedKey];
+                    // Otherwise, make sure at least one entry filled
+                    } else {
+                        allVerified |= modelInfo[this.verifiedKey];
+                    }
                 });
                 return allVerified;
+            },
+            getInputFinishedStatus: function() {
+                let allFinished = true;
+                this.modelInfoList.forEach((modelInfo) => {
+                    allFinished &= modelInfo[this.verifiedKey];
+                });
+                return allFinished;
             }
         },
         mounted: function() {

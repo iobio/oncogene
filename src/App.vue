@@ -5,16 +5,36 @@
                 <span id="title">Oncogene.iobio</span>
             </v-toolbar-title>
             <v-spacer></v-spacer>
-            <v-chip v-if="numSomaticVars != null" class="var-chip" color="white" outlined> {{ numSomaticVars + ' SomaticVariants Found in ' + numSomaticGenes + ' Genes' }}
+            <v-chip v-if="numSomaticVars != null" class="var-chip" color="white" outlined> {{ numSomaticVars + ' Somatic Variants Found in ' + numSomaticGenes + ' Genes' }}
             </v-chip>
-            <v-select v-if="activeFilters.length > 0"
-                      dense
-                      :items="activeFilters"
-                      label="Active Filters"
-                      outlined
-                      class="mt-6 pa-2"
-                      style="width: 100px"
-            ></v-select>
+            <div class="text-center mx-2" v-if="activeFilters.length > 0">
+                <v-menu bottom offset-y>
+                    <template v-slot:activator="{ on: menu, attrs }">
+                        <v-tooltip dark bottom>
+                            <template v-slot:activator="{ on: tooltip }">
+                                <v-btn
+                                        color="secondary"
+                                        dark
+                                        v-bind="attrs"
+                                        v-on="{ ...tooltip, ...menu }"
+                                >
+                                    Active Filters
+                                </v-btn>
+                            </template>
+                            <span>Click to view filters used for currently called somatic variants</span>
+                        </v-tooltip>
+                    </template>
+                    <v-list>
+                        <v-list-item
+                                v-for="(filter, index) in activeFilters"
+                                :key="index"
+                                style="font-family: Quicksand"
+                        >
+                            <v-list-item-title>{{ filter }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </div>
             <v-btn color="secondary" v-if="filesLoaded" @click="displayFilesCarousel">Files</v-btn>
             <v-btn
                     text
@@ -31,12 +51,15 @@
                   :$="globalApp.$"
                   :cohortModel="cohortModel"
                   :filterModel="filterModel"
+                  :geneModel="geneModel"
+                  :genomeBuildHelper="genomeBuildHelper"
                   :hoverTooltip="hoverTooltip"
                   :navbarHeight="navBarHeight"
                   :geneList="allGenes"
                   @load-demo="onLoadDemo"
                   @gene-changed="onGeneChanged"
                   @set-global-display="setGlobalDisplay"
+                  @set-filter-display="setFilterDisplay"
             >
 
             </Home>
@@ -144,18 +167,26 @@
                 })
             },
             onGeneChanged: function (geneDisplay) {
-                // todo: can get rid of this with redesign?
                 this.selectedGeneDisplay = geneDisplay;
                 this.selectedBuild = this.genomeBuildHelper.currentBuild.name;
                 this.dataLoaded = true;
             },
-            setGlobalDisplay: function (chipData) {
-                this.numSomaticVars = chipData.variantCount;
-                this.numSomaticGenes = chipData.geneCount;
-                chipData.filters.forEach(filter => {
-                    this.activeFilters.push(filter.display + ' ' + filter.currLogic + ' ' + filter.currVal);
-                });
+            setGlobalDisplay: function (globalData) {
+                this.numSomaticVars = globalData.variantCount;
+                this.numSomaticGenes = globalData.geneCount;
                 this.filesLoaded = true;
+                this.setFilterDisplay(globalData);
+            },
+            setFilterDisplay: function (globalData) {
+                // todo: left off make sure we hit this breakpoint
+
+                globalData.filters.forEach(filter => {
+                    if (filter.type === 'slider') {
+                        this.activeFilters.push(filter.display + ' ' + filter.currLogic + ' ' + filter.currVal + filter.labelSuffix);
+                    } else {
+                        this.activeFilters.push('No ' + filter.excludeName);
+                    }
+                });
             },
             displayFilesCarousel: function () {
                 this.$refs.homePanel.toggleCarousel(true);

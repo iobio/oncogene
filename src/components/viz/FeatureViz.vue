@@ -27,7 +27,7 @@
             </v-col>
             <v-col sm="6" md="1" lg="2" class="summary-field-label">Impact:</v-col>
             <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
-                 <span v-bind:class="{hide: impactText === ''}">
+                 <span v-show="impactText !== '-'">
                    <svg v-if="type === 'mnp' || type === 'snp'" class="impact-badge" height="12" width="12">
                      <g transform="translate(1,3)" class="filter-symbol" v-bind:class="impactColor">
                        <rect width="8" height="8"></rect>

@@ -698,9 +698,9 @@
                     this.updateStepProp('review', 'complete', this.isReadyToLaunch());
                 }
             },
-            updateMultiStatus: function (stepName, allCompleteStatus) {
+            updateMultiStatus: function (stepName, allCompleteStatus, allFinishedStatus) {
                 this.updateStepProp(stepName, 'complete', allCompleteStatus === 1);
-                if (allCompleteStatus && this.launchedFromConfig) {
+                if (allCompleteStatus && allFinishedStatus && this.launchedFromConfig) {
                     this.advanceSlide();
                 }
             },

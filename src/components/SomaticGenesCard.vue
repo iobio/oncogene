@@ -29,13 +29,9 @@
         <v-card-title class="section-title">
             Ranked Genes
         </v-card-title>
-        <v-card-subtitle style="font-style: italic" class="pt-2 pb-1">
+        <v-card-subtitle style="font-style: italic" class="mt-2 pb-1">
             The following loci contain somatic variants
         </v-card-subtitle>
-<!--        <v-row justify="center">-->
-<!--        todo: move this to top nav bar?-->
-<!--            <v-chip style="margin-top: 15px; margin-bottom: 5px" v-if="totalSomaticVarCount >= 0" outlined color="white">{{ totalSomaticVarCount + ' Somatic Variants Found'}}</v-chip>-->
-<!--        </v-row>-->
         <v-container fluid grid-list-md style="overflow-y: scroll !important">
             <v-row justify="center">
                 <v-expansion-panels class="mx-1" style="background-color: transparent !important"
@@ -75,7 +71,7 @@
                         </v-expansion-panel-header>
                         <v-expansion-panel-content style="background-color: transparent !important;">
                             <v-list style="background-color: transparent" dense>
-                                <v-list-item-group v-model="selectedVarIdx" color="primary">
+                                <v-list-item-group v-model="selectedVarIdx">
                                     <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
                                             <v-list-item-content>
                                                 <v-row style="padding-bottom: 2px" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">

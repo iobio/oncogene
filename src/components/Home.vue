@@ -7,7 +7,7 @@
         >
             <!--Static main page-->
             <v-layout fill-height>
-                <v-flex md3 v-if="dataEntered || debugMode"  :class="{ 'blur-content': displayCarousel }">
+                <v-flex md3 v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
                     <v-card flat
                             tile
                             id="nav-card"
@@ -107,15 +107,23 @@
                          @load-demo="$emit('load-demo')"
                          @launched="onLaunch">
                 </Welcome>
-                <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0"  :class="{ 'blur-content': displayCarousel }">
+                <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0"
+                             :class="{ 'blur-content': displayCarousel }">
                     <v-row no-gutters>
-                        <v-card width="100%">
-                            <v-toolbar>
-                                <v-toolbar-title style="font-family: Quicksand; font-size: 22px">
-                                    Gene Details
-                                </v-toolbar-title>
-                            </v-toolbar>
-                        </v-card>
+                        <gene-card v-if="selectedGene"
+                                   :selectedGene="selectedGene"
+                                   :selectedTranscript="selectedTranscript"
+                                   :geneRegionStart="geneRegionStart"
+                                   :geneRegionEnd="geneRegionEnd"
+                                   :geneModel="geneModel"
+                                   :d3="d3"
+                                   :$="$"
+                                   @transcript-selected="onTranscriptSelected"
+                                   @gene-source-selected="onGeneSourceSelected"
+                                   @gene-region-buffer-change="onGeneRegionBufferChange"
+                                   @gene-region-zoom="onGeneRegionZoom"
+                                   @gene-region-zoom-reset="onGeneRegionZoomReset">
+                        </gene-card>
                     </v-row>
                     <v-row no-gutters>
                         <v-col cols="8">
@@ -168,13 +176,30 @@
                                     :hasAtacSeq="cohortModel.hasAtacSeqData"
                                     @fetch-reads="fetchSeqReads"
                                     @summary-mounted="onSummaryMounted"
-                                    @summaryCardVariantDeselect="deselectVariant">
+                                    @summaryCardVariantDeselect="deselectVariant"
+                                    @show-pileup="onShowPileupForVariant">
                             </variant-summary-card>
                         </v-col>
                     </v-row>
                 </v-container>
             </v-layout>
         </v-sheet>
+        <v-dialog id="pileup-modal"
+                  v-model="displayPileup"
+                  width="75%"
+                  height="540"
+                  style="z-index: 1033">
+            <v-card class='full-width' style="overflow-y:auto;height:100%;z-index:1033">
+                <pileup id="pileup-container"
+                        :heading="pileupInfo.title"
+                        :referenceURL="pileupInfo.referenceURL"
+                        :tracks="pileupInfo.tracks"
+                        :locus="pileupInfo.coord"
+                        :visible="displayPileup"
+                        :showLabels=true
+                        :d3="d3"/>
+            </v-card>
+        </v-dialog>
         <v-overlay :value="displayLoader">
             <v-progress-circular indeterminate size="64"></v-progress-circular>
         </v-overlay>
@@ -186,8 +211,11 @@
     import VariantCard from './VariantCard.vue'
     import VariantSummaryCard from './VariantSummaryCard.vue'
     import FilterPanelMenu from './filter/FilterPanelMenu.vue'
+    import Pileup from './partials/Pileup.vue'
     // import HistoryTab from './HistoryTab.vue'
+
     import SomaticGenesCard from './SomaticGenesCard.vue'
+    import GeneCard from './GeneCard.vue'
 
     import '@/assets/css/v-tooltip.css'
 
@@ -199,7 +227,9 @@
             VariantSummaryCard,
             FilterPanelMenu,
             // HistoryTab,
-            SomaticGenesCard
+            GeneCard,
+            SomaticGenesCard,
+            Pileup
         },
         props: {
             d3: {
@@ -222,19 +252,29 @@
                 type: Object,
                 default: null
             },
+            geneModel: {
+                type: Object,
+                default: null
+            },
+            genomeBuildHelper: {
+                type: Object,
+                default: null
+            },
             hoverTooltip: {
                 type: Object,
                 default: null
             },
             geneList: {
                 type: Array,
-                default: () => { return [];}
+                default: () => {
+                    return [];
+                }
             }
         },
         data: () => {
             return {
                 // todo: get rid of unused vars
-                screenWidth: window.innerWidth,
+                screenWidth: (window.innerWidth * 0.5),
                 screenHeight: window.innerHeight,
 
                 // view state
@@ -261,6 +301,29 @@
                 lastClickCard: null,
                 selectedTab: '',
                 totalSomaticVarCount: -1,
+                pileupInfo: {
+                    // This controls how many base pairs are displayed on either side of
+                    // the center of the locus.
+                    SPAN: 30,
+                    // These are the reference URLs for the human genome builds currently supported
+                    referenceURLs: {
+                        'GRCh37': 'https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta',
+                        'GRCh38': 'https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg38/hg38.fa'
+                    },
+                    // Show the pileup dialog
+                    show: false,
+                    // Title in the pileup dialog
+                    title: 'Pileup View',
+                    // The bam file
+                    alignmentURL: null,
+                    alignmentIndexURL: null,
+                    // The vcf file
+                    variantURL: null,
+                    variantIndexURL: null,
+                    // The reference URL (for the current genome build)
+                    referenceURL: 'https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta',
+                },
+                displayPileup: false,
 
                 // models & model data
                 sampleIds: null,   // Sample ids for canonical sample models
@@ -334,9 +397,9 @@
                         let geneModel = self.cohortModel.geneModel;
                         self.totalSomaticVarCount = totalSomaticVarCount;
                         let chipInfo = {
-                            'variantCount' : totalSomaticVarCount,
-                            'geneCount' : totalSomaticGenes,
-                            'filters' : self.filterModel.getActiveImplementedFilters()
+                            'variantCount': totalSomaticVarCount,
+                            'geneCount': totalSomaticGenes,
+                            'filters': self.filterModel.getActiveImplementedFilters()
                         };
                         self.$emit('set-global-display', chipInfo);
 
@@ -365,13 +428,13 @@
                     console.log('There was a problem calling global somatics: ' + error);
                 });
             },
-            promiseLoadData: function (selectedGene, selectedTranscript) {
+            promiseLoadData: function (selectedGene, selectedTranscript, transcriptChange) {
                 const self = this;
 
                 return new Promise(function (resolve, reject) {
-                    // self.cardWidth = self.$('#genes-card').innerWidth(); // todo: put this back in when we add genes card
                     let options = {'getKnownVariants': false};
                     options['getCosmicVariants'] = false;
+                    options['transcriptChange'] = transcriptChange;
 
                     self.cohortModel.promiseLoadData(selectedGene,
                         selectedTranscript,
@@ -535,7 +598,7 @@
                     }
                 }
             },
-            promiseLoadGene: function (geneName, theTranscript) {
+            promiseLoadGene: function (geneName, theTranscript, transcriptChange) {
                 const self = this;
                 const geneModel = self.cohortModel.geneModel;
 
@@ -599,7 +662,7 @@
                         if (self.cohortModel.isLoaded) {
                             self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
                                 .then(() => {
-                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange)
                                         .then(function () {
                                             self.clearZoom = false;
                                             self.showVarViz = true;
@@ -622,11 +685,17 @@
             },
             onFilterChange: function () {
                 const self = this;
+                self.selectedVariant = null;
+
+                // Update drop down in app bar
+                let globalData = {
+                    'filters': self.filterModel.getActiveImplementedFilters()
+                };
+                self.$emit('set-filter-display', globalData);
 
                 // Only annotate once we are guaranteed that our DOM update is done for all tracks
                 self.cohortModel.promiseFilterVariants()
                     .then(() => {
-                        // todo: this needs to change w/ global mode
                         self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
                             .then((inheritanceObj) => {
                                 self.cohortModel.setLoadedVariants(self.selectedGene);
@@ -638,16 +707,6 @@
 
                                 self.cohortModel.allSomaticFeaturesLookup = inheritanceObj.somaticLookup;
                                 self.cohortModel.allInheritedFeaturesLookup = inheritanceObj.inheritedLookup;
-
-                                // Then we need to update coloring for tumor tracks only
-                                // TODO: we should be able to get rid of this once they're drawn post inheritance sorting
-                                if (self.$refs.variantCardRef) {
-                                    self.$refs.variantCardRef.forEach((cardRef) => {
-                                        if (cardRef.sampleModel.isTumor === true) {
-                                            cardRef.updateVariantClasses();
-                                        }
-                                    });
-                                }
                             });
                     }).catch((err) => {
                     console.log('There was a problem applying variant filter: ' + err);
@@ -662,14 +721,14 @@
                     //self.$refs.navRef.setSelectedGeneText(geneToReload);
                 }
             },
-            onGeneSelected: function (geneName) {
+            onGeneSelected: function (geneName, transcriptChange = false) {
                 const self = this;
                 let gene = geneName;
                 if (!geneName) {
                     gene = self.lookupGene;
                 }
                 self.deselectVariant();
-                self.promiseLoadGene(gene, null, false);
+                self.promiseLoadGene(gene, null, transcriptChange);
             },
             onSummaryMounted: function () {
                 if (this.selectedVariant) {
@@ -687,9 +746,120 @@
                         })
                 }
             },
-            toggleCarousel: function(display) {
+            toggleCarousel: function (display) {
                 this.displayCarousel = display;
-            }
+            },
+            onTranscriptIdSelected: function (transcriptId) {
+                const self = this;
+                let theTranscript = null;
+                self.selectedGene.transcripts.filter(function (transcript) {
+                    if (transcript.transcript_id.indexOf(transcriptId) == 0) {
+                        theTranscript = transcript;
+                    }
+                })
+                if (theTranscript != null) {
+                    self.onTranscriptSelected(theTranscript);
+                }
+            },
+            onTranscriptSelected: function (transcript) {
+                const self = this;
+                self.selectedTranscript = transcript;
+                self.geneModel.setLatestGeneTranscript(self.selectedGene.gene_name, self.selectedTranscript);
+                self.onGeneSelected(self.selectedGene.gene_name, true);
+            },
+            onGeneSourceSelected: function (theGeneSource) {
+                const self = this;
+                self.geneModel.geneSource = theGeneSource;
+                this.onGeneSelected(this.selectedGene.gene_name);
+            },
+            onGeneRegionBufferChange: function (theGeneRegionBuffer) {
+                const self = this;
+                self.geneModel.geneRegionBuffer = theGeneRegionBuffer;
+                // We have to clear the cache since the gene regions change
+                // self.promiseClearCache()
+                //     .then(function () {
+                self.onGeneSelected(self.selectedGene.gene_name);
+                    // })
+            },
+            onGeneRegionZoom: function (theStart, theEnd) {
+                const self = this;
+                // Gene-viz watches these for updates to redraw track
+                self.geneRegionStart = theStart;
+                self.geneRegionEnd = theEnd;
+
+                self.featureMatrixModel.setRankedVariants(self.geneRegionStart, self.geneRegionEnd);
+
+                self.filterModel.regionStart = self.geneRegionStart;
+                self.filterModel.regionEnd = self.geneRegionEnd;
+
+                let start = Date.now();
+                self.cohortModel.setLoadedVariants(self.selectedGene);
+                let delta = Date.now() - start;
+                console.log("Took " + delta + " ms to zoom region");
+                self.cohortModel.setCoverage(self.geneRegionStart, self.geneRegionEnd);
+
+            },
+            onGeneRegionZoomReset: function (updateTrack = true) {
+                const self = this;
+
+                self.geneRegionStart = self.selectedGene.start;
+                self.geneRegionEnd = self.selectedGene.end;
+
+                self.filterModel.regionStart = null;
+                self.filterModel.regionEnd = null;
+
+                if (updateTrack) {
+                    self.featureMatrixModel.setRankedVariants();
+                    let start = Date.now();
+                    self.cohortModel.setLoadedVariants(self.selectedGene);
+                    let delta = Date.now() - start;
+                    console.log("Took " + delta + " ms to RESET zoom region");
+                    self.cohortModel.setCoverage();
+                }
+            },
+            onShowPileupForVariant: function(variant) {
+                let self = this;
+
+                let theVariant = variant ? variant : this.selectedVariant;
+                if (theVariant) {
+                    let variantInfo = this.globalApp.utility.formatDisplay(theVariant, this.cohortModel.translator, this.isEduMode);
+                    // Format the coordinate for the variant
+                    const chrom = this.globalApp.utility.stripRefName(theVariant.chrom);
+                    const start = theVariant.start - this.pileupInfo.SPAN;
+                    const end   = theVariant.start + this.pileupInfo.SPAN;
+                    this.pileupInfo.coord = 'chr' + chrom + ':' + start + '-' + end;
+                    this.pileupInfo.tracks = [];
+                    // Set the bam, vcf, and references
+                    this.cohortModel.getCanonicalModels().forEach(function(model) {
+                        let currName = model.displayName !== '' ? model.displayName : '';
+                        if (currName === '') {
+                            currName = model.selectedSample;
+                        } else {
+                            currName += ' (' + model.selectedSample + ')';
+                        }
+                        let track               = {name: currName};
+                        track.variantURL        = model.vcf.getVcfURL();
+                        track.variantIndexURL   = model.vcf.getTbiURL();
+                        track.alignmentURL      = model.bam.coverageBam;
+                        track.alignmentIndexURL = model.bam.coverageBai;
+                        self.pileupInfo.tracks.push(track);
+                    });
+                    // Set the reference
+                    this.pileupInfo.referenceURL = this.pileupInfo.referenceURLs[this.genomeBuildHelper.getCurrentBuild().name];
+                    // set the title
+                    const titleParts = [];
+                    titleParts.push("Read Pileup");
+                    titleParts.push(this.selectedGene.gene_name);
+                    titleParts.push((theVariant.type ? theVariant.type.toUpperCase() + " " : "")
+                        + theVariant.chrom + ":" + theVariant.start + " " + theVariant.ref + "->" + theVariant.alt);
+                    titleParts.push(variantInfo.HGVSpAbbrev);
+                    this.pileupInfo.title = titleParts.join(' ');
+                    this.displayPileup = true;
+                }
+                else {
+                    return '';
+                }
+            },
         },
         computed: {
             overlayWidth: function () {
@@ -755,13 +925,13 @@
         padding-top: 15px
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
 
-    .section-title
-        font-family: 'Quicksand'
-        color: white
-        background-color: #7f1010
-        padding-bottom: 5px
+        .section-title
+            font-family: 'Quicksand'
+            color: white
+            background-color: #7f1010
+            padding-bottom: 5px
 
-    .blur-content
-        filter: blur(1px)
-        -webkit-filter: blur(1px)
+        .blur-content
+            filter: blur(1px)
+            -webkit-filter: blur(1px)
 </style>

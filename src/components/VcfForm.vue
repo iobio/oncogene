@@ -139,13 +139,13 @@
         },
         data: function () {
             return {
-                url: '',
-                indexUrl: '',
+                url: null,
+                indexUrl: null,
                 vcfSampleNames: [],
                 selectedSamples: [],
                 sampleNicknames: [],
                 displayLoader: false,
-                selectedBuild: '',
+                selectedBuild: null,
                 urlsVerified: false,
                 listInfo: -1,
                 modelInfoIdx: 0,
@@ -159,7 +159,7 @@
         },
         methods: {
             onUrlChange: function () {
-                if (this.url !== '' && this.indexUrl !== '' && this.selectedBuild !== '') {
+                if (this.url && this.indexUrl && this.selectedBuild) {
                     this.onVcfUrlEntered(this.url, this.indexUrl);
                 } else if (this.url === '' || this.indexUrl  === '') {
                     this.$emit('clear-model-info', null);
@@ -299,7 +299,9 @@
                 this.indexUrl = uploadedIndexUrl ? uploadedIndexUrl: this.uploadedIndexUrl;
                 this.selectedBuild = uploadedBuild ? uploadedBuild : this.uploadedBuild;
                 const selectedSamples = uploadedSelectedSamples ? uploadedSelectedSamples : this.uploadedSelectedSamples;
-                this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
+                if (this.url && this.indexUrl) {
+                    this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
+                }
             }
         },
         watch: {
