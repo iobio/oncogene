@@ -215,7 +215,7 @@
 </style>
 
 <template>
-    <v-card class="px-0 mx-1 my-1" style="overflow: scroll" outlined>
+    <v-card class="px-0 mx-1 my-1" outlined>
         <v-container class="summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">
                 <v-col cols="12" sm="12" xl="4" style="font-size: 22px">
@@ -266,20 +266,26 @@
                             <v-col sm="6" class="field-label-header">Raw Bam Counts</v-col>
                             <v-col sm="4"></v-col>
                             <v-col sm="2" style="float: right">
-                                <v-btn v-show="variantSelected" fab dark small color="secondary" class="mx-2"
-                                    @click="onIgvClick">
-                                    <v-icon>clear_all</v-icon>
-                                </v-btn>
+                                <v-tooltip left>
+                                    <template v-slot:activator="{ on, attrs }">
+                                        <v-btn v-show="variantSelected"
+                                               fab
+                                               dark
+                                               small
+                                               color="secondary"
+                                               class="mx-2"
+                                               v-bind="attrs"
+                                               v-on="on"
+                                               @click="onIgvClick">
+                                            <v-icon>clear_all</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <span>Display IGV Pileup</span>
+                                </v-tooltip>
                             </v-col>
                         </v-row>
                     </v-container>
-<!--                    <bar-feature-viz id="coverage-bar-feature-viz" class="summary-viz" style="padding-top: 10px"-->
-<!--                                     ref="coverageBarFeatureViz"-->
-<!--                                     :counts="coverageCounts"-->
-<!--                                     :selectedVariant="variant"-->
-<!--                                     :bamType="'coverage'"-->
-<!--                                     :d3="d3">-->
-<!--                    </bar-feature-viz>-->
+
                     <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz"
                                      style="padding-top: 10px"
                                      ref="rnaSeqBarFeatureViz"

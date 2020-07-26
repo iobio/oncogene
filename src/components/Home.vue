@@ -197,7 +197,8 @@
                         :locus="pileupInfo.coord"
                         :visible="displayPileup"
                         :showLabels=true
-                        :d3="d3"/>
+                        :hasRnaSeq="cohortModel.hasRnaSeqData"
+                        :hasAtacSeq="cohortModel.hasAtacSeqData"/>
             </v-card>
         </v-dialog>
         <v-overlay :value="displayLoader">
@@ -314,9 +315,15 @@
                     show: false,
                     // Title in the pileup dialog
                     title: 'Pileup View',
-                    // The bam file
-                    alignmentURL: null,
-                    alignmentIndexURL: null,
+                    // The coverage bam file
+                    coverageBam: null,
+                    coverageBai: null,
+                    // The rnaseq bam file
+                    rnaSeqBam: null,
+                    rnaSeqBai: null,
+                    // The atacseq bam file
+                    atacSeqBam: null,
+                    atacSeqBai: null,
                     // The vcf file
                     variantURL: null,
                     variantIndexURL: null,
@@ -840,8 +847,12 @@
                         let track               = {name: currName};
                         track.variantURL        = model.vcf.getVcfURL();
                         track.variantIndexURL   = model.vcf.getTbiURL();
-                        track.alignmentURL      = model.bam.coverageBam;
-                        track.alignmentIndexURL = model.bam.coverageBai;
+                        track.coverageBam       = model.bam.coverageBam;
+                        track.coverageBai       = model.bam.coverageBai;
+                        track.rnaSeqBam         = model.bam.rnaSeqBam;
+                        track.rnaSeqBai         = model.bam.rnaSeqBai;
+                        track.atacSeqBam        = model.bam.atacSeqBam;
+                        track.atacSeqBai        = model.bam.atacSeqBai;
                         self.pileupInfo.tracks.push(track);
                     });
                     // Set the reference
@@ -851,7 +862,7 @@
                     titleParts.push("Read Pileup");
                     titleParts.push(this.selectedGene.gene_name);
                     titleParts.push((theVariant.type ? theVariant.type.toUpperCase() + " " : "")
-                        + theVariant.chrom + ":" + theVariant.start + " " + theVariant.ref + "->" + theVariant.alt);
+                        + theVariant.chrom + ":" + theVariant.start + " " + theVariant.ref + " -> " + theVariant.alt);
                     titleParts.push(variantInfo.HGVSpAbbrev);
                     this.pileupInfo.title = titleParts.join(' ');
                     this.displayPileup = true;

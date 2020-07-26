@@ -1,29 +1,50 @@
 <template>
-    <v-container>
-        <v-card flat class="mx-2">
-            <v-layout column>
-                <v-layout row justify-space-between>
-                    <v-flex xs3>
-                        {{heading}}
-                    </v-flex>
-                    <v-layout xs3 justify-center>
-                        <v-btn fab small @click='zoomOut'>
-                            <v-icon>zoom_out</v-icon>
-                        </v-btn>
-                        <v-btn fab small @click='zoomIn'>
-                            <v-icon>zoom_in</v-icon>
-                        </v-btn>
-                    </v-layout>
-                    <v-flex xs3>
-                        <v-btn @click='launchFullIGV'>Open IGV in a Tab</v-btn>
-                    </v-flex>
-                </v-layout>
-                <v-flex xs12>
+    <v-card flat class="mx-2 igv-modal">
+        <v-container>
+            <v-row>
+                <v-col cols="4">
+                    {{heading}}
+                </v-col>
+                <v-col cols="6" style="text-align:center">
+                    <v-radio-group v-model="selectedBamType"
+                                   :row="true"
+                                   dense
+                                   class="mt-0"
+                                   label="Select Bam Type:"
+                                   @change="updateTracks">
+                        <v-radio v-for="n in bamTypes"
+                                 color="secondary"
+                                 :key="n"
+                                 :label="n"
+                                 :value="n"
+                                 style="font-style: italic; cursor: grab"
+                        ></v-radio>
+                    </v-radio-group>
+                </v-col>
+                <v-col cols="2" style="text-align: center">
+                    <v-btn fab small @click='zoomOut' class="mx-1" color="secondary">
+                        <v-icon>zoom_out</v-icon>
+                    </v-btn>
+                    <v-btn fab small @click='zoomIn' class="mx-1" color="secondary">
+                        <v-icon>zoom_in</v-icon>
+                    </v-btn>
+                </v-col>
+<!--                <v-col cols="2" style="text-align: right">-->
+<!--                    <v-btn @click='launchFullIGV' color="secondary">-->
+<!--                        Open in Tab-->
+<!--                        <v-icon class="pl-2">-->
+<!--                            open_in_new-->
+<!--                        </v-icon>-->
+<!--                    </v-btn>-->
+<!--                </v-col>-->
+            </v-row>
+            <v-row no-gutters>
+                <v-col cols="12" sm="12">
                     <div id='igv-content'></div>
-                </v-flex>
-            </v-layout>
-        </v-card>
-    </v-container>
+                </v-col>
+            </v-row>
+        </v-container>
+    </v-card>
 </template>
 
 <script>
@@ -44,22 +65,42 @@
                 type: Boolean,
                 default: false,
             },
+            hasRnaSeq: {
+                type: Boolean,
+                default: false
+            },
+            hasAtacSeq: {
+                type: Boolean,
+                default: false
+            }
         },
-        data () {
+        data() {
             return {
                 browser: null,
+                selectedBamType: 'Coverage',
+                bamTypes: ['Coverage'],
+                browserParams: null,
+                RNASEQ_TYPE: 'RNA-seq',
+                ATACSEQ_TYPE: 'ATAC-seq'
             }
         },
         mounted: function () {
+            if (this.hasRnaSeq) {
+                this.bamTypes.push(this.RNASEQ_TYPE);
+            }
+            if (this.hasAtacSeq) {
+                this.bamTypes.push(this.ATACSEQ_TYPE);
+            }
+
             if (this.visible) {
                 this.init();
             }
         },
         methods: {
-            init: function() {
+            init: function () {
                 const igvDiv = this.$el.querySelector('#igv-content');
 
-                const options = {
+                this.browserParams = {
                     showControls: false,
                     showIdeogram: true,
                     showTrackLabels: this.showLabels,
@@ -73,36 +114,68 @@
                 };
 
                 for (const track of this.tracks) {
-                    options.tracks.push({
+                    this.browserParams.tracks.push({
                         height: 120,
                         coverageTrackHeight: 30,
                         alignmentRowHeight: 1,
                         name: track.name,
                         type: 'alignment',
-                        url: track.alignmentURL,
-                        indexURL: track.alignmentIndexURL,
+                        url: track.coverageBam,     // Always default to coverage bams
+                        indexURL: track.coverageBai,
                     });
                 }
-                igv.createBrowser(igvDiv, options).then((browser) => {
+                igv.createBrowser(igvDiv, this.browserParams).then((browser) => {
                     this.browser = browser;
                 })
             },
-            zoomOut: function() {
+            zoomOut: function () {
                 this.browser.zoomOut();
             },
-            zoomIn: function() {
+            zoomIn: function () {
                 this.browser.zoomIn();
             },
-            launchFullIGV: function() {
+            launchFullIGV: function () {
                 launchIGV(this.referenceURL, this.locus, this.tracks);
             },
+            updateTracks: function () {
+                const self = this;
+                let urlKey = 'coverageBam';
+                let indexUrlKey = 'coverageBai';
+
+                if (this.selectedBamType === this.RNASEQ_TYPE) {
+                    urlKey = 'rnaSeqBam';
+                    indexUrlKey = 'rnaSeqBai';
+                } else if (this.selectedBamType === this.ATACSEQ_TYPE) {
+                    urlKey = 'atacSeqBam';
+                    indexUrlKey = 'atacSeqBai';
+                }
+
+                // Clear out existing tracks
+                this.tracks.forEach((track) => {
+                    self.browser.removeTrackByName(track.name);
+                });
+
+                // Add back tracks with selected bam type
+                for (const track of this.tracks) {
+                    if (track[urlKey]) {
+                        this.browser.loadTrack({
+                            height: 120,
+                            coverageTrackHeight: 30,
+                            alignmentRowHeight: 1,
+                            name: track.name,
+                            type: 'alignment',
+                            url: track[urlKey],
+                            indexURL: track[indexUrlKey],
+                        });
+                    }
+                }
+            }
         },
         watch: {
-            visible: function() {
+            visible: function () {
                 if (!this.browser) {
                     this.init();
-                }
-                else if (!this.visible) {
+                } else if (!this.visible) {
                     igv.removeBrowser(this.browser);
                     this.browser = null;
                 }
@@ -110,6 +183,7 @@
             },
         }
     }
+
     function launchIGV(referenceURL, locus, tracks) {
         const igvTracks = tracks.map((track) => ({
             type: 'alignment',
@@ -137,16 +211,12 @@
             })
         }
         const url = 'https://s3.amazonaws.com/static.iobio.io/dev/igv.iobio.io/index.html?config=' + JSON.stringify(igvConfig);
-        window.open(url, '_blank')
+        window.open(url, '_blank');
     }
 </script>
 
-<style>
-    .igv-right-hand-gutter {
-        right: initial;
-        left: -10px;
-    }
-    .igv-content-header {
-    //display: none;
-    }
+<style lang="sass">
+    .igv-modal
+        font-family: Quicksand
+        font-size: 20px
 </style>
