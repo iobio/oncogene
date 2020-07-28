@@ -306,9 +306,11 @@ export default class bamiobio {
                 // Pop off last empty line
                 intLines.pop();
                 // Count data in respective order as fed in
+                let foundVal = false;
                 for (let i = 0; i < intLines.length; i++) {
                     let line = intLines[i];
                     if (!line.startsWith('#')) {
+                        foundVal = true;
                         let data = line.split("\t");
                         const count = parseInt(data[1]);
                         countMap[featureList[i-1].id] = count;  // Account for first #specific_points line
@@ -316,6 +318,10 @@ export default class bamiobio {
                         // we don't care about reduced points for coverage of entire region
                         break;
                     }
+                }
+                // If we didn't return any values from bam, report 0
+                if (!foundVal) {
+                    countMap[featureList[0].id] = 0;
                 }
                 callback(countMap);
             } else {

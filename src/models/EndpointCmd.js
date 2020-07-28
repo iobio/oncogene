@@ -452,7 +452,7 @@ export default class EndpointCmd {
             const indexUrl = bamSource.baiUrl;
             maxPoints = maxPoints ? maxPoints : 0;
 
-            return this.api.streamCommand('alignmentCoverage', {
+            return this.devApi.streamCommand('alignmentCoverage', {
                 url,
                 indexUrl,
                 samtoolsRegion,

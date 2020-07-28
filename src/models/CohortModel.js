@@ -40,6 +40,7 @@ class CohortModel {
         this.maxDepth = 0;                      // Coverage depth
         this.maxRnaSeqDepth = 0;
         this.maxAtacSeqDepth = 0;
+        this.rawBamReadsQualityCutoff = 10;     // The value used to filter bam reads which populate the bar chart viz in variant summary card
         this.annotationComplete = false;        // True when all tracks have finished annotation
 
         this.inProgress = {
@@ -849,34 +850,35 @@ class CohortModel {
 
                 self.assignCategoryOrders();
 
-                const qualityCutoff = self.globalApp.INDIV_QUALITY_CUTOFF;
                 let p1 = self.promiseLoadVariants(theGene, theTranscript, options)
                     .then(() => {
                         // Have to wait until each track is processed to add ptCov annotations
                         let geneObj = self.geneModel.geneObjects[theGene.gene_name];
+
+                        // NOTE: leaving this out for now since opting for pileup modal instead of coverage bar chart
                         // Get coverage point data (non-sampled) for somatic variants
-                        self.getCanonicalModels().forEach(model => {
-                            model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.COVERAGE_TYPE, qualityCutoff)
-                                .then(coverageMap => {
-                                    for (var featId in coverageMap) {
-                                        if (model.variantIdHash[featId]) {
-                                            model.variantIdHash[featId]['readPtCov'] = coverageMap[featId];
-                                        } else {
-                                            // We still want to add this data in, even if variant not reported in vcf
-                                            // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
-                                            model.variantIdHash[featId] = {'readPtCov': coverageMap[featId]};
-                                        }
-                                    }
-                                }).catch(error => {
-                                reject('Problem fetching read depth for specific variants: ' + error);
-                            });
-                        });
+                        // self.getCanonicalModels().forEach(model => {
+                        //     model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.COVERAGE_TYPE, self.rawBamReadsQualityCutoff)
+                        //         .then(coverageMap => {
+                        //             for (var featId in coverageMap) {
+                        //                 if (model.variantIdHash[featId]) {
+                        //                     model.variantIdHash[featId]['readPtCov'] = coverageMap[featId];
+                        //                 } else {
+                        //                     // We still want to add this data in, even if variant not reported in vcf
+                        //                     // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                        //                     model.variantIdHash[featId] = {'readPtCov': coverageMap[featId]};
+                        //                 }
+                        //             }
+                        //         }).catch(error => {
+                        //         reject('Problem fetching read depth for specific variants: ' + error);
+                        //     });
+                        // });
 
                         if (self.hasRnaSeqData && !transcriptChange) {
                             // Get rnaseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
                                 if (model.rnaSeqUrlEntered) {
-                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE, qualityCutoff)
+                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.RNASEQ_TYPE, self.rawBamReadsQualityCutoff)
                                         .then(coverageMap => {
                                             for (var featId in coverageMap) {
                                                 if (model.variantIdHash[featId]) {
@@ -898,7 +900,7 @@ class CohortModel {
                             // Get atacseq point data (non-sampled) for somatic variants
                             self.getCanonicalModels().forEach(model => {
                                 if (model.atacSeqUrlEntered) {
-                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE, qualityCutoff)
+                                    model.promiseGetBamDepthForVariants(geneObj.somaticVariantList, self.globalApp.ATACSEQ_TYPE, self.rawBamReadsQualityCutoff)
                                         .then(coverageMap => {
                                             for (var featId in coverageMap) {
                                                 if (model.variantIdHash[featId]) {
@@ -1030,9 +1032,8 @@ class CohortModel {
 
         return new Promise((resolve, reject) => {
             let promises = [];
-            const qualityCutoff = self.globalApp.INDIV_QUALITY_CUTOFF;
             self.getCanonicalModels().forEach(model => {
-                let p = model.promiseGetBamDepthForVariants([selectedVariant], bamType, qualityCutoff)
+                let p = model.promiseGetBamDepthForVariants([selectedVariant], bamType, self.rawBamReadsQualityCutoff)
                     .then(coverageMap => {
                         for (var featId in coverageMap) {
                             if (model.variantIdHash[featId]) {
@@ -1056,6 +1057,15 @@ class CohortModel {
                     reject('Problem fetching sequencing reads in cohort model: ' + error);
             });
         });
+    }
+
+    clearFetchedSeqReads() {
+        this.getCanonicalModels().forEach(model => {
+            Object.values(model.variantIdHash).forEach(variant => {
+                variant.rnaSeqPtCov = -1;
+                variant.atacSeqPtCov = -1;
+            })
+        })
     }
 
     startGeneProgress(geneName) {

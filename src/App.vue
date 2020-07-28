@@ -293,7 +293,7 @@
                     //     tipType,
                     //     self);
 
-                    self.filterModel = new FilterModel(translator, self.globalApp.$);
+                    self.filterModel = new FilterModel(translator, self.cohortModel, self.globalApp.$);
                     self.cohortModel.filterModel = self.filterModel;
                 })
                 .catch((error) => {

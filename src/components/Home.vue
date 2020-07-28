@@ -175,6 +175,7 @@
                                     :hasRnaSeq="cohortModel.hasRnaSeqData"
                                     :hasAtacSeq="cohortModel.hasAtacSeqData"
                                     @fetch-reads="fetchSeqReads"
+                                    @clear-and-fetch-reads="clearFetchSeqReads"
                                     @summary-mounted="onSummaryMounted"
                                     @summaryCardVariantDeselect="deselectVariant"
                                     @show-pileup="onShowPileupForVariant">
@@ -751,6 +752,15 @@
                         .then(() => {
                             self.$refs.variantSummaryCardRef.updateSeqCharts(bamType);
                         })
+                }
+            },
+            clearFetchSeqReads: function () {
+                this.cohortModel.clearFetchedSeqReads();
+                if (this.cohortModel.hasRnaSeqData && this.selectedVariant) {
+                    this.fetchSeqReads(this.cohortModel.globalApp.RNASEQ_TYPE);
+                }
+                if (this.cohortModel.hasAtacSeqData && this.selectedVariant) {
+                    this.fetchSeqReads(this.cohortModel.globalApp.ATACSEQ_TYPE);
                 }
             },
             toggleCarousel: function (display) {

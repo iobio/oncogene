@@ -13,18 +13,30 @@
     }
 </style>
 <style lang="sass">
+    .bar-chart-label
+        font: 13px Quicksand
+        color: #b4b3b3
+        font-style: italic
     .bar-label
         font: 12px Quicksand
+    .quality-input
+        font-family: Quicksand
+        font-size: 16px
+
+        input
+            text-align: center
+            height: 30px
+
 </style>
 
 <template>
     <v-container>
         <v-row no-gutters>
-            <v-col cols="12" sm="12" xl="3" class="summary-field-label">
+            <v-col cols="12" sm="12" xl="3" class="bar-chart-label">
                 {{ chartLabel }}:
             </v-col>
             <v-col v-show="!showLoader"
-                   cols="12" sm="12" xl="9"
+                   cols="12" sm="12"
                    :id="bamType + 'Bar'"
                    style="padding-bottom: 5px">
             </v-col>
@@ -50,7 +62,7 @@
         data() {
             return {
                 chart: null,
-                showLoader: false
+                showLoader: false,
             }
         },
         props: {

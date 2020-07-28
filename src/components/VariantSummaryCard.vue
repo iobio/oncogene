@@ -2,6 +2,14 @@
      SJG updated May2018 -->
 
 <style lang="sass">
+    #raw-bam-dialog
+        font-family: Quicksand
+
+        .raw-bam-headline
+            font-size: 20px
+            background-color: #7f1010
+            color: white
+
     #getStartedBlock
         position: absolute
         width: 100%
@@ -263,15 +271,66 @@
                     </allele-frequency-viz>
                     <v-container>
                         <v-row no-gutters class="summary-viz" style="min-height: 0; padding-top: 10px">
-                            <v-col sm="6" class="field-label-header">Raw Bam Counts</v-col>
-                            <v-col sm="4"></v-col>
+                            <v-col sm="7" class="field-label-header">
+                                Raw Bam Counts
+                                <v-dialog v-model="rawBamDialog" persistent max-width="500px">
+                                    <template v-slot:activator="{ on, attrs }">
+                                    <v-btn x-small
+                                           text
+                                           fab
+                                           color="transparent"
+                                           v-bind="attrs"
+                                           v-on="on">
+                                        <v-icon small color="secondary" class="pb-1">
+                                            info_outline
+                                        </v-icon>
+                                    </v-btn>
+                                    </template>
+                                    <v-card id="raw-bam-dialog">
+                                        <v-card-title class="raw-bam-headline">
+                                            <span>Raw Bam Counts</span>
+                                        </v-card-title>
+                                        <v-card-text class="pt-3">
+                                            <div>
+                                                Raw counts are sourced from the provided bam files to populate the displayed
+                                                bar charts for RNA-Seq and ATAC-Seq. The counts covering a specific location may differ slightly from
+                                                those in 'Alternate Allele Frequencies', as they are filtered based on mapping quality (MAPQ).
+                                                Advanced users may change the filtering criteria below, and only reads with MAPQ values greater
+                                                than or equal to the provided number will be included in the bar chart counts.
+                                            </div>
+                                            <v-container>
+                                                <v-row>
+                                                    <v-col cols="4"></v-col>
+                                                    <v-col cols="4">
+                                                        <v-text-field class="quality-input"
+                                                                      v-model="qualityCutoff"
+                                                                      dense
+                                                                      single-line
+                                                                      :rules="[rules.numericRule]"
+                                                                      persistent-hint
+                                                        ></v-text-field>
+                                                    </v-col>
+                                                    <v-col cols="4"></v-col>
+                                                </v-row>
+                                            </v-container>
+                                        </v-card-text>
+                                        <v-card-actions class="px-3">
+                                            <v-spacer></v-spacer>
+                                            <v-btn @click="rawBamDialog = false">Close</v-btn>
+                                            <v-btn :disabled="!validQualityCutoff" color="secondary" @click="updateBamReadQuality">Save</v-btn>
+                                        </v-card-actions>
+                                    </v-card>
+                                </v-dialog>
+                            </v-col>
+                            <v-col sm="3"></v-col>
                             <v-col sm="2" style="float: right">
-                                <v-tooltip left>
+                                <v-tooltip bottom>
                                     <template v-slot:activator="{ on, attrs }">
                                         <v-btn v-show="variantSelected"
                                                fab
                                                dark
                                                small
+                                               elevation="3"
                                                color="secondary"
                                                class="mx-2"
                                                v-bind="attrs"
@@ -343,7 +402,12 @@
                 cohortFieldsValid: true,
                 coverageCounts: null,
                 rnaSeqCounts: null,
-                atacSeqCounts: null
+                atacSeqCounts: null,
+                rawBamDialog: false,
+                rules: {
+                    numericRule: value => (!isNaN(value)) && parseInt(value) >= 0  || 'Must be a positive integer',
+                },
+                qualityCutoff: 10
             }
         },
         watch: {
@@ -358,7 +422,7 @@
                         this.setAtacSeqCounts();
                     }
                 } else {
-                    this.$refs.coverageBarFeatureViz.clear();
+                    // this.$refs.coverageBarFeatureViz.clear();
                     if (this.cohortModel.hasRnaSeqData && this.$refs.rnaSeqBarFeatureViz) {
                         this.$refs.rnaSeqBarFeatureViz.clear();
                     }
@@ -469,6 +533,9 @@
                 let self = this;
                 return self.variant != null;
             },
+            validQualityCutoff: function() {
+                return (!isNaN(this.qualityCutoff)) && parseInt(this.qualityCutoff) >= 0
+            }
         },
         methods: {
             summaryCardVariantDeselect: function () {
@@ -513,11 +580,9 @@
 
                 let notFetched = 1;
                 for (var feat in map) {
-                    if (map[feat] && map[feat].readPtCov) {
+                    if (map[feat] && map[feat].readPtCov >= 0) {
                         notFetched &= map[feat].readPtCov < 0;
                         countMap[feat] = map[feat].readPtCov;
-                    } else {
-                        countMap[feat] = 0;
                     }
                 }
                 this.coverageCounts = countMap;
@@ -541,11 +606,9 @@
 
                 let notFetched = 1;
                 for (var feat in map) {
-                    if (map[feat] && map[feat].rnaSeqPtCov) {
+                    if (map[feat] && map[feat].rnaSeqPtCov >= 0) {
                         notFetched &= map[feat].rnaSeqPtCov < 0;
                         countMap[feat] = map[feat].rnaSeqPtCov;
-                    } else {
-                        countMap[feat] = 0;
                     }
                 }
                 this.rnaSeqCounts = countMap;
@@ -569,11 +632,9 @@
                 }
                 let notFetched = 1;
                 for (var feat in map) {
-                    if (map[feat] && map[feat].atacSeqPtCov) {
+                    if (map[feat] && map[feat].atacSeqPtCov >= 0) {
                         notFetched &= map[feat].atacSeqPtCov < 0;
                         countMap[feat] = map[feat].atacSeqPtCov;
-                    } else {
-                        countMap[feat] = 0;
                     }
                 }
                 this.atacSeqCounts = countMap;
@@ -598,17 +659,18 @@
             },
             onIgvClick: function() {
                 this.$emit('show-pileup');
+            },
+            updateBamReadQuality: function() {
+                if (this.cohortModel.rawBamReadsQualityCutoff !== this.qualityCutoff) {
+                    this.cohortModel.rawBamReadsQualityCutoff = this.qualityCutoff;
+                    if (this.hasRnaSeq || this.hasAtacSeq)
+                        this.$emit('clear-and-fetch-reads', this.cohortModel.globalApp.RNASEQ_TYPE);
+                }
+                this.rawBamDialog = false;
             }
         },
         mounted: function () {
             this.$emit('summary-mounted');
-            // this.setCoverageCounts();
-            // if (this.cohortModel.hasRnaSeqData) {
-            //     this.setRnaSeqCounts();
-            // }
-            // if (this.cohortModel.hasAtacSeqData) {
-            //     this.setAtacSeqCounts();
-            // }
         }
     }
 </script>

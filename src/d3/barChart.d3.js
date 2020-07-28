@@ -117,7 +117,7 @@ export default function barChart(d3, options) {
                 .attr('class', "bar-label")
                 .attr("width", _x.bandwidth())
                 .attr("text-anchor", "start")
-                .attr("x", ( d => { return _x(d.label) + (_x.bandwidth() / 2) - 9 ; }))
+                .attr("x", ( d => { return _x(d.label) + (_x.bandwidth() / 2) - 3 ; }))
                 .attr("y", function (d) {
                     return _y(d.value);
                 });

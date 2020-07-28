@@ -2,8 +2,9 @@
  * Among other things, determines if a variant is somatic or not by incorporating filter logic. */
 
 class FilterModel {
-    constructor(translator, $) {
+    constructor(translator, cohortModel, $) {
         this.$ = $;
+        this.cohortModel = cohortModel;
 
         /* Initializers */
         let qualCutoff = 'qual',
@@ -410,9 +411,8 @@ class FilterModel {
             }
             let coverageCheckList = Object.values(coverageCheckFeatures);
             if (coverageCheckList.length > 0) {
-                const qualityCutoff = self.translator.globalApp.INDIV_QUALITY_CUTOFF;
                 // Check coverage in normal sample (todo: update for multiple normal samples in the future)
-                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckList, self.translator.globalApp.COVERAGE_TYPE, qualityCutoff)
+                normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckList, self.translator.globalApp.COVERAGE_TYPE, self.cohortModel.globalApp.INDIV_QUALITY_CUTOFF)
                     .then(coverageMap => {
                         for (var featId in coverageMap) {
                             let depth = coverageMap[featId];    // coverageMap respects order

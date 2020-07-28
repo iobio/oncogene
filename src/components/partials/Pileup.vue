@@ -29,6 +29,7 @@
                         <v-icon>zoom_in</v-icon>
                     </v-btn>
                 </v-col>
+<!--                Note: leaving new tab functionality out for now b/c presigned URLs do not work-->
 <!--                <v-col cols="2" style="text-align: right">-->
 <!--                    <v-btn @click='launchFullIGV' color="secondary">-->
 <!--                        Open in Tab-->
