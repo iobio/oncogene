@@ -395,7 +395,6 @@
                 const self = this;
                 self.selectedVariant = null;
                 self.displayLoader = true;
-
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
                         let totalSomaticVarCount = rankObj.count;
@@ -425,7 +424,8 @@
 
                         self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
                             .then(() => {
-                                self.promiseLoadData(self.selectedGene, self.selectedTranscript)
+                                const globalMode = true;
+                                self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                                     .catch(error => {
                                         Promise.reject('Could not load data: ' + error);
                                     })
@@ -436,13 +436,15 @@
                     console.log('There was a problem calling global somatics: ' + error);
                 });
             },
-            promiseLoadData: function (selectedGene, selectedTranscript, transcriptChange) {
+            promiseLoadData: function (selectedGene, selectedTranscript, transcriptChange, globalMode) {
                 const self = this;
 
                 return new Promise(function (resolve, reject) {
                     let options = {'getKnownVariants': false};
                     options['getCosmicVariants'] = false;
                     options['transcriptChange'] = transcriptChange;
+                    options['globalMode'] = globalMode;
+                    options['keepHomRefs'] = true;
 
                     self.cohortModel.promiseLoadData(selectedGene,
                         selectedTranscript,
@@ -670,7 +672,7 @@
                         if (self.cohortModel.isLoaded) {
                             self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
                                 .then(() => {
-                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange)
+                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
                                         .then(function () {
                                             self.clearZoom = false;
                                             self.showVarViz = true;

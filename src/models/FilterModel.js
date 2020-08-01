@@ -36,8 +36,8 @@ class FilterModel {
 
         /* Somatic settings */
         this.DEFAULT_SOMATIC_CUTOFFS = {
-            normalAltFreq: 0.01,      // Must be between 0-1
-            normalAltCount: 5,
+            normalAltFreq: 0.05,      // Must be between 0-1
+            normalAltCount: 10,
             tumorAltFreq: 0.10,       // Must be between 0-1
             tumorAltCount: 5
         };
@@ -209,7 +209,7 @@ class FilterModel {
             impact: [
                 {name: 'HIGH', displayName: 'HIGH', excludeName: 'High Impact Variants', model: true, default: true},
                 {name: 'MODERATE', displayName: 'MODERATE', excludeName: 'Moderate Impact Variants', model: true, default: true},
-                {name: 'MODIFIER', displayName: 'MODIFIER', excludeName: 'Modifier Impact Variants', model: false, default: false},
+                {name: 'MODIFIER', displayName: 'MODIFIER', excludeName: 'Modifier Impact Variants', model: true, default: true},
                 {name: 'LOW', displayName: 'LOW', excludeName: 'Low Impact Variants', model: true, default: true}
             ],
             type: [
@@ -258,16 +258,15 @@ class FilterModel {
      *  If globalMode is true, returns a map of selectedSampleId: somaticFeatureList.
      *  Otherwise, returns a dictionary of somatic variant IDs from all tumor tracks combined.
      */
-    promiseAnnotateVariantInheritance(resultMap, featuresList, globalMode) {
+    promiseAnnotateVariantInheritance(resultMap, featuresList, globalMode, somaticOnlyMode) {
         const self = this;
-
         return new Promise((resolve, reject) => {
             let normalSamples = [];
             let tumorSamples = [];
             let tumorSampleModelIds = [];
-            let somaticVarLookup = {};
             let inheritedVarLookup = {};
             let somaticVarMap = {};
+            let somaticVarLookup = {};
             let i = 0;
 
             // Classify samples
@@ -306,7 +305,6 @@ class FilterModel {
                     normFeatures.forEach((feature) => {
                         feature.isInherited = true;   // Need to mark all normal variants as inherited from null
                         normalContainsLookup[feature.id] = true;
-                        // todo: not sure this is filled in yet when doing global somatic annotation
                         if (feature.passesFilters === true) {
                             filteredNormFeatures.push(feature);
                             inheritedVarLookup[feature.id] = true;
@@ -320,13 +318,19 @@ class FilterModel {
                         let passesNormalCount = false;
 
                         // If we're pulling back from annotateSomaticVars, we've already filtered based on counts
-                        if (globalMode) {
+                        // If we're in somatic only mode, we're not filtering
+                        if (globalMode || somaticOnlyMode) {
                             passesNormalCount = true;
                         } else {
-                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(this.SOMATIC_FILTER, this.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(this.SOMATIC_FILTER, this.NORMAL_COUNT, 'currVal'));
+                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currVal'));
                         }
                         let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
-                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(this.SOMATIC_FILTER, this.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(this.SOMATIC_FILTER, this.NORMAL_FREQ, 'currVal'), this.NORMAL_FREQ));
+                        let passesNormalAf = false;
+                        if (somaticOnlyMode) {
+                            passesNormalAf = true;
+                        } else {
+                            passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
+                        }
                         if (currFeat.id != null && passesNormalCount && passesNormalAf) {
                             passesNormalFiltersLookup[currFeat.id] = true;
                         }
@@ -356,13 +360,19 @@ class FilterModel {
                         let passesTumorCount = false;
 
                         // If we're pulling back from annotateSomaticVars, we've already filtered based on counts
-                        if (globalMode) {
+                        // If we're in somatic only mode, we're not filtering
+                        if (globalMode || somaticOnlyMode) {
                             passesTumorCount = true;
                         } else {
-                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(this.SOMATIC_FILTER, this.TUMOR_COUNT, 'currLogic'), feature.genotypeAltCount, self.getFilterField(this.SOMATIC_FILTER, this.TUMOR_COUNT, 'currVal'));
+                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_COUNT, 'currLogic'), feature.genotypeAltCount, self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_COUNT, 'currVal'));
                         }
                         let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;
-                        let passesTumorAf = self.matchAndPassFilter(self.getFilterField(this.SOMATIC_FILTER, this.TUMOR_FREQ, 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(this.SOMATIC_FILTER, this.TUMOR_FREQ, 'currVal'), this.TUMOR_FREQ));
+                        let passesTumorAf = false;
+                        if (somaticOnlyMode) {
+                            passesTumorAf = true;
+                        } else {
+                            passesTumorAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_FREQ, 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_FREQ, 'currVal'), self.TUMOR_FREQ));
+                        }
 
                         if (passesNormalFiltersLookup[feature.id] && passesTumorAf && passesTumorCount) {
                             // Found a somatic variant
@@ -406,7 +416,7 @@ class FilterModel {
             }
             // If we're in global mode, we don't have the bandwidth to get reads for all vars at once
             // Instead, these will be pulled in piece-meal like rnaseq/atacseq
-            if (globalMode) {
+            if (globalMode || somaticOnlyMode) {
                 coverageCheckFeatures = {};
             }
             let coverageCheckList = Object.values(coverageCheckFeatures);
@@ -424,8 +434,6 @@ class FilterModel {
                             } else {
                                 depthObj = depthObj[0];
                             }
-                            // if (depth >= self.DEFAULT_QUALITY_FILTERING_CRITERIA['totalCountCutoff']) {
-                            // todo: make sure synonymous then get rid of ^
                             if (self.matchAndPassFilter(depthObj.currLogic, depth, depthObj.currVal)) {
 
                                 // Have to check to see if all of the tumor samples have this variant`
@@ -527,8 +535,10 @@ class FilterModel {
     }
 
     /* Takes in a list of variants, sets passesFilter field on each variant to true,
-     * if it passes all of the current filter criteria within this model. */
-    markFilteredVariants(variants) {
+     * if it passes all of the current filter criteria within this model.
+     *
+     * If we're in somaticOnlyMode, want variants to always pass filters. */
+    markFilteredVariants(variants, somaticOnlyMode) {
         const self = this;
 
         // Get active filters
@@ -539,14 +549,16 @@ class FilterModel {
             variant.passesFilters = true;
 
             // Checkbox filters
-            for (let i = 0; i < checkboxFilters.length; i++) {
-                let filter = checkboxFilters[i];
-                let field = filter[0];
-                let value = filter[1];
+            if (!somaticOnlyMode) {
+                for (let i = 0; i < checkboxFilters.length; i++) {
+                    let filter = checkboxFilters[i];
+                    let field = filter[0];
+                    let value = filter[1];
 
-                if (self.getVarField(variant, field) === value) {
-                    variant.passesFilters = false;
-                    break;
+                    if (self.getVarField(variant, field) === value) {
+                        variant.passesFilters = false;
+                        break;
+                    }
                 }
             }
         });
@@ -839,7 +851,6 @@ class FilterModel {
             if (i > 0) {
                 normalPhrase += '||';
             }
-            //todo: add in logic for dropdown selection (aka from filter logicObj)
             normalPhrase += '(FORMAT/AO[' + idx + ':0]' + somaticCriteria[this.NORMAL_COUNT_LOGIC] + somaticCriteria[this.NORMAL_COUNT];
             normalPhrase += '&FORMAT/DP[' + idx + ':0]' + somaticCriteria[this.DEPTH_LOGIC] + somaticCriteria[this.GENOTYPE_DEPTH] + ')';
             normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';

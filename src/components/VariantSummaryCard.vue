@@ -275,7 +275,8 @@
                                 Raw Bam Counts
                                 <v-dialog v-model="rawBamDialog" persistent max-width="500px">
                                     <template v-slot:activator="{ on, attrs }">
-                                    <v-btn x-small
+                                    <v-btn v-if="hasAtacSeq || hasRnaSeq"
+                                           x-small
                                            text
                                            fab
                                            color="transparent"

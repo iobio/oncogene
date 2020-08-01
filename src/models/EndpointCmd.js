@@ -136,7 +136,7 @@ export default class EndpointCmd {
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
         if (this.gruBackend) {
-            cmd = me.devApi.streamCommand('annotateSomaticVariants',
+            cmd = me.api.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr,
@@ -452,7 +452,7 @@ export default class EndpointCmd {
             const indexUrl = bamSource.baiUrl;
             maxPoints = maxPoints ? maxPoints : 0;
 
-            return this.devApi.streamCommand('alignmentCoverage', {
+            return this.api.streamCommand('alignmentCoverage', {
                 url,
                 indexUrl,
                 samtoolsRegion,

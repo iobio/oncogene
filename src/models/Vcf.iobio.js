@@ -769,7 +769,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
+    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
         var me = this;
 
         return new Promise(function (resolve, reject) {
@@ -797,7 +797,7 @@ export default function vcfiobio(theGlobalApp) {
                         } else {
                             reject();
                         }
-                    }, null, sampleModelId, hasRnaSeqData, hasAtacSeqData);
+                    }, null, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef);
             } else {
                 //me._getLocalStats(refName, geneObject.start, geneObject.end, sampleName);
 
@@ -872,7 +872,7 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
+    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
 
         var me = this;
 
@@ -939,7 +939,7 @@ export default function vcfiobio(theGlobalApp) {
             });
 
             // Parse the vcf object into a variant object that is visualized by the client.
-            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData);
+            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef);
 
             callback(annotatedRecs, results);
         });
@@ -1715,7 +1715,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData) {
+    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
 
         var me = this;
         var selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
@@ -1817,7 +1817,7 @@ export default function vcfiobio(theGlobalApp) {
 
                     var clinvarResult = me.parseClinvarInfo(rec.info, clinvarMap);
 
-                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames);
+                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRef);
 
                     var clinvarObject = me._formatClinvarCoordinates(rec, alt);
 
@@ -1830,6 +1830,9 @@ export default function vcfiobio(theGlobalApp) {
                         var highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
 
                         for (var i = 0; i < allVariants.length; i++) {
+
+                            // todo: left off here - problem is that normal samples that are just homref are being excluded, when we need the normal variants to also be pulled back
+                            // todo: for local somatic filtering
                             var genotype = gtResult.genotypes[i];
 
                             // Keep the variant if we are just parsing a single sample (parseMultiSample=false)
@@ -2740,7 +2743,7 @@ export default function vcfiobio(theGlobalApp) {
      * Parse the genotype field from in the vcf rec
      *
      */
-    exports._parseGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames) {
+    exports._parseGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames, keepHomRef) {
         var me = this;
 
         // The result returned will be an object representing all
@@ -2932,6 +2935,7 @@ export default function vcfiobio(theGlobalApp) {
                 // A->G,C  0|2 bypass A->G, keep A->C
                 // A->G,C  1|2 keep A->G, keep A->C
                 // unknown .   bypass
+                // If keepHomRef is true, keep 0|0
                 var delim = null;
 
                 if (gt.gt.indexOf("|") > 0) {
@@ -2961,10 +2965,16 @@ export default function vcfiobio(theGlobalApp) {
                             } else if (tokens[1] == 0 && tokens[0] != 0) {
                                 let theAltIdx = +tokens[0] - 1;
                                 result.alt = alt.split(',')[theAltIdx]
+                            } else if (keepHomRef && tokens[0] == 0 && tokens[1] == 0) {
+                                gt.keep = true;
                             }
                             if (gt.keep) {
                                 if (tokens[0] == tokens[1]) {
-                                    gt.zygosity = "HOM";
+                                    if (tokens[0] == 0) {
+                                        gt.zygosity = "HOMREF";
+                                    } else {
+                                        gt.zygosity = "HOM";
+                                    }
                                 } else {
                                     gt.zygosity = "HET";
                                 }
@@ -2978,7 +2988,7 @@ export default function vcfiobio(theGlobalApp) {
                                 gt.zygosity = "HET";
                             }
                         } else if (tokens[0] == "0" && tokens[1] == "0") {
-                            gt.keep = false;
+                            gt.keep = !!keepHomRef;
                             gt.zygosity = "HOMREF"
                         }
                     }

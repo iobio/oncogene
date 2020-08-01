@@ -1635,7 +1635,7 @@ class SampleModel {
     }
 
     // Returns all vcf data in multi-sample vcf, per track
-    promiseGetAllVariants(theGene, theTranscript, isMultiSample) {
+    promiseGetAllVariants(theGene, theTranscript, isMultiSample, keepHomRefVariants) {
         const me = this;
         return new Promise(function (resolve, reject) {
             // First the gene vcf data has been cached, just return
@@ -1666,7 +1666,8 @@ class SampleModel {
                                     null,   // cache
                                     me.id,
                                     me.rnaSeqUrlEntered,
-                                    me.atacSeqUrlEntered
+                                    me.atacSeqUrlEntered,
+                                    keepHomRefVariants
                                 );
                             })
                             .then(data => {

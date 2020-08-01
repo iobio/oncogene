@@ -144,7 +144,10 @@ class GlobalApp {
             'W': 'Trp',
             'Y': 'Tyr'
         };
-        const threeAa = aaMap[singleAa];
+        let threeAa = aaMap[singleAa];
+        if (!threeAa && singleAa.includes('X')) {
+            threeAa = '*';
+        }
         return threeAa ? threeAa : singleAa;
     }
 }

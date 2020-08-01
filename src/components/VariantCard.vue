@@ -162,7 +162,7 @@
     <v-card outlined class="my-1">
         <v-expansion-panels v-model="openState" multiple>
             <v-expansion-panel class="app-card" id="variant-card" :key="0">
-                <v-expansion-panel-header>
+                <v-expansion-panel-header class="pt-2 pb-1" style="min-height: 50px">
                     <div>
                         <div class="text-center d-inline">
                             <v-avatar v-if="sampleModel.isCosmic" color="primary" size="28" class="mr-1 mb-1">
@@ -179,8 +179,13 @@
                             {{ sampleLabel }}
                         </div>
                         <div class="text-center d-inline">
-                            <v-chip v-if="annotationComplete && sampleModel.loadedVariants" small outlined color="appColor" class="mb-2 ml-2" style="font-size: 14px; font-family: 'Raleway'">
-                                {{ sampleModel.loadedVariants.features.length + (sampleModel.loadedVariants.features.length > 1 ? ' Variants' : ' Variant') }}
+                            <v-chip v-if="annotationComplete && sampleModel.loadedVariants && showChip"
+                                    small
+                                    outlined
+                                    color="appColor"
+                                    class="mb-2 ml-2"
+                                    style="font-size: 14px; font-family: 'Raleway'">
+                                {{ sampleModel.loadedVariants.features.length + (sampleModel.loadedVariants.features.length !== 1 ? ' Variants' : ' Variant') }}
                             </v-chip>
                         </div>
                         <v-badge v-if="sampleModel.loadedVariants && coverageDangerRegions.length > 0"
@@ -264,7 +269,8 @@
                                          @variantClick="onVariantClick"
                                          @variantHover="onVariantHover"
                                          @variantHoverEnd="onVariantHoverEnd"
-                                         @apply-active-filters="applyActiveFilters">
+                                         @apply-active-filters="applyActiveFilters"
+                                         @var-chart-rendered="showChip = true">
                             </variant-viz>
                             <div class="chart-label" v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
@@ -295,7 +301,7 @@
                             <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
                                 rna-seq
                             </div>
-                            <div id="rna-bam-track">
+                            <div id="rna-bam-track" v-if="sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
                                 <depth-viz
                                         v-if="showDepthViz"
                                         ref="depthVizRef"
@@ -321,7 +327,7 @@
                             <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
                                 atac-seq
                             </div>
-                            <div id="atac-bam-track">
+                            <div id="atac-bam-track" v-if="sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
                                 <depth-viz
                                         v-if="showDepthViz"
                                         ref="depthVizRef"
@@ -344,24 +350,24 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <gene-viz id="gene-viz"
-                                      v-bind:class="{ hide: !showGeneViz }"
-                                      :data="[selectedTranscript]"
-                                      :margin="geneVizMargin"
-                                      :width="width"
-                                      :height="80"
-                                      :trackHeight="geneVizTrackHeight"
-                                      :cdsHeight="geneVizCdsHeight"
-                                      :regionStart="regionStart"
-                                      :regionEnd="regionEnd"
-                                      :showXAxis="geneVizShowXAxis"
-                                      :featureClass="getExonClass"
-                                      :isZoomTrack="false"
-                                      :$="$"
-                                      :d3="d3"
-                                      @feature-selected="showExonTooltip"
-                            >
-                            </gene-viz>
+<!--                            <gene-viz id="gene-viz"-->
+<!--                                      v-bind:class="{ hide: !showGeneViz }"-->
+<!--                                      :data="[selectedTranscript]"-->
+<!--                                      :margin="geneVizMargin"-->
+<!--                                      :width="width"-->
+<!--                                      :height="80"-->
+<!--                                      :trackHeight="geneVizTrackHeight"-->
+<!--                                      :cdsHeight="geneVizCdsHeight"-->
+<!--                                      :regionStart="regionStart"-->
+<!--                                      :regionEnd="regionEnd"-->
+<!--                                      :showXAxis="geneVizShowXAxis"-->
+<!--                                      :featureClass="getExonClass"-->
+<!--                                      :isZoomTrack="false"-->
+<!--                                      :$="$"-->
+<!--                                      :d3="d3"-->
+<!--                                      @feature-selected="showExonTooltip"-->
+<!--                            >-->
+<!--                            </gene-viz>-->
                         </div>
                     </v-card>
                 </v-expansion-panel-content>
@@ -371,7 +377,7 @@
 </template>
 
 <script>
-    import GeneViz from "./viz/GeneViz.vue"
+    // import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
     import DepthViz from "./viz/DepthViz.vue"
 
@@ -379,7 +385,7 @@
         name: 'variant-card',
         components: {
             VariantViz,
-            GeneViz,
+            // GeneViz,
             DepthViz
         },
         props: {
@@ -478,7 +484,8 @@
                 numFilteredVariants: 0,
                 loadingVars: false,
                 callingVars: false,
-                loadingCov: false
+                loadingCov: false,
+                showChip: false
             }
         },
         methods: {
@@ -939,6 +946,9 @@
             'sampleModel.inProgress.loadingCoverage': function() {
                 this.loadingCov = this.sampleModel.inProgress.loadingCoverage;
             },
+            selectedGene: function() {
+                this.showChip = false;
+            }
         },
         mounted: function () {
             this.id = this.sampleModel.id;

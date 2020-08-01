@@ -872,8 +872,23 @@
                 this.cohortModel.setInputDataTypes(this.userData);
                 this.cohortModel.setBuild(this.selectedBuild);
                 this.cohortModel.setCallType(this.somaticCallsOnly);
+
+                // Set adjusted selected sample indices (account for any skipped samples)
+                let omittedSampleFlags = [];
+                for (let i = 0; i < this.vcfSampleNames.length; i++) {
+                    omittedSampleFlags.push(1);
+                }
                 this.modelInfoList.forEach(modelInfo => {
-                    modelInfo.selectedSampleIdx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+                    let idx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+                    omittedSampleFlags[idx] = 0;
+                });
+                this.modelInfoList.forEach(modelInfo => {
+                    let bound = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+                    let numSkipBefore = 0;
+                    for (let i = 0; i < bound; i++) {
+                        numSkipBefore += omittedSampleFlags[i];
+                    }
+                    modelInfo.selectedSampleIdx = bound - numSkipBefore;
                 });
                 this.$emit('launched', this.modelInfoList, this.listInput);
             }

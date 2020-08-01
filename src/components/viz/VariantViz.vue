@@ -189,7 +189,6 @@
                 dispatch.on('d3mouseout', function() {
                     self.onVariantHoverEnd();
                 });
-
                 this.setVariantChart();
             },
             update: function () {
@@ -244,7 +243,7 @@
                 this.variantChart.hideCircle(container, pinned);
             },
             setVariantChart: function () {
-                this.$emit('updateVariantChart', this.variantChart);
+                this.$emit('var-chart-rendered');
             },
             showFlaggedVariant: function (variant, container) {
                 this.variantChart.showFlaggedVariant(container, variant);

@@ -47,9 +47,11 @@ class CohortModel {
             'loadingDataSources': false
         };
 
-        this.allSomaticVcfData = null;
+        // somatic specific
         this.allSomaticFeaturesLookup = {};     // Contains the IDs corresponding to variants from all tumor tracks classified as somatic
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
+        this.onlySomaticCalls = false;
+        this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -65,17 +67,10 @@ class CohortModel {
         this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
         this.sampleModelUtil.init(this);
 
-        // data types
-        this.hasVcfData = true;
-        this.hasCoverageData = true;
+        // optional data types
         this.hasCnvData = false;
         this.hasRnaSeqData = false;
         this.hasAtacSeqData = false;
-
-        // new stuff - tb sorted
-        this.onlySomaticCalls = false;
-        this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
-        this.rankedSomaticGeneList = [];    // A ranked list of somatic gene objects for entire genome (ordered most pathogenic/relevant -> least)
     }
 
     /*
@@ -770,7 +765,8 @@ class CohortModel {
         return Object.keys(theVcfs).length === 1;
     }
 
-    /* Loads global somatic list */
+    /* If a somatic variant list is not provided, fetches the list based on the current filtering criteria.
+     * Then groups and ranks the variants by gene, and returns a rank object. */
     promiseAnnotateGlobalSomatics() {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -965,9 +961,7 @@ class CohortModel {
                         self.promiseFilterVariants()
                             .then(() => {
                                 const globalMode = false;
-                                // todo: I think I need ptcoverage here before annotating inheritance
-                                // todo: currently not enforcing these promises be resolved...
-                                self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, null, globalMode)
+                                self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, null, globalMode, self.onlySomaticCalls)
                                     .then((inheritanceObj) => {
                                         let geneChanged = options.loadFromFlag;
                                         self.setLoadedVariants(theGene, null, geneChanged, options.loadFeatureMatrix);
@@ -995,12 +989,13 @@ class CohortModel {
             let normalSelectedSampleIdxs = [];
             let tumorSelectedSampleIdxs = [];
             self.getCanonicalModels().forEach(model => {
-                if (model.isTumor)
-                tumorSelectedSampleIdxs.push(model.selectedSampleIdx);
-                else
+                if (model.isTumor) {
+                    tumorSelectedSampleIdxs.push(model.selectedSampleIdx);
+                } else {
                     normalSelectedSampleIdxs.push(model.selectedSampleIdx);
+                }
             });
-            const somaticFilterPhrase = self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
+            const somaticFilterPhrase = self.onlySomaticCalls ? '' : self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
             let selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
                 selectedSamples.push(model.selectedSample);
@@ -1010,11 +1005,12 @@ class CohortModel {
                 .then((somaticVariants) => {
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in somaticVariants) {
-                        self.filterModel.markFilteredVariants(somaticVariants[objKey].features);
+                        self.filterModel.markFilteredVariants(somaticVariants[objKey].features, self.onlySomaticCalls);
                     }
-                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, somaticVariants, true)
-                        .then((somaticVarList) => {
-                            resolve(somaticVarList);
+                    const globalMode = true;
+                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, somaticVariants, globalMode, self.onlySomaticCalls)
+                        .then((somaticVarMap) => {
+                            resolve(somaticVarMap);
                         }).catch(error => {
                             reject('Something went wrong annotating inheritance for global somatics:' + error);
                     });
@@ -1383,7 +1379,7 @@ class CohortModel {
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
-                self.filterModel.markFilteredVariants(sampleModel.vcfData.features);
+                self.filterModel.markFilteredVariants(sampleModel.vcfData.features, self.onlySomaticCalls);
                 resolve();
             });
         });
@@ -1396,7 +1392,6 @@ class CohortModel {
             let coverageType = model.getResultType(bamType);
             if (bamData) {
                 if (regionStart && regionEnd) {
-                    // todo: do we need to change .coverage here?
                     model[coverageType] = bamData.coverage.filter(function (depth) {
                         return depth[0] >= regionStart && depth[0] <= regionEnd;
                     })
@@ -1424,7 +1419,6 @@ class CohortModel {
         self.getCanonicalModels().forEach(function (model) {
             let coverageType = model.getResultType(bamType);
             coverageMap[model.id] = model[coverageType].coverage;
-            // todo: need to see where coords fall here
         });
     }
 
@@ -1447,12 +1441,14 @@ class CohortModel {
 
     promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
         const self = this;
+        const keepHomRefs = !!options.keepHomRefs;
+
         return new Promise(function (resolve, reject) {
             let annotatePromises = [];
             let theResultMap = {};
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, [self.getNormalModel()], isMultiSample, isBackground)
+            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, keepHomRefs)
                 .then((resultMap) => {
                     resultMap.forEach(resultObj => {
                         let sampleModel = self.getModelBySelectedSample(resultObj.name);

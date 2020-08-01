@@ -320,9 +320,9 @@
         },
         watch: {
             data: function (newData, oldData) {
-                let self = this;
-                if (self.$(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
-                    this.update(false);
+                const self = this;
+                if ( self && self.$(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
+                    self.update(false);
                 }
             },
             regionStart: function () {
