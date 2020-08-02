@@ -1522,6 +1522,7 @@ class GeneModel {
 
     promiseRankGenes() {
         const self = this;
+        self.rankedGeneList = [];
         return new Promise(resolve => {
             let genesWithVars = Object.values(self.geneObjects).filter((geneObj) => {
                 return geneObj.score > 0;
@@ -1569,6 +1570,25 @@ class GeneModel {
         return firstGene;
     }
 
+    /* Clears out existing somatic variants and score counts from gene objects.
+     * Used when somatic filters changed and variants recalled.
+     */
+    clearGeneObjects() {
+        const self = this;
+        Object.keys(self.geneObjects).forEach(key => {
+            self.geneObjects[key].somaticVariantList = [];
+            self.geneObjects[key].score = -1;
+            self.geneObjects[key].cosmicHighCount = 0;
+            self.geneObjects[key].cosmicModerCount = 0;
+            self.geneObjects[key].cosmicLowCount = 0;
+            self.geneObjects[key].cosmicModifCount = 0;
+            self.geneObjects[key].highCount = 0;
+            self.geneObjects[key].moderCount = 0;
+            self.geneObjects[key].lowCount = 0;
+            self.geneObjects[key].modifCount = 0;
+            }
+        )
+    }
 }
 
 

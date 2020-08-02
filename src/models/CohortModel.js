@@ -332,13 +332,13 @@ class CohortModel {
         let self = this;
         if (self.tumorInfo == null || forceRefresh) {
             self.tumorInfo = [];
-            self.getCanonicalModels().forEach(function(model) {
+            self.getCanonicalModels().forEach(function (model) {
                 if (model && model.getId() !== 'known-variants' && model.getId() !== 'cosmic-variants') {
                     let info = {};
                     info.model = model;
                     info.id = model.getId();
                     info.status = model.getTumorStatus() ? 'Tumor' : 'Normal';
-                    info.label  = model.getDisplayName();
+                    info.label = model.getDisplayName();
                     info.id = model.getDisplayName();
 
                     self.tumorInfo.push(info);
@@ -769,6 +769,8 @@ class CohortModel {
      * Then groups and ranks the variants by gene, and returns a rank object. */
     promiseAnnotateGlobalSomatics() {
         const self = this;
+        self.somaticVarMap = {};
+
         return new Promise((resolve, reject) => {
             self.promiseAnnotateSomaticVariants()
                 .then((somaticVariants) => {
@@ -784,8 +786,8 @@ class CohortModel {
                                     reject('Something went wrong ranking genes by variants ' + error);
                                 });
                         }).catch(error => {
-                            reject('Something went wrong populating somatic variant map: ' + error);
-                        });
+                        reject('Something went wrong populating somatic variant map: ' + error);
+                    });
                 })
                 .catch(error => {
                     reject('Problem loading somatic variants: ' + error);
@@ -925,7 +927,7 @@ class CohortModel {
                 if (self.hasRnaSeqData) {
                     // Get sampled data across gene
                     let p3 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.RNASEQ_TYPE)
-                        .then(function() {
+                        .then(function () {
                             self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
                         }).catch(error => {
                             console.log("Problem loading rnaseq data: " + error);
@@ -936,7 +938,7 @@ class CohortModel {
                 if (self.hasAtacSeqData) {
                     // Get sampled data across gene
                     let p4 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.ATACSEQ_TYPE)
-                        .then(function() {
+                        .then(function () {
                             self.setCoverage(null, null, self.globalApp.ATACSEQ_TYPE);
                         }).catch(error => {
                             console.log("Problem loading atacseq data: " + error);
@@ -1012,7 +1014,7 @@ class CohortModel {
                         .then((somaticVarMap) => {
                             resolve(somaticVarMap);
                         }).catch(error => {
-                            reject('Something went wrong annotating inheritance for global somatics:' + error);
+                        reject('Something went wrong annotating inheritance for global somatics:' + error);
                     });
                 }).catch((error) => {
                 reject('Problem pulling back somatic variants: ' + error);
@@ -1050,7 +1052,7 @@ class CohortModel {
                 .then(() => {
                     resolve();
                 }).catch(error => {
-                    reject('Problem fetching sequencing reads in cohort model: ' + error);
+                reject('Problem fetching sequencing reads in cohort model: ' + error);
             });
         });
     }
@@ -1406,8 +1408,8 @@ class CohortModel {
                         self.maxDepth = max;
                     else if (bamType === self.globalApp.RNASEQ_TYPE && max > self.maxRnaSeqDepth)
                         self.maxRnaSeqDepth = max;
-                     else if (bamType === self.globalApp.ATACSEQ_TYPE && max > self.maxAtacSeqDepth)
-                         self.atacSeqDepth = max;
+                    else if (bamType === self.globalApp.ATACSEQ_TYPE && max > self.maxAtacSeqDepth)
+                        self.atacSeqDepth = max;
                 }
             }
         })
@@ -1455,10 +1457,10 @@ class CohortModel {
                         sampleModel.processVariants([resultObj]);
                         theResultMap[sampleModel.id] = resultObj;
                     });
-                self.annotationComplete = false;
-            }).catch((error) => {
-                reject('Problem annotating variants: ' + error);
-            });
+                    self.annotationComplete = false;
+                }).catch((error) => {
+                    reject('Problem annotating variants: ' + error);
+                });
             annotatePromises.push(p);
 
             // Load clinvar track

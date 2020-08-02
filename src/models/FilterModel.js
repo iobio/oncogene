@@ -319,18 +319,18 @@ class FilterModel {
 
                         // If we're pulling back from annotateSomaticVars, we've already filtered based on counts
                         // If we're in somatic only mode, we're not filtering
-                        if (globalMode || somaticOnlyMode) {
+                        if (globalMode) {
                             passesNormalCount = true;
                         } else {
                             passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currVal'));
                         }
                         let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
-                        let passesNormalAf = false;
-                        if (somaticOnlyMode) {
-                            passesNormalAf = true;
-                        } else {
-                            passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
-                        }
+                        // let passesNormalAf = false;
+                        // if (somaticOnlyMode) {
+                        //     passesNormalAf = true;
+                        // } else {
+                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
+                        //}
                         if (currFeat.id != null && passesNormalCount && passesNormalAf) {
                             passesNormalFiltersLookup[currFeat.id] = true;
                         }

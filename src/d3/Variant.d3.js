@@ -589,8 +589,8 @@ export default function variantD3(d3, vizSettings) {
         }
     };
 
-    chart.clearVariants = function() {
-        // TODO: implement
+    chart.clearVariants = function(svgContainer) {
+        svgContainer.selectAll("svg").remove();
     };
 
     /* Updates styling classes applied to variants. Utilized in somatic filter application. */

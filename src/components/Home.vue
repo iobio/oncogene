@@ -395,6 +395,7 @@
                 const self = this;
                 self.selectedVariant = null;
                 self.displayLoader = true;
+                self.geneModel.clearGeneObjects();
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
                         let totalSomaticVarCount = rankObj.count;
@@ -693,6 +694,7 @@
                     })
                 })
             },
+            // For local filters only, that does not affect somatic filters and recall variants (e.g. impact/type only)
             onFilterChange: function () {
                 const self = this;
                 self.selectedVariant = null;

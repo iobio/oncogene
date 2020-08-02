@@ -1606,7 +1606,8 @@ export default function vcfiobio(theGlobalApp) {
                     let selectedTranscript = null;
                     let selectedTranscriptID = null;
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
-                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames);
+                    const keepHomRefs = true;
+                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
 
                     if (gtResult.keep) {
                         var highestImpactSnpeff = me._getHighestImpact(annot.snpEff.allSnpeff, me._cullTranscripts, selectedTranscriptID);
