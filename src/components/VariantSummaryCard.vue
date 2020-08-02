@@ -38,6 +38,7 @@
     .summary-card
         filter: blur(1px)
         -webkit-filter: blur(1px)
+        height: 100%
 
     .summary-field-label
         color: #b4b3b3

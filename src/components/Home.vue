@@ -108,7 +108,7 @@
                          @launched="onLaunch">
                 </Welcome>
                 <v-container v-if="dataEntered || debugMode" :height="700" class="pa-0"
-                             :class="{ 'blur-content': displayCarousel }">
+                             :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
                     <v-row no-gutters>
                         <gene-card v-if="selectedGene"
                                    :selectedGene="selectedGene"
@@ -127,38 +127,38 @@
                     </v-row>
                     <v-row no-gutters>
                         <v-col cols="8">
-                            <variant-card
-                                    ref="variantCardRef"
-                                    v-for="model in sampleModelsToDisplay"
-                                    :key="model.id"
-                                    v-bind:class="[ { 'full-width': true}, model.id ]"
-                                    :globalAppProp="globalApp"
-                                    :sampleModel="model"
-                                    :canonicalSampleIds="canonicalSampleIds"
-                                    :classifyVariantSymbolFunc="model.classifyByImpact"
-                                    :hoverTooltip="hoverTooltip"
-                                    :selectedGene="selectedGene"
-                                    :selectedTranscript="analyzedTranscript"
-                                    :selectedVariant="selectedVariant"
-                                    :regionStart="geneRegionStart"
-                                    :regionEnd="geneRegionEnd"
-                                    :width="screenWidth"
-                                    :height="screenHeight"
-                                    :showGeneViz="true"
-                                    :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
-                                    :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
-                                    :geneVizShowXAxis="false"
-                                    :annotationComplete="annotationComplete"
-                                    :d3="d3"
-                                    :$="$"
-                                    @cohort-variant-click="onCohortVariantClick"
-                                    @cohort-variant-hover="onCohortVariantHover"
-                                    @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                                    @variants-viz-change="onVariantsVizChange"
-                                    @variants-filter-change="onVariantsFilterChange"
-                                    @show-coverage-cutoffs="showCoverageCutoffs = true"
-                            >
-                            </variant-card>
+                                    <variant-card
+                                            ref="variantCardRef"
+                                            v-for="model in sampleModelsToDisplay"
+                                            :key="model.id"
+                                            v-bind:class="[ { 'full-width': true}, model.id ]"
+                                            :globalAppProp="globalApp"
+                                            :sampleModel="model"
+                                            :canonicalSampleIds="canonicalSampleIds"
+                                            :classifyVariantSymbolFunc="model.classifyByImpact"
+                                            :hoverTooltip="hoverTooltip"
+                                            :selectedGene="selectedGene"
+                                            :selectedTranscript="analyzedTranscript"
+                                            :selectedVariant="selectedVariant"
+                                            :regionStart="geneRegionStart"
+                                            :regionEnd="geneRegionEnd"
+                                            :width="screenWidth"
+                                            :height="screenHeight"
+                                            :showGeneViz="true"
+                                            :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
+                                            :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
+                                            :geneVizShowXAxis="false"
+                                            :annotationComplete="annotationComplete"
+                                            :d3="d3"
+                                            :$="$"
+                                            @cohort-variant-click="onCohortVariantClick"
+                                            @cohort-variant-hover="onCohortVariantHover"
+                                            @cohort-variant-hover-end="onCohortVariantHoverEnd"
+                                            @variants-viz-change="onVariantsVizChange"
+                                            @variants-filter-change="onVariantsFilterChange"
+                                            @show-coverage-cutoffs="showCoverageCutoffs = true"
+                                    >
+                                    </variant-card>
                         </v-col>
                         <v-col cols="4" class="summary-card">
                             <variant-summary-card
