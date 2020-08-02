@@ -127,38 +127,38 @@
                     </v-row>
                     <v-row no-gutters>
                         <v-col cols="8">
-                                    <variant-card
-                                            ref="variantCardRef"
-                                            v-for="model in sampleModelsToDisplay"
-                                            :key="model.id"
-                                            v-bind:class="[ { 'full-width': true}, model.id ]"
-                                            :globalAppProp="globalApp"
-                                            :sampleModel="model"
-                                            :canonicalSampleIds="canonicalSampleIds"
-                                            :classifyVariantSymbolFunc="model.classifyByImpact"
-                                            :hoverTooltip="hoverTooltip"
-                                            :selectedGene="selectedGene"
-                                            :selectedTranscript="analyzedTranscript"
-                                            :selectedVariant="selectedVariant"
-                                            :regionStart="geneRegionStart"
-                                            :regionEnd="geneRegionEnd"
-                                            :width="screenWidth"
-                                            :height="screenHeight"
-                                            :showGeneViz="true"
-                                            :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
-                                            :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
-                                            :geneVizShowXAxis="false"
-                                            :annotationComplete="annotationComplete"
-                                            :d3="d3"
-                                            :$="$"
-                                            @cohort-variant-click="onCohortVariantClick"
-                                            @cohort-variant-hover="onCohortVariantHover"
-                                            @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                                            @variants-viz-change="onVariantsVizChange"
-                                            @variants-filter-change="onVariantsFilterChange"
-                                            @show-coverage-cutoffs="showCoverageCutoffs = true"
-                                    >
-                                    </variant-card>
+                            <variant-card
+                                    ref="variantCardRef"
+                                    v-for="model in sampleModelsToDisplay"
+                                    :key="model.id"
+                                    v-bind:class="[ { 'full-width': true}, model.id ]"
+                                    :globalAppProp="globalApp"
+                                    :sampleModel="model"
+                                    :canonicalSampleIds="canonicalSampleIds"
+                                    :classifyVariantSymbolFunc="model.classifyByImpact"
+                                    :hoverTooltip="hoverTooltip"
+                                    :selectedGene="selectedGene"
+                                    :selectedTranscript="analyzedTranscript"
+                                    :selectedVariant="selectedVariant"
+                                    :regionStart="geneRegionStart"
+                                    :regionEnd="geneRegionEnd"
+                                    :width="screenWidth"
+                                    :height="screenHeight"
+                                    :showGeneViz="true"
+                                    :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
+                                    :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
+                                    :geneVizShowXAxis="false"
+                                    :annotationComplete="annotationComplete"
+                                    :d3="d3"
+                                    :$="$"
+                                    @cohort-variant-click="onCohortVariantClick"
+                                    @cohort-variant-hover="onCohortVariantHover"
+                                    @cohort-variant-hover-end="onCohortVariantHoverEnd"
+                                    @variants-viz-change="onVariantsVizChange"
+                                    @variants-filter-change="onVariantsFilterChange"
+                                    @show-coverage-cutoffs="showCoverageCutoffs = true"
+                            >
+                            </variant-card>
                         </v-col>
                         <v-col cols="4" class="summary-card">
                             <variant-summary-card
@@ -200,6 +200,36 @@
                         :showLabels=true
                         :hasRnaSeq="cohortModel.hasRnaSeqData"
                         :hasAtacSeq="cohortModel.hasAtacSeqData"/>
+            </v-card>
+        </v-dialog>
+        <v-dialog
+                v-model="displayUnmatchedGenesWarning"
+                width="40%"
+                height="350"
+                style="z-index: 1033">
+            <v-card id="unmatched-genes-modal">
+                <v-card-title class="unmatched-headline mb-3">Unmatched Gene Names Warning</v-card-title>
+                <v-card-text>
+                    The following gene targets contain somatic variants according to the current filtering criteria,
+                    but could not be matched to the entered loci names. To view these targets, please search for gene
+                    name
+                    synonyms using Gene Cards and manually search for them within Oncogene.*
+                    <v-list>
+                        <v-list-item v-for="(gene, i) in unmatchedGenes"
+                                     :key="i">
+                            <v-list-item-content>
+                                <v-list-item-title>{{gene}}</v-list-item-title>
+                            </v-list-item-content>
+                        </v-list-item>
+                    </v-list>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="secondary" @click="onAcknowledgeUnknownGenes">OK</v-btn>
+                </v-card-actions>
+                <v-footer style="font-size: 12px">
+                    *Note: we're currently working to eliminate these mismatches
+                </v-footer>
             </v-card>
         </v-dialog>
         <v-overlay :value="displayLoader">
@@ -332,6 +362,9 @@
                     referenceURL: 'https://s3.amazonaws.com/igv.broadinstitute.org/genomes/seq/hg19/hg19.fasta',
                 },
                 displayPileup: false,
+                displayUnmatchedGenesWarning: false,
+                displayUnmatchedGenesChip: false,
+                unmatchedGenes: [],
 
                 // models & model data
                 sampleIds: null,   // Sample ids for canonical sample models
@@ -401,6 +434,7 @@
                         let totalSomaticVarCount = rankObj.count;
                         let totalSomaticGenes = rankObj.geneCount;
                         let topRankedGene = rankObj.gene;
+                        self.unmatchedGenes = rankObj.unmatchedGenes;
 
                         let geneModel = self.cohortModel.geneModel;
                         self.totalSomaticVarCount = totalSomaticVarCount;
@@ -427,6 +461,11 @@
                             .then(() => {
                                 const globalMode = true;
                                 self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
+                                    .then(() => {
+                                        if (self.unmatchedGenes.length > 0) {
+                                            self.displayUnmatchedGenesWarning = true;
+                                        }
+                                    })
                                     .catch(error => {
                                         Promise.reject('Could not load data: ' + error);
                                     })
@@ -622,76 +661,71 @@
                         self.cohortModel.setLoaders(true);
                     }
 
-                    let p = Promise.resolve();
                     let theGeneObject = geneModel.geneObjects[geneName];
-                    if (!theGeneObject) {
-                        p = geneModel.promiseAddGeneName(geneName)
-                            .then(function () {
-                                geneModel.promiseGetGeneObject(geneName)
-                                    .then(geneObj => {
-                                        theGeneObject = geneObj;
+                    let geneObjP = theGeneObject ? Promise.resolve() : geneModel.promiseAddGeneName(geneName);
+                    geneObjP.then(() => {
+                        geneModel.promiseGetGeneObject(geneName)
+                            .then(geneObj => {
+                                theGeneObject = geneObj;
+                                if (self.bringAttention === 'gene') {
+                                    self.bringAttention = null;
+                                }
+                                geneModel.adjustGeneRegion(theGeneObject);
+                                self.geneRegionStart = theGeneObject.start;
+                                self.geneRegionEnd = theGeneObject.end;
+                                self.selectedGene = theGeneObject;
+
+                                if (theTranscript) {
+                                    // If we have selected a flagged variant, we want to use the flagged
+                                    // variant's transcript
+                                    self.selectedTranscript = theTranscript;
+                                } else {
+                                    // Determine the transcript that should be selected for this gene
+                                    // If the transcript wasn't previously selected for this gene,
+                                    // set it to the canonical transcript
+                                    let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
+                                    if (latestTranscript == null) {
+                                        self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                                        geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
+                                    } else {
+                                        self.selectedTranscript = latestTranscript;
+                                    }
+                                }
+
+                                if (self.$refs.scrollButtonRefGene) {
+                                    self.$refs.scrollButtonRefGene.showScrollButtons();
+                                }
+
+                                if (self.cohortModel.isLoaded) {
+                                    self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                                        .then(() => {
+                                            self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
+                                                .then(function () {
+                                                    self.clearZoom = false;
+                                                    self.showVarViz = true;
+                                                    self.applyFilters = true;
+                                                    resolve();
+                                                })
+                                                .catch(function (err) {
+                                                    console.log(err);
+                                                    reject(err);
+                                                })
+                                        }).catch(error => {
+                                        Promise.reject('Problem getting cosmic variant IDS: ' + error);
                                     })
-                            }).catch(function (error) {
-                                console.log(error);
-                                geneModel.removeGene(geneName);
-                                self.onShowSnackbar({
-                                    message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
-                                    timeout: 60000
-                                })
-                            });
-                    }
-                    p.then(() => {
-                        if (self.bringAttention === 'gene') {
-                            self.bringAttention = null;
-                        }
-                        geneModel.adjustGeneRegion(theGeneObject);
-                        self.geneRegionStart = theGeneObject.start;
-                        self.geneRegionEnd = theGeneObject.end;
-                        self.selectedGene = theGeneObject;
 
-                        if (theTranscript) {
-                            // If we have selected a flagged variant, we want to use the flagged
-                            // variant's transcript
-                            self.selectedTranscript = theTranscript;
-                        } else {
-                            // Determine the transcript that should be selected for this gene
-                            // If the transcript wasn't previously selected for this gene,
-                            // set it to the canonical transcript
-                            let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
-                            if (latestTranscript == null) {
-                                self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-                                geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
-                            } else {
-                                self.selectedTranscript = latestTranscript;
-                            }
-                        }
-
-                        if (self.$refs.scrollButtonRefGene) {
-                            self.$refs.scrollButtonRefGene.showScrollButtons();
-                        }
-
-                        if (self.cohortModel.isLoaded) {
-                            self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
-                                .then(() => {
-                                    self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
-                                        .then(function () {
-                                            self.clearZoom = false;
-                                            self.showVarViz = true;
-                                            self.applyFilters = true;
-                                            resolve();
-                                        })
-                                        .catch(function (err) {
-                                            console.log(err);
-                                            reject(err);
-                                        })
-                                }).catch(error => {
-                                Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                                } else {
+                                    resolve();
+                                }
                             })
-
-                        } else {
-                            resolve();
-                        }
-                    })
+                        }).catch(function (error) {
+                            console.log(error);
+                            geneModel.removeGene(geneName);
+                            self.onShowSnackbar({
+                                message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
+                                timeout: 60000
+                            })
+                        });
                 })
             },
             // For local filters only, that does not affect somatic filters and recall variants (e.g. impact/type only)
@@ -800,7 +834,7 @@
                 // self.promiseClearCache()
                 //     .then(function () {
                 self.onGeneSelected(self.selectedGene.gene_name);
-                    // })
+                // })
             },
             onGeneRegionZoom: function (theStart, theEnd) {
                 const self = this;
@@ -838,7 +872,7 @@
                     self.cohortModel.setCoverage();
                 }
             },
-            onShowPileupForVariant: function(variant) {
+            onShowPileupForVariant: function (variant) {
                 let self = this;
 
                 let theVariant = variant ? variant : this.selectedVariant;
@@ -847,26 +881,26 @@
                     // Format the coordinate for the variant
                     const chrom = this.globalApp.utility.stripRefName(theVariant.chrom);
                     const start = theVariant.start - this.pileupInfo.SPAN;
-                    const end   = theVariant.start + this.pileupInfo.SPAN;
+                    const end = theVariant.start + this.pileupInfo.SPAN;
                     this.pileupInfo.coord = 'chr' + chrom + ':' + start + '-' + end;
                     this.pileupInfo.tracks = [];
                     // Set the bam, vcf, and references
-                    this.cohortModel.getCanonicalModels().forEach(function(model) {
+                    this.cohortModel.getCanonicalModels().forEach(function (model) {
                         let currName = model.displayName !== '' ? model.displayName : '';
                         if (currName === '') {
                             currName = model.selectedSample;
                         } else {
                             currName += ' (' + model.selectedSample + ')';
                         }
-                        let track               = {name: currName};
-                        track.variantURL        = model.vcf.getVcfURL();
-                        track.variantIndexURL   = model.vcf.getTbiURL();
-                        track.coverageBam       = model.bam.coverageBam;
-                        track.coverageBai       = model.bam.coverageBai;
-                        track.rnaSeqBam         = model.bam.rnaSeqBam;
-                        track.rnaSeqBai         = model.bam.rnaSeqBai;
-                        track.atacSeqBam        = model.bam.atacSeqBam;
-                        track.atacSeqBai        = model.bam.atacSeqBai;
+                        let track = {name: currName};
+                        track.variantURL = model.vcf.getVcfURL();
+                        track.variantIndexURL = model.vcf.getTbiURL();
+                        track.coverageBam = model.bam.coverageBam;
+                        track.coverageBai = model.bam.coverageBai;
+                        track.rnaSeqBam = model.bam.rnaSeqBam;
+                        track.rnaSeqBai = model.bam.rnaSeqBai;
+                        track.atacSeqBam = model.bam.atacSeqBam;
+                        track.atacSeqBai = model.bam.atacSeqBai;
                         self.pileupInfo.tracks.push(track);
                     });
                     // Set the reference
@@ -880,11 +914,14 @@
                     titleParts.push(variantInfo.HGVSpAbbrev);
                     this.pileupInfo.title = titleParts.join(' ');
                     this.displayPileup = true;
-                }
-                else {
+                } else {
                     return '';
                 }
             },
+            onAcknowledgeUnknownGenes: function () {
+                this.displayUnmatchedGenesWarning = false;
+                this.$emit('display-unmatched-genes-btn', this.unmatchedGenes);
+            }
         },
         computed: {
             overlayWidth: function () {
@@ -959,4 +996,14 @@
         .blur-content
             filter: blur(1px)
             -webkit-filter: blur(1px)
+
+        #unmatched-genes-modal
+            font-family: 'Open Sans'
+
+            .unmatched-headline
+                font-family: 'Quicksand'
+                font-size: 18px
+                background-color: #7f1010
+                color: white
+
 </style>

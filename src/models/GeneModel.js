@@ -877,8 +877,10 @@ class GeneModel {
 
     promiseGetGeneObject(geneName) {
         var me = this;
+        if (me.geneObjects[geneName]) {
+            return Promise.resolve(me.geneObjects[geneName]);
+        }
         return new Promise(function (resolve, reject) {
-
             var url = me.geneInfoServer + geneName;
 
             // If current build not specified, default to GRCh37
@@ -1440,7 +1442,9 @@ class GeneModel {
         const self = this;
         let genesWithVars = {};
         let promises = [];
+        let genePromises = [];
         let totalSomaticVarCount = 0;
+        let unmatchedGeneSymbols = [];
 
         return new Promise((resolve, reject) => {
             Object.values(somaticVars).forEach(feat => {
@@ -1451,30 +1455,48 @@ class GeneModel {
                     totalSomaticVarCount++;
                     genesWithVars[feat.geneSymbol] = true;
                 } else {
-                    // VEP might call gene something else than what gene service does
-                    // TODO: alert user to not finding match
-                    console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                    // We might have a different, valid name for the geneSymbol
+                    // First try to get gene object
+                    let p = self.promiseAddGeneName(feat.geneSymbol)
+                        .then(() => {
+                            if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
+                                self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
+                                totalSomaticVarCount++;
+                                genesWithVars[feat.geneSymbol] = true;
+                            } else {
+                                // If we can't find the gene object, then add to unmatched
+                                unmatchedGeneSymbols.push(feat.geneSymbol);
+                                console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                            }
+                        }).catch(() => {
+                            unmatchedGeneSymbols.push(feat.geneSymbol);
+                            console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                    });
+                    genePromises.push(p);
                 }
             });
-            // Once each variant is assigned to its gene object, we can score them
-            Object.keys(genesWithVars).forEach(geneName => {
-                let scoreP = self.promiseScoreGene(geneName);
-                promises.push(scoreP);
-            });
+            Promise.all(genePromises)
+                .then(() =>{
+                    // Once each variant is assigned to its gene object, we can score them
+                    Object.keys(genesWithVars).forEach(geneName => {
+                        let scoreP = self.promiseScoreGene(geneName);
+                        promises.push(scoreP);
+                    });
 
-            // Fetch NCBI summary for all somatic genes
-            let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
-            promises.push(summaryP);
+                    // Fetch NCBI summary for all somatic genes
+                    let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
+                    promises.push(summaryP);
 
-            // Once each gene is scored we can rank them
-            Promise.all(promises)
-                .then(() => {
-                    self.promiseRankGenes()
-                        .then(topGene => {
-                            resolve({'gene': topGene, "count": totalSomaticVarCount, "geneCount": Object.keys(genesWithVars).length });
-                        }).catch(error => {
-                        reject('There was a problem ranking genes: ' + error);
-                    })
+                    // Once each gene is scored we can rank them
+                    Promise.all(promises)
+                        .then(() => {
+                            self.promiseRankGenes()
+                                .then(topGene => {
+                                    resolve({'gene': topGene, "count": totalSomaticVarCount, "geneCount": Object.keys(genesWithVars).length, 'unmatchedGenes': unmatchedGeneSymbols });
+                                }).catch(error => {
+                                reject('There was a problem ranking genes: ' + error);
+                            })
+                        })
                 })
         })
     }

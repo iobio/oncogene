@@ -124,7 +124,7 @@
                 </v-col>
                 <v-col cols="12" sm="4">
                     <div class="gene-summary">
-                        {{ ncbiSummary ? ncbiSummary.summary : 'Unable to display gene summary' }}
+                        {{ ncbiSummary ? (ncbiSummary.summary === '' ? '(No NCBI summary available for this gene)' : ncbiSummary.summary) : 'Unable to display gene summary' }}
                     </div>
                 </v-col>
             </v-row>

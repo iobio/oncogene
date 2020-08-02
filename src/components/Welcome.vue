@@ -69,12 +69,12 @@
                                                     Start New Analysis
                                                 </v-btn>
                                             </v-row>
-                                            <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="secondary" class="carousel-btn"
-                                                       @click="$emit('load-demo')">
-                                                    Try Demo Analysis
-                                                </v-btn>
-                                            </v-row>
+<!--                                            <v-row justify="center" class="pa-3">-->
+<!--                                                <v-btn x-large color="secondary" class="carousel-btn"-->
+<!--                                                       @click="$emit('load-demo')">-->
+<!--                                                    Try Demo Analysis-->
+<!--                                                </v-btn>-->
+<!--                                            </v-row>-->
                                             <v-row justify="center" class="pa-3">
                                                 <v-btn x-large color="secondary" class="carousel-btn"
                                                        @click="displayConfigUploadSlide">Upload Analysis

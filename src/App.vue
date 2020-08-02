@@ -7,6 +7,33 @@
             <v-spacer></v-spacer>
             <v-chip v-if="numSomaticVars != null" class="var-chip" color="white" outlined> {{ numSomaticVars + ' Somatic Variants Found in ' + numSomaticGenes + ' Genes' }}
             </v-chip>
+            <div class="text-center mx-2" v-if="displayUnmatchedGenesBtn">
+                <v-menu bottom offset-y>
+                    <template v-slot:activator="{ on: menu, attrs }">
+                        <v-tooltip dark bottom>
+                            <template v-slot:activator="{ on: tooltip }">
+                                <v-btn
+                                        color="secondary"
+                                        dark
+                                        v-bind="attrs"
+                                        v-on="{ ...tooltip, ...menu }"
+                                >
+                                    Unmatched Genes
+                                </v-btn>
+                            </template>
+                        </v-tooltip>
+                    </template>
+                    <v-list>
+                        <v-list-item
+                                v-for="(gene, index) in unmatchedGenesList"
+                                :key="index"
+                                style="font-family: Quicksand"
+                        >
+                            <v-list-item-title>{{ gene }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </div>
             <div class="text-center mx-2" v-if="activeFilters.length > 0">
                 <v-menu bottom offset-y>
                     <template v-slot:activator="{ on: menu, attrs }">
@@ -60,8 +87,8 @@
                   @gene-changed="onGeneChanged"
                   @set-global-display="setGlobalDisplay"
                   @set-filter-display="setFilterDisplay"
+                  @display-unmatched-genes-btn="onUnmatchedGenes"
             >
-
             </Home>
         </v-content>
     </v-app>
@@ -118,6 +145,8 @@
                 numSomaticGenes: null,
                 activeFilters: [],
                 filesLoaded: false,
+                displayUnmatchedGenesBtn: false,
+                unmatchedGenesList: [],
 
                 // static data
                 allGenes: allGenesData
@@ -190,6 +219,10 @@
             },
             displayFilesCarousel: function () {
                 this.$refs.homePanel.toggleCarousel(true);
+            },
+            onUnmatchedGenes: function(unmatchedGeneList) {
+                this.unmatchedGenesList = unmatchedGeneList;
+                this.displayUnmatchedGenesBtn = true;
             }
         },
         mounted: function () {
