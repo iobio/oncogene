@@ -2,38 +2,85 @@
 
 <style lang="sass">
     .history-card
-        .toolbar__title
+        font-family: Quicksand
+
+        .history-toolbar
             font-size: 14px !important
-            font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
-            color: #7f7f7f
             font-style: italic
+            color: white
             font-weight: 500 !important
-        .toolbar__content
-            background-color: white
-            height: 100px
+
+        .section-title
+            font-size: 22px
 </style>
 
 <template>
-    <v-layout row style="padding-top: 10px">
-        <v-flex xs12>
-            <v-card class="history-card">
-                <v-toolbar flat>
-                    <v-toolbar-title>Re-visit genes previously analyzed by clicking the icon</v-toolbar-title>
-                </v-toolbar>
-                <v-divider style="margin: 0"></v-divider>
-                <v-list>
-                    <v-list-tile v-for="item in geneHistoryList" :key="item" avatar @click="reloadGene(item)">
-                        <v-list-tile-action>
-                            <v-icon color="cohortBlue">replay</v-icon>
-                        </v-list-tile-action>
-                        <v-list-tile-content>
-                            <v-list-tile-title v-text="item"></v-list-tile-title>
-                        </v-list-tile-content>
-                    </v-list-tile>
-                </v-list>
-            </v-card>
-        </v-flex>
-    </v-layout>
+    <v-card flat
+            tile
+            dark
+            color="transparent"
+            class="history-card">
+        <v-card-title class="section-title">
+            Session History
+        </v-card-title>
+        <v-card-subtitle style="font-style: italic" class="mt-2 pb-3">
+            Review previous somatic analysis conditions
+        </v-card-subtitle>
+        <v-divider style="margin: 0"></v-divider>
+        <v-list-group v-for="(analysis, i) in analysisHistoryList"
+                      :key="i"
+        >
+            <template v-slot:activator>
+                <v-list-item-title style="color: white">{{getAnalysisTitle(analysis)}}
+                    <v-btn small
+                           outlined
+                           color="brightPrimary"
+                           v-show="!isCurrentAnalysis(analysis)"
+                           @click="reloadAnalysis(analysis.filters)"
+                           style="padding-left: 3px; padding-right: 3px; margin-left: 5px">
+                        Load
+                        <v-icon color="brightPrimary">arrow_right_alt</v-icon>
+                    </v-btn>
+                </v-list-item-title>
+                <v-divider
+                        v-if="i + 1 < analysisHistoryList.length"
+                        :key="'d'+i"
+                ></v-divider>
+            </template>
+            <v-list-group
+                    sub-group
+                    no-action
+            >
+                <template v-slot:activator>
+                    <v-list-item-content>
+                        <v-list-item-title style="color: white">Filters</v-list-item-title>
+                    </v-list-item-content>
+                </template>
+                <v-list-item
+                        v-for="(filterObj, i) in analysis.filters"
+                        :key="'f'+i"
+                >
+                    <v-list-item-title v-text="getFilterLine(filterObj)"></v-list-item-title>
+                </v-list-item>
+            </v-list-group>
+            <v-list-group
+                    sub-group
+                    no-action
+            >
+                <template v-slot:activator>
+                    <v-list-item-content>
+                        <v-list-item-title style="color: white">Genes</v-list-item-title>
+                    </v-list-item-content>
+                </template>
+                <v-list-item
+                        v-for="(gene, i) in analysis.rankedGeneList"
+                        :key="'g'+i"
+                >
+                    <v-list-item-title v-text="gene"></v-list-item-title>
+                </v-list-item>
+            </v-list-group>
+        </v-list-group>
+    </v-card>
 </template>
 
 
@@ -42,25 +89,37 @@
         name: 'history-tab',
         components: {},
         props: {
-            geneHistoryList: {
-                type: Array,
-                default: () => { return []; }
+            filterModel: {
+                type: Object,
+                default: null
             }
         },
         data() {
-            return {}
-        },
-        watch: {},
-        methods: {
-            reloadGene(geneName) {
-                let self = this;
-                self.$emit('reload-gene-history', geneName);
+            return {
+                analysisHistoryList: []
             }
         },
-        computed: {},
-        created: function () {
+        methods: {
+            refreshList: function () {
+                this.analysisHistoryList = Object.values(this.filterModel.filterHistory);
+            },
+            reloadAnalysis(analysisFilters) {
+                let self = this;
+                self.$emit('reload-analysis-history', analysisFilters);
+            },
+            getAnalysisTitle(analysisObj) {
+                return analysisObj.somaticVarCount + ' VARIANTS / ' + analysisObj.somaticGeneCount + ' GENES';
+            },
+            getFilterLine(filterObj) {
+                return filterObj.display + ' ' + filterObj.currLogic + ' ' + filterObj.currVal;
+            },
+            isCurrentAnalysis(analysis) {
+                let currentKey = this.filterModel.getAnalysisKey(analysis.filters);
+                return this.filterModel.currentAnalysisKey === currentKey;
+            }
         },
         mounted: function () {
+            this.analysisHistoryList = Object.values(this.filterModel.filterHistory);
         }
     }
 </script>

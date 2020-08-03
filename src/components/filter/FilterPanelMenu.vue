@@ -124,7 +124,8 @@
                 // todo: here, need to update active status of parent in filterModel class
 
                 if (recallFilter) {
-                    this.activeRecallFilters = this.filterModel.getActiveRecallFilters();
+                    const activeOnly = true;
+                    this.activeRecallFilters = this.filterModel.getRecallFilters(activeOnly);
                 } else {
                     this.$emit('filter-change');
                 }
@@ -140,7 +141,8 @@
             },
             removeStagedFilter: function(filterName) {
                 this.filterModel.removeStagedFilter(filterName);
-                this.activeRecallFilters = this.filterModel.getActiveRecallFilters();
+                const activeOnly = true;
+                this.activeRecallFilters = this.filterModel.getRecallFilters(activeOnly);
             }
         },
     }

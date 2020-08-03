@@ -84,13 +84,11 @@
                                 <v-tab-item
                                         :key="'historyTab'"
                                         :id="'history-tab'">
-                                    <v-container>
-                                        <history-tab
-                                                ref="historyTabRef"
-                                                :geneHistoryList="geneHistoryList"
-                                                @reload-gene-history="reloadGene">
-                                        </history-tab>
-                                    </v-container>
+                                    <history-tab v-if="filterModel"
+                                            ref="historyTabRef"
+                                            :filterModel="filterModel"
+                                            @reload-analysis-history="reloadAnalysis">
+                                    </history-tab>
                                 </v-tab-item>
                             </v-tabs-items>
                         </v-tabs>
@@ -244,7 +242,7 @@
     import VariantSummaryCard from './VariantSummaryCard.vue'
     import FilterPanelMenu from './filter/FilterPanelMenu.vue'
     import Pileup from './partials/Pileup.vue'
-    // import HistoryTab from './HistoryTab.vue'
+    import HistoryTab from './HistoryTab.vue'
 
     import SomaticGenesCard from './SomaticGenesCard.vue'
     import GeneCard from './GeneCard.vue'
@@ -258,7 +256,7 @@
             VariantCard,
             VariantSummaryCard,
             FilterPanelMenu,
-            // HistoryTab,
+            HistoryTab,
             GeneCard,
             SomaticGenesCard,
             Pileup
@@ -367,10 +365,10 @@
                 unmatchedGenes: [],
 
                 // models & model data
-                sampleIds: null,   // Sample ids for canonical sample models
-                selectedSamples: null,  // NOTE: must be in same order as sampleIds
+                sampleIds: null,            // Sample ids for canonical sample models
+                selectedSamples: null,      // NOTE: must be in same order as sampleIds
                 sampleModels: null,
-                geneHistoryList: [],
+                analysisHistoryList: [],    // List of different calling criteria used in current session
                 rankedGeneList: [],
 
                 allGeneNames: ['test', 'moo', 'oink'],
@@ -401,13 +399,14 @@
             }
         },
         methods: {
-            // Point of entry for launch and filter changes
+            // Point of entry for launch
             onLaunch: function (modelInfos, userGeneList) {
                 const self = this;
                 self.dataEntered = true;
                 self.displayCarousel = false;
                 self.firstLoadComplete = true;
                 self.displayLoader = true;
+                self.analysisHistoryList = [];
                 self.cohortModel.promiseInit(modelInfos, userGeneList)
                     .then(() => {
                         self.sampleModels = self.cohortModel.sampleModels;
@@ -423,6 +422,11 @@
                     }).catch(error => {
                     console.log('There was a problem initializing cohort model: ' + error);
                 })
+            },
+            reloadAnalysis: function(filterSettings) {
+                // Set filtering criteria in model
+                this.filterModel.loadFilterSettings(filterSettings);
+                this.callSomaticVariants();
             },
             callSomaticVariants: function () {
                 const self = this;
@@ -471,7 +475,13 @@
                                     })
                             }).catch(error => {
                             Promise.reject('Problem getting cosmic variant IDS: ' + error);
-                        })
+                        });
+                        let rankedGeneNames = [];
+                        self.geneModel.rankedGeneList.forEach(geneObj => {
+                            rankedGeneNames.push(geneObj.gene_name);
+                        });
+                        self.filterModel.addFilterHistory(totalSomaticVarCount, totalSomaticGenes, rankedGeneNames);
+                        self.$refs.historyTabRef.refreshList();
                     }).catch(error => {
                     console.log('There was a problem calling global somatics: ' + error);
                 });

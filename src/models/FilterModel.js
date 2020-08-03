@@ -231,9 +231,8 @@ class FilterModel {
 
         this.translator = translator;
 
-        /* The current settings */
-        // this.currentSomaticCutoffs = this.DEFAULT_SOMATIC_CUTOFFS;
-        // this.currentSomaticLogic = this.DEFAULT_SOMATIC_LOGIC;
+        this.filterHistory = {};        // Key: unique string composed of filter settings, Value: array of filter settings
+        this.currentAnalysisKey = '';   // The current unique analysis string key
     }
 
     /* Marks variants as somatic, or non-inherited, if they fulfill the following:
@@ -754,20 +753,54 @@ class FilterModel {
         return normalFilters;
     }
 
-    /* Returns array of filter objects that are currently staged to recall somatic variants. */
-    getActiveRecallFilters() {
+    /* Returns filters involved in recalling somatic.
+     * If activeOnly, returns those currently staged to recall somatic variants. */
+    getRecallFilters(activeOnly) {
         let recallFilters = [];
         this.filters[this.SOMATIC_FILTER].forEach(filter => {
-            if (filter.stagedLogic && filter.stagedVal >= 0 &&
+            if (!activeOnly)
+                recallFilters.push(filter);
+            else if (filter.stagedLogic && filter.stagedVal >= 0 &&
                 !(filter.stagedLogic === filter.currLogic && filter.stagedVal === filter.stagedLogic))
                 recallFilters.push(filter);
         });
         this.filters[this.QUAL_FILTER].forEach(filter => {
-            if (filter.stagedLogic && filter.stagedVal >= 0 &&
+            if (!activeOnly)
+                recallFilters.push(filter);
+            else if (filter.stagedLogic && filter.stagedVal >= 0 &&
                 !(filter.stagedLogic === filter.currLogic && filter.stagedVal === filter.stagedLogic))
                 recallFilters.push(filter);
         });
         return recallFilters;
+    }
+
+    setActiveRecallFilters(filterSettings) {
+        let foundMatch = false;
+        const somaticFilters = this.filters[this.SOMATIC_FILTER];
+        const qualityFilters = this.filters[this.QUAL_FILTER];
+        for (let i = 0; i < somaticFilters.length; i++) {
+            let filter = somaticFilters[i];
+            if (filter.name === filterSettings.name) {
+                filter.currLogic = filterSettings.currLogic;
+                filter.currVal = filterSettings.currVal;
+                foundMatch = true;
+                break;
+            }
+        }
+        if (!foundMatch) {
+            for (let i = 0; i < qualityFilters.length; i++) {
+                let filter = qualityFilters[i];
+                if (filter.name === filterSettings.name) {
+                    filter.currLogic = filterSettings.currLogic;
+                    filter.currVal = filterSettings.currVal;
+                    foundMatch = true;
+                    break;
+                }
+            }
+        }
+        if (!foundMatch) {
+            console.log('Warning: could not update settings for filter ' + filterSettings.name);
+        }
     }
 
 
@@ -875,6 +908,62 @@ class FilterModel {
             //tumorPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]>=' + (somaticCriteria['tumorAfCutoff']).toFixed(2);
         }
         return tumorPhrase;
+    }
+
+    /* Used to load in global filters from a previous analysis */
+    loadFilterSettings(analysisSettings) {
+        analysisSettings.forEach(filter => {
+            this.setActiveRecallFilters(filter);
+        });
+    }
+
+    /* Adds current filter settings, and the number of somatic variants & genes they pulled back,
+     * to history list, if the exact same settings have not yet been added.
+     * { somaticVarCount: x,
+     *   somaticGeneCount: y,
+     *   rankedGeneList: [geneA, geneB...],
+     *   filters: [
+     *     { name: filterName,
+     *       logic: filterLogic,
+     *       val: filterVal
+     *     }
+     *   ]
+     * }
+     */
+    addFilterHistory(somaticVarCount, somaticGeneCount, rankedGeneList) {
+        let filterSettingsList = [];
+
+        let analysisKey = this.getAnalysisKey(this.getRecallFilters());
+        this.getRecallFilters(false).forEach(filter => {
+            let settingsObject = {};
+            settingsObject.name = filter.name;
+            settingsObject.display = filter.display;
+            settingsObject.currLogic = filter.currLogic;
+            settingsObject.currVal = filter.currVal;
+            filterSettingsList.push(settingsObject);
+        });
+
+        if (!this.filterHistory[analysisKey]) {
+            let analysisObject = {};
+            analysisObject['somaticVarCount'] = somaticVarCount;
+            analysisObject['somaticGeneCount'] = somaticGeneCount;
+            analysisObject['rankedGeneList'] = rankedGeneList;
+            analysisObject['filters'] = filterSettingsList;
+            this.filterHistory[analysisKey] = analysisObject;
+        }
+        // Regardless if we've already added this analysis, it's the current one
+        this.currentAnalysisKey = analysisKey;
+    }
+
+    getAnalysisKey(filters) {
+        let analysisKey = '';
+        filters.forEach(filter => {
+            analysisKey += filter.name;
+            analysisKey += filter.currLogic;
+            analysisKey += filter.currVal;
+            analysisKey += "_";
+        });
+        return analysisKey;
     }
 }
 
