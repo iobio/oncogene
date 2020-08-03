@@ -49,7 +49,7 @@
                                     :grandparentFilterName="filterName"
                                     :annotationComplete="annotationComplete"
                                     :checkboxLists="filterModel.checkboxLists"
-                                    @filter-toggled="onFilterChange(filter.recallFilter)">
+                                    @filter-toggled="onFilterToggled">
                             </filter-panel-checkbox>
                             <filter-panel-slider
                                     v-if="filter.type==='slider'"
@@ -125,6 +125,11 @@
             onFilterChange: function (recallFilter) {
                 const self = this;
                 self.$emit('filter-change', recallFilter);
+            },
+            onFilterToggled: function(checkboxCategory) {
+                const self = this;
+                self.filterModel.updateCheckboxParentsStatus(checkboxCategory);
+                self.$emit('filter-change');
             }
         }
     }

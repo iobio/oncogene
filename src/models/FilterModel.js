@@ -81,7 +81,7 @@ class FilterModel {
         // The actual filters that can be applied
         this.filters = {
             'annotation': [
-                {name: 'impact', display: 'Impact', active: true, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
+                {name: 'impact', display: 'Impact', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
                 {name: 'type', display: 'Type', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false}],
             'somatic': [
                 {
@@ -887,8 +887,6 @@ class FilterModel {
             normalPhrase += '(FORMAT/AO[' + idx + ':0]' + somaticCriteria[this.NORMAL_COUNT_LOGIC] + somaticCriteria[this.NORMAL_COUNT];
             normalPhrase += '&FORMAT/DP[' + idx + ':0]' + somaticCriteria[this.DEPTH_LOGIC] + somaticCriteria[this.GENOTYPE_DEPTH] + ')';
             normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';
-            // todo: get rid of
-            //normalPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]<=' + (somaticCriteria['normalAfCutoff']).toFixed(2);
         }
         return normalPhrase;
     }
@@ -904,8 +902,6 @@ class FilterModel {
             }
             tumorPhrase += '(FORMAT/AO[' + idx + ':0]' + somaticCriteria[this.TUMOR_COUNT_LOGIC] + somaticCriteria[this.TUMOR_COUNT];
             tumorPhrase += '&FORMAT/DP[' + idx + ':0]' + somaticCriteria[this.DEPTH_LOGIC] + somaticCriteria[this.GENOTYPE_DEPTH] + ')';
-            // todo: get rid of
-            //tumorPhrase += '||FORMAT/AO[' + idx + ':0]/FORMAT/DP[' + idx + ':0]>=' + (somaticCriteria['tumorAfCutoff']).toFixed(2);
         }
         return tumorPhrase;
     }
@@ -964,6 +960,24 @@ class FilterModel {
             analysisKey += "_";
         });
         return analysisKey;
+    }
+
+    updateCheckboxParentsStatus(parentName) {
+        let active = false;
+        let list = this.checkboxLists[parentName];
+        for (let i = 0; i < list.length; i++) {
+            let currFilter = list[i];
+            if (!currFilter.model) {
+                active = true;
+                break;
+            }
+        }
+        let parentFilter = this.filters['annotation'].filter(filt => {
+            return filt.name === parentName;
+        });
+        if (parentFilter.length > 0) {
+            parentFilter[0].active = active;
+        }
     }
 }
 

@@ -36,21 +36,21 @@
             </div>
             <div class="text-center mx-2" v-if="activeFilters.length > 0">
                 <v-menu bottom offset-y>
-                    <template v-slot:activator="{ on: menu, attrs }">
-                        <v-tooltip dark bottom>
-                            <template v-slot:activator="{ on: tooltip }">
-                                <v-btn
-                                        color="secondary"
-                                        dark
-                                        v-bind="attrs"
-                                        v-on="{ ...tooltip, ...menu }"
-                                >
-                                    Active Filters
-                                </v-btn>
-                            </template>
-                            <span>Click to view filters used for currently called somatic variants</span>
-                        </v-tooltip>
-                    </template>
+<!--                    <template v-slot:activator="{ on: menu, attrs }">-->
+<!--                        <v-tooltip dark bottom>-->
+<!--                            <template v-slot:activator="{ on: tooltip }">-->
+<!--                                <v-btn-->
+<!--                                        color="secondary"-->
+<!--                                        dark-->
+<!--                                        v-bind="attrs"-->
+<!--                                        v-on="{ ...tooltip, ...menu }"-->
+<!--                                >-->
+<!--                                    Active Filters-->
+<!--                                </v-btn>-->
+<!--                            </template>-->
+<!--                            <span>Click to view filters used for currently called somatic variants</span>-->
+<!--                        </v-tooltip>-->
+<!--                    </template>-->
                     <v-list>
                         <v-list-item
                                 v-for="(filter, index) in activeFilters"
@@ -207,8 +207,7 @@
                 this.setFilterDisplay(globalData);
             },
             setFilterDisplay: function (globalData) {
-                // todo: left off make sure we hit this breakpoint
-
+                this.activeFilters = [];
                 globalData.filters.forEach(filter => {
                     if (filter.type === 'slider') {
                         this.activeFilters.push(filter.display + ' ' + filter.currLogic + ' ' + filter.currVal + filter.labelSuffix);
@@ -227,12 +226,8 @@
         },
         mounted: function () {
             const self = this;
-            // TODO: can probably get rid of this
-            // self.selectedGene = 'fakeGene1';
-            // self.selectedTranscript = 'fakeTranscript1';
             self.cardWidth = window.innerWidth;
 
-            // self.mainContentWidth = self.d3.select('main.content .container').outerWidth();
             self.globalApp.$(window).resize(function () {
                 self.onResize();
             });

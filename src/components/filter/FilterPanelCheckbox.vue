@@ -45,7 +45,7 @@
         methods: {
             boxChecked: function(filterObj) {
                 filterObj.model = !filterObj.model;
-                this.$emit('filter-toggled');
+                this.$emit('filter-toggled', this.parentFilterName);
             }
         }
     }
