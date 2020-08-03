@@ -57,7 +57,8 @@ class FilterModel {
                     active: false,
                     custom: false,
                     description: 'Filter by variant effect, impact, or type',
-                    icon: 'category'
+                    icon: 'category',
+                    activeForSomaticOnlyMode: true
                 },
                 {
                     name: somatic,
@@ -65,7 +66,8 @@ class FilterModel {
                     active: false,
                     custom: false,
                     description: 'Select a threshold for allele frequencies and observation counts by which to identify somatic variants',
-                    icon: 'flash_on'
+                    icon: 'flash_on',
+                    activeForSomaticOnlyMode: false
                 },
                 {
                     name: quality,
@@ -73,7 +75,8 @@ class FilterModel {
                     active: false,
                     custom: false,
                     description: 'Filter variants by observation counts',
-                    icon: 'star'
+                    icon: 'star',
+                    activeForSomaticOnlyMode: false
                 }
             ];
 

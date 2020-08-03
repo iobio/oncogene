@@ -86,6 +86,8 @@
                     :filter="category"
                     :annotationComplete="annotationComplete"
                     :applyFilters="applyFilters"
+                    :displaySomaticOnly="category.activeForSomaticOnlyMode"
+                    :somaticOnlyMode="somaticOnlyMode"
                     @filter-change="onFilterChange">
             </filter-panel>
         </v-card>
@@ -112,6 +114,10 @@
                 type: Boolean,
                 default: false
             },
+            somaticOnlyMode: {
+                type: Boolean,
+                default: false
+            }
         },
         data() {
             return {

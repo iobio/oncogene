@@ -77,6 +77,7 @@
                                             :showCoverageCutoffs="showCoverageCutoffs"
                                             :annotationComplete="annotationComplete"
                                             :applyFilters="applyFilters"
+                                            :somaticOnlyMode="cohortModel.onlySomaticCalls"
                                             @recall-somatic-variants="callSomaticVariants"
                                             @filter-change="onFilterChange">
                                     </filter-panel-menu>
