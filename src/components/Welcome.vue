@@ -448,6 +448,12 @@
                         'Local files are not currently accepted. For other input format requests, please ' +
                         'contact support at iobioproject@gmail.com.',
 
+                    optionalBam: 'Oncogene.iobio optionally allows for one coverage (bam) file and one index (bai) file ' +
+                        'per sample. Bam and bai files may exist in the same, or different, directories. ' +
+                        'If you don\'t have an index file, please see \'samtools index\' to create one. ' +
+                        'Local files are not currently accepted. For other input format requests, please ' +
+                        'contact support at iobioproject@gmail.com.',
+
                     cnv: 'Oncogene.iobio requires one copy number file per sample. This file must be tab-delimited and contain ' +
                         'the following five headers: chr, start, end, lcn.em, and tcn.em (corresponding to chromosome, start coordinate, ' +
                         'end coordinate, lesser copy number, and total copy number, respectively). Other data columns may exist in your tab-delimited file,' +
@@ -473,7 +479,7 @@
                 dataText: 'Oncogene.iobio consumes primary data including Variant Call Format (vcf), ' +
                     'Binary Alignment/Map (bam) files. Both variant calls and read coverage data ' +
                     'are required for the application to work. Optionally, copy number data ' +
-                    'may be provided in the form of a tab-delimited file with certain required headers' +
+                    'may be provided in the form of a tab-delimited file with certain required headers ' +
                     '(see the CNV panel for details), and raw ' +
                     'RNAseq and ATACseq reads may be provided in bam file format.',
                 somaticText: 'Oncogene.iobio will perform somatic calling on your variant data for you ' +
@@ -634,6 +640,9 @@
                     return this.FILE_TEXT['summary'];
                 }
                 let fileType = this.FILE_DESCRIPTORS[idx];
+                if (type === 'atacSeq' || type === 'rnaSeq') {
+                    fileType = 'optionalBam';
+                }
                 return this.FILE_TEXT[fileType];
             },
             getCardTitle: function(index) {
