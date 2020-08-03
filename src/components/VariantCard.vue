@@ -277,7 +277,7 @@
                             </div>
                             <div id="bam-track">
                                 <depth-viz
-                                        v-if="showDepthViz"
+                                        v-show="showDepthViz"
                                         ref="depthVizRef"
                                         :coverage="sampleModel.coverage"
                                         :coverageMedian="geneCoverageMedian"
@@ -303,7 +303,7 @@
                             </div>
                             <div id="rna-bam-track" v-if="sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
                                 <depth-viz
-                                        v-if="showDepthViz"
+                                        v-show="showDepthViz"
                                         ref="depthVizRef"
                                         :coverage="sampleModel.rnaSeqCoverage"
                                         :coverageMedian="geneCoverageMedian"
@@ -329,7 +329,7 @@
                             </div>
                             <div id="atac-bam-track" v-if="sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
                                 <depth-viz
-                                        v-if="showDepthViz"
+                                        v-show="showDepthViz"
                                         ref="depthVizRef"
                                         :coverage="sampleModel.atacSeqCoverage"
                                         :coverageMedian="geneCoverageMedian"
@@ -853,6 +853,10 @@
                 } else if (sampleModelId === 'cosmic-variants') {
                     return ['other', 'low', 'modifier', 'moderate', 'high']
                 }
+            },
+            toggleTracks: function(showTracks) {
+                this.showVariantViz = showTracks;
+                this.showDepthViz = showTracks;
             }
         },
         filters: {},

@@ -433,6 +433,12 @@
                 const self = this;
                 self.selectedVariant = null;
                 self.displayLoader = true;
+                let showTracks = false;
+                if (self.$refs.variantCardRef) {
+                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                        variantCard.toggleTracks(showTracks);
+                    })
+                }
                 self.geneModel.clearGeneObjects();
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
@@ -450,9 +456,6 @@
                         };
                         self.$emit('set-global-display', chipInfo);
 
-                        // Get rid of global loader
-                        self.displayLoader = false;
-
                         // Turn on track loaders
                         self.cohortModel.setLoaders(true);
 
@@ -465,6 +468,14 @@
                         self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
                             .then(() => {
                                 const globalMode = true;
+                                // Get rid of global loader
+                                self.displayLoader = false;
+                                showTracks = true;
+                                if (self.$refs.variantCardRef) {
+                                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                                        variantCard.toggleTracks(showTracks);
+                                    })
+                                }
                                 self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                                     .then(() => {
                                         if (self.unmatchedGenes.length > 0) {

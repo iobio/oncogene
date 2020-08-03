@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "deploy": "vue-cli-service s3-deploy"
   },
   "dependencies": {
     "core-js": "^3.3.2",
@@ -21,6 +22,7 @@
     "node-sass": "^4.14.1",
     "sass-loader": "^8.0.0",
     "vue": "^2.6.10",
+    "vue-cli-plugin-s3-deploy": "^4.0.0-rc3",
     "vue-material": "^1.0.0-beta-11",
     "vuedraggable": "^2.23.2",
     "vuetify": "^2.1.0"

@@ -26,18 +26,15 @@
         width: 100%
         height: 50px
         padding-top: 8px
-        top: 40%
+        top: 55%
         font-family: Poppins
         font-size: 22px
         background-color: $app-color
         text-align: center
         color: white
-        -webkit-box-shadow: 6px 11px 48px -7px rgba(0, 0, 0, 0.60)
-        box-shadow: 6px 11px 48px -7px rgba(0, 0, 0, 0.60)
+
 
     .summary-card
-        filter: blur(1px)
-        -webkit-filter: blur(1px)
         height: 100%
 
     .summary-field-label
@@ -225,6 +222,9 @@
 
 <template>
     <v-card class="px-0 mx-1 my-1" outlined>
+        <div id="getStartedBlock">
+            <span class="getStartedText">Click on a variant for details</span>
+        </div>
         <v-container class="summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">
                 <v-col cols="12" sm="12" xl="4" style="font-size: 22px">
@@ -244,9 +244,6 @@
             </v-row>
             <v-container fluid grid-list-md style="overflow-y: scroll !important; padding-top: 0">
                 <v-row wrap>
-                    <div id="getStartedBlock">
-                        <span class="getStartedText">Click on a variant for details</span>
-                    </div>
                     <feature-viz id="loaded-feature-viz" class="summary-viz"
                                  ref="summaryFeatureViz"
                                  :effect="effect"

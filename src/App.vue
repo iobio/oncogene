@@ -36,21 +36,21 @@
             </div>
             <div class="text-center mx-2" v-if="activeFilters.length > 0">
                 <v-menu bottom offset-y>
-<!--                    <template v-slot:activator="{ on: menu, attrs }">-->
-<!--                        <v-tooltip dark bottom>-->
-<!--                            <template v-slot:activator="{ on: tooltip }">-->
-<!--                                <v-btn-->
-<!--                                        color="secondary"-->
-<!--                                        dark-->
-<!--                                        v-bind="attrs"-->
-<!--                                        v-on="{ ...tooltip, ...menu }"-->
-<!--                                >-->
-<!--                                    Active Filters-->
-<!--                                </v-btn>-->
-<!--                            </template>-->
+                    <template v-slot:activator="{ on: menu, attrs }">
+                        <v-tooltip dark bottom>
+                            <template v-slot:activator="{ on: tooltip }">
+                                <v-btn
+                                        color="secondary"
+                                        dark
+                                        v-bind="attrs"
+                                        v-on="{ ...tooltip, ...menu }"
+                                >
+                                    Active Filters
+                                </v-btn>
+                            </template>
 <!--                            <span>Click to view filters used for currently called somatic variants</span>-->
-<!--                        </v-tooltip>-->
-<!--                    </template>-->
+                        </v-tooltip>
+                    </template>
                     <v-list>
                         <v-list-item
                                 v-for="(filter, index) in activeFilters"
