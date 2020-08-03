@@ -17,7 +17,7 @@
     "igv": "^2.2.13",
     "iobio-api-client": "^0.7.2",
     "jquery": "^3.5.1",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "material-design-icons-iconfont": "^5.0.1",
     "node-sass": "^4.14.1",
     "sass-loader": "^8.0.0",
