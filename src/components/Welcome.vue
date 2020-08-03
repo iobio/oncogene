@@ -63,6 +63,11 @@
                                          :color="slideBackground">
                                     <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
                                         <v-col md="auto">
+                                            <v-row justify-center class="pb-8">
+                                                <div style="text-align: center; width: 100%; font-family: Quicksand; font-size: 48px; color: #7f1010">
+                                                    ONCOGENE.IOBIO
+                                                </div>
+                                            </v-row>
                                             <v-row justify="center" class="pa-3">
                                                 <v-btn x-large color="secondary" class="carousel-btn"
                                                        @click="advanceSlide">
