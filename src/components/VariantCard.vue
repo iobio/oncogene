@@ -239,6 +239,16 @@
                                     <span class="loader-label">Analyzing gene coverage</span>
                                     <img src="../assets/images/wheel.gif">
                                 </div>
+                                <div v-show="loadingRnaSeq" class="loader covloader"
+                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">
+                                    <span class="loader-label">Analyzing RNA-Seq coverage</span>
+                                    <img src="../assets/images/wheel.gif">
+                                </div>
+                                <div v-show="loadingAtacSeq" class="loader covloader"
+                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">
+                                    <span class="loader-label">Analyzing ATAC-Seq coverage</span>
+                                    <img src="../assets/images/wheel.gif">
+                                </div>
                             </div>
                         </div>
 
@@ -279,6 +289,7 @@
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
+                                        :type="globalAppProp.COVERAGE_TYPE"
                                         :coverage="sampleModel.coverage"
                                         :coverageMedian="geneCoverageMedian"
                                         :coverageDangerRegions="coverageDangerRegions"
@@ -298,13 +309,14 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
+                            <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqUrlEntered">
                                 rna-seq
                             </div>
-                            <div id="rna-bam-track" v-if="sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
+                            <div id="rna-bam-track" v-if="sampleModel.rnaSeqUrlEntered">
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
+                                        :type="globalAppProp.RNASEQ_TYPE"
                                         :coverage="sampleModel.rnaSeqCoverage"
                                         :coverageMedian="geneCoverageMedian"
                                         :coverageDangerRegions="coverageDangerRegions"
@@ -324,13 +336,14 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
+                            <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqUrlEntered">
                                 atac-seq
                             </div>
-                            <div id="atac-bam-track" v-if="sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
+                            <div id="atac-bam-track" v-if="sampleModel.atacSeqUrlEntered">
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
+                                        :type="globalAppProp.ATACSEQ_TYPE"
                                         :coverage="sampleModel.atacSeqCoverage"
                                         :coverageMedian="geneCoverageMedian"
                                         :coverageDangerRegions="coverageDangerRegions"
@@ -485,6 +498,8 @@
                 loadingVars: false,
                 callingVars: false,
                 loadingCov: false,
+                loadingRnaSeq: false,
+                loadingAtacSeq: false,
                 showChip: false
             }
         },
@@ -947,8 +962,14 @@
             'sampleModel.inProgress.callingVariants': function() {
                 this.callingVars = this.sampleModel.inProgress.callingVariants;
             },
-            'sampleModel.inProgress.loadingCoverage': function() {
-                this.loadingCov = this.sampleModel.inProgress.loadingCoverage;
+            'sampleModel.inProgress.coverageLoading': function() {
+                this.loadingCov = this.sampleModel.inProgress.coverageLoading;
+            },
+            'sampleModel.inProgress.rnaSeqLoading': function() {
+                this.loadingRnaSeq = this.sampleModel.inProgress.rnaSeqLoading;
+            },
+            'sampleModel.inProgress.atacSeqLoading': function() {
+                this.loadingAtacSeq = this.sampleModel.inProgress.atacSeqLoading;
             },
             selectedGene: function() {
                 this.showChip = false;

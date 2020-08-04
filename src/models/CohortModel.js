@@ -305,9 +305,16 @@ class CohortModel {
      * SETTERS
      */
     setLoaders(show) {
-        this.sampleModels.forEach(model => {
+        const self = this;
+        self.sampleModels.forEach(model => {
             model.inProgress.loadingVariants = show;
-            model.inProgress.loadingCoverage = show;
+            model.inProgress[self.globalApp.COVERAGE_TYPE + 'Loading'] = show;
+            if (model.rnaSeqUrlEntered) {
+                model.inProgress[self.globalApp.RNASEQ_TYPE + 'Loading'] = show;
+            }
+            if (model.atacSeqUrlEntered) {
+                model.inProgress[self.globalApp.ATACSEQ_TYPE + 'Loading'] = show;
+            }
         });
     }
 
@@ -929,7 +936,7 @@ class CohortModel {
                     // Get sampled data across gene
                     let p3 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.RNASEQ_TYPE)
                         .then(function () {
-                            self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
+                            self.setCoverage(null, null, self.globalApp.RNASEQ_TYPE);
                         }).catch(error => {
                             console.log("Problem loading rnaseq data: " + error);
                         });
@@ -1271,7 +1278,7 @@ class CohortModel {
     }
 
     /* Filters variants and performs pileup. Also draws feature matrix. */
-    setLoadedVariants(gene, id = null, loadFromFlag = false, drawFeatureMatrix = true) {
+    setLoadedVariants(gene, id = null) {
         let self = this;
 
         let filterAndPileupVariants = function (model, start, end, target = 'loaded') {
@@ -1313,7 +1320,7 @@ class CohortModel {
 
         let allVariants = Object.assign({}, self.getNormalModel().loadedVariants);
         allVariants.features = [];      // Start empty so when we get normal in loop below, we don't duplicate
-        let uniqueMatrixFeatures = {};  // The features to rank in the matrix
+        // let uniqueMatrixFeatures = {};  // The features to rank in the matrix
 
         self.sampleModels.forEach(function (model) {
             if (id == null || id === model.id) {
@@ -1329,24 +1336,24 @@ class CohortModel {
                     model.inProgress.loadingVariants = false;
 
                     // Don't add known variants to our feature matrix
-                    if (model.id !== 'cosmic-variants' && model.id !== 'known-variants') {
-                        let currVariants = model.loadedVariants.features;
-                        currVariants.forEach((currVar) => {
-                            if (uniqueMatrixFeatures[currVar.id] == null) {
-                                uniqueMatrixFeatures[currVar.id] = currVar;
-                                allVariants.features.push(currVar);
-                            }
-                        });
-                        if (model.calledVariants) {
-                            currVariants = model.calledVariants.features;
-                            currVariants.forEach((currVar) => {
-                                if (uniqueMatrixFeatures[currVar.id] == null) {
-                                    uniqueMatrixFeatures[currVar.id] = currVar;
-                                    allVariants.features.push(currVar);
-                                }
-                            });
-                        }
-                    }
+                    // if (model.id !== 'cosmic-variants' && model.id !== 'known-variants') {
+                    //     let currVariants = model.loadedVariants.features;
+                    //     currVariants.forEach((currVar) => {
+                    //         if (uniqueMatrixFeatures[currVar.id] == null) {
+                    //             uniqueMatrixFeatures[currVar.id] = currVar;
+                    //             allVariants.features.push(currVar);
+                    //         }
+                    //     });
+                    //     if (model.calledVariants) {
+                    //         currVariants = model.calledVariants.features;
+                    //         currVariants.forEach((currVar) => {
+                    //             if (uniqueMatrixFeatures[currVar.id] == null) {
+                    //                 uniqueMatrixFeatures[currVar.id] = currVar;
+                    //                 allVariants.features.push(currVar);
+                    //             }
+                    //         });
+                    //     }
+                    // }
                 } else {
                     model.loadedVariants = {loadState: {}, features: []};
                     model.calledVariants = {loadState: {}, features: []}
@@ -1354,19 +1361,20 @@ class CohortModel {
             }
         });
 
+        // TODO: not using feature matrix currently, but may want a ranked variant list in future
         // Plug combined, unique features into feature matrix model
-        if (id !== 'known-variants' && id !== 'cosmic-variants' && drawFeatureMatrix) {
-            if (self.allUniqueFeaturesObj != null && self.allUniqueFeaturesObj.features
-                && self.allUniqueFeaturesObj.features.length > 0
-                && loadFromFlag) {
-                self.featureMatrixModel.promiseRankVariants(self.allUniqueFeaturesObj, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants())
-            } else if (allVariants && allVariants.features.length > 0) {
-                self.featureMatrixModel.promiseRankVariants(allVariants, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants());
-                self.allUniqueFeaturesObj = allVariants;
-            }
-        } else if (!drawFeatureMatrix) {
-            self.allUniqueFeaturesObj = allVariants;
-        }
+        // if (id !== 'known-variants' && id !== 'cosmic-variants' && drawFeatureMatrix) {
+        //     if (self.allUniqueFeaturesObj != null && self.allUniqueFeaturesObj.features
+        //         && self.allUniqueFeaturesObj.features.length > 0
+        //         && loadFromFlag) {
+        //         self.featureMatrixModel.promiseRankVariants(self.allUniqueFeaturesObj, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants())
+        //     } else if (allVariants && allVariants.features.length > 0) {
+        //         self.featureMatrixModel.promiseRankVariants(allVariants, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants());
+        //         self.allUniqueFeaturesObj = allVariants;
+        //     }
+        // } else if (!drawFeatureMatrix) {
+        //     self.allUniqueFeaturesObj = allVariants;
+        // }
     }
 
     /* Asks filter model to mark whether a variant meets all filter criteria.
@@ -1413,6 +1421,7 @@ class CohortModel {
                         self.atacSeqDepth = max;
                 }
             }
+            model.inProgress[bamType + 'Loading'] = false;
         })
     }
 
@@ -1843,11 +1852,12 @@ class CohortModel {
             let theResultMap = {};
             self.getCanonicalModels().forEach(function (model) {
                 if (model.isBamLoaded(bamType) /*&& model.entryDataChanged*/) {
-                    model.inProgress.loadingCoverage = true;
+                    if (bamType + 'UrlEntered') {
+                        model.inProgress[bamType + 'Loading'] = true;
+                    }
                     var p = new Promise(function (innerResolve) {
                         var theModel = model;
                         theModel.getBamDepth(theGene, theTranscript, bamType, function (coverageData) {
-                            theModel.inProgress.loadingCoverage = false;
                             theResultMap[theModel.id] = coverageData;
                             innerResolve();
                         });

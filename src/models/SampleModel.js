@@ -68,7 +68,9 @@ class SampleModel {
         this.inProgress = {
             'loadingVariants': false,
             'callingVariants': false,
-            'loadingCoverage': false
+            'coverageLoading': false,   // Note: must keep coverage keys like this
+            'rnaSeqLoading': false,
+            'atacSeqLoading': false
         };
     }
 
@@ -247,14 +249,15 @@ class SampleModel {
                 }
             }
             if (theVcfData == null) {
+                // SJG TODO: put cacheing back in
                 // Find vcf data in cache
-                me._promiseGetData(dataKind, geneObject.gene_name, selectedTranscript)
-                    .then(function (data) {
-                        if (data != null && data !== '') {
-                            me[dataKind] = data;
-                            theVcfData = data;
-                            resolve({model: me, vcfData: theVcfData});
-                        } else {
+                //me._promiseGetData(dataKind, geneObject.gene_name, selectedTranscript)
+                //     .then(function (data) {
+                //         if (data != null && data !== '') {
+                //             me[dataKind] = data;
+                //             theVcfData = data;
+                //             resolve({model: me, vcfData: theVcfData});
+                //         } else {
                             // If the vcf data is null, see if there are called variants in the cache.  If so,
                             // copy the called variants into the vcf data.
                             if (whenEmptyUseFbData && me.isAlignmentsOnly()) {
@@ -285,9 +288,9 @@ class SampleModel {
                             } else {
                                 resolve({model: me, vcfData: theVcfData});
                             }
-                        }
-                    })
             }
+            //         })
+            // }
         });
     }
 
@@ -1236,7 +1239,7 @@ class SampleModel {
         };
 
         // A gene has been selected.  Read the bam file to obtain
-        // the read converage.
+        // the read coverage.
         const refName = this.getBamRefName(gene.chr);
         this.promiseGetVcfData(gene, selectedTranscript)
             .then(function (data) {
@@ -3103,26 +3106,28 @@ class SampleModel {
     }
 
 
-    _promiseGetData(dataKind, geneName, transcript) {
-        let me = this;
-        return new Promise(function (resolve, reject) {
-
-            if (geneName == null) {
-                let msg = "SampleModel._promiseGetData(): empty gene name";
-                console.log(msg);
-                reject(msg);
-            } else {
-                let key = me._getCacheKey(dataKind, geneName.toUpperCase(), transcript);
-                me.getCacheHelper().promiseGetData(key)
-                    .then(function (data) {
-                            resolve(data);
-                        },
-                        function (error) {
-                            let msg = "An error occurred in SampleModel._promiseGetData(): " + error;
-                            console.log(msg);
-                            reject(msg);
-                        })
-            }
+    // SJG TODO: ripped out cacheing for now
+    // _promiseGetData(dataKind, geneName, transcript) {
+    _promiseGetData() {
+        // let me = this;
+        return new Promise(function (resolve) {
+            resolve();
+            // if (geneName == null) {
+            //     let msg = "SampleModel._promiseGetData(): empty gene name";
+            //     console.log(msg);
+            //     reject(msg);
+            // } else {
+            //     let key = me._getCacheKey(dataKind, geneName.toUpperCase(), transcript);
+            //     me.getCacheHelper().promiseGetData(key)
+            //         .then(function (data) {
+            //                 resolve(data);
+            //             },
+            //             function (error) {
+            //                 let msg = "An error occurred in SampleModel._promiseGetData(): " + error;
+            //                 console.log(msg);
+            //                 reject(msg);
+            //             })
+            // }
         })
     }
 

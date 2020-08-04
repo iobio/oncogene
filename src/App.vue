@@ -71,7 +71,7 @@
                 <span class="mr-2 ml-2">an iobio project</span>
             </v-btn>
         </v-app-bar>
-        <v-content style="background-color: #7f1010">
+        <v-main style="background-color: #7f1010">
             <Home v-if="filterModel"
                   ref="homePanel"
                   :d3="globalApp.d3"
@@ -90,7 +90,7 @@
                   @display-unmatched-genes-btn="onUnmatchedGenes"
             >
             </Home>
-        </v-content>
+        </v-main>
     </v-app>
 </template>
 

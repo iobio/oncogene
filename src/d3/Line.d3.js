@@ -19,7 +19,7 @@ export default function lineD3(d3, vizSettings) {
     var showYAxis = vizSettings.showYAxis ? vizSettings.showYAxis : true;
     var yTicks = vizSettings.yTicks ? vizSettings.yTicks : null;
 
-    var container = null;
+    var container = null;   // todo: think this is circle problem
     var showBrush = false;
     var x = null;
     var y = null;

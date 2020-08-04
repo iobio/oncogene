@@ -348,7 +348,7 @@
                                      style="padding-top: 10px"
                                      ref="rnaSeqBarFeatureViz"
                                      :counts="rnaSeqCounts"
-                                     :bamtype="'rnaSeq'"
+                                     :bamType="'rnaSeq'"
                                      :d3="d3">
                     </bar-feature-viz>
                     <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz"

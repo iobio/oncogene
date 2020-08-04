@@ -1,14 +1,14 @@
 <style lang="sass">
     @import ../../assets/sass/variables
 
-    #depth-viz .circle-label
+    .depth-viz .circle-label
         fill: $arrow-color
         font-size: 15px
         font-weight: bold
         stroke: none
         pointer-events: none
 
-    #depth-viz
+    .depth-viz
         .y.axis
             line
                 stroke-width: .5px
@@ -17,7 +17,7 @@
                 text
                     font-size: 11px
 
-    #depth-viz path.line
+    .depth-viz path.line
         stroke: rgba(128, 128, 128, .81)
         stroke-width: 1
         fill: none
@@ -30,7 +30,7 @@
         stop-color: grey
         stop-opacity: 0.6
 
-    #depth-viz
+    .depth-viz
         text-align: left
         margin-top: 0px
         min-height: 30px
@@ -60,8 +60,7 @@
 
 
 <template>
-    <div id="depth-viz">
-
+    <div class="depth-viz">
     </div>
 </template>
 
@@ -72,6 +71,10 @@
     export default {
         name: 'depth-viz',
         props: {
+            type: {
+                type: String,
+                default: null
+            },
             coverage: {
                 type: Array,
                 default: null
