@@ -85,7 +85,7 @@
                                                        @click="displayConfigUploadSlide">Upload Analysis
                                                 </v-btn>
                                             </v-row>
-                                            <v-row :hidden="!showUploadEntry" justify="center" class="pa-3">
+                                            <v-row v-show="showUploadEntry" justify="center" class="pa-3">
                                                 <v-file-input v-model="configFile" accept=".json"
                                                               label="Click to Select File"
                                                               @change="checkAndUploadConfig"></v-file-input>

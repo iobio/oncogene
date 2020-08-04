@@ -189,7 +189,6 @@
                 dispatch.on('d3mouseout', function() {
                     self.onVariantHoverEnd();
                 });
-                this.setVariantChart();
             },
             update: function () {
                 const self = this;
@@ -211,8 +210,12 @@
                         width: self.width
                     };
                     self.variantChart(chartData);
+                    let trackDisplayed = true;
+                    self.setVariantChart(trackDisplayed);
                 } else {
                     self.variantChart.clearVariants(selection);
+                    let trackDisplayed = false;
+                    self.setVariantChart(trackDisplayed);
                 }
             },
             updateVariantClasses: function(container) {
@@ -244,8 +247,8 @@
             hideVariantCircle: function (container, pinned) {
                 this.variantChart.hideCircle(container, pinned);
             },
-            setVariantChart: function () {
-                this.$emit('var-chart-rendered');
+            setVariantChart: function (trackDisplayed) {
+                this.$emit('var-chart-rendered', trackDisplayed);
             },
             showFlaggedVariant: function (variant, container) {
                 this.variantChart.showFlaggedVariant(container, variant);

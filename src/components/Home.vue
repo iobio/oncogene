@@ -144,8 +144,6 @@
                                     :width="screenWidth"
                                     :height="screenHeight"
                                     :showGeneViz="true"
-                                    :showDepthViz="model.id !== 'known-variants' && model.id !== 'cosmic-variants'"
-                                    :showVariantViz="(model.id !== 'known-variants' || showKnownVariantsCard) || (model.id !== 'cosmic-variants' || showCosmicVariantsCard)"
                                     :geneVizShowXAxis="false"
                                     :annotationComplete="annotationComplete"
                                     :d3="d3"
@@ -433,12 +431,12 @@
                 const self = this;
                 self.selectedVariant = null;
                 self.displayLoader = true;
-                let showTracks = false;
-                if (self.$refs.variantCardRef) {
-                    self.$refs.variantCardRef.forEach(function (variantCard) {
-                        variantCard.toggleTracks(showTracks);
-                    })
-                }
+                // let showTracks = false;
+                // if (self.$refs.variantCardRef) {
+                //     self.$refs.variantCardRef.forEach(function (variantCard) {
+                //         variantCard.toggleTracks(showTracks);
+                //     })
+                // }
                 self.geneModel.clearGeneObjects();
                 self.cohortModel.promiseAnnotateGlobalSomatics()
                     .then(rankObj => {
@@ -470,12 +468,12 @@
                                 const globalMode = true;
                                 // Get rid of global loader
                                 self.displayLoader = false;
-                                showTracks = true;
-                                if (self.$refs.variantCardRef) {
-                                    self.$refs.variantCardRef.forEach(function (variantCard) {
-                                        variantCard.toggleTracks(showTracks);
-                                    })
-                                }
+                                // showTracks = true;
+                                // if (self.$refs.variantCardRef) {
+                                //     self.$refs.variantCardRef.forEach(function (variantCard) {
+                                //         variantCard.toggleTracks(showTracks);
+                                //     })
+                                // }
                                 self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                                     .then(() => {
                                         if (self.unmatchedGenes.length > 0) {
@@ -679,6 +677,12 @@
                 self.showWelcome = false;
                 self.clearZoom = true;
                 self.applyFilters = false;
+                let showTracks = false;
+                if (self.$refs.variantCardRef) {
+                    self.$refs.variantCardRef.forEach(function (variantCard) {
+                        variantCard.toggleTracks(showTracks);
+                    })
+                }
                 return new Promise(function (resolve, reject) {
                     if (self.cohortModel) {
                         self.cohortModel.clearLoadedData(geneName);
@@ -728,6 +732,12 @@
                                                     self.clearZoom = false;
                                                     self.showVarViz = true;
                                                     self.applyFilters = true;
+                                                    showTracks = true;
+                                                    if (self.$refs.variantCardRef) {
+                                                        self.$refs.variantCardRef.forEach(function (variantCard) {
+                                                            variantCard.toggleTracks(showTracks);
+                                                        })
+                                                    }
                                                     resolve();
                                                 })
                                                 .catch(function (err) {

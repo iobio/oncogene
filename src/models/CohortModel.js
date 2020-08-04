@@ -1240,8 +1240,8 @@ class CohortModel {
         let self = this;
         self.sampleModels.forEach(function (model) {
             if (model.lastGeneLoaded !== geneName) {
-                model.loadedVariants = {loadState: {}, features: [], maxLevel: 1, featureWidth: 0};
-                model.calledVariants = {loadState: {}, features: [], maxLevel: 1, featureWidth: 0};
+                model.loadedVariants = null;
+                model.calledVariants = null;
                 model.variantHistoData = [];
                 model.coverage = [[]];
                 model.somaticVarCoverage = [[]];
@@ -1333,7 +1333,7 @@ class CohortModel {
                     model.calledVariants = filterAndPileupVariants(model, start, end, 'called');
 
                     // Turn off loaders
-                    model.inProgress.loadingVariants = false;
+                    // model.inProgress.loadingVariants = false;
 
                     // Don't add known variants to our feature matrix
                     // if (model.id !== 'cosmic-variants' && model.id !== 'known-variants') {
@@ -1497,11 +1497,11 @@ class CohortModel {
                             .then(function (updatedResultMap) {
                                 self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
                                     .then(function (data) {
-                                        for (var theId in data) {
-                                            if (!isBackground) {
-                                                self.getModel(theId).inProgress.loadingVariants = false;
-                                            }
-                                        }
+                                        // for (var theId in data) {
+                                        //     if (!isBackground) {
+                                        //         self.getModel(theId).inProgress.loadingVariants = false;
+                                        //     }
+                                        // }
                                         self.annotationComplete = true;
                                         resolve(data)
                                     });
@@ -1510,11 +1510,11 @@ class CohortModel {
                         console.log("Could not annotate with COSMIC b/c hash map not populated");
                         self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
                             .then(function (data) {
-                                for (var theId in data) {
-                                    if (!isBackground) {
-                                        self.getModel(theId).inProgress.loadingVariants = false;
-                                    }
-                                }
+                                // for (var theId in data) {
+                                //     if (!isBackground) {
+                                //         self.getModel(theId).inProgress.loadingVariants = false;
+                                //     }
+                                // }
                                 self.annotationComplete = true;
                                 resolve(data)
                             });

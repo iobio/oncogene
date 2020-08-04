@@ -226,7 +226,7 @@
                             <div style="text-align: center; clear: both">
                                 <div v-show="loadingVars" class="loader vcfloader"
                                      style="display: inline-block;padding-bottom:10px">
-                                    <span class="loader-label">Annotating variants</span>
+                                    <span class="loader-label">Analyzing variants</span>
                                     <img src="../assets/images/wheel.gif">
                                 </div>
                                 <div v-show="callingVars" class="loader fbloader"
@@ -280,9 +280,9 @@
                                          @variantHover="onVariantHover"
                                          @variantHoverEnd="onVariantHoverEnd"
                                          @apply-active-filters="applyActiveFilters"
-                                         @var-chart-rendered="showChip = true">
+                                         @var-chart-rendered="onVarVizRendered">
                             </variant-viz>
-                            <div class="chart-label" v-if="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
+                            <div class="chart-label" v-show="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
                             </div>
                             <div id="bam-track">
@@ -309,10 +309,10 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <div class="chart-label" v-if="showDepthViz && sampleModel.rnaSeqUrlEntered">
+                            <div class="chart-label" v-show="showDepthViz && sampleModel.rnaSeqCoverage && sampleModel.rnaSeqCoverage.length > 1">
                                 rna-seq
                             </div>
-                            <div id="rna-bam-track" v-if="sampleModel.rnaSeqUrlEntered">
+                            <div id="rna-bam-track" v-show="sampleModel.rnaSeqUrlEntered">
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
@@ -336,10 +336,10 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <div class="chart-label" v-if="showDepthViz && sampleModel.atacSeqUrlEntered">
+                            <div class="chart-label" v-show="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
                                 atac-seq
                             </div>
-                            <div id="atac-bam-track" v-if="sampleModel.atacSeqUrlEntered">
+                            <div id="atac-bam-track" v-show="sampleModel.atacSeqUrlEntered">
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
@@ -425,18 +425,18 @@
                 type: Number,
                 default: 0
             },
-            showVariantViz: {
-                type: Boolean,
-                default: true
-            },
+            // showVariantViz: {
+            //     type: Boolean,
+            //     default: true
+            // },
             showGeneViz: {
                 type: Boolean,
                 default: true
             },
-            showDepthViz: {
-                type: Boolean,
-                default: true
-            },
+            // showDepthViz: {
+            //     type: Boolean,
+            //     default: true
+            // },
             geneVizShowXAxis: {
                 type: Boolean,
                 default: false
@@ -500,10 +500,16 @@
                 loadingCov: false,
                 loadingRnaSeq: false,
                 loadingAtacSeq: false,
-                showChip: false
+                showChip: false,
+                showVariantViz: true,
+                showDepthViz: true
             }
         },
         methods: {
+            onVarVizRendered: function(trackDisplayed) {
+                this.showChip = trackDisplayed;
+                this.loadingVars = !trackDisplayed;
+            },
             depthVizYTickFormat: function (val) {
                 if (val === 0) {
                     return "";
@@ -957,6 +963,7 @@
         },
         watch: {
             'sampleModel.inProgress.loadingVariants': function() {
+                // Only use this to turn on loader
                 this.loadingVars = this.sampleModel.inProgress.loadingVariants;
             },
             'sampleModel.inProgress.callingVariants': function() {
