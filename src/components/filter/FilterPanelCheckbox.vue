@@ -23,7 +23,7 @@
                             v-model="item.model"
                             dark
                             style="padding-left: 15px; margin-top: 0; margin-bottom: 0; max-height: 30px"
-                            @click.stop="boxChecked(item)">
+                            @click.capture.stop="boxChecked()">
                 </v-checkbox>
             </v-container>
         </v-flex>
@@ -43,8 +43,7 @@
             checkboxLists: null
         },
         methods: {
-            boxChecked: function(filterObj) {
-                filterObj.model = !filterObj.model;
+            boxChecked: function() {
                 this.$emit('filter-toggled', this.parentFilterName);
             }
         }

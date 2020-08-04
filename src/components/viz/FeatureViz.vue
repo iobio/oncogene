@@ -65,7 +65,7 @@
         <v-row class="no-gutters mb-3">
             <v-col sm="6" md="1" lg="2" class="summary-field-label">Type:</v-col>
             <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
-                <span v-bind:class="{hide: type === ''}">
+                <span v-show="type !== '-'">
                     <svg v-if="type==='snp'" id="snp" class="legend-element" height="12" width="12" transform="translate(1,2)">
                         <rect class="legend-symbol snp" rx="2" ry="1" x="1" width="10" y="1" height="10" style="opacity: 1; fill: none; stroke: rgb(0, 0, 0); stroke-width: 1px;">
                         </rect>

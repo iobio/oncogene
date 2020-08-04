@@ -493,7 +493,9 @@
                             rankedGeneNames.push(geneObj.gene_name);
                         });
                         self.filterModel.addFilterHistory(totalSomaticVarCount, totalSomaticGenes, rankedGeneNames);
-                        self.$refs.historyTabRef.refreshList();
+                        if (self.$refs.historyTabRef) {
+                            self.$refs.historyTabRef.refreshList();
+                        }
                     }).catch(error => {
                     console.log('There was a problem calling global somatics: ' + error);
                 });

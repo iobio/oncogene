@@ -119,16 +119,18 @@
                                 <v-divider class="mx-12"></v-divider>
                                 <v-card-actions class="function-card-body">
                                     <v-container fluid>
-                                        <v-row v-for="i in DATA_MODELS.length"
+                                        <v-row v-for="i in userData.length"
                                                :key="'checkbox-' + i"
                                                no-gutters dense>
-                                            <v-col cols="4"></v-col>
-                                            <v-col cols="6">
-                                                <v-checkbox
-                                                        dense v-model="userData" color="appColor"
-                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')'"
-                                                        :value="DATA_MODELS[i-1]"
-                                                        @click="onDataChecked(DATA_MODELS[i-1])">
+                                            <v-col cols="3"></v-col>
+                                            <v-col cols="8">
+                                                <v-checkbox v-if="userData[i-1].name !== 'summary'"
+                                                        dense
+                                                        v-model="userData[i-1].model"
+                                                        color="appColor"
+                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')' + (isRequired(DATA_MODELS[i-1]) ? ' [required]' : '')"
+                                                        :disabled="isRequired(DATA_MODELS[i-1])"
+                                                        @click.capture.stop="onDataChecked(DATA_MODELS[i-1])">
                                                 </v-checkbox>
                                             </v-col>
                                         </v-row>
@@ -143,7 +145,7 @@
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
                                 <v-card-title class="about-title">
-                                    Somatic Calling
+                                    Somatic Filtering
                                 </v-card-title>
                                 <v-card-text class="about-text">
                                     {{ somaticText }}
@@ -225,24 +227,24 @@
                             </v-card>
                         </v-card>
                     </v-carousel-item>
-                    <v-carousel-item v-for="i in userData.length" :key="'form-' + i"
+                    <v-carousel-item v-for="(data, i) in selectedUserData" :key="'form-' + i"
                                      :style="'background-color: ' + slideBackground">
                         <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                                 light>
                             <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
                                     :elevation="aboutElevation">
                                 <v-card-title class="about-title">
-                                    {{ getCardTitle(i) }}
+                                    {{ getCardTitle(data) }}
                                 </v-card-title>
                                 <v-card-text class="about-text">
-                                    {{ getFileText(userData[i-1]) }}
+                                    {{ getFileText(data) }}
                                 </v-card-text>
                             </v-card>
-                            <vcf-form v-if="userData[i-1] === 'vcf'"
+                            <vcf-form v-if="data === 'vcf'"
                                       ref="vcfFormRef"
                                       :cohortModel="cohortModel"
-                                      :dataType="getDataType(userData[i-1])"
-                                      :fileType="getFileType(userData[i-1])"
+                                      :dataType="getDataType(data)"
+                                      :fileType="getFileType(data)"
                                       :slideBackground="slideBackground"
                                       :modelInfoList="modelInfoList"
                                       :allDataModels="DATA_MODELS"
@@ -264,12 +266,12 @@
                                       @vcf-sample-names-updated="setVcfSampleNames"
                                       @vcf-form-mounted="vcfFormMounted=true">
                             </vcf-form>
-                            <multi-source-form v-else-if="userData[i-1] !== 'summary'"
+                            <multi-source-form v-else-if="data !== 'summary'"
                                                ref="multiRef"
                                                :cohortModel="cohortModel"
-                                               :dataType="getDataType(userData[i-1])"
-                                               :modelType="userData[i-1]"
-                                               :fileType="getFileType(userData[i-1])"
+                                               :dataType="getDataType(data)"
+                                               :modelType="data"
+                                               :fileType="getFileType(data)"
                                                :slideBackground="slideBackground"
                                                :modelInfoList="modelInfoList"
                                                :maxSamples="MAX_SAMPLES"
@@ -343,7 +345,7 @@
     import MultiSourceForm from './MultiSourceForm.vue'
     import geneListsByType from '../data/gene_lists.json'
     import validGenes from '../data/genes.json'
-    import _ from 'lodash'
+    // import _ from 'lodash'
 
     export default {
         name: "Welcome",
@@ -477,12 +479,12 @@
                     'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
                     ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
                 dataText: 'Oncogene.iobio consumes primary data including Variant Call Format (vcf), ' +
-                    'Binary Alignment/Map (bam) files. Both variant calls and read coverage data ' +
+                    'Binary Sequencing Alignment/Map (bam) files. Both variant calls and sequencing read data ' +
                     'are required for the application to work. Optionally, copy number data ' +
                     'may be provided in the form of a tab-delimited file with certain required headers ' +
                     '(see the CNV panel for details), and raw ' +
                     'RNAseq and ATACseq reads may be provided in bam file format.',
-                somaticText: 'Oncogene.iobio will perform somatic calling on your variant data for you ' +
+                somaticText: 'Oncogene.iobio will perform somatic filtering on your variant data for you ' +
                     'if your file contains both somatic and inherited variants. This is ' +
                     'performed by requiring each variant to pass a certain criteria of ' +
                     'frequency and observation thresholds in both the tumor and normal samples, ' +
@@ -576,7 +578,13 @@
                     },
                 ],
                 // retained (model) state
-                userData: ['vcf', 'coverage', 'summary'],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
+                userData: [{name: 'vcf', model: true},
+                    {name: 'coverage', model: true},
+                    {name: 'cnv', model: false},
+                    {name: 'rnaSeq', model: false},
+                    {name: 'atacSeq', model: false},
+                    {name: 'summary', model: true}],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
+                selectedUserData: ['vcf', 'coverage', 'summary'],       // List of current cards in carousel
                 somaticCallsOnly: false,
                 selectedBuild: null,
                 listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
@@ -602,27 +610,35 @@
             advanceSlide: function () {
                 this.carouselModel += 1;
             },
-            // NOTE: not sure why, but clicking prepend checkbox icon caused this to fire twice (hence, debounce)
-            onDataChecked: _.debounce(function (model) {
+            onDataChecked: function(model) {
                 // Check to see if we're trying to uncheck required type
                 if (this.LOCKED_DATA[model]) {
                     this.showError = true;
                     this.errorText = 'Oncogene is currently configured to require this data type';
-                    this.userData.push(model);
+                    this.userData.push({name: model, model: true});
                 }
 
-                // Otherwise, remove if in list
-                let existIdx = this.userData.indexOf(model);
+                // Set model to opposite (if not required)
                 let isActive = false;
-                if (existIdx > -1) {
-                    this.userData.splice(existIdx, 1);
-                } else {
-                    // Or insert before summary slide
-                    isActive = true;
-                    this.userData.splice(this.userData.length - 1, 0, model);
+                for (let i = 0; i < this.userData.length; i++) {
+                    let dataObj = this.userData[i];
+                    if (dataObj.name === model) {
+                        isActive = dataObj.model;
+
+                        // Insert or delete from our computed list for carousel cards
+                        if (dataObj.model) {
+                            this.selectedUserData.splice(this.selectedUserData.length-1, 0, dataObj.name);
+                        } else {
+                            this.selectedUserData.splice(i, 1);
+                        }
+                        break;
+                    }
                 }
                 this.updateStepProp(model, 'active', isActive);
-            }, 100),
+            },
+            isRequired: function (dataType) {
+                return dataType === 'coverage' || dataType === 'vcf';
+            },
             getFileType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);
                 if (idx < 0) {
@@ -645,11 +661,21 @@
                 }
                 return this.FILE_TEXT[fileType];
             },
-            getCardTitle: function(index) {
-                let fileType = this.getFileType(this.userData[index-1]);
-                if (fileType === 'summary') {
+            getCardTitle: function(type) {
+                if (type === 'summary') {
                     return 'Input Summary';
-                } else {
+                }
+
+                let idx = -1;
+                for (let i = 0; i < this.userData.length; i++) {
+                    let currData = this.userData[i];
+                    if (type === currData.name) {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx >= 0) {
+                    let fileType = this.getFileType(this.userData[idx].name);
                     return fileType.toUpperCase() + ' Input';
                 }
             },
@@ -805,7 +831,13 @@
                     } else {
                         self.modelInfoList = infoObj['samples'];
                         self.userData = infoObj['dataTypes'];
-                        // TODO: problem here is that if we have types other than base 2, not actually added to slide deck
+                        self.selectedUserData = [];
+                        self.userData.forEach(data => {
+                            if (data.model) {
+                                self.selectedUserData.push(data.name);
+                            }
+                        });
+
                         // need to call
                         self.listInput = infoObj['listInput'];
                         self.updateStepProp('geneList', 'complete', true);
@@ -883,7 +915,7 @@
                 this.carouselModel = 4;
             },
             launch: function () {
-                this.cohortModel.setInputDataTypes(this.userData);
+                this.cohortModel.setInputDataTypes(this.selectedUserData);
                 this.cohortModel.setBuild(this.selectedBuild);
                 this.cohortModel.setCallType(this.somaticCallsOnly);
 

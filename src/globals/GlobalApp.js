@@ -122,6 +122,11 @@ class GlobalApp {
     /* Returns three-letter code for AA corresponding to provided single-letter AA argument.
      * If no matching three-letter code is found, returns single-letter argument. */
     convertAa(singleAa) {
+        if (!singleAa) {
+            console.log('Problem getting AA - no single code provided');
+            return '?';
+        }
+
         const aaMap = {
             'A': 'Ala',
             'C': 'Cys',

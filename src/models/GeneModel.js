@@ -9,7 +9,6 @@ class GeneModel {
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
         this.NCBI_GENE_SUMMARY_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gene&usehistory=y&retmode=json";
-        this.retried = false;   // Sometimes eutils craps out
 
 
         this.linkTemplates = {
@@ -84,7 +83,7 @@ class GeneModel {
             }
 
             if (!me.geneNCBISummaries[geneName]) {
-                let sumP = me.promiseGetNCBIGeneSummary(geneName);
+                let sumP = me.promiseGetNCBIGeneSummaries([geneName]);
                 promises.push(sumP);
             }
 
@@ -547,7 +546,7 @@ class GeneModel {
     }
 
     promiseGetNCBIGeneSummaries(geneNames) {
-        let me = this;
+        const me = this;
         let waitSeconds = 0;
         if (Object.keys(me.geneNCBISummaries).length > 0) {
             waitSeconds = 5000;
@@ -589,13 +588,7 @@ class GeneModel {
                     .fail(function() {
                         delete me.pendingNCBIRequests[theGeneNames];
                         console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
-                        if (!me.retried) {
-                            me.retried = true;
-                            console.log('Had to retry NCBI eutils');
-                            return me.promiseGetNCBIGeneSummaries(geneNames);
-                        } else {
-                            reject();
-                        }
+                        reject();
                     })
             }
         })
@@ -635,22 +628,14 @@ class GeneModel {
                 .fail(function() {
                     delete me.pendingNCBIRequests[theGeneNames];
                     console.log("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
-                    if (!me.retried) {
-                        me.retried = true;
-                        console.log('Had to retry NCBI eutils');
-                        return me.promiseGetNCBIGeneSummaries(data, theGeneNames);
-                    } else {
-                        reject();
-                    }
+                    reject();
                 })
         })
     }
 
-
     promiseGetNCBIGeneSummary(geneName) {
         let me = this;
         return new Promise( function(resolve) {
-
             var geneInfo = me.geneNCBISummaries[geneName];
             let unknownGeneInfo = {description: ' ', summary: ' '};
 
@@ -658,50 +643,56 @@ class GeneModel {
                 resolve(geneInfo);
             } else {
                 // Search NCBI based on the gene name to obtain the gene ID
-                var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
-                me.globalApp.$.ajax( url )
-                    .done(function(data) {
+                let waitSeconds = 0;
+                if (Object.keys(me.geneNCBISummaries).length > 0) {
+                    waitSeconds = 5000;
+                }
+                setTimeout(function() {
+                    var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
+                    me.globalApp.$.ajax( url )
+                        .done(function(data) {
 
-                        // Now that we have the gene ID, get the NCBI gene summary
-                        var webenv = data["esearchresult"]["webenv"];
-                        var queryKey = data["esearchresult"]["querykey"];
-                        var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
-                        me.globalApp.$.ajax( summaryUrl )
-                            .done(function(sumData) {
-                                if (sumData.result == null || sumData.result.uids.length === 0) {
-                                    if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
-                                        sumData.esummaryresult.forEach( function(message) {
-                                            console.log("Unable to get NCBI gene summary from eutils esummary");
-                                            console.log(message);
-                                        });
+                            // Now that we have the gene ID, get the NCBI gene summary
+                            var webenv = data["esearchresult"]["webenv"];
+                            var queryKey = data["esearchresult"]["querykey"];
+                            var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
+                            me.globalApp.$.ajax( summaryUrl )
+                                .done(function(sumData) {
+                                    if (sumData.result == null || sumData.result.uids.length === 0) {
+                                        if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
+                                            sumData.esummaryresult.forEach( function(message) {
+                                                console.log("Unable to get NCBI gene summary from eutils esummary");
+                                                console.log(message);
+                                            });
+                                        }
+                                        me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                                        resolve(unknownGeneInfo);
+
+                                    } else {
+
+                                        var uid = sumData.result.uids[0];
+                                        var geneInfo = sumData.result[uid];
+
+                                        me.geneNCBISummaries[geneName] = geneInfo;
+                                        resolve(geneInfo)
                                     }
+                                })
+                                .fail(function() {
+                                    console.log("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
                                     me.geneNCBISummaries[geneName] = unknownGeneInfo;
                                     resolve(unknownGeneInfo);
+                                })
 
-                                } else {
-
-                                    var uid = sumData.result.uids[0];
-                                    var geneInfo = sumData.result[uid];
-
-                                    me.geneNCBISummaries[geneName] = geneInfo;
-                                    resolve(geneInfo)
-                                }
-                            })
-                            .fail(function() {
-                                console.log("Error occurred when making http request to NCBI eutils esummary for gene " + geneName);
-                                me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                                resolve(unknownGeneInfo);
-                            })
-
-                    })
-                    .fail(function() {
-                        console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
-                        me.geneNCBISummaries[geneName] = unknownGeneInfo;
-                        resolve(geneInfo);
-                    })
+                        })
+                        .fail(function() {
+                            console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
+                            me.geneNCBISummaries[geneName] = unknownGeneInfo;
+                            resolve(geneInfo);
+                        })                }, waitSeconds);
             }
         });
     }
+
 
 
     _setTranscriptExonNumbers(transcript, sortedExons) {

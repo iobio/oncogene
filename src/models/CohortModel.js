@@ -312,16 +312,17 @@ class CohortModel {
     }
 
     setInputDataTypes(userDataList) {
+        const self = this;
         userDataList.forEach((dataType) => {
             switch (dataType) {
                 case 'cnv':
-                    this.hasCnvData = true;
+                    self.hasCnvData = true;
                     break;
                 case 'rnaSeq':
-                    this.hasRnaSeqData = true;
+                    self.hasRnaSeqData = true;
                     break;
                 case 'atacSeq':
-                    this.hasAtacSeqData = true;
+                    self.hasAtacSeqData = true;
                     break;
                 default:
             }

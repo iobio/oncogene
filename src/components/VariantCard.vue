@@ -534,8 +534,8 @@
                 if (this.showVariantViz) {
                     this.showVariantCircle(variant, false);
 
-                    const tipType = "hover";
-                    this.showVariantTooltip(variant, tipType, false);
+                    //const tipType = "hover";
+                    //this.showVariantTooltip(variant, tipType, false);
                 }
                 this.$emit('cohort-variant-hover', variant, this);
             },

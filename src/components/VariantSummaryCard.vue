@@ -270,7 +270,7 @@
                     <v-container>
                         <v-row no-gutters class="summary-viz" style="min-height: 0; padding-top: 10px">
                             <v-col sm="7" class="field-label-header">
-                                Raw Bam Counts
+                                Raw Read Counts
                                 <v-dialog v-model="rawBamDialog" persistent max-width="500px">
                                     <template v-slot:activator="{ on, attrs }">
                                     <v-btn v-if="hasAtacSeq || hasRnaSeq"
@@ -287,7 +287,7 @@
                                     </template>
                                     <v-card id="raw-bam-dialog">
                                         <v-card-title class="raw-bam-headline">
-                                            <span>Raw Bam Counts</span>
+                                            <span>Raw Read Counts</span>
                                         </v-card-title>
                                         <v-card-text class="pt-3">
                                             <div>
@@ -470,22 +470,37 @@
                 return "-";
             },
             variantAaChange: function () {
-                let aaChange = 'N/A';
-                if (this.variant != null && this.variant.vepAminoAcids) {
-                    let changeString = Object.values(this.variant.vepAminoAcids)[0];
-                    if (changeString) {
-                        let acids = changeString.split('/');
-                        let expectAa = this.cohortModel.globalApp.convertAa(acids[0]);
-                        let actualAa = this.cohortModel.globalApp.convertAa(acids[1]);
-                        aaChange = expectAa + '->' + actualAa;
+                let aaChange = '-';
+                if (this.variant != null) {
+                    aaChange = 'N/A';
+                    if (this.variant.vepAminoAcids) {
+                        let changeString = Object.values(this.variant.vepAminoAcids)[0];
+                        if (changeString) {
+                            let acids = changeString.split('/');
+                            let expectAa = this.cohortModel.globalApp.convertAa(acids[0]);
+                            let actualAa = null;
+                            if (acids[1]) {
+                                actualAa = this.cohortModel.globalApp.convertAa(acids[1]);
+                            } else {
+                                // For synonymous variants, we don't have a second AA in the array
+                                actualAa = this.cohortModel.globalApp.convertAa(acids[0]);
+                            }
+                            aaChange = expectAa + '->' + actualAa;
+                        }
                     }
                 }
                 return aaChange;
             },
             clinVarText: function () {
-                if (this.variantInfo != null && this.variantInfo.clinvarSig != null)
-                    return this.variantInfo.clinvarSig;
-                return "";
+                if (this.variantInfo != null) {
+                    if (this.variantInfo.clinvarSig === '' || this.variantInfo.clinvarSig === 'not provided') {
+                        return 'Not present';
+                    } else {
+                        return this.variantInfo.clinvarSig;
+                    }
+                } else {
+                    return "";
+                }
             },
             clinVarColor: function () {
                 if (this.variant != null && this.variant.clinvar != null) {
@@ -496,7 +511,7 @@
             },
             cosmicText: function () {
                 if (this.variantInfo != null) {
-                    return this.variantInfo.inCosmic ? 'Yes' : 'No';
+                    return this.variantInfo.inCosmic ? 'Present' : 'Not present';
                 }
                 return "";
             },
