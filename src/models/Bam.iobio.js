@@ -73,29 +73,31 @@ export default class bamiobio {
         }
 
         // Otherwise go fetch
-        const cmd = me.endpoint.getBamHeader(bamUrl);
-        let rawHeader = "";
-        cmd.on('data', function (data) {
-            if (data != null) {
-                rawHeader += data;
-            }
-        });
-        cmd.on('end', function () {
-            me.setHeader(rawHeader, bamType);
-            if (bamType === me.globalApp.COVERAGE_TYPE) {
-                callback(me.coverageHeader, bamType);
-            } else if (bamType === me.globalApp.RNASEQ_TYPE) {
-                callback(me.rnaSeqHeader, bamType);
-            } else if (bamType === me.globalApp.ATACSEQ_TYPE) {
-                callback(me.atacSeqHeader, bamType);
-            } else {
-                callback(null, bamType);
-            }
-        });
-        cmd.on('error', function (error) {
-            console.log(error);
-        });
-        cmd.run();
+        if (bamUrl) {
+            const cmd = me.endpoint.getBamHeader(bamUrl);
+            let rawHeader = "";
+            cmd.on('data', function (data) {
+                if (data != null) {
+                    rawHeader += data;
+                }
+            });
+            cmd.on('end', function () {
+                me.setHeader(rawHeader, bamType);
+                if (bamType === me.globalApp.COVERAGE_TYPE) {
+                    callback(me.coverageHeader, bamType);
+                } else if (bamType === me.globalApp.RNASEQ_TYPE) {
+                    callback(me.rnaSeqHeader, bamType);
+                } else if (bamType === me.globalApp.ATACSEQ_TYPE) {
+                    callback(me.atacSeqHeader, bamType);
+                } else {
+                    callback(null, bamType);
+                }
+            });
+            cmd.on('error', function (error) {
+                console.log(error);
+            });
+            cmd.run();
+        }
     }
 
     // todo: signature for this has changed (added bamType)
