@@ -37,7 +37,7 @@ class FilterModel {
         /* Somatic settings */
         this.DEFAULT_SOMATIC_CUTOFFS = {
             normalAltFreq: 0.05,      // Must be between 0-1
-            normalAltCount: 10,
+            normalAltCount: 5,
             tumorAltFreq: 0.10,       // Must be between 0-1
             tumorAltCount: 5
         };

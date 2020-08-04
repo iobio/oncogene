@@ -185,7 +185,7 @@
         <v-dialog id="pileup-modal"
                   v-model="displayPileup"
                   width="75%"
-                  height="540"
+                  height="75%"
                   style="z-index: 1033">
             <v-card class='full-width' style="overflow-y:auto;height:100%;z-index:1033">
                 <pileup id="pileup-container"

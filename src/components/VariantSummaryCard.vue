@@ -585,30 +585,31 @@
                 // }
             },
             setCoverageCounts: function () {
+                // todo: fix this
                 // Get coverage counts from each sample
-                let map = {};
-                let countMap = {};
-                if (this.cohortModel && this.variant) {
-                    map = this.cohortModel.getMatchingVariants(this.variant.id);
-                }
+                // let map = {};
+                // let countMap = {};
+                // if (this.cohortModel && this.variant) {
+                //     map = this.cohortModel.getMatchingVariants(this.variant.id);
+                // }
 
-                let notFetched = 1;
-                for (var feat in map) {
-                    if (map[feat] && map[feat].readPtCov >= 0) {
-                        notFetched &= map[feat].readPtCov < 0;
-                        countMap[feat] = map[feat].readPtCov;
-                    }
-                }
-                this.coverageCounts = countMap;
+                // let notFetched = 1;
+                // for (var feat in map) {
+                //     if (map[feat] && map[feat].readPtCov >= 0) {
+                //         notFetched &= map[feat].readPtCov < 0;
+                //         countMap[feat] = map[feat].readPtCov;
+                //     }
+                // }
+                // this.coverageCounts = countMap;
 
                 // If we have marker values still here for our variant, signal to fetch reads from bam
-                if (notFetched === 1) {
-                    this.$emit('fetch-reads', this.cohortModel.globalApp.COVERAGE_TYPE);
-                    this.$refs.coverageBarFeatureViz.clear();
-                } else if (this.$refs.coverageBarFeatureViz) {
-                    this.$refs.coverageBarFeatureViz.clear();
-                    this.$refs.coverageBarFeatureViz.drawCharts(this.coverageCounts);
-                }
+                // if (notFetched === 1) {
+                this.$emit('fetch-reads', this.cohortModel.globalApp.COVERAGE_TYPE);
+                this.$refs.coverageBarFeatureViz.clear();
+                // } else if (this.$refs.coverageBarFeatureViz) {
+                //     this.$refs.coverageBarFeatureViz.clear();
+                //     this.$refs.coverageBarFeatureViz.drawCharts(this.coverageCounts);
+                // }
             },
             setRnaSeqCounts: function () {
                 // Get rnaseq counts from each sample
