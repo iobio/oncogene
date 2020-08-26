@@ -621,7 +621,7 @@
 
                 let notFetched = 1;
                 for (var feat in map) {
-                    if (map[feat] && map[feat].rnaSeqPtCov >= 0) {
+                    if (map[feat]) {
                         notFetched &= map[feat].rnaSeqPtCov < 0;
                         countMap[feat] = map[feat].rnaSeqPtCov;
                     }
@@ -647,7 +647,7 @@
                 }
                 let notFetched = 1;
                 for (var feat in map) {
-                    if (map[feat] && map[feat].atacSeqPtCov >= 0) {
+                    if (map[feat]) {
                         notFetched &= map[feat].atacSeqPtCov < 0;
                         countMap[feat] = map[feat].atacSeqPtCov;
                     }

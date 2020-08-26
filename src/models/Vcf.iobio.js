@@ -769,7 +769,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
+    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, keepHomRef) {
         var me = this;
 
         return new Promise(function (resolve, reject) {
@@ -797,7 +797,7 @@ export default function vcfiobio(theGlobalApp) {
                         } else {
                             reject();
                         }
-                    }, null, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef);
+                    }, null, sampleModelId, keepHomRef);
             } else {
                 //me._getLocalStats(refName, geneObject.start, geneObject.end, sampleName);
 
@@ -872,7 +872,7 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
+    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, keepHomRef) {
 
         var me = this;
 
@@ -939,7 +939,7 @@ export default function vcfiobio(theGlobalApp) {
             });
 
             // Parse the vcf object into a variant object that is visualized by the client.
-            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef);
+            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, keepHomRef);
 
             callback(annotatedRecs, results);
         });
@@ -1716,7 +1716,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, hasRnaSeqData, hasAtacSeqData, keepHomRef) {
+    exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, keepHomRef) {
 
         var me = this;
         var selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
@@ -1925,9 +1925,9 @@ export default function vcfiobio(theGlobalApp) {
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'sampleModelId': sampleModelId,   // Used for feature matrix tracking
-                                    'readPtCov': -1,                  // Marker values used for bar chart viz
-                                    'rnaSeqPtCov':  hasRnaSeqData ? -1 : 0,
-                                    'atacSeqPtCov': hasAtacSeqData ? -1 : 0
+                                    'readPtCov': 0,                  // Marker values used for bar chart viz
+                                    'rnaSeqPtCov': -1,
+                                    'atacSeqPtCov': -1
                                 };
 
                                 for (var key in clinvarResult) {

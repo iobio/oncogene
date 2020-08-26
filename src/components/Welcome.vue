@@ -88,7 +88,8 @@
                                             <v-row v-show="showUploadEntry" justify="center" class="pa-3">
                                                 <v-file-input v-model="configFile" accept=".json"
                                                               label="Click to Select File"
-                                                              @change="checkAndUploadConfig"></v-file-input>
+                                                              @change="checkAndUploadConfig">
+                                                </v-file-input>
                                             </v-row>
                                         </v-col>
                                     </v-row>
@@ -275,10 +276,12 @@
                                                :slideBackground="slideBackground"
                                                :modelInfoList="modelInfoList"
                                                :maxSamples="MAX_SAMPLES"
+                                               :configSampleCount="configSampleCount[data]"
                                                @update-status="updateMultiStatus"
                                                @upload-fail="onUploadFail"
                                                @show-alert="displayAlert"
-                                               @hide-alerts="hideAlerts">
+                                               @hide-alerts="hideAlerts"
+                                               @multi-source-mounted="markMultiSourceMounted">
                             </multi-source-form>
                             <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                                     width="70%">
@@ -577,6 +580,12 @@
                         return isValid || 'Cannot process the following genes: ' + invalids.join();
                     },
                 ],
+                multiMountedStatus: {
+                    'coverage' : false,
+                    'cnv' : false,
+                    'rnaSeq' : false,
+                    'atacSeq' : false
+                },
                 // retained (model) state
                 userData: [{name: 'vcf', model: true},
                     {name: 'coverage', model: true},
@@ -585,6 +594,11 @@
                     {name: 'atacSeq', model: false},
                     {name: 'summary', model: true}],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
                 selectedUserData: ['vcf', 'coverage', 'summary'],       // List of current cards in carousel
+                configSampleCount: {                    // Used to advance slide when optional data count less than total sample count
+                    'cnv' : this.MAX_SAMPLES,
+                    'rnaSeq' : this.MAX_SAMPLES,
+                    'atacSeq' : this.MAX_SAMPLES
+                },
                 somaticCallsOnly: false,
                 selectedBuild: null,
                 listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
@@ -609,16 +623,15 @@
             },
             advanceSlide: function () {
                 this.carouselModel += 1;
+
+                // If we've loaded the config completely, turn off advance flag
+                // so if user circles back to edit, won't advance unexpectedly
+                if (this.carouselModel === 3 + this.selectedUserData.length) {
+                    this.launchedFromConfig = false;
+                }
             },
             onDataChecked: function(model) {
-                // Check to see if we're trying to uncheck required type
-                if (this.LOCKED_DATA[model]) {
-                    this.showError = true;
-                    this.errorText = 'Oncogene is currently configured to require this data type';
-                    this.userData.push({name: model, model: true});
-                }
-
-                // Set model to opposite (if not required)
+                // Set model to opposite
                 let isActive = false;
                 for (let i = 0; i < this.userData.length; i++) {
                     let dataObj = this.userData[i];
@@ -627,14 +640,39 @@
 
                         // Insert or delete from our computed list for carousel cards
                         if (dataObj.model) {
-                            this.selectedUserData.splice(this.selectedUserData.length-1, 0, dataObj.name);
+                            // Account for any missing cards prior to get proper insertion index
+                            let decCount = 0;
+                            for (let j = 0; j < i; j++) {
+                                let currObj = this.userData[j];
+                                if (!currObj.model) {
+                                    decCount++;
+                                }
+                            }
+                            this.selectedUserData.splice((i - decCount), 0, dataObj.name);
                         } else {
-                            this.selectedUserData.splice(i, 1);
+                            let selectedIdx = this.selectedUserData.indexOf(model);
+                            this.selectedUserData.splice(selectedIdx, 1);
+                            // Clear data from slide we just removed
+                            this.clearModelInfo(model);
+                            this.updateStepProp(model, 'complete', false);
                         }
                         break;
                     }
                 }
                 this.updateStepProp(model, 'active', isActive);
+            },
+            clearModelInfo: function(modelName) {
+                  if (modelName === 'cnv') {
+                      this.modelInfoList.forEach(modelInfo => {
+                          modelInfo.cnvUrl = null;
+                      });
+                  } else if (modelName === 'rnaSeq' || modelName === 'atacSeq') {
+                      this.modelInfoList.forEach(modelInfo => {
+                         modelInfo[modelName + 'BamUrl'] = null;
+                         modelInfo[modelName + 'BaiUrl'] = null;
+                         modelInfo[modelName + 'Verified'] = false;
+                      });
+                  }
             },
             isRequired: function (dataType) {
                 return dataType === 'coverage' || dataType === 'vcf';
@@ -725,16 +763,15 @@
                 this.modelInfoList.splice(modelInfoIdx, 1);
             },
             updateStepProp: function (stepName, propName, propStatus) {
-                let matchingSteps = this.reqSteps.filter((step) => {
-                    return step.step === stepName;
-                });
-                if (matchingSteps.length < 0) {
-                    console.log("Couldn't find matching step to update prop status");
-                } else {
-                    matchingSteps[0][propName] = propStatus;
+                for (let i = 0; i < this.reqSteps.length; i++) {
+                    let currStep = this.reqSteps[i];
+                    if (currStep.step === stepName) {
+                        currStep[propName] = propStatus;
+                        break;
+                    }
                 }
                 // Every time we update a complete status, check to see if we're all done
-                if (propName === 'complete' && stepName !== 'review') {
+                if ((propName === 'complete' || propName === 'active') && stepName !== 'review') {
                     this.updateStepProp('review', 'complete', this.isReadyToLaunch());
                 }
             },
@@ -751,11 +788,17 @@
                 });
                 return ready === 1;
             },
+            markMultiSourceMounted: function(model) {
+                // todo: left off here - thought mounting was problem but now not sure
+                // test if this is it or get rid of prop/signal
+                // whatever it is, ordering problem
+                this.multiMountedStatus[model] = true;
+            },
             checkFirstClick: function () {
                 if (this.clearGeneListFlag) {
                     this.listInput = '';
                     this.clearGeneListFlag = false;
-                }``
+                }
             },
             displayConfigUploadSlide: function () {
                 this.showUploadEntry = true;
@@ -789,7 +832,7 @@
                 let order = 0;
                 self.modelInfoList.forEach((modelInfo) => {
                     let newVal = {};
-                    // Don't add any verification parameters
+                    // Don't add any validation parameters
                     newVal.id = modelInfo.id ? modelInfo.id : ('s' + order);
                     newVal.order = modelInfo.order ? modelInfo.order : order;
                     newVal.selectedSample = modelInfo.selectedSample;
@@ -820,6 +863,13 @@
             },
             checkAndUploadConfig: function () {
                 const self = this;
+                if (!self.configFile) {
+                    return;
+                }
+
+                // Clear out any previous data if this is a second upload
+                self.clearUploadForm();
+
                 let reader = new FileReader();
                 reader.readAsText(self.configFile);
                 reader.onload = () => {
@@ -830,15 +880,14 @@
                         self.showError = true;
                     } else {
                         self.modelInfoList = infoObj['samples'];
-                        self.userData = infoObj['dataTypes'];
                         self.selectedUserData = [];
+                        self.userData = infoObj['dataTypes'];
                         self.userData.forEach(data => {
                             if (data.model) {
                                 self.selectedUserData.push(data.name);
                             }
                         });
 
-                        // need to call
                         self.listInput = infoObj['listInput'];
                         self.updateStepProp('geneList', 'complete', true);
                         self.somaticCallsOnly = infoObj['somaticCallsOnly'];
@@ -851,22 +900,41 @@
                         self.uploadedVcfUrl = firstSample.vcfUrl;
                         self.uploadedTbiUrl = firstSample.tbiUrl;
 
-                        // if we have optional data types, set flags
-                        if (firstSample['rnaSeqBamUrl']) {
-                            self.updateStepProp('rnaSeq', 'active', true);
+                        // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
+                        let rnaSeqActiveCount = 0;
+                        let atacSeqActiveCount = 0;
+                        let cnvActiveCount = 0;
+                        for (let i = 0; i < self.modelInfoList.length; i++) {
+                            let currModelInfo = self.modelInfoList[i];
+                            if (currModelInfo['rnaSeqBamUrl']) {
+                                rnaSeqActiveCount++;
+                                // Just update for first one found
+                                if (rnaSeqActiveCount === 1) {
+                                    self.updateStepProp('rnaSeq', 'active', true);
+                                }
+                            }
+                            if (currModelInfo['atacSeqBamUrl']) {
+                                atacSeqActiveCount++;
+                                // Just update for first one found
+                                if (atacSeqActiveCount === 1) {
+                                    self.updateStepProp('atacSeq', 'active', true);
+                                }
+                            }
+                            if (currModelInfo['cnvUrl']) {
+                                cnvActiveCount++;
+                                // Just update for first one found
+                                if (cnvActiveCount === 1) {
+                                    self.updateStepProp('cnv', 'active', true);
+                                }
+                            }
                         }
-                        if (firstSample['atacSeqBamUrl']) {
-                            self.updateStepProp('atacSeq', 'active', true);
-                        }
-                        if (firstSample['cnvUrl']) {
-                            self.updateStepProp('cnv', 'active', true);
-                        }
+                        self.configSampleCount['cnv'] = cnvActiveCount;
+                        self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
+                        self.configSampleCount['atacSeq'] = atacSeqActiveCount;
+
                         let selectedSamples = [];
                         self.modelInfoIdx = 0;
                         let modelInfoCount = 0;
-
-                        // todo: we need to check for cnv, rnaseq, and atacseq here and call updateStepProp
-                        // to get rid of 'Not Selected' badge for summary card for optional data
 
                         self.modelInfoList.forEach((modelInfo) => {
                             modelInfoCount++;
@@ -897,6 +965,33 @@
                     self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
                     self.showError = true;
                 };
+            },
+            clearUploadForm: function() {
+                this.errorText = null;
+                this.showError = false;
+                this.modelInfoList = [];
+                this.userData = [
+                    {name: 'vcf', model: true},
+                    {name: 'coverage', model: true},
+                    {name: 'cnv', model: false},
+                    {name: 'rnaSeq', model: false},
+                    {name: 'atacSeq', model: false},
+                    {name: 'summary', model: true}];
+                this.configSampleCount = {
+                    'cnv' : this.MAX_SAMPLES,
+                    'rnaSeq' : this.MAX_SAMPLES,
+                    'atacSeq' : this.MAX_SAMPLES
+                };
+                this.listInput = '';
+                this.somaticCallsOnly = false;
+                this.selectedList = null;
+                this.selectedBuild = null;
+                this.uploadedVcfUrl = null;
+                this.uploadedTbiUrl = null;
+                this.modelInfoIdx = 0;
+                this.uploadedSelectedSamples = [];
+                this.launchedFromConfig = true;
+                this.clearGeneListFlag = false;
             },
             onUploadedUrlsVerified: function () {
                 if (this.launchedFromConfig) {
@@ -943,7 +1038,6 @@
             // this.makeItRain();
             this.populateValidGenesMap();
             this.populateGeneLists();
-            // todo: if we've already loaded, populate data here
         }
     }
 </script>

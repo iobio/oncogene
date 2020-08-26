@@ -19,7 +19,6 @@
                 <v-checkbox v-for="item in checkboxLists[parentFilterName]"
                             :key="item.name"
                             :label="item.displayName"
-                            v-bind:disabled="!annotationComplete"
                             v-model="item.model"
                             dark
                             style="padding-left: 15px; margin-top: 0; margin-bottom: 0; max-height: 30px"

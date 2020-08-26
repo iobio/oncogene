@@ -898,6 +898,16 @@ class CohortModel {
                                         }).catch(error => {
                                         reject('Problem fetching rnaSeq depth for specific variants: ' + error);
                                     });
+                                } else {
+                                    geneObj.somaticVariantList.forEach(feat => {
+                                        if (model.variantIdHash[feat.id] && model.variantIdHash[feat.id]['rnaSeqPtCov'] < 0) {
+                                            model.variantIdHash[feat.id]['rnaSeqPtCov'] = 0;
+                                        } else {
+                                            // We still want to add this data in, even if variant not reported in vcf
+                                            // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                                            model.variantIdHash[feat.id] = {'rnaSeqPtCov': 0};
+                                        }
+                                    })
                                 }
                             });
                         }
@@ -919,6 +929,16 @@ class CohortModel {
                                             }
                                         }).catch(error => {
                                         reject('Problem fetching atacSeq depth for specific variants: ' + error);
+                                    });
+                                } else {
+                                    geneObj.somaticVariantList.forEach(feat => {
+                                        if (model.variantIdHash[feat.id] && model.variantIdHash[feat.id]['atacSeqPtCov'] < 0) {
+                                            model.variantIdHash[feat.id]['atacSeqPtCov'] = 0;
+                                        } else {
+                                            // We still want to add this data in, even if variant not reported in vcf
+                                            // so when we pull counts for e.g. somatic variant, still show bam data for normal sample
+                                            model.variantIdHash[feat.id] = {'atacSeqPtCov': 0};
+                                        }
                                     });
                                 }
                             });

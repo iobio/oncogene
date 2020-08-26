@@ -95,6 +95,10 @@
             maxSamples: {
                 type: Number,
                 default: 0
+            },
+            configSampleCount : {
+                type: Number,
+                default: null
             }
         },
         data: function () {
@@ -230,32 +234,36 @@
                 return allVerified;
             },
             getInputFinishedStatus: function() {
-                let allFinished = true;
+                let allFinishedCount = 0;
                 this.modelInfoList.forEach((modelInfo) => {
-                    allFinished &= modelInfo[this.verifiedKey];
+                    allFinishedCount += modelInfo[this.verifiedKey] ? 1 : 0;
                 });
-                return allFinished;
+                return this.configSampleCount ? (allFinishedCount === this.configSampleCount) : (allFinishedCount === this.modelInfoList.length);
+            },
+            checkForUpload: function() {
+                const self = this;
+                let allSamplesHaveUrls = true;
+                let allSamplesHaveIndexUrls = true;
+
+                self.modelInfoList.forEach((modelInfo) => {
+                    if (modelInfo[self.key] != null && modelInfo[self.key] !== '') {
+                        allSamplesHaveUrls &= true;
+                        if (self.fileType !== 'bam' || (self.fileType === 'bam'
+                            && modelInfo[self.indexKey] != null && modelInfo[self.indexKey] !== '')) {
+                            allSamplesHaveIndexUrls &= true;
+                        }
+                    }
+                });
+                if (allSamplesHaveUrls && allSamplesHaveIndexUrls) {
+                    for (let i = 0; i < self.modelInfoList.length; i++) {
+                        self.onUrlChange(i);
+                    }
+                }
             }
         },
         mounted: function() {
-            const self = this;
-            let allSamplesHaveUrls = true;
-            let allSamplesHaveIndexUrls = true;
-
-            self.modelInfoList.forEach((modelInfo) => {
-                if (modelInfo[self.key] != null && modelInfo[self.key] !== '') {
-                    allSamplesHaveUrls &= true;
-                    if (self.fileType !== 'bam' || (self.fileType === 'bam'
-                        && modelInfo[self.indexKey] != null && modelInfo[self.indexKey] !== '')) {
-                        allSamplesHaveIndexUrls &= true;
-                    }
-                }
-            });
-            if (allSamplesHaveUrls && allSamplesHaveIndexUrls) {
-                for (let i = 0; i < self.modelInfoList.length; i++) {
-                    self.onUrlChange(i);
-                }
-            }
+            this.checkForUpload();
+            this.$emit('multi-source-mounted', this.modelType);
         }
     }
 </script>

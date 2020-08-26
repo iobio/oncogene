@@ -1668,8 +1668,6 @@ class SampleModel {
                                     me.globalApp.vepAF,   // vep af
                                     null,   // cache
                                     me.id,
-                                    me.rnaSeqUrlEntered,
-                                    me.atacSeqUrlEntered,
                                     keepHomRefVariants
                                 );
                             })
@@ -1762,6 +1760,13 @@ class SampleModel {
 
                             // Populate hash table of variant IDs in this sample
                             vcfData.features.forEach((feat) => {
+                                // Update ptCov props from marker values if we don't have this data
+                                if (!me.rnaSeqUrlEntered) {
+                                    feat.rnaSeqPtCov = 0;
+                                }
+                                if (!me.atacSeqUrlEntered) {
+                                    feat.atacSeqPtCov = 0;
+                                }
                                 model.variantIdHash[feat.id] = feat;
                             });
                         }
