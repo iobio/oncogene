@@ -881,7 +881,6 @@
             }
         },
         filters: {},
-
         computed: {
             sampleLabel: function () {
                 let label = "";

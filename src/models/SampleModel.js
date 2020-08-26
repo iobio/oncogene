@@ -11,7 +11,7 @@ class SampleModel {
         this.globalApp = globalApp;
         this.vcf = null;                    // The vcf.iobio model backing this
         this.bam = null;                    // The bam.iobio model backing this - used for coverage, rnaseq, and atacseq
-        this.cnv = null;
+        this.cnv = null;                    // The cnv.iobio model backing this
         this.cohort = null;
 
         this.vcfData = null;
@@ -44,6 +44,7 @@ class SampleModel {
 
         // cnv data
         this.cnvUrlEntered = false;
+        this.cnvsInGene = null;     // The CNVs within the currently selected gene
 
         // model properties
         // TODO: I can get rid of some of these now
@@ -69,6 +70,7 @@ class SampleModel {
             'loadingVariants': false,
             'callingVariants': false,
             'coverageLoading': false,   // Note: must keep coverage keys like this
+            'cnvLoading' : false,
             'rnaSeqLoading': false,
             'atacSeqLoading': false
         };
@@ -211,6 +213,10 @@ class SampleModel {
             console.log("Error: need bam type in isBamLoaded");
         }
         return this.isBamReadyToLoad(bamType);
+    }
+
+    isCnvLoaded() {
+        return this.cnv && this.cnvUrlEntered;
     }
 
     isVcfLoaded() {
@@ -1245,7 +1251,7 @@ class SampleModel {
             .then(function (data) {
                 const theVcfData = data.vcfData;
                 let regions = [];
-                // We we have variants, get the positions for each variant.  This will
+                // We have variants, get the positions for each variant.  This will
                 // be provided for the service to get coverage data so that specific
                 // base coverage is also returned.
                 if (theVcfData != null) {
@@ -1301,6 +1307,26 @@ class SampleModel {
 
                     })
             })
+    }
+
+    /* Upon first call, populates map of all cnv events for this sample model (key: chromosome, value: array of CNVs on that chromosome).
+     * Then returns list of CNVs that occur within the boundaries of the provided gene. */
+    promiseGetCnvRegions(theGene) {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            if (!self.cnv.dataLoaded) {
+                self.cnv.promiseParseCnvData()
+                    .then(() => {
+                        let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+                        resolve(theCnvs);
+                    }).catch(error => {
+                    reject('Something went wrong parsing cnv data: ' + error);
+                });
+            } else {
+                let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+                resolve(theCnvs);
+            }
+        });
     }
 
     promiseAnnotated(theVcfData) {

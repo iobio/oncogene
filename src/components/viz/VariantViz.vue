@@ -146,7 +146,7 @@
                 noPassingResults: false,
                 filterChips: [],    // TODO: actually implement these
                 id: '',
-                data: null  // variants that go into d3 viz
+                data: null  // variants & cnvs that go into d3 viz
             }
         },
         created: function () {
@@ -255,11 +255,20 @@
             }
         },
         watch: {
+            // Guaranteed to have loaded variants ready before cnvs
+            'model.loadedVariants.cnvs': function () {
+                if (this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
+                    this.data = this.model.loadedVariants;
+                    this.update();
+                }
+            },
+            // May not always have cnvs though
             'model.loadedVariants.features': function () {
-                this.data = this.model.loadedVariants;
-                this.update();
+                if (this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
+                    this.data = this.model.loadedVariants;
+                    this.update();
+                }
             }
-
         }
     }
 </script>

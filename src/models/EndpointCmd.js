@@ -151,23 +151,28 @@ export default class EndpointCmd {
     }
 
     promiseGetCnvData(cnvUrl) {
+        const self = this;
         return new Promise((resolve, reject) => {
-            cnvUrl = decodeURI(cnvUrl);
-            const https = require('https');
-            const req = https.get(cnvUrl, res => {
-                let buffer = '';
-                res.on('data', d => {
-                    buffer += d;
-                });
-                res.on('end', () => {
-                    resolve(buffer);
-                });
-            }).on('error', e => {
-                console.log(e);
-                reject(e);
+            self.globalApp.$.ajax({
+                url: cnvUrl,
+                type: "GET",
+                crossDomain: true,
+                dataType: "text",
+                success: function (res) {
+                    if (res && res.length > 0) {
+                        resolve(res);
+                    } else {
+                        reject("Empty results returned from promiseGetCnvData");
+                    }
+                },
+                error: function (xhr, status, errorThrown) {
+                    console.log("Error: " + errorThrown);
+                    console.log("Status: " + status);
+                    console.log(xhr);
+                    reject("Error " + errorThrown + " occurred in promiseGetCnvData");
+                }
             });
-            req.end();
-        });
+        })
     }
 
     annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {

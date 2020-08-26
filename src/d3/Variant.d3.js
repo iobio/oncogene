@@ -38,7 +38,6 @@ export default function variantD3(d3, vizSettings) {
         showTransition = vizSettings.showTransition ? vizSettings.showTransition : true,
         dividerLevel = vizSettings.dividerLevel ? vizSettings.dividerLevel : null;
 
-
     /**** CHART DRAWING ****/
 
     function chart(chartInfo) {
@@ -83,7 +82,7 @@ export default function variantD3(d3, vizSettings) {
             var container = d3.select(this).classed('ibo-variant', true);
             container.selectAll("svg").remove();
 
-            if (data && data.length > 0 && data[0] && data[0].features && data[0].features.length > 0) {
+            if (data && data.length > 0 && data[0] && (data[0].features && data[0].features.length > 0) || (data[0].cnvs && data[0].cnvs.length > 0)) {
 
                 // Update the x-scale.
                 if (regionStart && regionEnd) {
@@ -207,6 +206,14 @@ export default function variantD3(d3, vizSettings) {
                         return "translate(0," + y(i + 1) + ")"
                     });
 
+                var trackCnv = g.selectAll('.track.cnv')
+                    .data(data)
+                    .join('g')
+                    .attr('class', 'track cnv')
+                    .attr('transform', function (d, i) {
+                        return "translate(0," + y(i + 1) + ")"
+                    });
+
                 var brushY = 0;
                 if (showBrush) {
                     if (brushHeight == null) {
@@ -223,6 +230,7 @@ export default function variantD3(d3, vizSettings) {
 
                 track.selectAll('.variant').remove();
                 trackindel.selectAll('.variant').remove();
+                trackCnv.selectAll('.cnv').remove();
 
                 // precompute y-coord for SNPs and INDELs to use same for w/ and w/o transition
                 var computedSnpY = function(d) {
@@ -233,6 +241,25 @@ export default function variantD3(d3, vizSettings) {
                     return height - ((d.level + 1) * (variantHeight + verticalPadding) - indelOffset);
                 };
 
+                // cnvs
+                trackCnv.selectAll('.cnv')
+                    .data(function (d) {
+                        return d['cnvs'];
+                    })
+                    .join('rect')
+                    .attr('class', 'cnv')
+                    .attr('rx', borderRadius)
+                    .attr('ry', borderRadius)
+                    .attr('x', function(d) {
+                        return Math.round(x(d.start));
+                    })
+                    .attr('y', function() {
+                        return Math.round(y(0));
+                    })
+                    .attr('width', function(d) {
+                        return Math.round(x(d.end) - x(d.start));
+                    })
+                    .attr('height', innerHeight);
 
                 // snps
                 track.selectAll('.variant')
@@ -288,9 +315,11 @@ export default function variantD3(d3, vizSettings) {
                         return tx;
                     });
 
+
                 // exit
                 track.exit().remove();
                 trackindel.exit().remove();
+                trackCnv.exit().remove();
 
                 // update
                 if (showTransition) {
@@ -304,8 +333,7 @@ export default function variantD3(d3, vizSettings) {
 
                     track.selectAll('.variant.snp, .variant.mnp').sort(function (a, b) {
                         return parseInt(a.start) - parseInt(b.start)
-                    })
-                        .transition()
+                    }).transition()
                         .duration(1000)
                         .delay(function (d, i) {
                             return i * interval;

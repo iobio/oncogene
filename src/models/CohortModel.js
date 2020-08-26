@@ -974,7 +974,15 @@ class CohortModel {
                     promises.push(p4);
                 }
 
-                // todo: if we have CNV data - load here
+                if (self.hasCnvData) {
+                    let p5 = self.promiseLoadCopyNumbers(theGene)
+                        .then(function (cnvMap) {
+                            self.setCnvForRegion(cnvMap)
+                        }).catch(error => {
+                            console.log("Problem loading cnv data: " + error);
+                        });
+                    promises.push(p5);
+                }
 
                 Promise.all(promises)
                     .then(function () {
@@ -1250,7 +1258,20 @@ class CohortModel {
                     reject(error);
                 })
         })
+    }
 
+    /* Loads the CNVs within the currently selected gene */
+    promiseLoadCopyNumbers(theGene) {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            // todo: insert cache layer here
+            self.promiseLoadCnvDatas(theGene)
+                .then(function (data) {
+                    resolve(data);
+                }).catch(function (error) {
+                reject(error);
+            });
+        });
     }
 
     /* Clears the variant data for each cohort if the last gene analyzed for this data set is different than the one provided.
@@ -1350,6 +1371,7 @@ class CohortModel {
                     let end = self.filterModel.regionEnd ? self.filterModel.regionEnd : gene.end;
 
                     model.loadedVariants = filterAndPileupVariants(model, start, end, 'loaded');
+                    model.loadedVariants['cnvs'] = model.cnvsInGene;
                     model.calledVariants = filterAndPileupVariants(model, start, end, 'called');
 
                     // Turn off loaders
@@ -1375,7 +1397,7 @@ class CohortModel {
                     //     }
                     // }
                 } else {
-                    model.loadedVariants = {loadState: {}, features: []};
+                    model.loadedVariants = {loadState: {}, features: [], cnvs: []};
                     model.calledVariants = {loadState: {}, features: []}
                 }
             }
@@ -1413,6 +1435,17 @@ class CohortModel {
                 self.filterModel.markFilteredVariants(sampleModel.vcfData.features, self.onlySomaticCalls);
                 resolve();
             });
+        });
+    }
+
+    /* Sets the region-specific property for each sample, if present. */
+    setCnvForRegion(theCnvs) {
+        const self = this;
+        self.getCanonicalModels().forEach(model => {
+           if (theCnvs[model.id]) {
+               model.cnvsInGene = theCnvs[model.id];
+           }
+            model.inProgress['cnvLoading'] = false;
         });
     }
 
@@ -1863,6 +1896,31 @@ class CohortModel {
                 resolve(geneCoverageAll);
             })
         })
+    }
+
+    /* Loads the CNV data for each sample model, and returns CNVs within gene boundaries, for each sample. */
+    promiseLoadCnvDatas(theGene) {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            let promises = [];
+            let resultMap = {};     // key: sample model ID, value: array of CNVs in the gene boundaries
+            self.getCanonicalModels().forEach(function (model) {
+                if (model.isCnvLoaded()) {
+                    model.inProgress['cnvLoading'] = true;
+                }
+                let p = model.promiseGetCnvRegions(theGene)
+                    .then(cnvList => {
+                        resultMap[model.id] = cnvList;
+                    });
+                promises.push(p);
+            });
+            Promise.all(promises)
+                .then(() => {
+                    resolve(resultMap);
+                }).catch(error => {
+                    reject('Problem loading CNV regions: ' + error);
+                })
+        });
     }
 
     promiseLoadBamDepth(theGene, theTranscript, bamType) {
