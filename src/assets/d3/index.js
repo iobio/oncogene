@@ -29,6 +29,7 @@ import {
     tsv, json,
     max, min,
     format,
+    mouse,
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
 } from 'd3';
 
@@ -57,5 +58,6 @@ export default {
     format,
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
     easeBounce,
+    mouse,
     active
 };

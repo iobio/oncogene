@@ -5,6 +5,7 @@
         stroke: #000
         stroke-width: 1px
         stroke-opacity: .3
+        z-index: 10
 
         &.current
             stroke: #036DB7 !important
@@ -59,6 +60,10 @@
                 stroke-width: 7
                 opacity: .6
 
+    .cnv
+        fill: #cf7676
+        opacity: 50%
+        z-index: 5
 
 </style>
 
@@ -257,14 +262,14 @@
         watch: {
             // Guaranteed to have loaded variants ready before cnvs
             'model.loadedVariants.cnvs': function () {
-                if (this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
+                if (this.model.loadedVariants && this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
                     this.data = this.model.loadedVariants;
                     this.update();
                 }
             },
             // May not always have cnvs though
             'model.loadedVariants.features': function () {
-                if (this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
+                if (this.model.loadedVariants && this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
                     this.data = this.model.loadedVariants;
                     this.update();
                 }

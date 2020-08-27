@@ -188,8 +188,26 @@ export default function variantD3(d3, vizSettings) {
                     .attr("class", "tooltip")
                     .style("opacity", 0);
 
+                // add tooltip for cnv
+                var cnvTooltip = container.append("div")
+                    .style("opacity", 0)
+                    .attr("class", "tooltip")
+                    .style("background-color", "white")
+                    .style("border", "solid")
+                    .style("border-width", "1px")
+                    .style("border-radius", "5px")
+                    .style("padding", "10px");
+
                 // Start variant model
                 // add elements
+                var trackCnv = g.selectAll('.track.cnv')
+                    .data(data)
+                    .join('g')
+                    .attr('class', 'track cnv')
+                    .attr('transform', function (d, i) {
+                        return "translate(0," + y(i + 1) + ")"
+                    });
+
                 var track = g.selectAll('.track.snp')
                     .data(data)
                     .join('g')
@@ -202,14 +220,6 @@ export default function variantD3(d3, vizSettings) {
                     .data(data)
                     .join('g')
                     .attr('class', 'track indel')
-                    .attr('transform', function (d, i) {
-                        return "translate(0," + y(i + 1) + ")"
-                    });
-
-                var trackCnv = g.selectAll('.track.cnv')
-                    .data(data)
-                    .join('g')
-                    .attr('class', 'track cnv')
                     .attr('transform', function (d, i) {
                         return "translate(0," + y(i + 1) + ")"
                     });
@@ -254,7 +264,7 @@ export default function variantD3(d3, vizSettings) {
                         return Math.round(x(d.start));
                     })
                     .attr('y', function() {
-                        return Math.round(y(0));
+                        return Math.round(y(0) - variantHeight - margin.top);
                     })
                     .attr('width', function(d) {
                         return Math.round(x(d.end) - x(d.start));
@@ -408,6 +418,21 @@ export default function variantD3(d3, vizSettings) {
                             return tx;
                         });
                 }
+
+                // Add cnv listeners
+                g.selectAll(".cnv")
+                    .on("mouseover", function (d) {
+                        var c = d.cnvs[0];
+                        cnvTooltip
+                            .html("Copy Number Event<br>" + d.gene.chr + ":" + c.start + "-" + c.end + "<br>LCN: " + c.lcn + "<br>TCN: " + c.tcn)
+                            .style("font-family", "Quicksand")
+                            .style("z-index", 256)
+                            .style("left", (d3.mouse(this)[0]) + "px")
+                            .style("top", (d3.mouse(this)[1]) + "px")
+                            .style("opacity", 1);
+                    }).on("mouseout", function () {
+                        cnvTooltip.style("opacity", 0);
+                });
 
                 // Add listeners after adjusting symbol width, etc
                 g.selectAll('.variant')
