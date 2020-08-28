@@ -38,6 +38,7 @@ export default function variantD3(d3, vizSettings) {
         showTransition = vizSettings.showTransition ? vizSettings.showTransition : true,
         dividerLevel = vizSettings.dividerLevel ? vizSettings.dividerLevel : null;
 
+
     /**** CHART DRAWING ****/
 
     function chart(chartInfo) {
@@ -82,7 +83,7 @@ export default function variantD3(d3, vizSettings) {
             var container = d3.select(this).classed('ibo-variant', true);
             container.selectAll("svg").remove();
 
-            if (data && data.length > 0 && data[0] && (data[0].features && data[0].features.length > 0) || (data[0].cnvs && data[0].cnvs.length > 0)) {
+            if (data && data.length > 0 && data[0] && data[0].features) {
 
                 // Update the x-scale.
                 if (regionStart && regionEnd) {
@@ -188,26 +189,8 @@ export default function variantD3(d3, vizSettings) {
                     .attr("class", "tooltip")
                     .style("opacity", 0);
 
-                // add tooltip for cnv
-                var cnvTooltip = container.append("div")
-                    .style("opacity", 0)
-                    .attr("class", "tooltip")
-                    .style("background-color", "white")
-                    .style("border", "solid")
-                    .style("border-width", "1px")
-                    .style("border-radius", "5px")
-                    .style("padding", "10px");
-
                 // Start variant model
                 // add elements
-                var trackCnv = g.selectAll('.track.cnv')
-                    .data(data)
-                    .join('g')
-                    .attr('class', 'track cnv')
-                    .attr('transform', function (d, i) {
-                        return "translate(0," + y(i + 1) + ")"
-                    });
-
                 var track = g.selectAll('.track.snp')
                     .data(data)
                     .join('g')
@@ -240,7 +223,6 @@ export default function variantD3(d3, vizSettings) {
 
                 track.selectAll('.variant').remove();
                 trackindel.selectAll('.variant').remove();
-                trackCnv.selectAll('.cnv').remove();
 
                 // precompute y-coord for SNPs and INDELs to use same for w/ and w/o transition
                 var computedSnpY = function(d) {
@@ -251,25 +233,6 @@ export default function variantD3(d3, vizSettings) {
                     return height - ((d.level + 1) * (variantHeight + verticalPadding) - indelOffset);
                 };
 
-                // cnvs
-                trackCnv.selectAll('.cnv')
-                    .data(function (d) {
-                        return d['cnvs'];
-                    })
-                    .join('rect')
-                    .attr('class', 'cnv')
-                    .attr('rx', borderRadius)
-                    .attr('ry', borderRadius)
-                    .attr('x', function(d) {
-                        return Math.round(x(d.start));
-                    })
-                    .attr('y', function() {
-                        return Math.round(y(0) - variantHeight - margin.top);
-                    })
-                    .attr('width', function(d) {
-                        return Math.round(x(d.end) - x(d.start));
-                    })
-                    .attr('height', innerHeight);
 
                 // snps
                 track.selectAll('.variant')
@@ -325,11 +288,9 @@ export default function variantD3(d3, vizSettings) {
                         return tx;
                     });
 
-
                 // exit
                 track.exit().remove();
                 trackindel.exit().remove();
-                trackCnv.exit().remove();
 
                 // update
                 if (showTransition) {
@@ -343,7 +304,8 @@ export default function variantD3(d3, vizSettings) {
 
                     track.selectAll('.variant.snp, .variant.mnp').sort(function (a, b) {
                         return parseInt(a.start) - parseInt(b.start)
-                    }).transition()
+                    })
+                        .transition()
                         .duration(1000)
                         .delay(function (d, i) {
                             return i * interval;
@@ -418,21 +380,6 @@ export default function variantD3(d3, vizSettings) {
                             return tx;
                         });
                 }
-
-                // Add cnv listeners
-                g.selectAll(".cnv")
-                    .on("mouseover", function (d) {
-                        var c = d.cnvs[0];
-                        cnvTooltip
-                            .html("Copy Number Event<br>" + d.gene.chr + ":" + c.start + "-" + c.end + "<br>LCN: " + c.lcn + "<br>TCN: " + c.tcn)
-                            .style("font-family", "Quicksand")
-                            .style("z-index", 256)
-                            .style("left", (d3.mouse(this)[0]) + "px")
-                            .style("top", (d3.mouse(this)[1]) + "px")
-                            .style("opacity", 1);
-                    }).on("mouseout", function () {
-                        cnvTooltip.style("opacity", 0);
-                });
 
                 // Add listeners after adjusting symbol width, etc
                 g.selectAll('.variant')
@@ -552,15 +499,15 @@ export default function variantD3(d3, vizSettings) {
     };
 
     // chart.removeFlaggedVariant = function(svg, variant) {
-        // Find the matching variant
-        // svg.selectAll(".variant").each(function (d) {
-        //     if (d.start === variant.start
-        //         && d.end === variant.end
-        //         && d.ref === variant.ref
-        //         && d.alt === variant.alt
-        //         && d.type.toLowerCase() === variant.type.toLowerCase()) {
-        //     }
-        // });
+    // Find the matching variant
+    // svg.selectAll(".variant").each(function (d) {
+    //     if (d.start === variant.start
+    //         && d.end === variant.end
+    //         && d.ref === variant.ref
+    //         && d.alt === variant.alt
+    //         && d.type.toLowerCase() === variant.type.toLowerCase()) {
+    //     }
+    // });
     // };
 
     chart.showCircle = function(d, svgContainer, indicateMissingVariant, pinned) {
@@ -572,12 +519,12 @@ export default function variantD3(d3, vizSettings) {
                 && d.ref === variant.ref
                 && d.alt === variant.alt
                 && d.type.toLowerCase() === variant.type.toLowerCase()) {
-                    if (variant.zygosity != null && variant.zygosity.toLowerCase() === 'homref') {
-                        // we want to show an "x" for homozygous reference variants
-                        // instead of a circle
-                    } else {
-                        matchingVariant = variant;
-                    }
+                if (variant.zygosity != null && variant.zygosity.toLowerCase() === 'homref') {
+                    // we want to show an "x" for homozygous reference variants
+                    // instead of a circle
+                } else {
+                    matchingVariant = variant;
+                }
             }
         });
 
@@ -698,7 +645,6 @@ export default function variantD3(d3, vizSettings) {
             d = d / 1000 + "K";
         return d;
     }
-
 
     /*** RETURN OBJECT ****/
     return chart;

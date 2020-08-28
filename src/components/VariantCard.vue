@@ -254,7 +254,7 @@
 
                         <div style="width:100%" id="viz-div">
                             <div class="chart-label"
-                                 v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features.length > 0 && sampleModel.id !== 'known-variants'"
+                                 v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features && sampleModel.id !== 'known-variants'"
                             >
                                 all variants
                             </div>
@@ -282,6 +282,21 @@
                                          @apply-active-filters="applyActiveFilters"
                                          @var-chart-rendered="onVarVizRendered">
                             </variant-viz>
+                            <div class="chart-label"
+                                 v-show="showCnvViz && sampleModel.cnvsInGene && sampleModel.cnvUrlEntered">
+                                cnv
+                            </div>
+                            <cnv-viz id="cnv-viz"
+                                     ref="cnvVizRef"
+                                     v-show="showCnvViz"
+                                     :model="sampleModel"
+                                     :regionStart="regionStart"
+                                     :regionEnd="regionEnd"
+                                     :showTransition="true"
+                                     :width="width"
+                                     :margin="cnvVizMargin"
+                                     :d3="d3">
+                            </cnv-viz>
                             <div class="chart-label" v-show="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
                             </div>
@@ -390,15 +405,15 @@
 </template>
 
 <script>
-    // import GeneViz from "./viz/GeneViz.vue"
     import VariantViz from "./viz/VariantViz.vue"
     import DepthViz from "./viz/DepthViz.vue"
+    import CnvViz from "./viz/CnvViz.vue"
 
     export default {
         name: 'variant-card',
         components: {
             VariantViz,
-            // GeneViz,
+            CnvViz,
             DepthViz
         },
         props: {
@@ -480,7 +495,12 @@
                     bottom: 10,
                     left: 4
                 },
-
+                cnvVizMargin: {
+                    top: 0,
+                    right: 2,
+                    bottom: 10,
+                    left: 4
+                },
                 depthVizMargin: {
                     top: 22,
                     right: 2,
@@ -502,6 +522,7 @@
                 loadingAtacSeq: false,
                 showChip: false,
                 showVariantViz: true,
+                showCnvViz: true,
                 showDepthViz: true
             }
         },
@@ -877,6 +898,7 @@
             },
             toggleTracks: function(showTracks) {
                 this.showVariantViz = showTracks;
+                this.showCnvViz = showTracks;
                 this.showDepthViz = showTracks;
             }
         },

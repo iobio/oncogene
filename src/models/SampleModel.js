@@ -22,7 +22,7 @@ class SampleModel {
 
         // variant & coverage data
         this.variantIdHash = {};    // A hash table of all variant IDs : variant objects in this model - MAY contain variant objects with only rnaSeqPtCoverage/atacSeqPtCoverage if missing from vcf
-        this.loadedVariants = null;
+        this.loadedVariants = [];
         this.variantHistoData = null;
         this.coverage = [[]];       // Coverage pulled from bamData
         this.rnaSeqCoverage = [[]];
@@ -44,7 +44,7 @@ class SampleModel {
 
         // cnv data
         this.cnvUrlEntered = false;
-        this.cnvsInGene = null;     // The CNVs within the currently selected gene
+        this.cnvsInGene = [];     // The CNVs within the currently selected gene
 
         // model properties
         // TODO: I can get rid of some of these now

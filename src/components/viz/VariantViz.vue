@@ -60,11 +60,6 @@
                 stroke-width: 7
                 opacity: .6
 
-    .cnv
-        fill: #cf7676
-        opacity: 50%
-        z-index: 5
-
 </style>
 
 
@@ -151,7 +146,7 @@
                 noPassingResults: false,
                 filterChips: [],    // TODO: actually implement these
                 id: '',
-                data: null  // variants & cnvs that go into d3 viz
+                data: null
             }
         },
         created: function () {
@@ -260,19 +255,9 @@
             }
         },
         watch: {
-            // Guaranteed to have loaded variants ready before cnvs
-            'model.loadedVariants.cnvs': function () {
-                if (this.model.loadedVariants && this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
-                    this.data = this.model.loadedVariants;
-                    this.update();
-                }
-            },
-            // May not always have cnvs though
             'model.loadedVariants.features': function () {
-                if (this.model.loadedVariants && this.model.loadedVariants.features && this.model.loadedVariants.cnvs) {
-                    this.data = this.model.loadedVariants;
-                    this.update();
-                }
+                this.data = this.model.loadedVariants;
+                this.update();
             }
         }
     }

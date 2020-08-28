@@ -1371,7 +1371,6 @@ class CohortModel {
                     let end = self.filterModel.regionEnd ? self.filterModel.regionEnd : gene.end;
 
                     model.loadedVariants = filterAndPileupVariants(model, start, end, 'loaded');
-                    model.loadedVariants['cnvs'] = model.cnvsInGene;
                     model.calledVariants = filterAndPileupVariants(model, start, end, 'called');
 
                     // Turn off loaders
@@ -1397,7 +1396,7 @@ class CohortModel {
                     //     }
                     // }
                 } else {
-                    model.loadedVariants = {loadState: {}, features: [], cnvs: []};
+                    model.loadedVariants = {loadState: {}, features: []};
                     model.calledVariants = {loadState: {}, features: []}
                 }
             }
