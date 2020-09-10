@@ -118,22 +118,20 @@ export default function cnvD3(d3, divId, vizSettings) {
                         .attr('height', height);
 
                 // fraction lines
-                var lines = svg.selectAll('.cnv-line')
+                const line = d3.line()
+                    .x(function(d) { return x(d.coord); })
+                    .y(function(d) { return y(d.ratio); });
+
+                const lines = svg.selectAll('lines')
                     .data(data)
                     .enter()
-                    .append('g');
+                    .append("g");
 
-                lines.append("path")
-                    .attr('fill', 'none')
+                lines.append('path')
+                    .attr("d", function(d) { return line(d.points); })
                     .attr('stroke-width', 1.5)
-                    .attr("d", function(d) {
-                        return d3.line(d.points)
-                            .x(function(p) { return x(p.coord); })
-                            .y(function(p) { return y(p.ratio); })
-                    });
-
-                // exit
-                // trackCnv.exit().remove();
+                    .attr('stroke', '#888888')
+                    .attr('fill', 'none');
 
                 // update
                 if (showTransition) {

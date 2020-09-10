@@ -938,7 +938,6 @@ class SampleModel {
     onCnvUrlEntered(cnvUrl, callback) {
         if (cnvUrl == null || cnvUrl === '') {
             this.cnvUrlEntered = false;
-            this.cnv = null;
             if (callback) {
                 callback(false);
             }
@@ -948,7 +947,6 @@ class SampleModel {
             this.cnv.checkCnvFormat(cnvUrl, function (success, buffer) {
                 if (!success) {
                     self.cnvUrlEntered = false;
-                    self.cnv = null;
                     console.log('Problem opening CNV file: ' + buffer);
                 }
                 if (callback) {
