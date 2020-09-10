@@ -256,7 +256,7 @@
                             <div class="chart-label"
                                  v-show="showVariantViz && sampleModel.loadedVariants && sampleModel.loadedVariants.features && sampleModel.id !== 'known-variants'"
                             >
-                                all variants
+                                variants
                             </div>
                             <variant-viz id="loaded-variant-viz"
                                          ref="variantVizRef"
@@ -284,10 +284,9 @@
                             </variant-viz>
                             <div class="chart-label"
                                  v-show="showCnvViz && sampleModel.cnvsInGene && sampleModel.cnvUrlEntered">
-                                cnv
+                                copy number
                             </div>
-                            <cnv-viz id="cnv-viz"
-                                     ref="cnvVizRef"
+                            <cnv-viz ref="cnvVizRef"
                                      v-show="showCnvViz"
                                      :model="sampleModel"
                                      :regionStart="regionStart"
@@ -496,13 +495,13 @@
                     left: 4
                 },
                 cnvVizMargin: {
-                    top: 0,
+                    top: 10,
                     right: 2,
                     bottom: 10,
                     left: 4
                 },
                 depthVizMargin: {
-                    top: 22,
+                    top: 15,
                     right: 2,
                     bottom: 0,
                     left: 4

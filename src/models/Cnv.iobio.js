@@ -99,6 +99,8 @@ class cnviobio {
 
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
+    // Only pulls back CNV if the following is NOT true:
+    //      LCN = 1 && TCN = 2
     findEntryByCoord(chr, startCoord, endCoord) {
         let matchingCnvs = [];
 
@@ -121,19 +123,35 @@ class cnviobio {
             }
             // We're in a gene encompasses by a CNV larger than the entire gene
             if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end) {
-                matchingCnvs.push(chrData[i]);
+                matchingCnvs.push(this._getFormattedData(chrData[i]));
             // We've found an element that encompasses some of the 5' part of the gene
             } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord) {
-                matchingCnvs.push(chrData[i]);
+                matchingCnvs.push(this._getFormattedData(chrData[i]));
             // We've found an event that starts within our gene and encompasses some of the 3' part
             } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord) {
-                matchingCnvs.push(chrData[i]);
+                matchingCnvs.push(this._getFormattedData(chrData[i]));
             // We've found a tiny CNV within the gene
             } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord) {
-                matchingCnvs.push(chrData[i]);
+                matchingCnvs.push(this._getFormattedData(chrData[i]));
             }
         }
         return matchingCnvs;
+    }
+
+    /* Returns CNV data object with the following fields:
+     * start, end, tcn, lcn, and points
+     * where points is an array every 100bp between start and end with { coord lcn/tcn ratio } */
+    _getFormattedData(data) {
+        let points = [];
+        for (let i = data.start; i < data.end; i += 1000) {
+            points.push({ coord: i, ratio: (data.lcn/data.tcn).toFixed(2) });
+        }
+
+        // Always add on end coord
+        points.push({ coord: data.end, ratio: (data.lcn/data.tcn).toFixed(2) });
+
+        data.points = points;
+        return data;
     }
 }
 

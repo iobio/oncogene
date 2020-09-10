@@ -129,7 +129,7 @@
                                                         dense
                                                         v-model="userData[i-1].model"
                                                         color="appColor"
-                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')' + (isRequired(DATA_MODELS[i-1]) ? ' [required]' : '')"
+                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')' + (userData[i-1].name === 'cnv' ? ' [coming soon]' : isRequired(DATA_MODELS[i-1]) ? ' [required]' : '')"
                                                         :disabled="isRequired(DATA_MODELS[i-1])"
                                                         @click.capture.stop="onDataChecked(DATA_MODELS[i-1])">
                                                 </v-checkbox>
@@ -587,7 +587,8 @@
                     'atacSeq' : false
                 },
                 // retained (model) state
-                userData: [{name: 'vcf', model: true},
+                userData: [
+                    {name: 'vcf', model: true},
                     {name: 'coverage', model: true},
                     {name: 'cnv', model: false},
                     {name: 'rnaSeq', model: false},
@@ -675,7 +676,8 @@
                   }
             },
             isRequired: function (dataType) {
-                return dataType === 'coverage' || dataType === 'vcf';
+                // todo: CNV type remove when viz fixed
+                return dataType === 'coverage' || dataType === 'vcf' || dataType === 'cnv';
             },
             getFileType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);

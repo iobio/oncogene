@@ -1,13 +1,18 @@
 <style lang="sass">
-    .cnv
+    .cnv-amp
         fill: #cf7676
         opacity: 50%
+        z-index: 5
+
+    .cnv-del
+        fill: #194d81
+        opacity: 30%
         z-index: 5
 
 </style>
 
 <template>
-    <div class="cnv-viz"></div>
+    <div :id="'cnv-' + model.id"></div>
 </template>
 
 <script>
@@ -62,11 +67,11 @@
                 };
 
                 // Instantiate d3 object
-                this.cnvChart = cnvD3(self.d3, cnvVizOptions);
+                this.cnvChart = cnvD3(self.d3, ('cnv-' + self.model.id), cnvVizOptions);
             },
             update: function () {
                 const self = this;
-                let selection = self.d3.select(self.$el).datum([self.data]);
+                let selection = self.d3.select(self.$el).datum(self.data);
                 if (self.data) {
                     const chartData = {
                         selection: selection,
@@ -77,15 +82,15 @@
                         width: self.width
                     };
                     self.cnvChart(chartData);
-                } else {
-                    self.cnvChart.clearVariants(selection);
                 }
             }
         },
         watch: {
             'model.cnvsInGene': function () {
-                this.data = this.model.cnvsInGene;
-                this.update();
+                if (this.model) {
+                    this.data = this.model.cnvsInGene;
+                    this.update();
+                }
             }
         }
     }
