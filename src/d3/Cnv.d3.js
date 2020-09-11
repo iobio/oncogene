@@ -88,7 +88,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .call(yAxis);
 
                 // TCN Shading
-                svg.selectAll('.cnv-rect')
+                let rects = svg.selectAll('.cnv-rect')
                     .data(data)
                     .enter()
                     .append("rect")
@@ -103,11 +103,25 @@ export default function cnvD3(d3, divId, vizSettings) {
                             return Math.round(y(1));
                         })
                         .attr('width', function(d) {
+                            if (showTransition) {
+                                return 0;
+                            } else {
+                                var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
+                                var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
+                                return (x(minEnd) - x(maxStart));
+                            }
+                        })
+                        .attr('height', height);
+
+                if (showTransition) {
+                    rects.transition()
+                        .duration(2000)
+                        .attr('width', function(d) {
                             var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
                             var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
                             return (x(minEnd) - x(maxStart));
                         })
-                        .attr('height', height);
+                }
 
                 // Ratio Lines
                 const line = d3.line()
@@ -119,17 +133,20 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .enter()
                     .append("g");
 
-                lines.append('path')
-                    .attr("d", function(d) { return line(d.points); })
+                const paths = lines.append('path')
                     .attr('stroke-width', 1.5)
                     .attr('stroke', '#888888')
-                    .attr('fill', 'none');
+                    .attr('fill', 'none')
+                    .attr("d", function(d) { return line(d.points); });
 
-                // update
-                if (showTransition) {
-                    // todo: implement cool transition
-                    console.log('implement cool CNV transition');
-                }
+                let totalLength = paths.node().getTotalLength();
+
+                paths.attr("stroke-dasharray", totalLength + " " + totalLength)
+                    .attr("stroke-dashoffset", totalLength)
+                    .transition()
+                    .duration(2000)
+                    .ease(d3.easeLinear)
+                    .attr("stroke-dashoffset", 0);
 
                 // Add cnv listeners
                 // trackCnv.on("mouseover", function (d) {

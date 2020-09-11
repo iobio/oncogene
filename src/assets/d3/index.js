@@ -16,7 +16,7 @@ import {
 
 import { axisBottom, axisTop, axisRight, axisLeft } from 'd3-axis';
 
-import { easeBounce } from 'd3-ease';
+import { easeBounce, easeLinear } from 'd3-ease';
 
 import { brushX } from 'd3-brush';
 
@@ -57,7 +57,7 @@ export default {
     max, min,
     format,
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
-    easeBounce,
+    easeBounce, easeLinear,
     mouse,
     active
 };
