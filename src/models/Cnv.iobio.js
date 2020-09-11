@@ -145,7 +145,7 @@ class cnviobio {
         let points = [];
 
         // Adjust points to be long enough to cover region buffer
-        const regionBuffer = 1000;
+        const regionBuffer = 0;
         geneStart -= regionBuffer;
         geneEnd += regionBuffer;
 

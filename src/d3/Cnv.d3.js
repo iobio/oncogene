@@ -10,8 +10,8 @@ export default function cnvD3(d3, divId, vizSettings) {
 
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
-    var width = 800 - margin.right - margin.left,
-        height = 75 - margin.top - margin.bottom;
+    var width = 800,
+        height = 40;
 
     // Scales, Axes, Deltas
     var x = vizSettings.x ? vizSettings.x : d3.scaleLinear(),
@@ -57,14 +57,14 @@ export default function cnvD3(d3, divId, vizSettings) {
                 y.range([height, 0]);
 
                 // Select the svg element, if it exists.
-                const adj = 10;
+                const adj = 5;
                 var svg = d3.select('#' + id)
                     .append('svg')
                     .attr("preserveAspectRatio", "xMinYMin meet")
                     .attr("viewBox", "-"
                         + 0 + " -"
                         + adj + " "
-                        + (width + adj *3) + " "
+                        + (width) + " "
                         + (height + adj *3))
                     .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
                     .classed("svg-content", true);
