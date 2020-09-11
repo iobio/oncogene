@@ -57,13 +57,17 @@ export default function cnvD3(d3, divId, vizSettings) {
                 y.range([height, 0]);
 
                 // Select the svg element, if it exists.
+                const adj = 10;
                 var svg = d3.select('#' + id)
-                    .append("svg")
-                        .attr("width", width + margin.left + margin.right)
-                        .attr("height", height + margin.top + margin.bottom)
-                    .append("g")
-                        .attr("class", "group")
-                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                    .append('svg')
+                    .attr("preserveAspectRatio", "xMinYMin meet")
+                    .attr("viewBox", "-"
+                        + 0 + " -"
+                        + adj + " "
+                        + (width + adj *3) + " "
+                        + (height + adj *3))
+                    .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
+                    .classed("svg-content", true);
 
 
                 // add tooltip
@@ -76,26 +80,14 @@ export default function cnvD3(d3, divId, vizSettings) {
                 //     .style("border-radius", "5px")
                 //     .style("padding", "10px");
 
-                // add y-axis
+                // Y-Axis
                 var yAxis = d3.axisRight(y);
                 yAxis.tickValues([0.0, 0.5, 1.0]);
                 svg.append("g")
-                    .attr("class", "y axis")
+                    .attr("class", "axis")
                     .call(yAxis);
 
-                // Start variant model
-                // add elements
-                // var trackCnv = svg.selectAll('.track.cnv')
-                //     .data(data)
-                //     .join('g')
-                //     .attr('class', 'track cnv')
-                //     .attr('transform', function (d, i) {
-                //         return "translate(0," + (y(i)) + ")"
-                //     });
-                //
-                // trackCnv.selectAll('.cnv').remove();
-
-                // shading
+                // TCN Shading
                 svg.selectAll('.cnv-rect')
                     .data(data)
                     .enter()
@@ -113,11 +105,11 @@ export default function cnvD3(d3, divId, vizSettings) {
                         .attr('width', function(d) {
                             var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
                             var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
-                            return Math.round(x(minEnd) - x(maxStart) + margin.right);
+                            return (x(minEnd) - x(maxStart));
                         })
                         .attr('height', height);
 
-                // fraction lines
+                // Ratio Lines
                 const line = d3.line()
                     .x(function(d) { return x(d.coord); })
                     .y(function(d) { return y(d.ratio); });

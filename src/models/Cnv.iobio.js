@@ -144,18 +144,27 @@ class cnviobio {
     _getFormattedData(data, geneStart, geneEnd) {
         let points = [];
 
+        // Adjust points to be long enough to cover region buffer
+        const regionBuffer = 1000;
+        geneStart -= regionBuffer;
+        geneEnd += regionBuffer;
+
         // Get right most start point
         let start = Math.max(geneStart, +data.start);
 
         // Get left most end point
         let end = Math.min(geneEnd, +data.end);
 
+        let lastIndex = start;
         for (let i = start; i < end; i += 1000) {
             points.push({ coord: i, ratio: (+(data.lcn/data.tcn).toFixed(2)) });
+            lastIndex = i;
         }
 
-        // Always add on end coord
-        points.push({ coord: +data.end, ratio: (+(data.lcn/data.tcn).toFixed(2)) });
+        // Always add on end coord if > last point
+        if (end > lastIndex) {
+            points.push({ coord: end, ratio: (+(data.lcn/data.tcn).toFixed(2)) });
+        }
 
         data.points = points;
         return data;

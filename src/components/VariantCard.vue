@@ -495,9 +495,9 @@
                     left: 4
                 },
                 cnvVizMargin: {
-                    top: 10,
+                    top: 5,
                     right: 2,
-                    bottom: 10,
+                    bottom: 5,
                     left: 4
                 },
                 depthVizMargin: {
