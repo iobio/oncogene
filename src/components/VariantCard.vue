@@ -291,10 +291,12 @@
                                      :model="sampleModel"
                                      :regionStart="regionStart"
                                      :regionEnd="regionEnd"
+                                     :chromosome="selectedGene ? selectedGene.chr : null"
                                      :showTransition="true"
                                      :width="width"
                                      :margin="cnvVizMargin"
-                                     :d3="d3">
+                                     :d3="d3"
+                                     @toggle-cnv-tooltip="toggleCnvTooltip">
                             </cnv-viz>
                             <div class="chart-label" v-show="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
@@ -899,6 +901,9 @@
                 this.showVariantViz = showTracks;
                 this.showCnvViz = showTracks;
                 this.showDepthViz = showTracks;
+            },
+            toggleCnvTooltip: function(cnvInfo, mouseCoords) {
+                this.$emit('toggle-cnv-tooltip', cnvInfo, mouseCoords);
             }
         },
         filters: {},

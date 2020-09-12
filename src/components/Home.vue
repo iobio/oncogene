@@ -154,6 +154,7 @@
                                     @variants-viz-change="onVariantsVizChange"
                                     @variants-filter-change="onVariantsFilterChange"
                                     @show-coverage-cutoffs="showCoverageCutoffs = true"
+                                    @toggle-cnv-tooltip="toggleCnvTooltip"
                             >
                             </variant-card>
                         </v-col>
@@ -420,7 +421,7 @@
                         self.callSomaticVariants();
                     }).catch(error => {
                     console.log('There was a problem initializing cohort model: ' + error);
-                })
+                });
             },
             reloadAnalysis: function(filterSettings) {
                 // Set filtering criteria in model
@@ -955,6 +956,24 @@
             onAcknowledgeUnknownGenes: function () {
                 this.displayUnmatchedGenesWarning = false;
                 this.$emit('display-unmatched-genes-btn', this.unmatchedGenes);
+            },
+            toggleCnvTooltip: function(cnvInfo, mouseCoords) {
+                const self = this;
+                mouseCoords = self.d3.mouse(self.$el);
+                if (cnvInfo) {
+                    self.d3.select('#cnv-tooltip')
+                        .html("Copy Number Event<br>" + self.selectedGene.chr + ":" + cnvInfo.start + "-" + cnvInfo.end + "<br>LCN: " + cnvInfo.lcn + "<br>TCN: " + cnvInfo.tcn)
+                        .style("left", (mouseCoords[0]+10) + "px")
+                        .style("top", (mouseCoords[1]+10) + "px")
+                        .transition()
+                        .duration(500)
+                        .style('opacity', 1);
+                } else {
+                    self.d3.select('#cnv-tooltip')
+                        .transition()
+                        .duration(500)
+                        .style('opacity', 0);
+                }
             }
         },
         computed: {
@@ -1039,5 +1058,4 @@
                 font-size: 18px
                 background-color: #7f1010
                 color: white
-
 </style>

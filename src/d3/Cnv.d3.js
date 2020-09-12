@@ -6,7 +6,7 @@ export default function cnvD3(d3, divId, vizSettings) {
         console.log('WARNING: no vizSettings argument provided to cnv.d3.');
         vizSettings = {};
     }
-    var dispatch = d3.dispatch();   // todo: not using for now but can in future OR get rid of
+    var dispatch = d3.dispatch('d3cnv');
 
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
@@ -32,7 +32,7 @@ export default function cnvD3(d3, divId, vizSettings) {
         // Required arguments
         var regionStart = chartInfo.regionStart,
             regionEnd = chartInfo.regionEnd,
-            //chrom = chartInfo.chromosome,
+            // chrom = chartInfo.chromosome,
             selection = chartInfo.selection;
 
         // Optional arguments
@@ -69,17 +69,6 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
                     .classed("svg-content", true);
 
-
-                // add tooltip
-                // var cnvTooltip = container.append("div")
-                //     .style("opacity", 0)
-                //     .attr("class", "tooltip")
-                //     .style("background-color", "white")
-                //     .style("border", "solid")
-                //     .style("border-width", "1px")
-                //     .style("border-radius", "5px")
-                //     .style("padding", "10px");
-
                 // Y-Axis
                 var yAxis = d3.axisRight(y);
                 yAxis.tickValues([0.0, 0.5, 1.0]);
@@ -111,7 +100,13 @@ export default function cnvD3(d3, divId, vizSettings) {
                                 return (x(minEnd) - x(maxStart));
                             }
                         })
-                        .attr('height', height);
+                        .attr('height', height)
+                        .on('mouseover', function(d) {
+                            dispatch.call('d3cnv', this, d);
+                        })
+                        .on('mouseout', function() {
+                            dispatch.call('d3cnv');
+                        });
 
                 if (showTransition) {
                     rects.transition()
@@ -147,19 +142,6 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .duration(2000)
                     .ease(d3.easeLinear)
                     .attr("stroke-dashoffset", 0);
-
-                // Add cnv listeners
-                // trackCnv.on("mouseover", function (d) {
-                //         cnvTooltip
-                //             .html("Copy Number Event<br>" + chrom + ":" + d.start + "-" + d.end + "<br>LCN: " + d.lcn + "<br>TCN: " + d.tcn)
-                //             .style("font-family", "Quicksand")
-                //             .style("z-index", 256)
-                //             .style("left", (d3.mouse(this)[0]) + "px")
-                //             .style("top", (d3.mouse(this)[1]) + "px")
-                //             .style("opacity", 1);
-                //     }).on("mouseout", function () {
-                //         cnvTooltip.style("opacity", 0);
-                // });
             }
         });
     }

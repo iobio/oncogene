@@ -29,6 +29,10 @@
                 default: 0,
                 type: Number
             },
+            chromosome: {
+                default: null,
+                type: String
+            },
             margin: {
                 type: Object,
                 default: function () {
@@ -68,6 +72,12 @@
 
                 // Instantiate d3 object
                 this.cnvChart = cnvD3(self.d3, ('cnv-' + self.model.id), cnvVizOptions);
+
+                // Register listeners
+                let dispatch = this.cnvChart.getDispatch();
+                dispatch.on('d3cnv', function(positionArr, cnvInfo) {
+                    self.$emit('toggle-cnv-tooltip', positionArr, cnvInfo);
+                });
             },
             update: function () {
                 const self = this;
