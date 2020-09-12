@@ -32,7 +32,6 @@ export default function cnvD3(d3, divId, vizSettings) {
         // Required arguments
         var regionStart = chartInfo.regionStart,
             regionEnd = chartInfo.regionEnd,
-            // chrom = chartInfo.chromosome,
             selection = chartInfo.selection;
 
         // Optional arguments
@@ -82,7 +81,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .enter()
                     .append("rect")
                         .attr('class', function(d) {
-                            return d.tcn > 2 ? 'cnv-amp cnv-rect' : 'cnv-del cnv-rect';
+                            return d.tcn > 2 ? 'cnv-amp cnv-rect' : d.tcn < 2 ? 'cnv-del cnv-rect' : 'cnv-flat cnv-rect';
                         })
                         .attr('x', function(d) {
                             var maxStart = Math.max(d.start, regionStart); // Want right-most start coord

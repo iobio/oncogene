@@ -9,6 +9,10 @@
         opacity: 30%
         z-index: 5
 
+
+    .cnv-flat
+        fill: transparent
+
 </style>
 
 <template>
@@ -79,6 +83,10 @@
                     self.$emit('toggle-cnv-tooltip', positionArr, cnvInfo);
                 });
             },
+            // todo: 1) add CNV by track to detail panel
+            // todo: 2) add CNV event to somatic score & ordering algorithm
+            // todo: 3) only display colors for amps/dels
+
             update: function () {
                 const self = this;
                 let selection = self.d3.select(self.$el).datum(self.data);
