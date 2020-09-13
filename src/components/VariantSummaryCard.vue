@@ -343,7 +343,6 @@
                             </v-col>
                         </v-row>
                     </v-container>
-
                     <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz"
                                      style="padding-top: 10px"
                                      ref="rnaSeqBarFeatureViz"
@@ -376,7 +375,7 @@
         components: {
             FeatureViz,
             AlleleFrequencyViz,
-            BarFeatureViz
+            BarFeatureViz,
         },
         props: {
             sampleIds: null,
@@ -387,6 +386,10 @@
             d3: null,
             $: null,
             cohortModel: null,
+            hasCnvData: {
+                type: Boolean,
+                default: false
+            },
             hasRnaSeq: {
                 type: Boolean,
                 default: false
@@ -400,6 +403,7 @@
             return {
                 cohortFieldsValid: true,
                 coverageCounts: null,
+                cnvCounts: null,
                 rnaSeqCounts: null,
                 atacSeqCounts: null,
                 rawBamDialog: false,
@@ -429,7 +433,7 @@
                         this.$refs.atacSeqBarFeatureViz.clear();
                     }
                 }
-            }
+            },
         },
         computed: {
             sampleReadsMap: function () {

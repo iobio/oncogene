@@ -42,6 +42,7 @@ class CohortModel {
         this.maxAtacSeqDepth = 0;
         this.rawBamReadsQualityCutoff = 10;     // The value used to filter bam reads which populate the bar chart viz in variant summary card
         this.annotationComplete = false;        // True when all tracks have finished annotation
+        this.cnvData = null;                    // Map of CNV data for all samples
 
         this.inProgress = {
             'loadingDataSources': false
@@ -977,7 +978,7 @@ class CohortModel {
                 if (self.hasCnvData) {
                     let p5 = self.promiseLoadCopyNumbers(theGene)
                         .then(function (cnvMap) {
-                            self.setCnvForRegion(cnvMap)
+                            self.setCnvForRegion(cnvMap);
                         }).catch(error => {
                             console.log("Problem loading cnv data: " + error);
                         });
@@ -1034,12 +1035,11 @@ class CohortModel {
                 }
             });
             const somaticFilterPhrase = self.onlySomaticCalls ? '' : self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
-            let selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
-                selectedSamples.push(model.selectedSample);
+                self.selectedSamples.push(model.selectedSample);
             });
             const regions = self.geneModel.getFormattedGeneRegions();
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, selectedSamples, regions)
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions)
                 .then((somaticVariants) => {
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in somaticVariants) {
@@ -1446,6 +1446,22 @@ class CohortModel {
            }
             model.inProgress['cnvLoading'] = false;
         });
+        self.cnvData = theCnvs;
+    }
+
+    getMaxTcn(theCnvs) {
+        let maxTcn = 0;
+        for (var i in theCnvs) {
+            let cnvArr = theCnvs[i];
+
+            // We can have multiple cnvs covering a single sample
+            cnvArr.forEach(cnvObj => {
+                if ((+cnvObj.tcn) > maxTcn) {
+                    maxTcn = (+cnvObj.tcn);
+                }
+            });
+        }
+        return maxTcn;
     }
 
     setCoverage(regionStart, regionEnd, bamType) {

@@ -178,6 +178,12 @@
                                     @summaryCardVariantDeselect="deselectVariant"
                                     @show-pileup="onShowPileupForVariant">
                             </variant-summary-card>
+                            <cnv-summary-card
+                                    v-if="cohortModel.hasCnvData"
+                                    :d3="globalApp.d3"
+                                    :cohortModel="cohortModel"
+                                    :hasCnvData="cohortModel.hasCnvData">
+                            </cnv-summary-card>
                         </v-col>
                     </v-row>
                 </v-container>
@@ -240,6 +246,7 @@
     import Welcome from './Welcome.vue'
     import VariantCard from './VariantCard.vue'
     import VariantSummaryCard from './VariantSummaryCard.vue'
+    import CnvSummaryCard from './CnvSummaryCard.vue'
     import FilterPanelMenu from './filter/FilterPanelMenu.vue'
     import Pileup from './partials/Pileup.vue'
     import HistoryTab from './HistoryTab.vue'
@@ -255,6 +262,7 @@
             Welcome,
             VariantCard,
             VariantSummaryCard,
+            CnvSummaryCard,
             FilterPanelMenu,
             HistoryTab,
             GeneCard,
