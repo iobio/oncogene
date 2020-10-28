@@ -129,7 +129,7 @@
                                                         dense
                                                         v-model="userData[i-1].model"
                                                         color="appColor"
-                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')' + (isRequired(DATA_MODELS[i-1]) ? ' [required]' : '')"
+                                                        :label="DATA_DESCRIPTORS[i-1] + ' (.' + FILE_DESCRIPTORS[i-1] + ')' + (userData[i-1].name === 'cnv' ? ' [coming soon]' : isRequired(DATA_MODELS[i-1]) ? ' [required]' : '')"
                                                         :disabled="isRequired(DATA_MODELS[i-1])"
                                                         @click.capture.stop="onDataChecked(DATA_MODELS[i-1])">
                                                 </v-checkbox>
@@ -676,7 +676,8 @@
                   }
             },
             isRequired: function (dataType) {
-                return dataType === 'coverage' || dataType === 'vcf';
+                // return dataType === 'coverage' || dataType === 'vcf';
+              return dataType === 'coverage' || dataType === 'vcf' || dataType === 'cnv';
             },
             getFileType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);
