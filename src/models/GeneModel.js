@@ -1557,12 +1557,13 @@ class GeneModel {
      * ex: ['chrA:startA-endA', 'chrB:startB-endB', ...]
      * NOTE: positions inclusive */
     getFormattedGeneRegions(geneObjectMap) {
+        const me = this;
         let regions = [];
         let genes = geneObjectMap ? geneObjectMap : this.geneObjects;
         for (var geneName in genes) {
             let obj = this.geneObjects[geneName];
             let chr = obj.chr;
-            if (chr.startsWith('chr')) {
+            if (chr.startsWith('chr') && me.genomeBuildHelper.getCurrentBuildName() === 'GRCh37') {
                 chr = chr.substring(3);
             }
             regions.push(chr + ':' + obj.start + '-' + obj.end);
