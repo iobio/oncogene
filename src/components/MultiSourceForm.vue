@@ -154,7 +154,7 @@
                     // Check cnv file
                     self.checkCnv(i, url)
                         .then(() => {
-                            self.$emit('update-status', self.modelType, self.getAllInputStatus());
+                            self.$emit('update-status', self.modelType, self.getAllInputStatus(), self.getInputFinishedStatus());
                         })
                 }
             },

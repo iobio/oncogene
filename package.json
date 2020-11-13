@@ -9,6 +9,7 @@
     "deploy": "vue-cli-service s3-deploy"
   },
   "dependencies": {
+    "@vue/cli": "^4.5.7",
     "core-js": "^3.6.5",
     "d3": "^5.16.0",
     "d3-scale": "^3.2.1",
@@ -20,11 +21,11 @@
     "lodash": "^4.17.19",
     "material-design-icons-iconfont": "^5.0.1",
     "node-sass": "^4.14.1",
-    "vue": "^2.6.11",
+    "vue": "^2.6.12",
     "vue-cli-plugin-s3-deploy": "^4.0.0-rc3",
     "vue-material": "^1.0.0-beta-14",
     "vuedraggable": "^2.24.0",
-    "vuetify": "^2.3.7"
+    "vuetify": "^2.3.14"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.4.6",
@@ -37,7 +38,7 @@
     "sass-loader": "^8.0.2",
     "stylus": "^0.54.8",
     "vue-cli-plugin-vuetify": "^1.1.2",
-    "vue-template-compiler": "^2.6.11",
+    "vue-template-compiler": "^2.6.12",
     "vuetify-loader": "^1.6.0"
   },
   "eslintConfig": {

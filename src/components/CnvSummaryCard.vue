@@ -63,7 +63,7 @@
     <v-card class="px-0 mx-1 my-1" outlined>
         <v-container class="cnv-summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">
-                <v-col cols="12" sm="12" xl="4" style="font-size: 22px">
+                <v-col cols="12" style="font-size: 22px">
                     Copy Number Details
                 </v-col>
             </v-row>
