@@ -109,7 +109,7 @@ export default function cnvD3(d3, divId, vizSettings) {
 
                 if (showTransition) {
                     rects.transition()
-                        .duration(2000)
+                        .duration(1000)
                         .attr('width', function(d) {
                             var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
                             var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
