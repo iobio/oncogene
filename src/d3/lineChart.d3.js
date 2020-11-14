@@ -1,5 +1,5 @@
 /**
-SJG Aug2020
+SJG Nov2020
 This is a line chart that initially displays just the graph outline, then populates when fillChart is called,
 to allow a dynamic rendering of chart.
 
@@ -15,7 +15,7 @@ export default function lineChart(d3, options) {
         margin = {top: 10, right: 0, bottom: 40, left: 50},
         height = 200 - margin.bottom - margin.top,
         width = 300 - margin.left - margin.right,
-        legendWidth = 100;
+        legendHeight = 50;
 
 
     /* Draws outline of chart and axes */
@@ -27,8 +27,8 @@ export default function lineChart(d3, options) {
 
         // Draw new chart
         var svg = d3.select('#' + parentId).append('svg')
-            .attr('height', height + margin.top + margin.bottom)
-            .attr('width', width + legendWidth + margin.left + margin.right)
+            .attr('height', height + legendHeight + margin.top + margin.bottom)
+            .attr('width', width + margin.left + margin.right)
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -126,65 +126,10 @@ export default function lineChart(d3, options) {
             .attr("r", 5);
 
         // Draw legend
-        svg.append("circle").attr("cx",270).attr("cy",25).attr("r", 4).style("fill", lineColor)
-        svg.append("circle").attr("cx",270).attr("cy",50).attr("r", 4).style("fill", dotColor)
-        svg.append("text").attr("x", 280).attr("y", 25).text("TCN").style("font-size", "15px").attr("alignment-baseline","middle")
-        svg.append("text").attr("x", 280).attr("y", 50).text("MCN").style("font-size", "15px").attr("alignment-baseline","middle")
+        svg.append("circle").attr("cx",140).attr("cy",200).attr("r", 4).style("fill", lineColor)
+        svg.append("circle").attr("cx",200).attr("cy",200).attr("r", 4).style("fill", dotColor)
+        svg.append("text").attr("x", 150).attr("y", 200).text("TCN").style("font-size", "15px").attr("alignment-baseline","middle")
+        svg.append("text").attr("x", 210).attr("y", 200).text("MCN").style("font-size", "15px").attr("alignment-baseline","middle")
     }
-
-    /*** OUTWARD FACING FUNCTIONS ***/
-
-    /* Takes in array of maps with {label:, value:} entries and draws bars based on provided values.
-       Providing an empty data array will zero out all bars.
-       NOTE: newDataMap MUST have an identical number of entries as the original dataMap, in the exact same order
-     */
-    // chart.fillChart = function (newDataMap) {
-    //     var svg = d3.select('#' + parentId).select('svg');
-    //
-    //     // Reset all columns to 0 if nothing in map
-    //     if (newDataMap == null || newDataMap.length === 0) {
-    //         svg.selectAll("rect")
-    //             .transition()
-    //             .duration(700)
-    //             .attr('y', height)
-    //             .attr('height', function () {
-    //                 return height - _y(0);
-    //             });
-    //         svg.selectAll("text").remove();
-    //     }
-    //     else {
-    //         newDataMap.forEach(function (dataBar) {
-    //             var barId = "#bar_" + dataBar.label.replace(' ', '_');
-    //             var labelId = "#label_" + dataBar.label.replace(' ', '_');
-    //             var barHeight = dataBar.value ? dataBar.value : 0;
-    //             var column = svg.select(barId);
-    //             var label = svg.select(labelId);
-    //
-    //             if (column) {
-    //                 column.style("fill", () => { return lineColor; })
-    //                     .attr("y",  () => { return _y(0); })
-    //                     .attr("height", 0)
-    //                     .transition()
-    //                     .duration(750)
-    //                     .delay(function (d, i) {
-    //                         return i * 250;
-    //                     })
-    //                     .attr("y", () => { return _y(barHeight); })
-    //                     .attr("height",  () => { return height - _y(barHeight); })
-    //             }
-    //
-    //             if (label) {
-    //                 label.attr("y",  () => { return _y(0); })
-    //                     .attr("height", 0)
-    //                     .transition()
-    //                     .duration(750)
-    //                     .delay((d, i) => { return i * 250; })
-    //                     .text(() => { return dataBar.value; })
-    //                     .attr("y",  () => { return _y(barHeight) + .1; })
-    //                     .attr("dy", "-.7em");
-    //             }
-    //         })
-    //     }
-    // };
     return chart;
 }
