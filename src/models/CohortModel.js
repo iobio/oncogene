@@ -1922,12 +1922,12 @@ class CohortModel {
             self.getCanonicalModels().forEach(function (model) {
                 if (model.isCnvLoaded()) {
                     model.inProgress['cnvLoading'] = true;
+                    let p = model.promiseGetCnvRegions(theGene)
+                        .then(cnvList => {
+                            resultMap[model.id] = cnvList;
+                        });
+                    promises.push(p);
                 }
-                let p = model.promiseGetCnvRegions(theGene)
-                    .then(cnvList => {
-                        resultMap[model.id] = cnvList;
-                    });
-                promises.push(p);
             });
             Promise.all(promises)
                 .then(() => {
