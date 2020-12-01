@@ -1,12 +1,12 @@
 <style lang="sass">
     .cnv-amp
         fill: #cf7676
-        opacity: 50%
+        opacity: 0.5 !important
         z-index: 5
 
     .cnv-del
         fill: #194d81
-        opacity: 30%
+        opacity: 0.3 !important
         z-index: 5
 
 
