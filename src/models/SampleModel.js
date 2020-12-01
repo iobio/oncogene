@@ -1307,23 +1307,28 @@ class SampleModel {
             })
     }
 
-    /* Upon first call, populates map of all cnv events for this sample model (key: chromosome, value: array of CNVs on that chromosome).
-     * Then returns list of CNVs that occur within the boundaries of the provided gene. */
+    /* Populates CNV data from raw file data */
+    promiseInitCnvData() {
+        const self = this;
+        if (!self.cnvUrlEntered || !self.cnv) {
+            return Promise.resolve();
+        }
+        return new Promise((resolve, reject) => {
+            self.cnv.promiseParseCnvData()
+                .then(() => {
+                    resolve();
+                }).catch(err => {
+                    reject("Something went wrong populating cnv data: " + err);
+            });
+        });
+    }
+
+    /* Returns list of CNVs that occur within the boundaries of the provided gene. */
     promiseGetCnvRegions(theGene) {
         const self = this;
-        return new Promise((resolve, reject) => {
-            if (!self.cnv.dataLoaded) {
-                self.cnv.promiseParseCnvData()
-                    .then(() => {
-                        let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
-                        resolve(theCnvs);
-                    }).catch(error => {
-                    reject('Something went wrong parsing cnv data: ' + error);
-                });
-            } else {
-                let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
-                resolve(theCnvs);
-            }
+        return new Promise((resolve) => {
+            let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+            resolve(theCnvs);
         });
     }
 

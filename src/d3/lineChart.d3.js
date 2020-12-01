@@ -2,7 +2,6 @@
 SJG Nov2020
 This is a line chart that initially displays just the graph outline, then populates when fillChart is called,
 to allow a dynamic rendering of chart.
-    TODO: THIS NEEDS TO BE TESTED W/ MISSING DATA
  */
 export default function lineChart(d3, options) {
     // Instance variables

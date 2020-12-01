@@ -115,7 +115,7 @@
         watch: {
             'cohortModel.cnvData': function() {
                 let maxTcn = this.cohortModel.getMaxTcn(this.cohortModel.cnvData);
-                let sampleLabels = this.cohortModel.selectedSamples;
+                let sampleLabels = this.cohortModel.getSelSamplesWithCnvData();
                 if (this.$refs.cnvLineViz) {
                     this.$refs.cnvLineViz.fillChart(this.cohortModel.cnvData, sampleLabels, maxTcn);
                 }

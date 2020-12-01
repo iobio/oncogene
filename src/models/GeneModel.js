@@ -849,6 +849,7 @@ class GeneModel {
                         theGeneObject.lowCount = 0;
                         theGeneObject.modifCount = 0;
                         theGeneObject.ncbiSummary = '';
+                        theGeneObject.inCnv = false;
 
                         me.geneObjects[geneName] = theGeneObject;
                     });
@@ -910,6 +911,7 @@ class GeneModel {
                             theGeneObject.lowCount = 0;
                             theGeneObject.modifCount = 0;
                             theGeneObject.ncbiSummary = '';
+                            theGeneObject.inCnv = false;
 
                             me.geneObjects[theGeneObject.gene_name] = theGeneObject;
                             resolve(theGeneObject);
@@ -1493,6 +1495,16 @@ class GeneModel {
     }
 
     // todo: incorporate CiVIC into this, incorporate M Bailey TCGA stuff into this
+    /* Assigns points to the provided gene according to the variants contained within that gene.
+     * Points are assigned in the following manner:
+     * +4 for each variant with HIGH VEP impact
+     * +3 for each variant with MODERATE VEP impact
+     * +2 for each variant with LOW VEP impact
+     * +1 for each variant with MODIFIER/OTHER VEP impact
+     *
+     * Additionally:
+     * +1 for each variant in region of TCN != 2 (aka abnormal copy number)
+     */
     promiseScoreGene(geneName) {
         const self = this;
         const VEP_HIGH = 'HIGH';
@@ -1501,7 +1513,6 @@ class GeneModel {
         let score = 0;
 
         return new Promise((resolve) => {
-            // todo: add counts per annotation type here too for populating badges
             let geneObj = self.geneObjects[geneName];
             if (geneObj) {
                 geneObj.somaticVariantList.forEach(feat => {
@@ -1512,7 +1523,6 @@ class GeneModel {
 
                     // Note: variants cannot be annotated w/ COSMIC
                     // for entire list, so don't need to add that into equation for now
-
                     if (impact === VEP_HIGH) {
                         score += 4;
                         geneObj.highCount += 1;
@@ -1525,6 +1535,12 @@ class GeneModel {
                     } else {
                         score += 1;
                         geneObj.modifCount += 1;
+                    }
+
+                    // CNV scoring
+                    if (feat.inCnv) {
+                        score += 2;
+                        geneObj.hasCnv = true;
                     }
                 });
                 geneObj.score = score;
@@ -1600,6 +1616,7 @@ class GeneModel {
             self.geneObjects[key].moderCount = 0;
             self.geneObjects[key].lowCount = 0;
             self.geneObjects[key].modifCount = 0;
+            self.geneObjects[key].inCnv = false;
             }
         )
     }

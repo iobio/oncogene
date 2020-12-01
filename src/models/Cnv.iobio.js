@@ -73,6 +73,10 @@ class cnviobio {
     /* Populates map in this with each line from CNV file, grouped by chromosome. */
     promiseParseCnvData() {
         const self = this;
+        if (self.dataLoaded) {
+            return Promise.resolve();
+        }
+
         return new Promise((resolve) => {
             self.rawLines.forEach((line) => {
                 let tokens = line.split('\t');
@@ -85,10 +89,10 @@ class cnviobio {
 
                 self.startCoords[currChr - 1].push(tokens[self.headerIndices[1]]);
                 let otherData = {
-                    start: tokens[self.headerIndices[1]],
-                    end: tokens[self.headerIndices[2]],
-                    tcn: tokens[self.headerIndices[3]],
-                    lcn: tokens[self.headerIndices[4]]
+                    start: +tokens[self.headerIndices[1]],
+                    end: +tokens[self.headerIndices[2]],
+                    tcn: +tokens[self.headerIndices[3]],
+                    lcn: +tokens[self.headerIndices[4]]
                 };
                 self.cnvData[currChr - 1].push(otherData);
             });
@@ -104,15 +108,21 @@ class cnviobio {
     findEntryByCoord(chr, startCoord, endCoord) {
         let matchingCnvs = [];
 
+        // Synonimize chromosome nomenclature
         if (chr.indexOf('c') > -1) {
             chr = chr.substring(3);
+        }
+        if (chr === 'X') {
+            chr = 24;
+        } else if (chr === 'Y') {
+            chr = 25;
         }
 
         const chrStarts = this.startCoords[chr - 1];
         const chrData = this.cnvData[chr - 1];
 
         // Don't start searching if our first section is > our coord
-        if (chrStarts[0] > startCoord) {
+        if (chrStarts.length === 0 || chrStarts[0] > startCoord) {
             return matchingCnvs;
         }
 

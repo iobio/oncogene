@@ -10,7 +10,7 @@ export default new Vuetify({
             primary: '#7f1010',
             ruby: '#9c1f1f',
             lightPrimary: '#965757',
-            brightPrimary: '#cf7676',
+            brightPrimary: '#cf7676', // Note: this is also cnv-amp color
             secondary: '#194d81',
             warning: '#d61b1b',
             gray: '#E9EAEC',
@@ -24,7 +24,8 @@ export default new Vuetify({
             moderColor: '#F49A73',
             lowColor: '#b5cf6a',
             modifColor: '#f9e4b5',
-            somaticColor: '#7f107f'
+            somaticColor: '#7f107f',
+            cnvDel: '#194d81'
         },
       },
       icons: {

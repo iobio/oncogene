@@ -47,13 +47,14 @@
                                     <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
                                     <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
                                     <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
-                                    <v-avatar style="margin-top: 3px; margin-left: 5px"
-                                              size="20"
+                                    <v-avatar style="margin-top: 2px; margin-left: 5px"
+                                              size="22"
                                               color="secondary">
                                         <span style="color: white; font-family: Quicksand; font-size: 15px">
                                             {{getTotalVarCount(geneObj)}}
                                         </span>
                                     </v-avatar>
+                                    <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>
                                     <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
                                         {{ getGeneText(geneObj) }}
                                     </div>

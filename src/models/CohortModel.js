@@ -302,6 +302,17 @@ class CohortModel {
         return map;
     }
 
+    /* Returns selected sample names for samples that have CNV data loaded. */
+    getSelSamplesWithCnvData() {
+        let selectedSamples = [];
+        this.sampleModels.forEach(model => {
+            if (model.isCnvLoaded()) {
+                selectedSamples.push(model.selectedSample);
+            }
+        })
+        return selectedSamples;
+    }
+
     /*
      * SETTERS
      */
@@ -414,11 +425,28 @@ class CohortModel {
                         samplePromises.push(self.promiseAddSample(modelInfo, modelInfo.order));
                     });
                     samplePromises.push(self.promiseAddCosmicSample());
+
                     Promise.all(samplePromises)
                         .then(() => {
                             self.setTumorInfo(true);
-                            self.inProgress.loadingDataSources = false;
-                            resolve();
+
+                            // Populate CNV data if we have some
+                            if (self.hasCnvData) {
+                                let cnvPromises = [];
+                                self.sampleModels.forEach(model => {
+                                    cnvPromises.push(model.promiseInitCnvData());
+                                });
+                                Promise.all(cnvPromises)
+                                    .then(() => {
+                                        self.inProgress.loadingDataSources = false;
+                                        resolve();
+                                    }).catch(err => {
+                                        reject('Problem init cnv data: ' + err);
+                                    })
+                            } else {
+                                self.inProgress.loadingDataSources = false;
+                                resolve();
+                            }
                         }).catch(() => {
                         reject('Problem adding sample models.');
                     })
@@ -783,20 +811,17 @@ class CohortModel {
         return new Promise((resolve, reject) => {
             self.promiseAnnotateSomaticVariants()
                 .then((somaticVariants) => {
-                    // returns idx: obj w/ name: selectedSample and features list
-                    self.promisePopulateSomaticVarMap(somaticVariants)
-                        .then((varMap) => {
-                            self.somaticVarMap = varMap;
-                            self.geneModel.promiseGroupAndRank(self.somaticVarMap)
-                                .then(rankObj => {
-                                    resolve(rankObj);
-                                })
-                                .catch(error => {
-                                    reject('Something went wrong ranking genes by variants ' + error);
-                                });
-                        }).catch(error => {
-                        reject('Something went wrong populating somatic variant map: ' + error);
-                    });
+                    if (self.hasCnvData) {
+                        self.annotateCnvs(somaticVariants);
+                    }
+                    self.somaticVarMap = self.populateSomaticVarMap(somaticVariants);
+                    self.geneModel.promiseGroupAndRank(self.somaticVarMap)
+                        .then(rankObj => {
+                            resolve(rankObj);
+                        })
+                        .catch(error => {
+                            reject('Something went wrong ranking genes by variants ' + error);
+                        });
                 })
                 .catch(error => {
                     reject('Problem loading somatic variants: ' + error);
@@ -809,28 +834,28 @@ class CohortModel {
      * and appends each unique feature to a hash of varId : varObj. Updates feature objects (varObj)
      * added to has to reflect which samples in cohort contains the variant.
     */
-    promisePopulateSomaticVarMap(somaticVarMap) {
+    populateSomaticVarMap(somaticVarMap) {
         const self = this;
         let featureMap = {};
+        Object.values(somaticVarMap).forEach((sampleObj) => {
+            let selectedSample = sampleObj.name;
+            sampleObj.features.forEach(feature => {
+                let featObj = featureMap[feature.id];
+                if (featObj == null) {
+                    feature.sampleMap = {};
+                    self.getCanonicalModels().forEach(model => {
+                        feature.sampleMap[model.selectedSample] = false;
+                    });
+                    featureMap[feature.id] = feature;
 
-        return new Promise((resolve) => {
-            Object.values(somaticVarMap).forEach((sampleObj) => {
-                let selectedSample = sampleObj.name;
-                sampleObj.features.forEach(feature => {
-                    let featObj = featureMap[feature.id];
-                    if (featObj == null) {
-                        feature.sampleMap = {};
-                        self.getCanonicalModels().forEach(model => {
-                            feature.sampleMap[model.selectedSample] = false;
-                        });
-                        featureMap[feature.id] = feature;
-                    } else {
-                        featObj.sampleMap[selectedSample] = true;
-                    }
-                })
+                } else {
+                    featObj.sampleMap[selectedSample] = true;
+                    // Check to see if this variant falls into a CNV for any sample where it exists
+                    featObj.inCnv |= feature.inCnv;
+                }
             });
-            resolve(featureMap);
         })
+        return featureMap;
     }
 
 
@@ -1462,6 +1487,26 @@ class CohortModel {
             });
         }
         return maxTcn;
+    }
+
+    /* Takes in a map of samples in this data set. For each sample, iterates through
+     * associated variants and annotates whether variant falls within a CNV region. */
+    annotateCnvs(sampleMap) {
+        const self = this;
+        Object.values(sampleMap).forEach((sampleObj) => {
+            let selectedSample = sampleObj.name;
+            let sampleModel = self.getModelBySelectedSample(selectedSample);
+            if (sampleModel.isCnvLoaded()) {
+                sampleObj.features.forEach(feature => {
+                    let matchingCnvs = sampleModel.cnv.findEntryByCoord(feature.chrom, feature.start, feature.end);
+                    matchingCnvs.forEach(cnv => {
+                        if (cnv.tcn !== 2) {
+                            feature.inCnv = 1;
+                        }
+                    })
+                })
+            }
+        })
     }
 
     setCoverage(regionStart, regionEnd, bamType) {
