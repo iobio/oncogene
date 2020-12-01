@@ -428,7 +428,7 @@
                 ],
                 LOCKED_DATA: {
                     'vcf': true,
-                    'coverage': true,
+                    'coverage': false,
                     'cnv': false,
                     'rnaSeq': false,
                     'atacSeq': false
@@ -526,10 +526,10 @@
                     },
                     {
                         step: 'coverage',
-                        active: true,
+                        active: false,
                         complete: false,
                         index: 4,
-                        optional: false,
+                        optional: true,
                         text: 'Upload Coverage Data'
                     },
                     {
@@ -589,12 +589,12 @@
                 // retained (model) state
                 userData: [
                     {name: 'vcf', model: true},
-                    {name: 'coverage', model: true},
+                    {name: 'coverage', model: false},
                     {name: 'cnv', model: false},
                     {name: 'rnaSeq', model: false},
                     {name: 'atacSeq', model: false},
                     {name: 'summary', model: true}],   // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
-                selectedUserData: ['vcf', 'coverage', 'summary'],       // List of current cards in carousel
+                selectedUserData: ['vcf', 'summary'],       // List of current cards in carousel
                 configSampleCount: {                    // Used to advance slide when optional data count less than total sample count
                     'cnv' : this.MAX_SAMPLES,
                     'rnaSeq' : this.MAX_SAMPLES,
@@ -676,7 +676,7 @@
                   }
             },
             isRequired: function (dataType) {
-              return dataType === 'coverage' || dataType === 'vcf';
+              return dataType === 'vcf';
             },
             getFileType: function (type) {
                 let idx = this.DATA_MODELS.indexOf(type);
@@ -902,11 +902,19 @@
                         self.uploadedTbiUrl = firstSample.tbiUrl;
 
                         // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
+                        let coverageActiveCount = 0;
                         let rnaSeqActiveCount = 0;
                         let atacSeqActiveCount = 0;
                         let cnvActiveCount = 0;
                         for (let i = 0; i < self.modelInfoList.length; i++) {
                             let currModelInfo = self.modelInfoList[i];
+                          if (currModelInfo['coverageBamUrl']) {
+                            coverageActiveCount++;
+                            // Just update for first one found
+                            if (coverageActiveCount === 1) {
+                              self.updateStepProp('coverage', 'active', true);
+                            }
+                          }
                             if (currModelInfo['rnaSeqBamUrl']) {
                                 rnaSeqActiveCount++;
                                 // Just update for first one found
@@ -930,6 +938,7 @@
                             }
                         }
                         self.configSampleCount['cnv'] = cnvActiveCount;
+                        self.configSampleCount['coverage'] = coverageActiveCount;
                         self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
                         self.configSampleCount['atacSeq'] = atacSeqActiveCount;
 
@@ -973,13 +982,14 @@
                 this.modelInfoList = [];
                 this.userData = [
                     {name: 'vcf', model: true},
-                    {name: 'coverage', model: true},
+                    {name: 'coverage', model: false},
                     {name: 'cnv', model: false},
                     {name: 'rnaSeq', model: false},
                     {name: 'atacSeq', model: false},
                     {name: 'summary', model: true}];
                 this.configSampleCount = {
                     'cnv' : this.MAX_SAMPLES,
+                    'coverage' : this.MAX_SAMPLES,
                     'rnaSeq' : this.MAX_SAMPLES,
                     'atacSeq' : this.MAX_SAMPLES
                 };

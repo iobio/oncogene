@@ -48,6 +48,9 @@ class cnviobio {
 
     /* Returns indices of required fields for CNV file header. */
     checkHeaders(headerLine) {
+        if (headerLine.startsWith('#')) {
+            headerLine = headerLine.substring(1);
+        }
         const tokens = headerLine.split('\t');
         let fieldIdx = [];
         this.REQ_FIELDS.forEach(() => {
