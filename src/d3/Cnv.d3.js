@@ -75,9 +75,13 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .attr("class", "axis")
                     .call(yAxis);
 
-                // TCN Shading
+                // TCN Shading - only for abnormal regions
+                var abnData = data.filter(cnv => {
+                    return cnv.tcn != 2;
+                })
+
                 let rects = svg.selectAll('.cnv-rect')
-                    .data(data)
+                    .data(abnData)
                     .enter()
                     .append("rect")
                         .attr('class', function(d) {
@@ -127,7 +131,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .enter()
                     .append("g");
 
-                const paths = lines.append('path')
+                let paths = lines.append('path')
                     .attr('stroke-width', 1.5)
                     .attr('stroke', '#888888')
                     .attr('fill', 'none')

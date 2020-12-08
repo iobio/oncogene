@@ -55,8 +55,8 @@
 </style>
 
 <template>
-    <v-card width="100%" id="gene-card">
-        <v-container>
+    <v-card width="100%" id="gene-card" class="pa-1">
+<!--        <v-container>-->
             <v-row no-gutters class="pt-2">
                 <v-col cols="12" sm="8">
                     <span class="header">
@@ -128,7 +128,7 @@
                     </div>
                 </v-col>
             </v-row>
-        </v-container>
+<!--        </v-container>-->
     </v-card>
 </template>
 
