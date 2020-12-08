@@ -12,7 +12,7 @@
              @launched="onLaunch">
     </Welcome>
     <v-row no-gutters>
-      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }" :style="{ 'height': screenHeight + ' !important', 'overflow-y': scroll}">
+      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }" :style="{ 'height': screenHeight + ' !important', 'overflow-y': 'scroll'}">
         <v-card flat
                 tile
                 class="nav-card"
@@ -136,6 +136,7 @@
                 :selectedVariant="selectedVariant"
                 :regionStart="geneRegionStart"
                 :regionEnd="geneRegionEnd"
+                :maxTcn="cohortModel.maxTcnForGene"
                 :width="screenWidth"
                 :height="screenHeight"
                 :showGeneViz="true"
@@ -173,12 +174,12 @@
                 @summaryCardVariantDeselect="deselectVariant"
                 @show-pileup="onShowPileupForVariant">
             </variant-summary-card>
-            <cnv-summary-card
-                v-if="cohortModel.hasCnvData"
-                :d3="globalApp.d3"
-                :cohortModel="cohortModel"
-                :hasCnvData="cohortModel.hasCnvData">
-            </cnv-summary-card>
+<!--            <cnv-summary-card-->
+<!--                v-if="cohortModel.hasCnvData"-->
+<!--                :d3="globalApp.d3"-->
+<!--                :cohortModel="cohortModel"-->
+<!--                :hasCnvData="cohortModel.hasCnvData">-->
+<!--            </cnv-summary-card>-->
           </v-col>
         </v-row>
       </v-col>
@@ -240,7 +241,7 @@
 import Welcome from './Welcome.vue'
 import VariantCard from './VariantCard.vue'
 import VariantSummaryCard from './VariantSummaryCard.vue'
-import CnvSummaryCard from './CnvSummaryCard.vue'
+// import CnvSummaryCard from './CnvSummaryCard.vue'
 import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
 import HistoryTab from './HistoryTab.vue'
@@ -256,7 +257,7 @@ export default {
     Welcome,
     VariantCard,
     VariantSummaryCard,
-    CnvSummaryCard,
+    // CnvSummaryCard,
     FilterPanelMenu,
     HistoryTab,
     GeneCard,

@@ -43,6 +43,7 @@ class CohortModel {
         this.rawBamReadsQualityCutoff = 10;     // The value used to filter bam reads which populate the bar chart viz in variant summary card
         this.annotationComplete = false;        // True when all tracks have finished annotation
         this.cnvData = null;                    // Map of CNV data for all samples
+        this.maxTcnForGene = 2;                 // Max TCN for selected gene from all CNVs for all samples
 
         this.inProgress = {
             'loadingDataSources': false
@@ -1003,6 +1004,7 @@ class CohortModel {
                 if (self.hasCnvData) {
                     let p5 = self.promiseLoadCopyNumbers(theGene)
                         .then(function (cnvMap) {
+                            self.setMaxTcnForRegion(cnvMap);
                             self.setCnvForRegion(cnvMap);
                         }).catch(error => {
                             console.log("Problem loading cnv data: " + error);
@@ -1472,6 +1474,20 @@ class CohortModel {
             model.inProgress['cnvLoading'] = false;
         });
         self.cnvData = theCnvs;
+    }
+
+    /* Sets the max TCN for all samples for the currently selected gene */
+    setMaxTcnForRegion(theCnvs) {
+        const self = this;
+        self.maxTcnForGene = 2;
+
+        Object.values(theCnvs).forEach(cnvList => {
+            cnvList.forEach(cnvObj => {
+                if (cnvObj.tcn > self.maxTcnForGene) {
+                    self.maxTcnForGene = cnvObj.tcn;
+                }
+            })
+        })
     }
 
     getMaxTcn(theCnvs) {

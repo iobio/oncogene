@@ -1327,7 +1327,8 @@ class SampleModel {
     promiseGetCnvRegions(theGene) {
         const self = this;
         return new Promise((resolve) => {
-            let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+            const joinEntries = true;
+            let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end, joinEntries);
             resolve(theCnvs);
         });
     }

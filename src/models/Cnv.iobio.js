@@ -104,11 +104,14 @@ class cnviobio {
         })
     }
 
+    // todo: format this info better
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
     // Only pulls back CNV if the following is NOT true:
     //      LCN = 1 && TCN = 2
-    findEntryByCoord(chr, startCoord, endCoord) {
+    // If merge CNVs true, returns one single continuous CNV, rather than a list.
+    // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
+    findEntryByCoord(chr, startCoord, endCoord, mergeCnvs = false) {
         let matchingCnvs = [];
 
         // Synonimize chromosome nomenclature
@@ -148,12 +151,52 @@ class cnviobio {
                 matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             }
         }
+
+        if (mergeCnvs) {
+            matchingCnvs = this._mergeCnvs(matchingCnvs);
+        }
         return matchingCnvs;
+    }
+
+    // Returns a list of CNVs with only one joined entry. The TCN and LCN fields will be set to the MAX value within array.
+    // and start and end will be the smallest and largest coordinates to encompass all points, respectively.
+    _mergeCnvs(cnvList) {
+        let retList = [];
+
+        // Make deep copy
+        let firstObj = {
+            tcn: 0,
+            lcn: 0,
+            points: [],
+            start: Number.MAX_SAFE_INTEGER,
+            end: 0
+        };
+        retList.push(firstObj);
+
+        // Append all other points to first and update end coord
+        for (let i = 0; i < cnvList.length; i++) {
+            let cnvObj = cnvList[i];
+            firstObj.points = firstObj.points.concat(cnvObj.points);
+            if (cnvObj.end > firstObj.end) {
+                firstObj.end = cnvObj.end;
+            }
+            if (cnvObj.start < firstObj.start) {
+                firstObj.start = cnvObj.start;
+            }
+            if (cnvObj.tcn > firstObj.tcn) {
+                firstObj.tcn = cnvObj.tcn;
+            }
+            // sometimes lcn is NA
+            if (cnvObj.lcn >= 0 && cnvObj.lcn > firstObj.lcn) {
+                firstObj.lcn = cnvObj.lcn;
+            }
+        }
+        return retList;
     }
 
     /* Returns CNV data object with the following fields:
      * start, end, tcn, lcn, and points
-     * where points is an array every 100bp between start and end with { coord lcn/tcn ratio } */
+     * where points is an array every 1000bp between start and end with { coord lcn/tcn ratio } */
     _getFormattedData(data, geneStart, geneEnd) {
         let points = [];
 
@@ -170,13 +213,13 @@ class cnviobio {
 
         let lastIndex = start;
         for (let i = start; i < end; i += 1000) {
-            points.push({ coord: i, ratio: (+(data.lcn/data.tcn).toFixed(2)) });
+            points.push({ coord: i, ratio: (+(data.lcn/data.tcn).toFixed(2)), tcn: +data.tcn, lcn: +data.lcn });
             lastIndex = i;
         }
 
         // Always add on end coord if > last point
         if (end > lastIndex) {
-            points.push({ coord: end, ratio: (+(data.lcn/data.tcn).toFixed(2)) });
+            points.push({ coord: end, ratio: (+(data.lcn/data.tcn).toFixed(2)), tcn: +data.tcn, lcn: +data.lcn });
         }
 
         data.points = points;

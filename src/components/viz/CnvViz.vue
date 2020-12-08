@@ -37,6 +37,10 @@
                 default: null,
                 type: String
             },
+            maxTcn: {
+                default: 2,
+                type: Number
+            },
             margin: {
                 type: Object,
                 default: function () {
@@ -71,7 +75,7 @@
                 const cnvVizOptions = {
                     margin: this.margin,
                     verticalPadding: 4,
-                    showTransition: this.showTransition
+                    showTransition: true
                 };
 
                 // Instantiate d3 object
@@ -93,11 +97,13 @@
                         regionEnd: self.regionEnd,
                         chromosome: self.chromosome,
                         verticalLayers: self.data.length,
-                        width: self.width
+                        width: self.width,
+                        maxTcn: self.maxTcn,
+                        drawMinorAllele: self.drawMinorAllele
                     };
                     self.cnvChart(chartData);
                 }
-            }
+            },
         },
         watch: {
             'model.cnvsInGene': function () {

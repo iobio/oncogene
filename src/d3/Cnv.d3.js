@@ -32,7 +32,9 @@ export default function cnvD3(d3, divId, vizSettings) {
         // Required arguments
         var regionStart = chartInfo.regionStart,
             regionEnd = chartInfo.regionEnd,
-            selection = chartInfo.selection;
+            selection = chartInfo.selection,
+            maxTcnAllSamples = chartInfo.maxTcn,
+            drawMinorAllele = chartInfo.drawMinorAllele;
 
         // Optional arguments
         width = chartInfo.width ? chartInfo.width : width;
@@ -52,10 +54,10 @@ export default function cnvD3(d3, divId, vizSettings) {
                 x.range([0, width - margin.left - margin.right]);
 
                 // Update the y-scale.
-                y.domain([0, 1]);
+                y.domain([0, maxTcnAllSamples]);
                 y.range([height, 0]);
 
-                // Select the svg element, if it exists.
+                // Add svg
                 const adj = 5;
                 var svg = d3.select('#' + id)
                     .append('svg')
@@ -68,83 +70,87 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
                     .classed("svg-content", true);
 
+                // Add color gradient if only showing TCN
+                if (!drawMinorAllele) {
+                    // Set the gradient
+                    const topGradient = maxTcnAllSamples > 2 ? "red" : "#888888";
+                    svg.append("linearGradient")
+                        .attr("id", "line-gradient")
+                        .attr("gradientUnits", "userSpaceOnUse")
+                        .attr("x1", 0)
+                        .attr("y1", y(0))
+                        .attr("x2", 0)
+                        .attr("y2", y(maxTcnAllSamples))
+                        .selectAll("stop")
+                        .data([
+                            {offset: "0%", color: "blue"},
+                            {offset: "100%", color: topGradient }
+                        ])
+                        .enter().append("stop")
+                        .attr("offset", function(d) { return d.offset; })
+                        .attr("stop-color", function(d) { return d.color; });
+                }
+
                 // Y-Axis
                 var yAxis = d3.axisRight(y);
-                yAxis.tickValues([0.0, 0.5, 1.0]);
+                yAxis.ticks(maxTcnAllSamples);
                 svg.append("g")
                     .attr("class", "axis")
                     .call(yAxis);
 
-                // TCN Shading - only for abnormal regions
-                var abnData = data.filter(cnv => {
-                    return cnv.tcn != 2;
-                })
-
-                let rects = svg.selectAll('.cnv-rect')
-                    .data(abnData)
-                    .enter()
-                    .append("rect")
-                        .attr('class', function(d) {
-                            return d.tcn > 2 ? 'cnv-amp cnv-rect' : d.tcn < 2 ? 'cnv-del cnv-rect' : 'cnv-flat cnv-rect';
-                        })
-                        .attr('x', function(d) {
-                            var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
-                            return Math.round(x(maxStart));
-                        })
-                        .attr('y', function() {
-                            return Math.round(y(1));
-                        })
-                        .attr('width', function(d) {
-                            if (showTransition) {
-                                return 0;
-                            } else {
-                                var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
-                                var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
-                                return (x(minEnd) - x(maxStart));
-                            }
-                        })
-                        .attr('height', height)
-                        .on('mouseover', function(d) {
-                            dispatch.call('d3cnv', this, d);
-                        })
-                        .on('mouseout', function() {
-                            dispatch.call('d3cnv');
-                        });
-
-                if (showTransition) {
-                    rects.transition()
-                        .duration(1000)
-                        .attr('width', function(d) {
-                            var maxStart = Math.max(d.start, regionStart); // Want right-most start coord
-                            var minEnd = Math.min(d.end, regionEnd);  // Want left-most end coord
-                            return (x(minEnd) - x(maxStart));
-                        })
-                }
-
-                // Ratio Lines
-                const line = d3.line()
+                // TCN Line
+                const tcnLine = d3.line()
                     .x(function(d) { return x(d.coord); })
-                    .y(function(d) { return y(d.ratio); });
+                    .y(function(d) { return y(d.tcn); });
 
-                const lines = svg.selectAll('lines')
+                const tcnLines = svg.selectAll('lines')
                     .data(data)
                     .enter()
                     .append("g");
 
-                let paths = lines.append('path')
+                const tcnPaths = tcnLines.append('path')
                     .attr('stroke-width', 1.5)
-                    .attr('stroke', '#888888')
+                    .attr('stroke', 'url(#line-gradient)')
                     .attr('fill', 'none')
-                    .attr("d", function(d) { return line(d.points); });
+                    .attr("d", function(d) { return tcnLine(d.points); });
 
-                let totalLength = paths.node().getTotalLength();
+                if (showTransition) {
+                    let tcnLength = tcnPaths.node().getTotalLength();
+                    tcnPaths.attr("stroke-dasharray", tcnLength + " " + tcnLength)
+                        .attr("stroke-dashoffset", tcnLength)
+                        .transition()
+                        .duration(2000)
+                        .ease(d3.easeLinear)
+                        .attr("stroke-dashoffset", 0);
+                }
 
-                paths.attr("stroke-dasharray", totalLength + " " + totalLength)
-                    .attr("stroke-dashoffset", totalLength)
-                    .transition()
-                    .duration(2000)
-                    .ease(d3.easeLinear)
-                    .attr("stroke-dashoffset", 0);
+                // LCN Line
+                if (drawMinorAllele) {
+                    const lcnLine = d3.line()
+                        .x(function(d) { return x(d.coord); })
+                        .y(function(d) { return y(d.lcn); });
+
+                    const lcnLines = svg.selectAll('lines')
+                        .data(data)
+                        .enter()
+                        .append("g");
+
+                    const lcnPaths = lcnLines.append('path')
+                        .attr('stroke-width', 1.5)
+                        .attr('stroke', '#888888')
+                        .attr('fill', 'none')
+                        .attr("d", function(d) { return lcnLine(d.points); });
+
+                    if (showTransition) {
+                        let lcnLength = lcnPaths.node().getTotalLength();
+                        lcnPaths.attr("stroke-dasharray", lcnLength + " " + lcnLength)
+                            .attr("stroke-dashoffset", lcnLength)
+                            .transition()
+                            .duration(2000)
+                            .ease(d3.easeLinear)
+                            .attr("stroke-dashoffset", 0);
+                    }
+                }
             }
         });
     }

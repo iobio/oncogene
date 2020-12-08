@@ -284,7 +284,7 @@
                             </variant-viz>
                             <div class="chart-label"
                                  v-show="showCnvViz && sampleModel.cnvsInGene && sampleModel.cnvUrlEntered">
-                                copy number
+                                total copy number
                             </div>
                             <cnv-viz ref="cnvVizRef"
                                      v-show="showCnvViz"
@@ -292,6 +292,7 @@
                                      :regionStart="regionStart"
                                      :regionEnd="regionEnd"
                                      :chromosome="selectedGene ? selectedGene.chr : null"
+                                     :maxTcn="maxTcn"
                                      :showTransition="true"
                                      :width="width"
                                      :margin="cnvVizMargin"
@@ -301,7 +302,7 @@
                             <div class="chart-label" v-show="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
                             </div>
-                            <div id="bam-track">
+                            <div id="bam-track" v-if="sampleModel.coverageData">
                                 <depth-viz
                                         v-show="showDepthViz"
                                         ref="depthVizRef"
@@ -460,6 +461,10 @@
             annotationComplete: {
                 type: Boolean,
                 default: false
+            },
+            maxTcn: {
+                type: Number,
+                default: 2
             },
             d3: null,
             $: null
