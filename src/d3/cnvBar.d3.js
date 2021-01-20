@@ -1,4 +1,4 @@
-export default function cnvD3(d3, divId, vizSettings) {
+export default function cnvBarD3(d3, divId, vizSettings) {
     /**** CONSTRUCTOR ****/
 
     // Don't throw null exception
@@ -11,14 +11,14 @@ export default function cnvD3(d3, divId, vizSettings) {
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
     var width = 800,
-        height = 40;
+        height = 60;
 
     // Scales, Axes, Deltas
     var x = vizSettings.x ? vizSettings.x : d3.scaleLinear(),
         y = vizSettings.y ? vizSettings.y : d3.scaleLinear();
 
     // Viz-level flags
-    var showTransition = vizSettings.showTransition ? vizSettings.showTransition : true;
+    // var showTransition = vizSettings.showTransition ? vizSettings.showTransition : true;
 
     var id = divId;
 
@@ -34,7 +34,8 @@ export default function cnvD3(d3, divId, vizSettings) {
             regionEnd = chartInfo.regionEnd,
             selection = chartInfo.selection,
             maxTcnAllSamples = chartInfo.maxTcn,
-            drawMinorAllele = chartInfo.drawMinorAllele;
+            maxMcnAllSamples = chartInfo.maxMcn ? chartInfo.maxMcn : 1;
+            // drawMinorAllele = chartInfo.drawMinorAllele;
 
         // Optional arguments
         width = chartInfo.width ? chartInfo.width : width;
@@ -45,7 +46,6 @@ export default function cnvD3(d3, divId, vizSettings) {
             container.selectAll("svg").remove();
 
             if (data && data.length > 0) {
-
                 // Update the x-scale.
                 if (regionStart && regionEnd) {
                     x.domain([regionStart, regionEnd]);
@@ -55,8 +55,8 @@ export default function cnvD3(d3, divId, vizSettings) {
                 x.range([0, width - margin.left - margin.right]);
 
                 // Update the y-scale.
-                y.domain([0, maxTcnAllSamples]);
-                y.range([height, 0]);
+                y.domain([-maxMcnAllSamples, maxTcnAllSamples]);
+                y.range([height - y(maxMcnAllSamples), 0]);
 
                 // Add svg
                 const adj = 5;
@@ -71,78 +71,55 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
                     .classed("svg-content", true);
 
-                // Add color gradient for TCN
-                const topGradient = maxTcnAllSamples > 2 ? "red" : "#888888";
-                svg.append("linearGradient")
-                    .attr("id", "tcn-gradient")
-                    .attr("gradientUnits", "userSpaceOnUse")
-                    .attr("x1", 0)
-                    .attr("y1", y(0))
-                    .attr("x2", 0)
-                    .attr("y2", y(maxTcnAllSamples))
-                    .selectAll("stop")
-                    .data([
-                        {offset: "0%", color: "#194d81"},
-                        {offset: "100%", color: topGradient }
-                    ])
-                    .enter().append("stop")
-                    .attr("offset", function(d) { return d.offset; })
-                    .attr("stop-color", function(d) { return d.color; });
+                // X-Axis & zero line
+                // var xAxis = d3.axisTop(x).ticks(0).tickSize(0);
+                // svg.append("g")
+                //     .attr("transform", `translate(0,${y(0) - y(maxTcnAllSamples)})`)
+                //     .attr("class", "axis")
+                //     .call(xAxis);
 
                 // Y-Axis
                 var yAxis = d3.axisRight(y);
-                yAxis.ticks(maxTcnAllSamples);
+                yAxis.ticks(maxTcnAllSamples + maxMcnAllSamples);
                 svg.append("g")
                     .attr("class", "axis")
                     .call(yAxis);
 
-                // TCN Area
-                const tcnArea = d3.area()
-                    .x(function(d) { return x(d.coord); })
-                    .y0(height)
-                    .y1(function(d) { return y(d.tcn); });
-
-                // Add one element per cnv
-                const tcnAreas = svg.selectAll('areas')
+                // Bar constant
+                const bars = svg.selectAll('rect')
                     .data(data)
                     .enter()
-                    .append("g");
+                    .append('g');
 
-                // Draw area per element
-                tcnAreas.append("path")
-                    .attr('fill', 'url(#tcn-gradient)')
-                    .attr('stroke', 'url(#line-gradient)')
-                    .attr('opacity', 0.5)
-                    .attr('stroke-width', '0.5px')
-                    .attr("d", function(d) { return tcnArea(d.points); })
+                // Outline
+                // bars.append('rect')
+                //     .attr('x', function() { return x(regionStart); })
+                //     .attr('y', function() { return y(maxTcnAllSamples); })
+                //     .attr('height', function() { return y(0) - y(maxMcnAllSamples + maxTcnAllSamples); })
+                //     .attr('width', function() { return x(regionEnd) - x(regionStart); })
+                //     .attr('fill', 'transparent')
+                //     .attr('stroke-width', 1.0)
+                //     .attr('stroke', '#888888')
+                //     .attr('opacity', 0.5);
 
-                // LCN Line
-                if (drawMinorAllele) {
-                    const lcnLine = d3.line()
-                        .x(function(d) { return x(d.coord); })
-                        .y(function(d) { return y(d.lcn); });
+                // TCN bars
+                bars.append('rect')
+                    .attr('x', function(d) { return x(d.start); })
+                    .attr('y', function(d) { return y(d.tcn); })
+                    .attr('height', function(d) { return y(0) - y(d.tcn) })
+                    .attr('width', function (d) { return x(d.end) - x(d.start); })
+                    .attr('fill', '#965757')
+                    .attr('opacity', 0.5);
 
-                    const lcnLines = svg.selectAll('lines')
-                        .data(data)
-                        .enter()
-                        .append("g");
+                // MCN bars
+                bars.append('rect')
+                    .attr('x', function(d) { return x(d.start); })
+                    .attr('y', function() { return y(0); })
+                    .attr('height', function(d) { return y(0) - y(d.lcn) })
+                    .attr('width', function (d) { return x(d.end) - x(d.start); })
+                    .attr('fill', '#194d81')
+                    .attr('opacity', 0.5);
 
-                    const lcnPaths = lcnLines.append('path')
-                        .attr('stroke-width', 1.5)
-                        .attr('stroke', 'black')
-                        .attr('fill', 'none')
-                        .attr("d", function(d) { return lcnLine(d.points); });
-
-                    if (showTransition) {
-                        let lcnLength = lcnPaths.node().getTotalLength();
-                        lcnPaths.attr("stroke-dasharray", lcnLength + " " + lcnLength)
-                            .attr("stroke-dashoffset", lcnLength)
-                            .transition()
-                            .duration(2000)
-                            .ease(d3.easeLinear)
-                            .attr("stroke-dashoffset", 0);
-                    }
-                }
 
                 // Marker circle and label
                 svg.selectAll(".circle").data([0])
@@ -166,6 +143,8 @@ export default function cnvD3(d3, divId, vizSettings) {
     chart.getDispatch = function() {
         return dispatch;
     };
+
+    // todo: left off connecting dots up to variant card/home component and testing circles
 
     chart.showCircles = function (container, start, end, matchingCnvList) {
         if (container == null) {
@@ -215,6 +194,9 @@ export default function cnvD3(d3, divId, vizSettings) {
             circle.attr("cx", mousex + margin.left + 2)
                 .attr("cy", mousey + margin.top)
                 .attr("r", 3)
+
+            // todo: draw circle on lcn line if that line is displayed
+
         }
     };
 

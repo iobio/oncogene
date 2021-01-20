@@ -107,8 +107,6 @@ class cnviobio {
     // todo: format this info better
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
-    // Only pulls back CNV if the following is NOT true:
-    //      LCN = 1 && TCN = 2
     // If merge CNVs true, returns one single continuous CNV, rather than a list.
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
     findEntryByCoord(chr, startCoord, endCoord, mergeCnvs = false) {
@@ -204,6 +202,7 @@ class cnviobio {
         const regionBuffer = 0;
         geneStart -= regionBuffer;
         geneEnd += regionBuffer;
+        // todo: regionBuffer needs to actually be piped in here
 
         // Get right most start point
         let start = Math.max(geneStart, +data.start);

@@ -498,7 +498,7 @@ class CohortModel {
             modelInfo.model = vm;
             vm.id = modelInfo.id;
             vm.order = modelInfo.order;
-            vm.isTumor = modelInfo.isTumor;
+            vm.isTumor = modelInfo.isTumor === 'true';
             vm.selectedSample = modelInfo.selectedSample;
             vm.selectedSampleIdx = modelInfo.selectedSampleIdx;
 

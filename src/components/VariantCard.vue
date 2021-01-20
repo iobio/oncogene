@@ -284,7 +284,7 @@
                             </variant-viz>
                             <div class="chart-label"
                                  v-show="showCnvViz && sampleModel.cnvsInGene && sampleModel.cnvUrlEntered">
-                                total copy number
+                                copy number
                             </div>
                             <cnv-viz ref="cnvVizRef"
                                      v-show="showCnvViz"
@@ -734,8 +734,16 @@
                     // the calculated (binned, averaged) depth at this position.
                     self.$refs.depthVizRef.showCurrentPoint({pos: variant.start, depth: theDepth});
                 }
+            },
+            showCnvCircle: function(variant) {
+                const self = this;
 
-
+                if (self.showCnvViz && self.sampleModel.cnvData != null) {
+                  let matchingCnvs = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end, false);
+                  if (matchingCnvs.length > 0) {
+                    self.$refs.cnvVizRef.showCnvPoint(variant.start, variant.end, matchingCnvs);
+                  }
+                }
             },
             onVariantsVizChange: function (viz, trackId) {
                 this.$nextTick(() => {

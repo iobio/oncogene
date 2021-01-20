@@ -61,6 +61,7 @@
             return {
                 cnvChart: {},
                 id: '',
+                drawMinorAllele: true,
                 data: null  // cnvs that go into d3 viz
             }
         },
@@ -89,8 +90,8 @@
             },
             update: function () {
                 const self = this;
-                let selection = self.d3.select(self.$el).datum(self.data);
-                if (self.data) {
+                let selection = self.d3.select(self.$el).datum(this.data);
+                if (this.data) {
                     const chartData = {
                         selection: selection,
                         regionStart: self.regionStart,
@@ -104,6 +105,16 @@
                     self.cnvChart(chartData);
                 }
             },
+            showCnvPoint: function(variantStart, variantEnd, matchingCnvs) {
+              const self = this;
+              let container = self.d3.select(self.$el);
+              self.cnvChart.showCircle(container, variantStart, variantEnd, matchingCnvs);
+            },
+            hideCnvPoint: function() {
+              const self = this;
+              let container = self.d3.select(self.$el);
+              self.cnvChart.hideCircle(container);
+            }
         },
         watch: {
             'model.cnvsInGene': function () {
