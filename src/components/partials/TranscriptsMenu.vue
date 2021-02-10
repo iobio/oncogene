@@ -35,11 +35,6 @@
 
         #gene-source-box
             font-family: Raleway
-            display: block
-            margin-top: 5px
-            margin-bottom: 0
-            width: 200px
-            float: right
 
             .input-group--select
                 .input-group__selections__comma
@@ -50,7 +45,6 @@
                 label
                     font-size: 14px
                     line-height: 25px
-                    height: 25px
 
             .input-group__input
                 min-height: 0px
@@ -85,7 +79,7 @@
                        v-bind="attrs"
                        v-on="on"
                        text>
-                   {{ selectedTranscript.transcript_id }}
+                    Transcript
                     <v-icon>expand_more</v-icon>
                 </v-btn>
             </template>
@@ -93,15 +87,20 @@
                 <v-card-title class="tscript-headline">
                     <span>Transcript Info</span>
                 </v-card-title>
-                <div id="gene-source-box" class="px-2">
-                    <v-select class="selection-box"
+              <v-row id="gene-source-box" class="px-2">
+                <v-col sm="6">
+                  <div>Selected: {{ selectedTranscript.transcript_id }}</div>
+                </v-col>
+                <v-col sm="3" offset-sm="3" class="py-1">
+                  <v-select class="selection-box"
                             v-bind:items="geneSources"
                             v-model="geneSource"
                             label="Gene source"
                             item-value="text"
                             @input="onGeneSourceSelected">
-                    </v-select>
-                </div>
+                  </v-select>
+                </v-col>
+              </v-row>
                 <div class="gene-viz-wrapper px-2">
                     <gene-viz id="select-transcript-viz"
                               :data="selectedGene.transcripts"

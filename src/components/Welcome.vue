@@ -1,5 +1,24 @@
 <template>
     <div :id="divId">
+      <v-snackbar
+          v-model="snackbar"
+          :timeout=timeout
+          shaped
+          top
+          color="secondary"
+      >
+        {{ this.listText + " list added to gene list" }}
+        <template v-slot:action="{ attrs }">
+          <v-btn
+              color="blue"
+              text
+              v-bind="attrs"
+              @click="snackbar = false"
+          >
+            Close
+          </v-btn>
+        </template>
+      </v-snackbar>
         <svg v-if="!firstLoadComplete" :width="welcomeWidth" :height="welcomeHeight">
             <g :transform="translation"></g>
         </svg>
@@ -203,26 +222,50 @@
                                 <v-divider class="mx-12"></v-divider>
                                 <v-card-actions>
                                     <v-container class="px-11">
-                                        <v-select
-                                                :items="geneListNames"
+                                        <v-row no-gutters>
+                                          <v-col sm="6" class="pr-1">
+                                            <v-select
+                                                :items="cancerListNames"
                                                 color="appColor"
                                                 background-color="white"
-                                                label="Cancer Type (Panel Name)"
+                                                label="Cancer Type"
                                                 outlined
-                                                clearable
-                                                v-model="selectedList"
-                                                @change="populateListInput"
-                                        ></v-select>
+                                                dense
+                                                v-model="selectedCancerList"
+                                                @change="populateListInput('cancer')"
+                                            ></v-select>
+                                          </v-col>
+                                          <v-col sm="6" class="pl-1">
+                                            <v-select
+                                                :items="tissueListNames"
+                                                color="appColor"
+                                                background-color="white"
+                                                label="Tissue Type"
+                                                outlined
+                                                dense
+                                                v-model="selectedTissueList"
+                                                @change="populateListInput('tissue')"
+                                            ></v-select>
+                                          </v-col>
+                                        </v-row>
                                         <v-textarea
                                                 color="appColor"
                                                 background-color="white"
                                                 outlined
-                                                rows="10"
+                                                rows="8"
                                                 label="Genes"
                                                 :rules="geneRules"
-                                                :value="listInput"
+                                                v-model="listInput"
+                                                class="pt-1"
                                                 @click="checkFirstClick"
                                         ></v-textarea>
+                                      <div class="v-text-field__details" style="margin-top: -25px">
+                                        <div class="v-messages theme--light">
+                                          <div class="v-messages__wrapper float-right">
+                                              {{ geneCount + ' genes' }}
+                                          </div>
+                                        </div>
+                                      </div>
                                     </v-container>
                                 </v-card-actions>
                             </v-card>
@@ -346,7 +389,8 @@
     import variantRainD3 from '../d3/VariantRain.d3.js'
     import VcfForm from './VcfForm.vue'
     import MultiSourceForm from './MultiSourceForm.vue'
-    import geneListsByType from '../data/gene_lists.json'
+    import geneListsByCancerType from '../data/genes_by_cancer_type_ncgv6.json'
+    import geneListsByTissueType from '../data/genes_by_tissue_type_ncgv6.json'
     import validGenes from '../data/genes.json'
     // import _ from 'lodash'
 
@@ -407,8 +451,10 @@
                 showWarning: false,
                 warningText: 'Some warning text',
                 validGenesMap: {},
-                geneListNames: [],
-                selectedList: null,
+                cancerListNames: [],
+                tissueListNames: [],
+                selectedCancerList: null,
+                selectedTissueList: null,
                 modelInfoIdx: 0,
 
                 // static data
@@ -495,8 +541,8 @@
                     'select \'Yes\' so this criteria will not be applied.',
                 geneListText: 'Using the provided list, oncogene.iobio will find somatic variants ' +
                     'and provide a ranked list of impactful loci for inspection. Each provided list contains ' +
-                    'genes implicated in the corresponding type of cancer. If the type of cancer is ' +
-                    'unknown, or not provided in the dropdown, UCSF500 is a good place to start, or visit' +
+                    'genes implicated in the corresponding type of cancer or found in cancers at the selected primary tissue.' +
+                    ' If the type of cancer is unknown, or not provided in the dropdown, UCSF500 is a good place to start, or visit' +
                     ' <a target="_blank" href="https://genepanel.iobio.io">genepanel.iobio.io</a>' +
                     ' to curate your own custom list.',
                 reqSteps: [
@@ -579,6 +625,11 @@
                         self.updateStepProp('geneList', 'complete', isValid);
                         return isValid || 'Cannot process the following genes: ' + invalids.join();
                     },
+                    v => {
+                        let numGenes = v.split('\n').length;
+                        let isValid = numGenes < 1000;
+                        return isValid || 'Maximum number of genes is 1000';
+                    }
                 ],
                 multiMountedStatus: {
                     'coverage' : false,
@@ -602,7 +653,12 @@
                 },
                 somaticCallsOnly: false,
                 selectedBuild: null,
-                listInput: 'Select a type to populate gene list or enter your own', // TODO: need to check for duplicates before launching all calls
+                STARTING_INPUT: 'Select a type to populate gene list or enter your own',
+                listInput: '',
+                listText: '',
+                geneCount: 0,
+                snackbar: false,
+                timeout: 2000,
                 modelInfoList: [],
                 vcfSampleNames: []
             }
@@ -616,7 +672,16 @@
             },
             secondHalfSteps: function () {
                 return this.reqSteps.slice((this.reqSteps.length / 2));
-            }
+            },
+        },
+        watch: {
+              listInput: function() {
+                if (this.listInput === this.STARTING_INPUT || this.listInput === '') {
+                  this.geneCount = 0;
+                } else {
+                  this.geneCount = this.listInput.split('\n').length;
+                }
+              }
         },
         methods: {
             makeItRain: function () {
@@ -719,8 +784,11 @@
                 }
             },
             populateGeneLists: function () {
-                for (var listName in geneListsByType) {
-                    this.geneListNames.push(listName);
+                for (var listName in geneListsByCancerType) {
+                    this.cancerListNames.push(listName);
+                }
+                for (var tissueListName in geneListsByTissueType) {
+                    this.tissueListNames.push(tissueListName);
                 }
             },
             populateValidGenesMap: function () {
@@ -728,15 +796,29 @@
                     this.validGenesMap[gene['gene_name']] = true;
                 });
             },
-            populateListInput: function () {
+            populateListInput: function (listType) {
                 this.clearGeneListFlag = false;
-                this.listInput = '';
-                let geneList = geneListsByType[this.selectedList];
+                if (this.listInput === this.STARTING_INPUT) {
+                  this.listInput = '';
+                }
+                let selectedList = this.selectedCancerList;
+                let geneList = geneListsByCancerType[selectedList];
+                if (listType === 'tissue') {
+                  selectedList = this.selectedTissueList;
+                  geneList = geneListsByTissueType[selectedList];
+                }
+
                 if (geneList) {
                     geneList.forEach((gene) => {
                         this.listInput += gene + '\n';
                     });
                 }
+
+                // Update snackbar
+                this.listText = selectedList;
+                this.snackbar = true;
+
+                //this.updateGeneCount();
             },
             setModelInfo: function (info) {
                 if (!info) {
@@ -995,7 +1077,8 @@
                 };
                 this.listInput = '';
                 this.somaticCallsOnly = false;
-                this.selectedList = null;
+                this.selectedCancerList = null;
+                this.selectedTissueList = null;
                 this.selectedBuild = null;
                 this.uploadedVcfUrl = null;
                 this.uploadedTbiUrl = null;
@@ -1047,6 +1130,7 @@
         },
         mounted: function () {
             // this.makeItRain();
+            this.listInput = this.STARTING_INPUT;
             this.populateValidGenesMap();
             this.populateGeneLists();
         }

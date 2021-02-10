@@ -157,7 +157,7 @@
     import geneD3 from '../../d3/Gene.d3.js'
 
     export default {
-        name: 'gene-viz',
+      name: 'gene-viz',
         props: {
             data: {},
             regionStart: {

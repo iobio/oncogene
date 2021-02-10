@@ -19,6 +19,13 @@
             margin-left: 10px
             margin-right: 10px
 
+        .v-expansion-panel-content__wrap
+            padding-left: 5px !important
+            padding-right: 5px !important
+
+        #card-viz
+          padding: 5px
+
         #sample-label
             max-width: 200px
             color: $text-color
@@ -29,6 +36,7 @@
                 min-width: 100px
                 max-width: 100px
         #gene-viz, #gene-viz-zoom
+            padding-top: 0
             .axis
                 padding-left: 0px
                 padding-right: 0px
@@ -160,9 +168,9 @@
 
 <template>
     <v-card outlined class="my-1">
-        <v-expansion-panels v-model="openState" multiple>
+        <v-expansion-panels v-model="openState" style="width: 100%" multiple>
             <v-expansion-panel class="app-card" id="variant-card" :key="0">
-                <v-expansion-panel-header class="pt-2 pb-1" style="min-height: 50px">
+                <v-expansion-panel-header class="pt-2 pb-1 pl-2 pr-2" style="min-height: 50px">
                     <div>
                         <div class="text-center d-inline">
                             <v-avatar v-if="sampleModel.isCosmic" color="primary" size="28" class="mr-1 mb-1">
@@ -193,35 +201,10 @@
                             <span slot="badge"> {{ coverageDangerRegions.length }} </span>
                             Exons with insufficient coverage
                         </v-badge>
-                        <!--                    <known-variants-toolbar-->
-                        <!--                            v-if="sampleModel.isCosmic"-->
-                        <!--                            :id="sampleModel.id"-->
-                        <!--                            :annotationType="'vep'"-->
-                        <!--                            @variantsVizChange="onVariantsVizChange"-->
-                        <!--                            @variantsFilterChange="onVariantsFilterChange"-->
-                        <!--                    >-->
-                        <!--                    </known-variants-toolbar>-->
-                        <!--                    todo: add these <div class="text-center d-inline" style="float: right;" id="cnv-ideo"></div>-->
-                        <!--                    <div class="text-center d-inline" style="float: right;" id="loh-ideo"></div>-->
                     </div>
                 </v-expansion-panel-header>
                 <v-expansion-panel-content :value="openState">
-                    <v-card outlined :style="{padding: '5px 10px'}" id="card-viz">
-                        <!--                    <stacked-bar-chart-viz-->
-                        <!--                            id="known-variants-chart"-->
-                        <!--                            style="width:100%"-->
-                        <!--                            v-if="(sampleModel.id === 'known-variants' && knownVariantsViz !== 'variants') || (sampleModel.id === 'cosmic-variants' && cosmicVariantsViz !== 'variants')"-->
-                        <!--                            :data="sampleModel.variantHistoData"-->
-                        <!--                            :width="width"-->
-                        <!--                            :xStart="selectedGene.start"-->
-                        <!--                            :xEnd="selectedGene.end"-->
-                        <!--                            :regionStart="regionStart"-->
-                        <!--                            :regionEnd="regionEnd"-->
-                        <!--                            :categories="getCategories(sampleModel.id)"-->
-                        <!--                            :d3="d3"-->
-                        <!--                            :$="$"-->
-                        <!--                    >-->
-                        <!--                    </stacked-bar-chart-viz>-->
+                    <v-card flat id="card-viz">
                         <div style="width:100%">
                             <div style="text-align: center; clear: both">
                                 <div v-show="loadingVars" class="loader vcfloader"
