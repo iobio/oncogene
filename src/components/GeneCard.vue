@@ -123,20 +123,20 @@
         </div>
       </v-col>
     </v-row>
-    <v-row no-gutters style="height: 17px" class="pt-0" justify="end">
-      <v-col cols="12" sm="1" offset-sm="7" class="float-right">
-        <v-switch
-            v-on:click.self.stop.prevent="toggleZoom"
-            label="Zoom"
-            class="zoom-switch"
-            v-model="showZoom"
-        >
-        </v-switch>
-      </v-col>
-      <v-col cols="12" sm="4">
-        <!--Spacing-->
-      </v-col>
-    </v-row>
+<!--    <v-row no-gutters style="height: 17px" class="pt-0" justify="end">-->
+<!--      <v-col cols="12" sm="1" offset-sm="7" class="float-right">-->
+<!--        <v-switch-->
+<!--            v-on:click.self.stop.prevent="toggleZoom"-->
+<!--            label="Zoom"-->
+<!--            class="zoom-switch"-->
+<!--            v-model="showZoom"-->
+<!--        >-->
+<!--        </v-switch>-->
+<!--      </v-col>-->
+<!--      <v-col cols="12" sm="4">-->
+<!--        &lt;!&ndash;Spacing&ndash;&gt;-->
+<!--      </v-col>-->
+<!--    </v-row>-->
   </v-card>
 </template>
 

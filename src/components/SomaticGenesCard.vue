@@ -55,7 +55,8 @@
                                         </span>
                                     </v-avatar>
                                     <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>
-                                    <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
+                                  <v-chip v-if="getCnvCount(geneObj)>0" small light color="brightPrimary" style="margin-top: 2px; margin-left: 5px">CNV</v-chip>
+                                  <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
                                         {{ getGeneText(geneObj) }}
                                     </div>
                                     <v-btn small
@@ -106,6 +107,25 @@
                                                     </v-col>
                                                 </v-row>
                                             </v-list-item-content>
+                                    </v-list-item>
+                                    <v-list-item v-for="(cnv, i) in geneObj.somaticCnvList" :key="'cnv-' + i">
+                                      <v-list-item-content>
+                                        <v-list-item-content>
+                                          <v-row style="padding-bottom: 2px" @mouseover="onCnvHover(geneObj, cnv)" @mouseleave="onCnvHoverExit">
+                                            <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
+                                                    <span class="d-inline">
+                                                       <svg class="impact-badge" height="12" width="10">
+                                                         <g transform="translate(4,6)" class="filter-symbol" style="stroke: #cf7676 !important; fill: #cf7676 !important;">
+                                                           <path d="M0,-5.885661912765424L3.398088489694245,0 0,5.885661912765424 -3.398088489694245,0Z">
+                                                           </path>
+                                                         </g>
+                                                       </svg>
+                                                     </span>
+                                              <v-list-item-title class="variant-text" v-text="getCnvText(cnv)" @click="onCnvSelected(cnv)"></v-list-item-title>
+                                            </v-col>
+                                          </v-row>
+                                        </v-list-item-content>
+                                      </v-list-item-content>
                                     </v-list-item>
                                 </v-list-item-group>
                             </v-list>
@@ -161,6 +181,9 @@
                 let aaChange = feat.ref + '->' + feat.alt;
                 return type + ' ' + impact + ' ' + aaChange;
             },
+            getCnvText: function(cnv) {
+                return 'CNV: ' + cnv.start + '->' + cnv.end;
+            },
             getReadableType(type) {
                 if (type === 'snp') {
                     return 'SNP';
@@ -207,6 +230,13 @@
                 }
                 return count;
             },
+            getCnvCount: function(geneObj) {
+                let count = 0;
+                if (geneObj) {
+                  count = geneObj.somaticCnvList.length;
+                }
+                return count;
+            },
             onVariantSelected: function(feature) {
                 this.$emit('variant-selected', feature, this, 'rankedList');
             },
@@ -224,6 +254,14 @@
             },
             onVariantHoverExit: function() {
                 this.$emit('variant-hover-exit');
+            },
+            onCnvHover: function(geneObj, variant) {
+              // Only emit event if we're hovering over a gene that's loaded
+              if (geneObj.gene_name === this.selectedGeneName)
+                this.$emit('cnv-hover', variant, 'rankedList');
+            },
+            onCnvHoverExit: function() {
+              this.$emit('cnv-hover-exit');
             },
             deselectListVar: function() {
                 this.selectedVarIdx = -1;

@@ -6,7 +6,7 @@ export default function cnvD3(d3, divId, vizSettings) {
         console.log('WARNING: no vizSettings argument provided to cnv.d3.');
         vizSettings = {};
     }
-    var dispatch = d3.dispatch('d3cnv');
+    var dispatch = d3.dispatch('d3mouseover', 'd3mouseout');
 
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
@@ -115,6 +115,12 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .attr('opacity', 0.5)
                     .attr('stroke-width', '0.5px')
                     .attr("d", function(d) { return tcnArea(d.points); })
+                    .on("mouseover", function (d) {
+                        dispatch.call('d3mouseover', this, d);
+                    })
+                    .on("mouseout", function () {
+                        dispatch.call('d3mouseout');
+                    });
 
                 // LCN Line
                 if (drawMinorAllele) {

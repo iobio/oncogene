@@ -850,6 +850,7 @@ class GeneModel {
                         theGeneObject.modifCount = 0;
                         theGeneObject.ncbiSummary = '';
                         theGeneObject.inCnv = false;
+                        theGeneObject.somaticCnvList = [];
 
                         me.geneObjects[geneName] = theGeneObject;
                     });
@@ -912,6 +913,7 @@ class GeneModel {
                             theGeneObject.modifCount = 0;
                             theGeneObject.ncbiSummary = '';
                             theGeneObject.inCnv = false;
+                            theGeneObject.somaticCnvList = [];
 
                             me.geneObjects[theGeneObject.gene_name] = theGeneObject;
                             resolve(theGeneObject);
@@ -1431,7 +1433,7 @@ class GeneModel {
      *
      * Adds NCBI summary to each gene with a somatic variant.
      */
-    promiseGroupAndRank(somaticVars) {
+    promiseGroupAndRank(somaticVars, somaticCnvs) {
         const self = this;
         let genesWithVars = {};
         let promises = [];
@@ -1444,7 +1446,7 @@ class GeneModel {
                 // For now, just adding a list of vars per object
                 // We may want to change this depending on gene list viz needs
                 if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
-                    self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
+                    self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
                     totalSomaticVarCount++;
                     genesWithVars[feat.geneSymbol] = true;
                 } else {
@@ -1453,7 +1455,7 @@ class GeneModel {
                     let p = self.promiseAddGeneName(feat.geneSymbol)
                         .then(() => {
                             if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
-                                self.geneObjects[feat.geneSymbol].somaticVariantList.push(feat);
+                                self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
                                 totalSomaticVarCount++;
                                 genesWithVars[feat.geneSymbol] = true;
                             } else {
@@ -1468,8 +1470,17 @@ class GeneModel {
                     genePromises.push(p);
                 }
             });
+
             Promise.all(genePromises)
                 .then(() =>{
+                    // Add all CNVs to existing genes
+                    // Note: shouldn't have nomenclature symbol issue here, since CNVs go off of coords exclusively
+                    Object.keys(somaticCnvs).forEach(geneName => {
+                        if (self.geneObjects[(geneName.toUpperCase())]) {
+                            self.geneObjects[(geneName.toUpperCase())].somaticCnvList = somaticCnvs[geneName];
+                        }
+                    })
+
                     // Once each variant is assigned to its gene object, we can score them
                     Object.keys(genesWithVars).forEach(geneName => {
                         let scoreP = self.promiseScoreGene(geneName);
@@ -1504,6 +1515,7 @@ class GeneModel {
      *
      * Additionally:
      * +1 for each variant in region of TCN != 2 (aka abnormal copy number)
+     * +1 for each CNV with TCN != 2, even without a variant contained within
      */
     promiseScoreGene(geneName) {
         const self = this;
@@ -1515,6 +1527,7 @@ class GeneModel {
         return new Promise((resolve) => {
             let geneObj = self.geneObjects[geneName];
             if (geneObj) {
+                // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
                     let impact = Object.keys(feat.highestImpactVep);
                     if (impact.length > 0) {
@@ -1537,11 +1550,17 @@ class GeneModel {
                         geneObj.modifCount += 1;
                     }
 
-                    // CNV scoring
+                    // In variant CNV scoring
                     if (feat.inCnv) {
                         score += 2;
                         geneObj.hasCnv = true;
                     }
+
+                // Account for gene wide CNV events, independent of variants
+                geneObj.somaticCnvList.forEach(() => {
+                    score += 1;
+                })
+
                 });
                 geneObj.score = score;
             }
@@ -1617,6 +1636,7 @@ class GeneModel {
             self.geneObjects[key].lowCount = 0;
             self.geneObjects[key].modifCount = 0;
             self.geneObjects[key].inCnv = false;
+            self.geneObjects[key].somaticCnvList = [];
             }
         )
     }

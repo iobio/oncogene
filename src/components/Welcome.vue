@@ -540,7 +540,8 @@
                     'along with certain quality thresholds. If your file contains only somatic calls, ' +
                     'select \'Yes\' so this criteria will not be applied.',
                 geneListText: 'Using the provided list, oncogene.iobio will find somatic variants ' +
-                    'and provide a ranked list of impactful loci for inspection. Each provided list contains ' +
+                    'and provide a ranked list of impactful loci for inspection. Each provided list, ' +
+                    'sourced from <a target="_blank" href="http://ncg.kcl.ac.uk/index.php">NCG6.0</a>, contains ' +
                     'genes implicated in the corresponding type of cancer or found in cancers at the selected primary tissue.' +
                     ' If the type of cancer is unknown, or not provided in the dropdown, UCSF500 is a good place to start, or visit' +
                     ' <a target="_blank" href="https://genepanel.iobio.io">genepanel.iobio.io</a>' +
@@ -1030,6 +1031,9 @@
 
                         self.modelInfoList.forEach((modelInfo) => {
                             modelInfoCount++;
+                            if (typeof modelInfo.isTumor !== 'boolean') {
+                              modelInfo.isTumor = modelInfo.isTumor === 'true';  // Get rid of type casting issues
+                            }
                             selectedSamples.push(modelInfo.selectedSample);
                         });
                         self.modelInfoIdx = modelInfoCount; // Update child component to stay on count

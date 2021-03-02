@@ -396,7 +396,10 @@ export default {
       }
     },
     selectedGene: function () {
-      let selectedGeneDisplay = this.selectedGene.gene_name + " " + this.selectedGene.chr;
+      let selectedGeneDisplay = '';
+      if (this.selectedGene) {
+        selectedGeneDisplay = this.selectedGene.gene_name + " " + this.selectedGene.chr;
+      }
       this.$emit('gene-changed', selectedGeneDisplay);
       this.selectedTab = 'genes-tab';
     }
@@ -499,7 +502,7 @@ export default {
               self.$refs.historyTabRef.refreshList();
             }
           }).catch(error => {
-        console.log('There was a problem calling global somatics: ' + error);
+            console.log('There was a problem calling global somatics: ' + error);
       });
     },
     promiseLoadData: function (selectedGene, selectedTranscript, transcriptChange, globalMode) {

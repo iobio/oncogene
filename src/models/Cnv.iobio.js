@@ -8,6 +8,7 @@ class cnviobio {
         this.startCoords = []; // index is chr, entry is sub-array of start coords [[22224, 22229, ...]
         this.cnvData = [];   // index is chr, entry is sub-array of maps of start, end, tcn, lcn [[{start: 21200, end: 22229, tcn: lcn: }, {start: 21200, end: 23457, tcn: lcn:}, ....]]
         this.dataLoaded = false;
+        this.selectedSample = null;
         this.REQ_FIELDS = ['chrom', 'start', 'end', 'tcn.em', 'lcn.em'];
     }
 
@@ -84,20 +85,22 @@ class cnviobio {
             self.rawLines.forEach((line) => {
                 let tokens = line.split('\t');
                 let currChr = tokens[self.headerIndices[0]];
+                let adjChr = currChr;
                 if (currChr === 'X') {
-                    currChr = 24;
+                    adjChr = 24;
                 } else if (currChr === 'Y') {
-                    currChr = 25;
+                    adjChr = 25;
                 }
 
-                self.startCoords[currChr - 1].push(tokens[self.headerIndices[1]]);
+                self.startCoords[adjChr - 1].push(tokens[self.headerIndices[1]]);
                 let otherData = {
+                    chr: +currChr,
                     start: +tokens[self.headerIndices[1]],
                     end: +tokens[self.headerIndices[2]],
                     tcn: +tokens[self.headerIndices[3]],
                     lcn: +tokens[self.headerIndices[4]]
                 };
-                self.cnvData[currChr - 1].push(otherData);
+                self.cnvData[adjChr - 1].push(otherData);
             });
             self.dataLoaded = true;
             resolve();
@@ -108,8 +111,9 @@ class cnviobio {
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
     // If merge CNVs true, returns one single continuous CNV, rather than a list.
+    // If abnormalOnly is true, returns only CNVs where TCN != 2
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
-    findEntryByCoord(chr, startCoord, endCoord, mergeCnvs = false) {
+    findEntryByCoord(chr, startCoord, endCoord, mergeCnvs = false, abnormalOnly = false) {
         let matchingCnvs = [];
 
         // Synonimize chromosome nomenclature
@@ -135,17 +139,20 @@ class cnviobio {
             if (chrData[i].start > endCoord) {
                 break;
             }
+            // If we only want abnormal CNVs, perform check before adding
+            let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2) : true;
+
             // We're in a gene encompasses by a CNV larger than the entire gene
-            if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end) {
+            if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end && abnormalSatisfied) {
                 matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found an element that encompasses some of the 5' part of the gene
-            } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord) {
+            } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord && abnormalSatisfied) {
                 matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found an event that starts within our gene and encompasses some of the 3' part
-            } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord) {
+            } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord && abnormalSatisfied) {
                 matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found a tiny CNV within the gene
-            } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord) {
+            } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord && abnormalSatisfied) {
                 matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             }
         }

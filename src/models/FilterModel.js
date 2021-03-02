@@ -475,6 +475,44 @@ class FilterModel {
         })
     }
 
+    /* For each region, compares the abnormal (TCN != 2) CNVs for the normal model to those of the tumor model(s).
+     * Any CNVs present in only the tumor samples as a dictionary organized by geneName: list of abnormal CNVs.
+     * If no normalCnvModel is provided, just includes all tumor sample CNVs that are abnormal. */
+    annotateSomaticCnvs(normalCnvModel, tumorCnvModels, geneObjects) {
+        let somaticCnvs = {};
+        Object.keys(geneObjects).forEach(geneName => {
+            let geneObj = geneObjects[geneName];
+            let normalLookup = {};
+            let tumorLookup = {};
+
+            // We may not have normal CNVs to find 'somatic' CNVs - in that case, just include all abnormal tumor CNVs
+            let normalCnvs = [];
+            if (normalCnvModel != null) {
+                normalCnvs = normalCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, false, true);
+                normalCnvs.forEach(normalCnv => {
+                    normalLookup[normalCnv.start + '_' + normalCnv.end + '_' + normalCnv.tcn + '_' + normalCnv.lcn] = true;
+                })
+            }
+            tumorCnvModels.forEach(tumorCnvModel => {
+                let tumorCnvs = tumorCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, false, true);
+                tumorCnvs.forEach(tumorCnv => {
+                    if (!normalLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn]) {
+                        if (somaticCnvs[geneName] == null) {
+                            somaticCnvs[geneName] = [];
+                        }
+                        if (!tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn]) {
+                            tumorCnv.selectedSamples = [];
+                            somaticCnvs[geneName].push(tumorCnv);
+                            tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn] = true;
+                        }
+                        tumorCnv.selectedSamples.push(tumorCnvModel.selectedSample);
+                    }
+                })
+            })
+        })
+        return somaticCnvs;
+    }
+
     getMatchingDepth(startCoord, depthList) {
         let lastDepth = 0;
         for (let i = 0; i < depthList.length; i++) {

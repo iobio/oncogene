@@ -84,8 +84,11 @@
 
                 // Register listeners
                 let dispatch = this.cnvChart.getDispatch();
-                dispatch.on('d3cnv', function(positionArr, cnvInfo) {
-                    self.$emit('toggle-cnv-tooltip', positionArr, cnvInfo);
+                dispatch.on('d3mouseover', function(cnvInfo) {
+                  self.$emit('toggle-cnv-tooltip', cnvInfo);
+                });
+                dispatch.on('d3mouseout', function() {
+                  self.$emit('toggle-cnv-tooltip');
                 });
             },
             update: function () {

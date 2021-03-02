@@ -54,6 +54,7 @@ class CohortModel {
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
         this.onlySomaticCalls = false;
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
+        this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -498,9 +499,10 @@ class CohortModel {
             modelInfo.model = vm;
             vm.id = modelInfo.id;
             vm.order = modelInfo.order;
-            vm.isTumor = modelInfo.isTumor === 'true';
+            vm.isTumor = modelInfo.isTumor;
             vm.selectedSample = modelInfo.selectedSample;
             vm.selectedSampleIdx = modelInfo.selectedSampleIdx;
+            vm.cnv.selectedSample = modelInfo.selectedSample;
 
             let filePromises = [];
             if (modelInfo.vcfUrl) {
@@ -803,20 +805,41 @@ class CohortModel {
         return Object.keys(theVcfs).length === 1;
     }
 
-    /* If a somatic variant list is not provided, fetches the list based on the current filtering criteria.
-     * Then groups and ranks the variants by gene, and returns a rank object. */
+    /* If a somatic variant list is not provided, fetches the list of somatic variants based on the current filtering criteria.
+     * Additionally annotates all somatic CNVs at the specified gene regions.
+     * Then groups and ranks the variants and CNVs by gene, and returns a rank object. */
     promiseAnnotateGlobalSomatics() {
         const self = this;
         self.somaticVarMap = {};
+        self.somaticCnvMap = {};
 
         return new Promise((resolve, reject) => {
-            self.promiseAnnotateSomaticVariants()
+            let promises = [];
+            let varP = self.promiseAnnotateSomaticVariants()
                 .then((somaticVariants) => {
                     if (self.hasCnvData) {
-                        self.annotateCnvs(somaticVariants);
+                        self.annotateCnvsOnVariants(somaticVariants);
                     }
                     self.somaticVarMap = self.populateSomaticVarMap(somaticVariants);
-                    self.geneModel.promiseGroupAndRank(self.somaticVarMap)
+                })
+                .catch(error => {
+                    reject('Problem loading somatic variants: ' + error);
+                });
+            promises.push(varP);
+
+            if (self.hasCnvData) {
+                let cnvP = self.promiseAnnotateSomaticCnvs()
+                    .then(somaticCnvMap => {
+                        self.somaticCnvMap = somaticCnvMap;
+                    }).catch(error => {
+                        reject('Something went wrong annotating global somatic CNVs ' + error);
+                    })
+                promises.push(cnvP);
+            }
+
+            Promise.all(promises)
+                .then(() => {
+                    self.geneModel.promiseGroupAndRank(self.somaticVarMap, self.somaticCnvMap)
                         .then(rankObj => {
                             resolve(rankObj);
                         })
@@ -824,10 +847,28 @@ class CohortModel {
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
                 })
-                .catch(error => {
-                    reject('Problem loading somatic variants: ' + error);
-                });
         });
+    }
+
+    promiseAnnotateSomaticCnvs() {
+        const self = this;
+        return new Promise((resolve) => {
+            const genes = self.geneModel.geneObjects;
+
+            // Check to see if normal sample has CNV data
+            let normalModel = self.getNormalModel();
+            let normalCnvModel = null;
+            if (normalModel.cnv != null) {
+                normalCnvModel = normalModel.cnv;
+            }
+
+            let tumorCnvModels = [];
+            self.getOrderedTumorModels().forEach(tumorModel => {
+                tumorCnvModels.push(tumorModel.cnv);
+            });
+            let somaticCnvs = self.filterModel.annotateSomaticCnvs(normalCnvModel, tumorCnvModels, genes);
+            resolve(somaticCnvs);
+        })
     }
 
 
@@ -1507,7 +1548,7 @@ class CohortModel {
 
     /* Takes in a map of samples in this data set. For each sample, iterates through
      * associated variants and annotates whether variant falls within a CNV region. */
-    annotateCnvs(sampleMap) {
+    annotateCnvsOnVariants(sampleMap) {
         const self = this;
         Object.values(sampleMap).forEach((sampleObj) => {
             let selectedSample = sampleObj.name;
