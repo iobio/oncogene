@@ -1004,10 +1004,11 @@ export default {
             .style('opacity', 0);
       }
     },
-    displayCnvDialog: function(cnvInfo, width, selectedSample) {
+    displayCnvDialog: function(cnvObj, width, selectedSample) {
+      // todo: cnvObj still coming in incorrectly here
       this.cnvDialogWidth = width;
       this.selectedCnv = {
-        cnvInfo: cnvInfo,
+        cnvObj: cnvObj,
         selectedSample: selectedSample
       };
       this.cnvDialog = true;

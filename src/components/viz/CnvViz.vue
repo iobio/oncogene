@@ -122,9 +122,9 @@
             }
         },
         watch: {
-            'model.cnvsInGene': function () {
+            'model.cnvsInGeneObj': function () {
                 if (this.model) {
-                    this.data = this.model.cnvsInGene;
+                    this.data = this.model.cnvsInGeneObj;
                     this.update();
                 }
             }

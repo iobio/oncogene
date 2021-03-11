@@ -486,16 +486,16 @@ class FilterModel {
             let tumorLookup = {};
 
             // We may not have normal CNVs to find 'somatic' CNVs - in that case, just include all abnormal tumor CNVs
-            let normalCnvs = [];
+            let normalCnvObj = {};
             if (normalCnvModel != null) {
-                normalCnvs = normalCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, false, true);
-                normalCnvs.forEach(normalCnv => {
+                normalCnvObj = normalCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, true);
+                normalCnvObj.matchingCnvs.forEach(normalCnv => {
                     normalLookup[normalCnv.start + '_' + normalCnv.end + '_' + normalCnv.tcn + '_' + normalCnv.lcn] = true;
                 })
             }
             tumorCnvModels.forEach(tumorCnvModel => {
-                let tumorCnvs = tumorCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, false, true);
-                tumorCnvs.forEach(tumorCnv => {
+                let tumorCnvObj = tumorCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, true);
+                tumorCnvObj.matchingCnvs.forEach(tumorCnv => {
                     if (!normalLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn]) {
                         if (somaticCnvs[geneName] == null) {
                             somaticCnvs[geneName] = [];

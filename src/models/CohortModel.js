@@ -1512,15 +1512,15 @@ class CohortModel {
     }
 
     /* Sets the region-specific property for each sample, if present. */
-    setCnvForRegion(theCnvs) {
+    setCnvForRegion(cnvMap) {
         const self = this;
         self.getCanonicalModels().forEach(model => {
-           if (theCnvs[model.id]) {
-               model.cnvsInGene = theCnvs[model.id];
+           if (cnvMap[model.id]) {
+               model.cnvsInGeneObj = cnvMap[model.id];
            }
             model.inProgress['cnvLoading'] = false;
         });
-        self.cnvData = theCnvs;
+        self.cnvData = cnvMap;
     }
 
     /* Sets the max TCN for all samples for the currently selected gene */
@@ -1528,8 +1528,8 @@ class CohortModel {
         const self = this;
         self.maxTcnForGene = 2;
 
-        Object.values(theCnvs).forEach(cnvList => {
-            cnvList.forEach(cnvObj => {
+        Object.values(theCnvs).forEach(cnvObj => {
+            cnvObj.matchingCnvs.forEach(cnvObj => {
                 if (cnvObj.tcn > self.maxTcnForGene) {
                     self.maxTcnForGene = cnvObj.tcn;
                 }
@@ -1561,8 +1561,8 @@ class CohortModel {
             let sampleModel = self.getModelBySelectedSample(selectedSample);
             if (sampleModel.isCnvLoaded()) {
                 sampleObj.features.forEach(feature => {
-                    let matchingCnvs = sampleModel.cnv.findEntryByCoord(feature.chrom, feature.start, feature.end);
-                    matchingCnvs.forEach(cnv => {
+                    let cnvObj = sampleModel.cnv.findEntryByCoord(feature.chrom, feature.start, feature.end);
+                    cnvObj.matchingCnvs.forEach(cnv => {
                         if (cnv.tcn !== 2) {
                             feature.inCnv = 1;
                         }
@@ -2031,8 +2031,8 @@ class CohortModel {
                 if (model.isCnvLoaded()) {
                     model.inProgress['cnvLoading'] = true;
                     let p = model.promiseGetCnvRegions(theGene)
-                        .then(cnvList => {
-                            resultMap[model.id] = cnvList;
+                        .then(cnvObj => {
+                            resultMap[model.id] = cnvObj;
                         });
                     promises.push(p);
                 }

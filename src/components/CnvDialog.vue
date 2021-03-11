@@ -2,17 +2,15 @@
   <v-card class='full-width'>
     <v-card-title class="section-title">Sample {{selectedCnv.selectedSample}} Copy Number Details</v-card-title>
     <v-card-text id="dialog-card-text" class="px-5">
-      <div class="pt-3 dialog-label">Chromosomal View</div>
-      <div v-if="loadingIdeogram" class="text-center pt-2">
-        <v-progress-circular indeterminate
-                           color="#7f1010"
-                           class="mb-0"
-        ></v-progress-circular>
+      <div class="pb-3 pt-3">
+        <div class="dialog-label">Chromosomal View</div>
+        <div :class="this.numCnvs > 1 ? 'legendIdeo' : 'compactIdeo'" id="ideo-container"></div>
       </div>
-      <div v-if="!loadingIdeogram" id="ideo-container"></div>
-      <div class="pt-2 dialog-label" style="padding-bottom: 10px">Gene View</div>
-      <div id="cnv-dialog-shading" style="display: block; margin: auto"></div>
-      <div id="cnv-dialog-gene" style="display: block; margin-left: auto; margin-right: auto; margin-top: -40px"></div>
+      <div>
+        <div class="py-1 dialog-label">Gene View</div>
+        <div id="cnv-dialog-shading" style="display: block; margin-left: auto; margin-right: auto;"></div>
+        <div id="cnv-dialog-gene" style="display: block; margin-left: auto; margin-right: auto; margin-top: -40px"></div>
+      </div>
     </v-card-text>
   </v-card>
 </template>
@@ -70,7 +68,7 @@ export default {
           return 'transcript';
         }
       },
-      cnvColors: ['rgb(127, 16, 16, 0.5)', 'rgb(204, 151, 142, 0.5)', 'rgb(243, 156, 107, 0.5)', 'rgb(38, 20, 71, 0.5)', 'rgb(192, 189, 165, 0.5)']
+      cnvColors: ['rgb(127, 16, 16, 0.5)', 'rgb(204, 151, 142, 0.5)', 'rgb(0, 119, 136, 0.5)', 'rgb(38, 20, 71, 0.5)', 'rgb(243, 156, 107, 0.5)', 'rgb(192, 189, 165, 0.5)']
     }
   },
   watch: {
@@ -84,6 +82,15 @@ export default {
       deep: true
     }
   },
+  computed: {
+    numCnvs: function() {
+      if (this.selectedCnv && this.selectedCnv.cnvObj && this.selectedCnv.cnvObj.matchingCnvs) {
+        return this.selectedCnv.cnvObj.matchingCnvs.length;
+      } else {
+        return 1;
+      }
+    }
+  },
   methods: {
     drawCnv: function () {
       this.d3.select("#dialog-card-text").selectAll('svg').remove();
@@ -94,23 +101,27 @@ export default {
       }
       this.drawShading(strippedChr);
       this.drawGene();
-      setTimeout(() => {
-        this.drawIdeogram(strippedChr);
-      }, 500);
+      this.drawIdeogram(strippedChr);
     },
     drawIdeogram: function (strippedChr) {
       if (!this.selectedGene || !this.selectedCnv) {
         console.log('Error in displaying CNV dialog - no selected gene or cnv');
         return;
       }
-
       let annotations = [];
+
+      // Only add legend if we have more than one CNV
+      if (!(this.selectedCnv.cnvObj && this.selectedCnv.cnvObj.mergedCnv && this.selectedCnv.cnvObj.mergedCnv.length > 0)) {
+        console.log('ERROR: could not draw ideogram - selectedCnv not coming into CnvDialog correctly');
+        return;
+      }
+      let delims = this.selectedCnv.cnvObj.mergedCnv[0].delimiters;
       let legend = [{
-        name: 'Copy Number Labels',
+        name: '----------------------------------',
         rows: []
       }];
       let i = 0;
-      this.selectedCnv.cnvInfo.delimiters.forEach(coordPair => {
+      delims.forEach(coordPair => {
         let start = coordPair[0];
         let end = coordPair[1];
         let color = this.cnvColors[i];
@@ -121,11 +132,24 @@ export default {
           stop: end,
           name: 'CNV ' + (i+1),
         });
-        legend[0].rows.push({color: color, name: 'CNV ' + (i+1)})
+        legend[0].rows.push({color: color, name: 'CNV ' + (i+1) + ': ' + start + '-' + end})
         i++;
       })
 
-      let fullHeight = this.d3.select('#dialog-card-text').node().getBoundingClientRect().width - 100;
+      // Add gene
+      const selectionColor = '#194d81';
+      annotations.push({
+        color: selectionColor,
+        chr: strippedChr,
+        start: this.selectedGene.start,
+        stop: this.selectedGene.end,
+        name: 'Gene Location',
+        trackIndex: 1
+      });
+      legend[0].rows.push({color: selectionColor, name: 'Gene Location'})
+
+      //let fullHeight = this.d3.select('#dialog-card-text').node().getBoundingClientRect().width - 100;
+      let fullHeight = (this.width * 2) * 0.8;
       if (fullHeight > 0) {
         const config = {
           organism: 'human',
@@ -133,27 +157,62 @@ export default {
           container: '#ideo-container',
           orientation: 'horizontal',
           chrHeight: fullHeight,
+          chrWidth: 20,
           chrLabelSize: 10,
           chromosome: strippedChr,
           annotations: annotations,
           annotationsLayout: 'overlay',
-          legend: legend
+          legend: legend,
+          showAnnotTooltip: false
         };
         new Ideogram(config);
         this.loadingIdeogram = false;
+
+        // Wait to draw gene markers until after ideogram rendered
+        const self = this;
+
+        // todo: might be able to use this hook instead onDrawAnnots in ideogram
+        setTimeout(() => {
+          let geneG = self.d3.select('#_ideogram').selectAll('.annot')
+              .filter(function() {
+                return self.d3.select(this).attr("fill") === selectionColor; // filter by single attribute
+              })
+          // Parse out points from attribute
+          let points = geneG.attr('points');
+          let coordArr = [];
+          let pointArr = points.split(' ');
+          pointArr.forEach(pointStr => {
+            let singlePointArr = pointStr.split(',');
+            singlePointArr.forEach(point => {
+              coordArr.push(point);
+            })
+          })
+
+          let newPoints = '';
+          let topYCount = 0;
+          for (let i = 0; i < coordArr.length; i++) {
+            let currPoint = coordArr[i];
+            if (i%2 === 0) {
+              newPoints += (currPoint + ' ');
+            } else {
+              let updatedPoint = topYCount < 2 ? (+currPoint + 2) : (+currPoint + 35);
+              newPoints += (updatedPoint + ' ');
+              topYCount++;
+            }
+          }
+          geneG.attr('points', newPoints);
+        }, 50)
       }
     },
     drawShading: function (strippedChr) {
-      // todo: incorporate exon data here from selectedTranscript
-
-      if (this.selectedCnv && this.selectedCnv.cnvInfo) {
-        let selection = this.d3.select('#cnv-dialog-shading').datum([this.selectedCnv.cnvInfo]);
+      if (this.selectedCnv && this.selectedCnv.cnvObj) {
+        let selection = this.d3.select('#cnv-dialog-shading').datum(this.selectedCnv.cnvObj);
         const chartData = {
           selection: selection,
           regionStart: this.selectedGene.start,
           regionEnd: this.selectedGene.end,
           chromosome: strippedChr,
-          verticalLayers: [this.selectedCnv.cnvInfo].length,
+          verticalLayers: 1,
           width: this.width,
           maxTcn: this.maxTcn,
           drawMinorAllele: true
@@ -207,9 +266,10 @@ export default {
     });
 
     const cnvVizOptions = {
-      margin: {top: 0, bottom: 10, left: 0, right: 0},
+      margin: {top: -50, bottom: 10, left: 0, right: 0},
       verticalPadding: 4,
-      showTransition: false
+      showTransition: false,
+      inDialog: true
     };
     this.cnvChart = cnvD3(this.d3, ('cnv-dialog-shading'), cnvVizOptions);
     let cnvDispatch = this.cnvChart.getDispatch();
@@ -232,14 +292,29 @@ export default {
         text
           font-size: 8px !important
 
-    #ideo-container
-        height: 125px
-        margin-top: -35px
+    #_ideogram
+        padding-top: 0 !important
 
     .dialog-label
         font-family: Open Sans
-        font-size: 16px
+        font-size: 18px
 
-    ._ideogramLegend
-        float: right
+    #_ideogramLegend
+        float: right !important
+        margin-top: -35px
+
+    .longIdeo
+        height: 300px
+
+    .shortIdeo
+        height: 225px
+
+    #_ideogramLegend
+        font-family: Open Sans !important
+        font-size: 14px !important
+
+    .bandLabel
+        font-family: Open Sans !important
+        color: #888888
+
 </style>

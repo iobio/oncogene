@@ -266,7 +266,7 @@
                                          @var-chart-rendered="onVarVizRendered">
                             </variant-viz>
                             <div class="chart-label"
-                                 v-show="showCnvViz && sampleModel.cnvsInGene && sampleModel.cnvUrlEntered">
+                                 v-show="showCnvViz && sampleModel.cnvsInGeneObj && sampleModel.cnvUrlEntered">
                                 copy number
                             </div>
                             <cnv-viz ref="cnvVizRef"
@@ -723,9 +723,9 @@
                 const self = this;
 
                 if (self.showCnvViz && self.sampleModel.cnvData != null) {
-                  let matchingCnvs = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end, false);
-                  if (matchingCnvs.length > 0) {
-                    self.$refs.cnvVizRef.showCnvPoint(variant.start, variant.end, matchingCnvs);
+                  let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end);
+                  if (cnvObj.matchingCnvs.length > 0) {
+                    self.$refs.cnvVizRef.showCnvPoint(variant.start, variant.end, cnvObj.matchingCnvs);
                   }
                 }
             },
@@ -902,8 +902,8 @@
             toggleCnvTooltip: function(cnvInfo) {
                 this.$emit('toggle-cnv-tooltip', cnvInfo);
             },
-            displayCnvDialog: function(cnvInfo, width, selectedSample) {
-                this.$emit('display-cnv-dialog', cnvInfo, width, selectedSample);
+            displayCnvDialog: function(cnvObj, width, selectedSample) {
+                this.$emit('display-cnv-dialog', cnvObj, width, selectedSample);
             }
         },
         filters: {},

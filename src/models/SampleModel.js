@@ -44,7 +44,7 @@ class SampleModel {
 
         // cnv data
         this.cnvUrlEntered = false;
-        this.cnvsInGene = [];     // The CNVs within the currently selected gene
+        this.cnvsInGeneObj = null;     // The CNVs within the currently selected gene
 
         // model properties
         // TODO: I can get rid of some of these now
@@ -1323,13 +1323,12 @@ class SampleModel {
         });
     }
 
-    /* Returns list of CNVs that occur within the boundaries of the provided gene. */
+    /* Returns an object with the list of CNVs that occur within the boundaries of the provided gene, as well as a single merged continuous CNV. */
     promiseGetCnvRegions(theGene) {
         const self = this;
         return new Promise((resolve) => {
-            const joinEntries = true;
-            let theCnvs = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end, joinEntries);
-            resolve(theCnvs);
+            let cnvObj = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+            resolve(cnvObj);
         });
     }
 

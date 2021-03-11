@@ -113,12 +113,16 @@
             }
         },
         watch: {
-            'cohortModel.cnvData': function() {
-                let maxTcn = this.cohortModel.getMaxTcn(this.cohortModel.cnvData);
+            'cohortModel.cnvData': {
+              handler: function () {
+                let maxTcn = this.cohortModel.getMaxTcn(this.cohortModel.cnvData.matchingCnvs);
                 let sampleLabels = this.cohortModel.getSelSamplesWithCnvData();
                 if (this.$refs.cnvLineViz) {
-                    this.$refs.cnvLineViz.fillChart(this.cohortModel.cnvData, sampleLabels, maxTcn);
+                  //todo: does this need merged cnv? need to test this, model changes and not displaying viz
+                  this.$refs.cnvLineViz.fillChart(this.cohortModel.cnvData.mergedCnv, sampleLabels, maxTcn);
                 }
+              },
+              deep: true
             }
         },
         methods: {

@@ -10,8 +10,8 @@ export default function cnvD3(d3, divId, vizSettings) {
 
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
-    var width = 800,
-        height = 40;
+    var width = 600,
+        height = 50;
     var lineColor = vizSettings.lineColor ? vizSettings.lineColor : '#464646';
 
     // Scales, Axes, Deltas
@@ -22,6 +22,10 @@ export default function cnvD3(d3, divId, vizSettings) {
     var showTransition = vizSettings.showTransition !== false;
 
     var id = divId;
+    var inDialog = vizSettings.inDialog ? vizSettings.inDialog : false;
+
+    var cnvColors = ['rgb(127, 16, 16, 0.5)', 'rgb(204, 151, 142, 0.5)', 'rgb(0, 119, 136, 0.5)', 'rgb(38, 20, 71, 0.5)', 'rgb(243, 156, 107, 0.5)', 'rgb(192, 189, 165, 0.5)'];
+
 
     /**** CHART DRAWING ****/
 
@@ -45,7 +49,7 @@ export default function cnvD3(d3, divId, vizSettings) {
             var container = d3.select(this).classed('ibo-cnv', true);
             container.selectAll("svg").remove();
 
-            if (data && data.length > 0) {
+            if (data && data.matchingCnvs && data.matchingCnvs.length > 0) {
 
                 // Update the x-scale.
                 if (regionStart && regionEnd) {
@@ -60,10 +64,10 @@ export default function cnvD3(d3, divId, vizSettings) {
                 y.range([height, 0]);
 
                 // Add svg
-                const adj = 5;
+                const adj = inDialog ? 3 : 5;
                 var svg = d3.select('#' + id)
                     .append('svg')
-                    .attr("preserveAspectRatio", "xMidYMid meet")
+                    .attr("preserveAspectRatio", "xMinYMin meet")
                     .attr("viewBox", "-"
                         + 0 + " -"
                         + adj + " "
@@ -105,15 +109,15 @@ export default function cnvD3(d3, divId, vizSettings) {
 
                 // Add one element per cnv
                 const tcnAreas = svg.selectAll('areas')
-                    .data(data)
+                    .data(data.matchingCnvs)
                     .enter()
                     .append("g");
 
                 // Draw area per element
                 tcnAreas.append("path")
-                    .attr('fill', 'url(#tcn-gradient)')
-                    .attr('stroke', 'url(#line-gradient)')
-                    .attr('opacity', 0.5)
+                    .attr('fill', (d, i) => { return inDialog ? cnvColors[i] : 'url(#tcn-gradient)' })
+                    .attr('stroke', (d, i) => { return inDialog ? cnvColors[i] : 'url(#line-gradient)' })
+                    .attr('opacity', () => { return inDialog ? 1.0 : 0.5 })
                     .attr('stroke-width', '0.5px')
                     .attr("d", function(d) { return tcnArea(d.points); })
                     .on("mouseover", function (d) {
@@ -122,8 +126,8 @@ export default function cnvD3(d3, divId, vizSettings) {
                     .on("mouseout", function () {
                         dispatch.call('d3mouseout');
                     })
-                    .on("click", function (d) {
-                        dispatch.call('d3click', this, d, width);
+                    .on("click", function () {
+                        dispatch.call('d3click', this, data, width);
                     });
 
                 // LCN Line
@@ -133,7 +137,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                         .y(function(d) { return y(d.lcn); });
 
                     const lcnLines = svg.selectAll('lines')
-                        .data(data)
+                        .data(data.mergedCnv)
                         .enter()
                         .append("g");
 

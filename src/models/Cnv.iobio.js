@@ -107,14 +107,16 @@ class cnviobio {
         })
     }
 
-    // todo: format this info better
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
-    // If merge CNVs true, returns one single continuous CNV, rather than a list.
+    // Returns a single continuous CNV (for viz purposes) as well as a list of the individual ones covering the gene
     // If abnormalOnly is true, returns only CNVs where TCN != 2
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
-    findEntryByCoord(chr, startCoord, endCoord, mergeCnvs = false, abnormalOnly = false) {
-        let matchingCnvs = [];
+    findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false) {
+        let cnvObj = {
+            matchingCnvs: [],
+            mergedCnv: []
+        };
 
         // Synonimize chromosome nomenclature
         if (chr.indexOf('c') > -1) {
@@ -131,7 +133,7 @@ class cnviobio {
 
         // Don't start searching if our first section is > our coord
         if (chrStarts.length === 0 || chrStarts[0] > startCoord) {
-            return matchingCnvs;
+            return cnvObj;
         }
 
         // Search intervals for matching start
@@ -144,23 +146,21 @@ class cnviobio {
 
             // We're in a gene encompasses by a CNV larger than the entire gene
             if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end && abnormalSatisfied) {
-                matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
+                cnvObj.matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found an element that encompasses some of the 5' part of the gene
             } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord && abnormalSatisfied) {
-                matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
+                cnvObj.matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found an event that starts within our gene and encompasses some of the 3' part
             } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord && abnormalSatisfied) {
-                matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
+                cnvObj.matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             // We've found a tiny CNV within the gene
             } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord && abnormalSatisfied) {
-                matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
+                cnvObj.matchingCnvs.push(this._getFormattedData(chrData[i], startCoord, endCoord));
             }
         }
 
-        if (mergeCnvs) {
-            matchingCnvs = this._mergeCnvs(matchingCnvs);
-        }
-        return matchingCnvs;
+        cnvObj.mergedCnv = this._mergeCnvs(cnvObj.matchingCnvs);
+        return cnvObj;
     }
 
     // Returns a list of CNVs with only one joined entry. The TCN and LCN fields will be set to the MAX value within array.
