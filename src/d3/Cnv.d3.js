@@ -6,19 +6,20 @@ export default function cnvD3(d3, divId, vizSettings) {
         console.log('WARNING: no vizSettings argument provided to cnv.d3.');
         vizSettings = {};
     }
-    var dispatch = d3.dispatch('d3mouseover', 'd3mouseout');
+    var dispatch = d3.dispatch('d3mouseover', 'd3mouseout', 'd3click');
 
     // Viz-level sizing
     var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
     var width = 800,
         height = 40;
+    var lineColor = vizSettings.lineColor ? vizSettings.lineColor : '#464646';
 
     // Scales, Axes, Deltas
     var x = vizSettings.x ? vizSettings.x : d3.scaleLinear(),
         y = vizSettings.y ? vizSettings.y : d3.scaleLinear();
 
     // Viz-level flags
-    var showTransition = vizSettings.showTransition ? vizSettings.showTransition : true;
+    var showTransition = vizSettings.showTransition !== false;
 
     var id = divId;
 
@@ -62,7 +63,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                 const adj = 5;
                 var svg = d3.select('#' + id)
                     .append('svg')
-                    .attr("preserveAspectRatio", "xMinYMin meet")
+                    .attr("preserveAspectRatio", "xMidYMid meet")
                     .attr("viewBox", "-"
                         + 0 + " -"
                         + adj + " "
@@ -120,6 +121,9 @@ export default function cnvD3(d3, divId, vizSettings) {
                     })
                     .on("mouseout", function () {
                         dispatch.call('d3mouseout');
+                    })
+                    .on("click", function (d) {
+                        dispatch.call('d3click', this, d, width);
                     });
 
                 // LCN Line
@@ -135,7 +139,7 @@ export default function cnvD3(d3, divId, vizSettings) {
 
                     const lcnPaths = lcnLines.append('path')
                         .attr('stroke-width', 1.5)
-                        .attr('stroke', 'black')
+                        .attr('stroke', lineColor)
                         .attr('fill', 'none')
                         .attr("d", function(d) { return lcnLine(d.points); });
 

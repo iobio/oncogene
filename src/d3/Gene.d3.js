@@ -1,6 +1,6 @@
 export default function geneD3(d3, options) {
 
-    var dispatch = d3.dispatch("d3selected", "d3featuretooltip", "d3featureglyphtooltip", "d3brush");
+    var dispatch = d3.dispatch("d3selected", "d3featuretooltip", "d3featureglyphtooltip", "d3brush", "d3exontooltip");
 
     // defaults
     var geneD3_showLabel = options.showLabel ? options.showLabel : false;
@@ -8,7 +8,8 @@ export default function geneD3(d3, options) {
     // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
     var selectedTranscript = null;
-    var color = options.color ? options.color : '#969696';
+    var color = options.color ? options.color : '#424242';
+    var inDialog = options.inDialog ? options.inDialog : false;
 
     // dimensions
     var margin = options.margin ? options.margin : {top: 10, right: 0, bottom: 15, left: 110},
@@ -87,17 +88,14 @@ export default function geneD3(d3, options) {
             y.domain([0, data.length]);
             y.range([innerHeight, 0]);
 
-
             data.forEach(function (transcript) {
                 transcript.features.forEach(function (feature) {
                     feature.transcript_type = transcript.transcript_type;
                 })
             });
 
-
             // Select the svg element, if it exists.
             var svg = container.selectAll("svg").data([0]);
-
             var g = svg.join("svg")
                 .attr("width", geneD3_widthPercent ? geneD3_widthPercent : geneD3_width)
                 .attr("height", geneD3_heightPercent ? geneD3_heightPercent : geneD3_height + margin.top + margin.bottom)
@@ -121,9 +119,8 @@ export default function geneD3(d3, options) {
             g.selectAll(".x.axis").remove();
             if (geneD3_showXAxis) {
                 g.append('g')
-                    .style('font-size', '15px')
                     .attr("class", "x axis")
-                    .attr("transform", "translate(0, " + parseInt(margin.top + margin.bottom + 10) + ")")
+                    .attr("transform", "translate(0, " + parseInt(10) + ")")
                     .call(xAxis);
             }
 
@@ -181,10 +178,10 @@ export default function geneD3(d3, options) {
 
             transcript.selectAll(".name,.type").remove();
             if (geneD3_showLabel) {
-                transcript.selectAll('.name').data(function (d) {
-                    return [[d.start, d.transcript_id]]
-                })
-                    .join('text')
+                let tscript = transcript.selectAll('.name').data(function (d) {
+                    return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
+                });
+                tscript.join('text')
                     .attr('class', 'name')
                     .attr('x', function() {
                         return margin.left > 5 ? 5 - margin.left : 0
@@ -195,27 +192,52 @@ export default function geneD3(d3, options) {
                     .text(function (d) {
                         return d[1];
                     })
+                    .style('font-size', () => { return inDialog ? '8px' : '16px' })
                     .style('fill-opacity', 0)
                     .style("pointer-events", "none");
 
-                transcript.selectAll('.type').data(function (d) {
-                    return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
-                })
-                    .join('text')
-                    .attr('class', 'type')
-                    .style('font-size', '16px')
-                    .attr('x', function () {
-                        return (geneD3_width - margin.left - margin.right - 5) + 10
+                tscript.join('text')
+                    .attr('class', 'name_2')
+                    .attr('x', function() {
+                        let offset = inDialog ? 20 : 0;
+                        return margin.left > 5 ? 5 - margin.left + offset : offset;
                     })
-                    .attr('y', 12)
+                    .attr('y', 0)
                     .attr('text-anchor', 'top')
                     .attr('alignment-baseline', 'left')
-                    .style("pointer-events", "none")
                     .text(function (d) {
-                        var type = (d[1] === 'protein_coding' || d[1] === 'mRNA' ? '' : d[1]);
-                        return type + ' ' + d[2] + ' ' + d[3];
+                        return d[1];
                     })
+                    .style('font-size', () => { return inDialog ? '8px' : '16px' })
+                    .style('fill-opacity', 0)
+                    .style("pointer-events", "none");
 
+                if (!inDialog) {
+                    transcript.selectAll('.type').data(function (d) {
+                        return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
+                    })
+                        .join('text')
+                        .attr('class', 'type')
+                        .style('font-size', '16px')
+                        .attr('x', function () {
+                            let offset = inDialog ? -50 : 10;
+                            return (geneD3_width - margin.left - margin.right - 5) + offset;
+                        })
+                        .attr('y', function() {
+                            return inDialog === true ? 30 : 12;
+                        })
+                        .attr('text-anchor', 'top')
+                        .attr('alignment-baseline', 'left')
+                        .style("pointer-events", "none")
+                        .text(function (d) {
+                            var type = (d[1] === 'protein_coding' || d[1] === 'mRNA' ? '' : d[1]);
+                            return type + ' ' + d[2] + ' ' + d[3];
+                        })
+                } else {
+                    transcript.selectAll('.type').data(function (d) {
+                        return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
+                    })
+                }
 
             }
             transcript.selectAll(".arrow").remove();
@@ -244,7 +266,7 @@ export default function geneD3(d3, options) {
                 });
             }).join('rect')
                 .style('fill', color)
-                .style('stroke', 'hsla(0,0%,65%,.6')
+                .style('stroke', color)
                 .attr('rx', borderRadius)
                 .attr('ry', borderRadius)
                 .attr('x', function (d) {
@@ -263,18 +285,21 @@ export default function geneD3(d3, options) {
                 })
                 .attr("pointer-events", "all")
                 .style("cursor", "pointer")
-                .on("mouseover", function () {
+                .on("mouseover", function (d) {
                     // show the tooltip
-                    // var featureObject = d3.select(this);
+                    dispatch.call('d3exontooltip', this, d)
 
                     // select the transcript
                     svg.selectAll('.transcript.selected').classed("selected", false);
                     d3.select(this.parentNode).classed("selected", true);
                 })
                 .on("mouseout", function () {
+                    // hide the tooltip
+                    // var featureObject = d3.select(this);
+                    dispatch.call('d3exontooltip', this)
+
                     // de-select the transcript
                     d3.select(this.parentNode).classed("selected", false);
-
                 })
                 .on("click", function (d) {
                     if (!displayOnly) {
@@ -356,20 +381,43 @@ export default function geneD3(d3, options) {
                 .duration(700)
                 .attr('d', centerArrow);
 
-
-            transcript.selectAll('.name').transition()
-                .duration(700)
+            transcript.selectAll('.name')
+                .text(function (d) {
+                    if (inDialog) {
+                        let isCanonical = d[2];
+                        return isCanonical ? (d[1] + (isCanonical ? ' (CANONICAL)' : '')) : d[1];
+                    } else {
+                        return d[1];
+                    }
+                })
                 .attr('x', function () {
-                    return margin.left > 5 ? 5 - margin.left : 0;
+                    let offset = inDialog ? 50 : 0;
+                    return margin.left > 5 ? 5 - margin.left + offset : offset;
                 })
                 .attr('y', function () {
-                    return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 : -10;
+                    let offset = inDialog ? 50 : 0;
+                    return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
                 })
-                .text(function (d) {
-                    return d[1];
-                })
+                .style('font', () => { return inDialog ? '9px Open Sans' : '16px Open Sans' })
+                .style('fill', '#424242')
                 .style('fill-opacity', 1);
 
+            if (inDialog) {
+                transcript.selectAll('.name_2')
+                    .attr('x', function () {
+                        return margin.left > 5 ? 5 - margin.left : 0;
+                    })
+                    .attr('y', function () {
+                        let offset = inDialog ? 50 : 0;
+                        return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
+                    })
+                    .text(function (d) {
+                        return d[3];
+                    })
+                    .style('font', '11px Quicksand')
+                    .style('fill', '#7f1010')
+                    .style('fill-opacity', 1);
+            }
 
             transcript.selectAll('.utr,.cds,.exon').sort(function (a, b) {
                 return parseInt(a.start) - parseInt(b.start)

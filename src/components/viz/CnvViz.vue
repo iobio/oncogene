@@ -72,7 +72,6 @@
         methods: {
             draw: function () {
                 const self = this;
-
                 const cnvVizOptions = {
                     margin: this.margin,
                     verticalPadding: 4,
@@ -90,6 +89,9 @@
                 dispatch.on('d3mouseout', function() {
                   self.$emit('toggle-cnv-tooltip');
                 });
+                dispatch.on('d3click', function(cnvInfo, width) {
+                  self.$emit('display-cnv-dialog', cnvInfo, width, self.model.selectedSample);
+                })
             },
             update: function () {
                 const self = this;

@@ -71,6 +71,7 @@ class CohortModel {
         this.sampleModelUtil.init(this);
 
         // optional data types
+        this.hasCoverageData = false;
         this.hasCnvData = false;
         this.hasRnaSeqData = false;
         this.hasAtacSeqData = false;
@@ -336,6 +337,9 @@ class CohortModel {
         const self = this;
         userDataList.forEach((dataType) => {
             switch (dataType) {
+                case 'coverage':
+                    self.hasCoverageData = true;
+                    break;
                 case 'cnv':
                     self.hasCnvData = true;
                     break;
@@ -823,6 +827,7 @@ class CohortModel {
                     self.somaticVarMap = self.populateSomaticVarMap(somaticVariants);
                 })
                 .catch(error => {
+                    console.log('Problem loading somatic variants: ' + error);
                     reject('Problem loading somatic variants: ' + error);
                 });
             promises.push(varP);
@@ -844,6 +849,7 @@ class CohortModel {
                             resolve(rankObj);
                         })
                         .catch(error => {
+                            console.log('Something went wrong ranking genes by variants ' + error);
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
                 })

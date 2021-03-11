@@ -173,6 +173,7 @@ class cnviobio {
             tcn: 0,
             lcn: 0,
             points: [],
+            delimiters: [], // The start and stop points of CNV events composing this single merged CNV
             start: Number.MAX_SAFE_INTEGER,
             end: 0
         };
@@ -181,6 +182,8 @@ class cnviobio {
         // Append all other points to first and update end coord
         for (let i = 0; i < cnvList.length; i++) {
             let cnvObj = cnvList[i];
+            firstObj.delimiters.push([cnvObj.start, cnvObj.end])
+
             firstObj.points = firstObj.points.concat(cnvObj.points);
             if (cnvObj.end > firstObj.end) {
                 firstObj.end = cnvObj.end;

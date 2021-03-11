@@ -227,10 +227,10 @@
         </div>
         <v-container class="summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">
-                <v-col cols="12" sm="12" xl="4" style="font-size: 22px">
+                <v-col cols="12" sm="12" xl="5" style="font-size: 22px">
                     Variant Details
                 </v-col>
-                <v-col v-if="variant" cols="12" sm="12" xl="8">
+                <v-col v-if="variant" cols="12" sm="12" xl="7">
                     <v-chip outlined
                             small
                             color="appColor"
@@ -267,7 +267,7 @@
                                           :sampleMap="sampleReadsMap"
                                           :d3="d3">
                     </allele-frequency-viz>
-                    <v-container>
+                    <v-container v-if="hasCoverageData">
                         <v-row no-gutters class="summary-viz" style="min-height: 0; padding-top: 10px">
                             <v-col sm="7" class="field-label-header">
                                 Raw Read Counts
@@ -386,6 +386,10 @@
             d3: null,
             $: null,
             cohortModel: null,
+            hasCoverageData: {
+                type: Boolean,
+                default: false
+            },
             hasCnvData: {
                 type: Boolean,
                 default: false

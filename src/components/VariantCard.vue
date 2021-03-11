@@ -280,7 +280,8 @@
                                      :width="width"
                                      :margin="cnvVizMargin"
                                      :d3="d3"
-                                     @toggle-cnv-tooltip="toggleCnvTooltip">
+                                     @toggle-cnv-tooltip="toggleCnvTooltip"
+                                     @display-cnv-dialog="displayCnvDialog">
                             </cnv-viz>
                             <div class="chart-label" v-show="showDepthViz && sampleModel.coverage && sampleModel.coverage.length > 1">
                                 coverage
@@ -898,8 +899,11 @@
                 this.showCnvViz = showTracks;
                 this.showDepthViz = showTracks;
             },
-            toggleCnvTooltip: function(cnvInfo, mouseCoords) {
-                this.$emit('toggle-cnv-tooltip', cnvInfo, mouseCoords);
+            toggleCnvTooltip: function(cnvInfo) {
+                this.$emit('toggle-cnv-tooltip', cnvInfo);
+            },
+            displayCnvDialog: function(cnvInfo, width, selectedSample) {
+                this.$emit('display-cnv-dialog', cnvInfo, width, selectedSample);
             }
         },
         filters: {},

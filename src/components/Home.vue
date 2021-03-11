@@ -151,6 +151,7 @@
                 @variants-filter-change="onVariantsFilterChange"
                 @show-coverage-cutoffs="showCoverageCutoffs = true"
                 @toggle-cnv-tooltip="toggleCnvTooltip"
+                @display-cnv-dialog="displayCnvDialog"
             >
             </variant-card>
           </v-col>
@@ -166,6 +167,7 @@
                 :$="globalApp.$"
                 :d3="globalApp.d3"
                 :cohortModel="cohortModel"
+                :hasCoverageData="cohortModel.hasCoverageData"
                 :hasRnaSeq="cohortModel.hasRnaSeqData"
                 :hasAtacSeq="cohortModel.hasAtacSeqData"
                 @fetch-reads="fetchSeqReads"
@@ -231,6 +233,23 @@
         </v-footer>
       </v-card>
     </v-dialog>
+    <v-dialog
+        width="90%"
+        style="z-index: 1033"
+        v-model="cnvDialog">
+      <cnv-dialog
+          :dialogOpen="cnvDialog"
+          :selectedGene="selectedGene"
+          :selectedTranscript="[selectedTranscript]"
+          :selectedCnv="selectedCnv"
+          :assemblyVersion="genomeBuildHelper.getCurrentBuild().name"
+          :maxTcn="cohortModel.maxTcnForGene"
+          :width="screenWidth"
+          :d3="d3"
+          @toggle-exon-tooltip="toggleExonTooltip"
+          @toggle-cnv-tooltip="toggleCnvTooltip">
+      </cnv-dialog>
+    </v-dialog>
     <v-overlay :value="displayLoader">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
@@ -241,11 +260,10 @@
 import Welcome from './Welcome.vue'
 import VariantCard from './VariantCard.vue'
 import VariantSummaryCard from './VariantSummaryCard.vue'
-// import CnvSummaryCard from './CnvSummaryCard.vue'
 import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
 import HistoryTab from './HistoryTab.vue'
-
+import CnvDialog from './CnvDialog.vue'
 import SomaticGenesCard from './SomaticGenesCard.vue'
 import GeneCard from './GeneCard.vue'
 
@@ -262,7 +280,8 @@ export default {
     HistoryTab,
     GeneCard,
     SomaticGenesCard,
-    Pileup
+    Pileup,
+    CnvDialog
   },
   props: {
     d3: {
@@ -322,10 +341,13 @@ export default {
       showCoverageCutoffs: false,
       applyFilters: false,
       firstLoadComplete: false,
+      cnvDialog: false,
+      cnvDialogWidth: 0,
 
       // selection state
       selectedGene: null,
       selectedTranscript: null,
+      selectedCnv: null,
       selectedVariant: null,
       analyzedTranscript: null,
       coverageDangerRegions: null,
@@ -963,19 +985,47 @@ export default {
       this.displayUnmatchedGenesWarning = false;
       this.$emit('display-unmatched-genes-btn', this.unmatchedGenes);
     },
-    toggleCnvTooltip: function (cnvInfo, mouseCoords) {
+    toggleCnvTooltip: function (cnvInfo) {
       const self = this;
-      mouseCoords = self.d3.mouse(self.$el);
+      const mouseCoords = self.d3.mouse(self.$el);
       if (cnvInfo) {
         self.d3.select('#cnv-tooltip')
             .html("Copy Number Event<br>" + self.selectedGene.chr + ":" + cnvInfo.start + "-" + cnvInfo.end + "<br>LCN: " + cnvInfo.lcn + "<br>TCN: " + cnvInfo.tcn)
             .style("left", (mouseCoords[0] + 10) + "px")
             .style("top", (mouseCoords[1] + 10) + "px")
+            .style("z-index", "1036")
             .transition()
             .duration(500)
             .style('opacity', 1);
       } else {
         self.d3.select('#cnv-tooltip')
+            .transition()
+            .duration(500)
+            .style('opacity', 0);
+      }
+    },
+    displayCnvDialog: function(cnvInfo, width, selectedSample) {
+      this.cnvDialogWidth = width;
+      this.selectedCnv = {
+        cnvInfo: cnvInfo,
+        selectedSample: selectedSample
+      };
+      this.cnvDialog = true;
+    },
+    toggleExonTooltip: function (exonInfo) {
+      const self = this;
+      const mouseCoords = self.d3.mouse(self.$el);
+      if (exonInfo) {
+        self.d3.select('#exon-tooltip')
+            .html("Exon" + exonInfo.exon_number + "<br>" + exonInfo.start + "-" + exonInfo.end)
+            .style("left", (mouseCoords[0] + 10) + "px")
+            .style("top", (mouseCoords[1] + 10) + "px")
+            .style("z-index", "1036")
+            .transition()
+            .duration(500)
+            .style('opacity', 1);
+      } else {
+        self.d3.select('#exon-tooltip')
             .transition()
             .duration(500)
             .style('opacity', 0);
