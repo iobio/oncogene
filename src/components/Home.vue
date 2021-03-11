@@ -142,6 +142,7 @@
                 :showGeneViz="true"
                 :geneVizShowXAxis="false"
                 :annotationComplete="annotationComplete"
+                :somaticOnlyMode="cohortModel.onlySomaticCalls"
                 :d3="d3"
                 :$="$"
                 @cohort-variant-click="onCohortVariantClick"

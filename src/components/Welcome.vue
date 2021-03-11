@@ -223,7 +223,7 @@
                                 <v-card-actions>
                                     <v-container class="px-11">
                                         <v-row no-gutters>
-                                          <v-col sm="6" class="pr-1">
+                                          <v-col sm="12" class="pr-1">
                                             <v-select
                                                 :items="cancerListNames"
                                                 color="appColor"
@@ -235,18 +235,19 @@
                                                 @change="populateListInput('cancer')"
                                             ></v-select>
                                           </v-col>
-                                          <v-col sm="6" class="pl-1">
-                                            <v-select
-                                                :items="tissueListNames"
-                                                color="appColor"
-                                                background-color="white"
-                                                label="Tissue Type"
-                                                outlined
-                                                dense
-                                                v-model="selectedTissueList"
-                                                @change="populateListInput('tissue')"
-                                            ></v-select>
-                                          </v-col>
+<!--                                          todo: Leaving out as of Mar2021...-->
+<!--                                          <v-col sm="6" class="pl-1">-->
+<!--                                            <v-select-->
+<!--                                                :items="tissueListNames"-->
+<!--                                                color="appColor"-->
+<!--                                                background-color="white"-->
+<!--                                                label="Tissue Type"-->
+<!--                                                outlined-->
+<!--                                                dense-->
+<!--                                                v-model="selectedTissueList"-->
+<!--                                                @change="populateListInput('tissue')"-->
+<!--                                            ></v-select>-->
+<!--                                          </v-col>-->
                                         </v-row>
                                         <v-textarea
                                                 color="appColor"

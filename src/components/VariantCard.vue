@@ -258,6 +258,7 @@
                                          :classifySymbolFunc="classifyVariantSymbolFunc"
                                          :isTumorTrack="sampleModel.isTumor"
                                          :isKnownOrCosmicTrack="isKnownOrCosmicTrack"
+                                         :somaticOnlyMode="somaticOnlyMode"
                                          :d3="d3"
                                          @variantClick="onVariantClick"
                                          @variantHover="onVariantHover"
@@ -449,6 +450,10 @@
             maxTcn: {
                 type: Number,
                 default: 2
+            },
+            somaticOnlyMode: {
+              type: Boolean,
+              default: false
             },
             d3: null,
             $: null
