@@ -1533,7 +1533,6 @@ class GeneModel {
                     if (impact.length > 0) {
                         impact = impact[0];
                     }
-
                     // Note: variants cannot be annotated w/ COSMIC
                     // for entire list, so don't need to add that into equation for now
                     if (impact === VEP_HIGH) {
@@ -1549,17 +1548,15 @@ class GeneModel {
                         score += 1;
                         geneObj.modifCount += 1;
                     }
-
                     // In variant CNV scoring
                     if (feat.inCnv) {
                         score += 2;
                         geneObj.hasCnv = true;
                     }
-
-                // Account for gene wide CNV events, independent of variants
-                geneObj.somaticCnvList.forEach(() => {
-                    score += 1;
-                })
+                    // Account for gene wide CNV events, independent of variants
+                    geneObj.somaticCnvList.forEach(() => {
+                        score += 1;
+                    })
 
                 });
                 geneObj.score = score;

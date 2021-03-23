@@ -113,8 +113,8 @@ class GlobalApp {
     getCosmicUrl(build) {
         // These have VEP impact assigned
         let cosmicUrls = {
-            'GRCh37': "https://iobio.s3.amazonaws.com/samples/vcf/COSMIC_data/v90_05Sept2019/CosmicAllVariantsGRCh37.vcf.gz",
-            'GRCh38': "https://iobio.s3.amazonaws.com/samples/vcf/COSMIC_data/v90_05Sept2019/CosmicAllVariantsGRCh38.vcf.gz"
+            'GRCh37': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic_norm_v92_grch37.vcf.gz",
+            'GRCh38': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic_norm_v92_grch38.vcf.gz"
         };
         return cosmicUrls[build];
     }
