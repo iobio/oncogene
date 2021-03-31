@@ -1617,52 +1617,27 @@ class SampleModel {
 
 
         });
-
     }
 
-    promiseGetVariantIds(theGene, theTranscript, sampleModel) {
+    promiseGetVariantIds(regions) {
         const self = this;
-
         return new Promise((resolve, reject) => {
             let resultMap = {};
-            let inCache = false;
-
-            // Check to see if we've stored the IDs in the cache
-            sampleModel._promiseGetData(CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
-                .then(function (ids) {
-                    if (ids != null && ids !== '') {
-                        resultMap[sampleModel.id + '-ids'] = ids;
-                        inCache = true;
+            self.vcf.promiseGetVariantIds(regions, 'LEGACY_ID')
+              .then(function (data) {
+                if (data) {
+                    if (Object.keys(data).length === 0) {
+                        console.log('Warning: no cosmic variants found for this gene.');
                     }
-                });
-            // If not, pull them in from the vcf file
-            if (inCache) {
-                resolve(resultMap);
-            } else {
-                self._promiseVcfRefName(theGene.chr)
-                    .then(function () {
-                        return self.vcf.promiseGetVariantIds(
-                            self.getVcfRefName(theGene.chr),
-                            theGene,
-                            theTranscript,
-                            null,   // regions
-                            'LEGACY_ID'
-                        );
-                    }).then(function (data) {
-                    if (data) {
-                        if (Object.keys(data).length === 0) {
-                            console.log('Warning: no cosmic variants found for this gene.');
-                        }
-                        // TODO: cache this once we know its working
-                        resultMap[sampleModel.id + '-ids'] = data;
-                        resolve(resultMap);
-                    } else {
-                        reject('Warning: no result obtained from getting variant ids for ' + self.id);
-                    }
-                }).catch(function (err) {
-                    reject('Could not obtain variant ids for ' + self.id + ' because: ' + err);
-                })
-            }
+                    // TODO: cache this once we know its working
+                    resultMap[self.id + '-ids'] = data;
+                    resolve(resultMap);
+                } else {
+                    reject('Warning: no result obtained from getting variant ids for ' + self.id);
+                }
+            }).catch(function (err) {
+                reject('Could not obtain variant ids for ' + self.id + ' because: ' + err);
+            })
         });
     }
 

@@ -10,8 +10,8 @@ export default class EndpointCmd {
         this.launchedFromUtah = this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        this.api = new Client('backend.iobio.io', {secure: true});
-        this.devApi = new Client('mosaic.chpc.utah.edu/gru-dev', {secure: true});
+        //this.api = new Client('backend.iobio.io', {secure: true});
+        this.api = new Client('mosaic.chpc.utah.edu/gru-dev', {secure: true});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
 
@@ -79,10 +79,12 @@ export default class EndpointCmd {
     }
 
     /* Returns only the columns of a VCF file which contain fields necessary to create a unique identifier for a variant.
+     * Regions param must be an array of gene objects with refName, start, and end properties
+     * NOTE: bcftools does not accept 'chr2' - must convert to just '2'
      * These include: POS, REF, ALT and INFO
      * Can be used when determining if a variant exists in two samples across VCF files, for instance.
      * Currently used in Oncogene for COSMIC comparison */
-    getVariantIds(vcfSource, refName, regions) {
+    getVariantIds(vcfSource, regions) {
         const me = this;
 
         let cmd = null;

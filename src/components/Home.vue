@@ -493,17 +493,11 @@ export default {
             self.geneRegionStart = self.selectedGene.start;
             self.geneRegionEnd = self.selectedGene.end;
 
-            self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
-                .then(() => {
+            // self.cohortModel.promiseGetCosmicVariantIds(self.rankedGeneList)
+            //     .then(() => {
                   const globalMode = true;
                   // Get rid of global loader
                   self.displayLoader = false;
-                  // showTracks = true;
-                  // if (self.$refs.variantCardRef) {
-                  //     self.$refs.variantCardRef.forEach(function (variantCard) {
-                  //         variantCard.toggleTracks(showTracks);
-                  //     })
-                  // }
                   self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                       .then(() => {
                         if (self.unmatchedGenes.length > 0) {
@@ -513,9 +507,9 @@ export default {
                       .catch(error => {
                         Promise.reject('Could not load data: ' + error);
                       })
-                }).catch(error => {
-              Promise.reject('Problem getting cosmic variant IDS: ' + error);
-            });
+            //     }).catch(error => {
+            //   Promise.reject('Problem getting cosmic variant IDS: ' + error);
+            // });
             let rankedGeneNames = [];
             self.geneModel.rankedGeneList.forEach(geneObj => {
               rankedGeneNames.push(geneObj.gene_name);

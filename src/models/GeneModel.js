@@ -1433,7 +1433,8 @@ class GeneModel {
      *
      * Adds NCBI summary to each gene with a somatic variant.
      */
-    promiseGroupAndRank(somaticVars, somaticCnvs) {
+    // TODO: BIG - IF WE DO SECOND ROUND OF FILTERING THIS WILL BREAK - NEED TO RELY ON PER FILTER SOMATIC LIST
+    promiseGroupAndAssign(somaticVars, somaticCnvs) {
         const self = this;
         let genesWithVars = {};
         let promises = [];
@@ -1470,7 +1471,6 @@ class GeneModel {
                     genePromises.push(p);
                 }
             });
-
             Promise.all(genePromises)
                 .then(() =>{
                     // Add all CNVs to existing genes
@@ -1481,28 +1481,66 @@ class GeneModel {
                         }
                     })
 
-                    // Once each variant is assigned to its gene object, we can score them
-                    Object.keys(genesWithVars).forEach(geneName => {
-                        let scoreP = self.promiseScoreGene(geneName);
-                        promises.push(scoreP);
-                    });
-
                     // Fetch NCBI summary for all somatic genes
                     let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
                     promises.push(summaryP);
 
-                    // Once each gene is scored we can rank them
                     Promise.all(promises)
                         .then(() => {
-                            self.promiseRankGenes()
-                                .then(topGene => {
-                                    resolve({'gene': topGene, "count": totalSomaticVarCount, "geneCount": Object.keys(genesWithVars).length, 'unmatchedGenes': unmatchedGeneSymbols });
-                                }).catch(error => {
-                                reject('There was a problem ranking genes: ' + error);
+                            // Compose list of gene objects for return
+                            let somaticGeneObjs = [];
+                            Object.keys(genesWithVars).forEach(gene => {
+                                let currGeneObj = self.geneObjects[gene];
+                                if (!currGeneObj) {
+                                    console.log('Something went wrong fetching gene object for somatic gene: ' + gene);
+                                } else {
+                                    let strippedChr = currGeneObj.chr.startsWith('chr') ? currGeneObj.chr.substring(3) : currGeneObj.chr;
+                                    somaticGeneObjs.push({
+                                        name: strippedChr,
+                                        start: currGeneObj.start,
+                                        end: currGeneObj.end,
+                                    });
+                                }
                             })
-                        })
+                            let retObj = {
+                                genes: somaticGeneObjs,
+                                somaticCount: totalSomaticVarCount,
+                                unmatchedSymbols: unmatchedGeneSymbols,
+                                somaticGeneObjs: self.geneObjects
+                            }
+                            resolve(retObj);
+                        }).catch(err => {
+                            reject('Fatal problem grouping genes for somatic annotation: ' + err);
+                    })
                 })
         })
+    }
+
+    promiseScoreAndRank(genesWithVars, totalSomaticVarCount, unmatchedGeneSymbols) {
+        const self = this;
+        let promises = [];
+        return new Promise((resolve, reject) => {
+
+            // Once each variant is assigned to its gene object, we can score them
+            Object.keys(genesWithVars).forEach(geneName => {
+                let scoreP = self.promiseScoreGene(geneName);
+                promises.push(scoreP);
+            });
+            Promise.all(promises)
+                .then(() => {
+                    self.promiseRankGenes()
+                        .then(topGene => {
+                            resolve({
+                                'gene': topGene,
+                                "count": totalSomaticVarCount,
+                                "geneCount": Object.keys(genesWithVars).length,
+                                'unmatchedGenes': unmatchedGeneSymbols
+                            });
+                        }).catch(error => {
+                        reject('There was a problem ranking genes: ' + error);
+                    })
+                })
+        });
     }
 
     // todo: incorporate CiVIC into this, incorporate M Bailey TCGA stuff into this
@@ -1533,7 +1571,7 @@ class GeneModel {
                     if (impact.length > 0) {
                         impact = impact[0];
                     }
-                    // Note: variants cannot be annotated w/ COSMIC
+                    // Note: variants cannot be annotated w/ COSMIC - todo: why?
                     // for entire list, so don't need to add that into equation for now
                     if (impact === VEP_HIGH) {
                         score += 4;
@@ -1553,6 +1591,9 @@ class GeneModel {
                         score += 2;
                         geneObj.hasCnv = true;
                     }
+
+                    // todo: add point for in cosmic
+
                     // Account for gene wide CNV events, independent of variants
                     geneObj.somaticCnvList.forEach(() => {
                         score += 1;

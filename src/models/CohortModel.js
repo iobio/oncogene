@@ -841,15 +841,26 @@ class CohortModel {
                     })
                 promises.push(cnvP);
             }
-
             Promise.all(promises)
                 .then(() => {
-                    self.geneModel.promiseGroupAndRank(self.somaticVarMap, self.somaticCnvMap)
-                        .then(rankObj => {
-                            resolve(rankObj);
-                        })
-                        .catch(error => {
-                            console.log('Something went wrong ranking genes by variants ' + error);
+                    self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap)
+                        .then(groupObj => {
+                            self.promiseGetCosmicVariantIds(groupObj.genes)
+                                .then(() => {
+                                    // self.promiseAnnotateWithCosmic(groupObj.somaticGeneObjs)
+                                    //     .then(() => {
+                                            self.geneModel.promiseScoreAndRank(groupObj.somaticGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                                .then((rankObj) => {
+                                                    resolve(rankObj);
+                                                }).catch(err => {
+                                                reject('Fatal error scoring and ranking somatic genes: ' + err);
+                                            })
+                                        // });
+                                }).catch(err => {
+                                    reject('Problem getting cosmic variants for global somatic regions: ' + err);
+                            })
+                        }).catch(error => {
+                            console.log('Something went wrong grouping and assigning somatic variants ' + error);
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
                 })
@@ -1237,11 +1248,13 @@ class CohortModel {
         })
     }
 
-    promiseGetCosmicVariantIds(theGene, theTranscript) {
+    /* Takes in a list of genes, composes a region string of all to send to bcftools view on COSMIC vcf to pull in variants
+     * that fall within that region. Populates model level map of cosmic variant IDs. */
+    promiseGetCosmicVariantIds(regions) {
         let self = this;
         return new Promise(function (resolve, reject) {
             self.getModel('cosmic-variants').inProgress.loadingVariants = true;
-            self.sampleMap['cosmic-variants'].promiseGetVariantIds(theGene, theTranscript, self.sampleMap['cosmic-variants'])
+            self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
                 .then(function (resultMap) {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     self.cosmicVariantIdHash = resultMap['cosmic-variants-ids'];
@@ -1661,46 +1674,32 @@ class CohortModel {
                     });
                 annotatePromises.push(p);
             }
-
-            // Always get COSMIC IDs so we can put status in feature matrix
-            // let p = self.promiseGetCosmicVariantIds(theGene, theTranscript);
-            // annotatePromises.push(p);
-
             Promise.all(annotatePromises)
                 .then(function () {
-                    if (self.cosmicVariantIdHash) {
-                        self.promiseAnnotateWithCosmic(theResultMap)
-                            .then(function (updatedResultMap) {
-                                self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
-                                    .then(function (data) {
-                                        // for (var theId in data) {
-                                        //     if (!isBackground) {
-                                        //         self.getModel(theId).inProgress.loadingVariants = false;
-                                        //     }
-                                        // }
-                                        self.annotationComplete = true;
-                                        resolve(data)
-                                    });
-                            });
-                    } else {
+                    // todo: this is going to need to be conditional now, because if selecting gene from somatic list, cosmic already annotated
+                    // if (self.cosmicVariantIdHash) {
+                    //     self.promiseAnnotateWithCosmic(theResultMap)
+                    //         .then(function (updatedResultMap) {
+                    //             self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
+                    //                 .then(function (data) {
+                    //                     self.annotationComplete = true;
+                    //                     resolve(data)
+                    //                 });
+                    //         });
+                    // } else {
                         console.log("Could not annotate with COSMIC b/c hash map not populated");
                         self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
                             .then(function (data) {
-                                // for (var theId in data) {
-                                //     if (!isBackground) {
-                                //         self.getModel(theId).inProgress.loadingVariants = false;
-                                //     }
-                                // }
                                 self.annotationComplete = true;
                                 resolve(data)
                             });
-                    }
+                    // }
                 });
         })
     }
 
     /* Assigns bool to each variant telling if in COSMIC or not */
-    promiseAnnotateWithCosmic(resultMap) {
+    promiseAnnotateWithCosmic(somaticGeneObjs) {
         const self = this;
         return new Promise((resolve, reject) => {
             let cosmicHash = self.cosmicVariantIdHash;
@@ -1708,18 +1707,15 @@ class CohortModel {
                 reject('Could not annotate cosmic status per variants');
             } else {
                 // for each non-ref sample, assign inCosmic field for variants
-                for (var id in resultMap) {
-                    if (id !== 'known-variants' && id !== 'cosmic-variants') {
-                        let currSample = resultMap[id];
-                        currSample.features.forEach((feat) => {
-                            if (cosmicHash[feat.id]) {
-                                feat.inCosmic = true;
-                                feat.cosmicLegacyId = cosmicHash[feat.id];
-                            }
-                        })
-                    }
-                }
-                resolve(resultMap);
+                Object.values(somaticGeneObjs).forEach(geneObj => {
+                    geneObj.somaticVariantList.forEach(feat => {
+                        if (cosmicHash[feat.id]) {
+                            feat.inCosmic = true;
+                            //feat.cosmicLegacyId = cosmicHash[feat.id];
+                        }
+                    })
+                });
+                resolve();
             }
         });
     }

@@ -624,17 +624,12 @@ export default function vcfiobio(theGlobalApp) {
     };
 
     /* Returns dictionary with IDs as keys and values from INFO column according to infoValueField if provided. Else true as value. */
-    exports.promiseGetVariantIds = function (refName, geneObject, selectedTranscript, regions, infoValueField = null) {
+    exports.promiseGetVariantIds = function (regions) {
         const me = this;
 
         return new Promise(function (resolve, reject) {
             if (sourceType === SOURCE_TYPE_URL) {
-                if (regions == null || regions.length === 0) {
-                    regions = [];
-                    regions.push({'name': refName, 'start': geneObject.start, 'end': geneObject.end});
-                }
-
-                let cmd = me.getEndpoint().getVariantIds({'vcfUrl': vcfURL, 'tbiUrl': tbiUrl}, refName, regions);
+                let cmd = me.getEndpoint().getVariantIds({'vcfUrl': vcfURL, 'tbiUrl': tbiUrl}, regions);
                 let annotatedData = "";
                 // Get the results from the iobio command
                 cmd.on('data', function (data) {
@@ -644,39 +639,39 @@ export default function vcfiobio(theGlobalApp) {
                     annotatedData += data;
                 });
                 cmd.on('end', function () {
-                    let annotatedRecs = annotatedData.split("\n");
-                    let idLookup = {};
-                    annotatedRecs.forEach(function (record) {
-                        if (record.charAt(0) !== "#") {
-                            // Parse the vcf record into its fields
-                            let fields = record.split('\t');
-                            let refName = fields[0];
-                            let pos = fields[1];
-                            let ref = fields[3];
-                            let alt = fields[4];
-                            let info = fields[7];
-
-                            let strand = '';
-                            let infoVal = '';
-                            if (info && info !== '') {
-                                let infoFields = info.split(';');
-                                infoFields.forEach((field) => {
-                                    if (field.startsWith('STRAND')) {
-                                        strand = field.split('=')[1];
-                                    }
-                                    if (infoValueField && field.startsWith(infoValueField.toUpperCase())) {
-                                        infoVal = field.split('=')[1];
-                                    }
-                                })
-                            }
-                            strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
-                            let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
-
-                            // Parse ids and return as array
-                            let id = 'var_' + pos + '_' + chr + '_' + strand + '_' + ref + '_' + alt;
-                            idLookup[id] = infoVal === '' ? true : infoVal;
-                        }
-                    });
+                    let idLookup = annotatedData.split("\n");
+                    // let idLookup = {};
+                    // annotatedRecs.forEach(function (record) {
+                    //     if (record.charAt(0) !== "#") {
+                    //         // Parse the vcf record into its fields
+                    //         let fields = record.split('\t');
+                    //         let refName = fields[0];
+                    //         let pos = fields[1];
+                    //         let ref = fields[3];
+                    //         let alt = fields[4];
+                    //         let info = fields[7];
+                    //
+                    //         let strand = '';
+                    //         let infoVal = '';
+                    //         if (info && info !== '') {
+                    //             let infoFields = info.split(';');
+                    //             infoFields.forEach((field) => {
+                    //                 if (field.startsWith('STRAND')) {
+                    //                     strand = field.split('=')[1];
+                    //                 }
+                    //                 if (infoValueField && field.startsWith(infoValueField.toUpperCase())) {
+                    //                     infoVal = field.split('=')[1];
+                    //                 }
+                    //             })
+                    //         }
+                    //         strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
+                    //         let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
+                    //
+                    //         // Parse ids and return as array
+                    //         let id = 'var_' + pos + '_' + chr + '_' + strand + '_' + ref + '_' + alt;
+                    //         idLookup[id] = infoVal === '' ? true : infoVal;
+                    //     }
+                    // });
                     resolve(idLookup);
                 });
                 cmd.on('error', function (error) {
@@ -1979,7 +1974,7 @@ export default function vcfiobio(theGlobalApp) {
             return 'var';
         }
         let trimmedChromName = rec.chrom.indexOf("chr") === 0 ? rec.chrom.slice(3) : rec.chrom; // We have to synonymize chromosome name between versions - no chr13 vs 13 b/c messes up track filtering
-        return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_' + alt);
+        return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_[' + alt + ']');
     };
 
     exports._parseAnnot = function (rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {
