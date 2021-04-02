@@ -47,14 +47,15 @@
                                     <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
                                     <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
                                     <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
-                                    <v-avatar style="margin-top: 2px; margin-left: 5px"
+                                    <v-icon v-if="getCnvCount(geneObj)>0" color="brightPrimary">bookmark_border</v-icon>
+                                  <v-avatar style="margin-top: 2px; margin-left: 5px"
                                               size="22"
                                               color="secondary">
                                         <span style="color: white; font-family: Quicksand; font-size: 15px">
                                             {{getTotalVarCount(geneObj)}}
                                         </span>
                                     </v-avatar>
-                                    <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>
+<!--                                    <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>-->
                                   <v-chip v-if="getCnvCount(geneObj)>0" small light color="brightPrimary" style="margin-top: 2px; margin-left: 5px">CNV</v-chip>
                                   <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
                                         {{ getGeneText(geneObj) }}
@@ -198,7 +199,10 @@
             getTotalVarCount: function(geneObj) {
                 let count = 0;
                 if (geneObj) {
-                    count = geneObj.highCount + geneObj.moderCount + geneObj.lowCount + geneObj.modifCount;
+                  if (geneObj.gene_name === 'RUNX1') {
+                    debugger;
+                  }
+                    count = geneObj.highCount + geneObj.moderCount + geneObj.lowCount + geneObj.modifCount + geneObj.cnvCount;
                 }
                 return count;
             },

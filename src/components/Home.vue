@@ -493,23 +493,18 @@ export default {
             self.geneRegionStart = self.selectedGene.start;
             self.geneRegionEnd = self.selectedGene.end;
 
-            // self.cohortModel.promiseGetCosmicVariantIds(self.rankedGeneList)
-            //     .then(() => {
-                  const globalMode = true;
-                  // Get rid of global loader
-                  self.displayLoader = false;
-                  self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
-                      .then(() => {
-                        if (self.unmatchedGenes.length > 0) {
-                          self.displayUnmatchedGenesWarning = true;
-                        }
-                      })
-                      .catch(error => {
-                        Promise.reject('Could not load data: ' + error);
-                      })
-            //     }).catch(error => {
-            //   Promise.reject('Problem getting cosmic variant IDS: ' + error);
-            // });
+            const globalMode = true;
+            // Get rid of global loader
+            self.displayLoader = false;
+            self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
+                .then(() => {
+                  if (self.unmatchedGenes.length > 0) {
+                    self.displayUnmatchedGenesWarning = true;
+                  }
+                })
+                .catch(error => {
+                  Promise.reject('Could not load data: ' + error);
+                })
             let rankedGeneNames = [];
             self.geneModel.rankedGeneList.forEach(geneObj => {
               rankedGeneNames.push(geneObj.gene_name);
@@ -749,7 +744,9 @@ export default {
                 }
 
                 if (self.cohortModel.isLoaded) {
-                  self.cohortModel.promiseGetCosmicVariantIds(self.selectedGene, self.selectedTranscript)
+                  let strippedChr = self.selectedGene.chr.startsWith('chr') ? self.selectedGene.chr.substring(3) : self.selectedGene.chr;
+                  let region = strippedChr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
+                  self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
                       .then(() => {
                         self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
                             .then(function () {

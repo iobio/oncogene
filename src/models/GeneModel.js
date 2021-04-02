@@ -848,6 +848,7 @@ class GeneModel {
                         theGeneObject.moderCount = 0;
                         theGeneObject.lowCount = 0;
                         theGeneObject.modifCount = 0;
+                        theGeneObject.cnvCount = 0;
                         theGeneObject.ncbiSummary = '';
                         theGeneObject.inCnv = false;
                         theGeneObject.somaticCnvList = [];
@@ -911,6 +912,7 @@ class GeneModel {
                             theGeneObject.moderCount = 0;
                             theGeneObject.lowCount = 0;
                             theGeneObject.modifCount = 0;
+                            theGeneObject.cnvCount = 0;
                             theGeneObject.ncbiSummary = '';
                             theGeneObject.inCnv = false;
                             theGeneObject.somaticCnvList = [];
@@ -1433,14 +1435,16 @@ class GeneModel {
      *
      * Adds NCBI summary to each gene with a somatic variant.
      */
-    // TODO: BIG - IF WE DO SECOND ROUND OF FILTERING THIS WILL BREAK - NEED TO RELY ON PER FILTER SOMATIC LIST
     promiseGroupAndAssign(somaticVars, somaticCnvs) {
         const self = this;
         let genesWithVars = {};
+        let somaticGeneNames = [];
         let promises = [];
         let genePromises = [];
         let totalSomaticVarCount = 0;
         let unmatchedGeneSymbols = [];
+        let formattedGeneObj = [];  // Only contains genes with snps/small indels to compare to COSMIC
+        let fullGeneObj = [];       // Contains genes with snps, small indels, and CNVs - any gene which somaticVars/somaticCnvs fall into
 
         return new Promise((resolve, reject) => {
             Object.values(somaticVars).forEach(feat => {
@@ -1464,9 +1468,9 @@ class GeneModel {
                                 unmatchedGeneSymbols.push(feat.geneSymbol);
                                 console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
                             }
-                        }).catch(() => {
+                        }).catch(err => {
                             unmatchedGeneSymbols.push(feat.geneSymbol);
-                            console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                            console.log('Could not match VEP gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
                     });
                     genePromises.push(p);
                 }
@@ -1476,9 +1480,11 @@ class GeneModel {
                     // Add all CNVs to existing genes
                     // Note: shouldn't have nomenclature symbol issue here, since CNVs go off of coords exclusively
                     Object.keys(somaticCnvs).forEach(geneName => {
-                        if (self.geneObjects[(geneName.toUpperCase())]) {
-                            self.geneObjects[(geneName.toUpperCase())].somaticCnvList = somaticCnvs[geneName];
+                        let name = geneName.toUpperCase();
+                        if (self.geneObjects[name]) {
+                            self.geneObjects[name].somaticCnvList = somaticCnvs[geneName];
                         }
+                        fullGeneObj.push(self.geneObjects[name]);
                     })
 
                     // Fetch NCBI summary for all somatic genes
@@ -1488,25 +1494,27 @@ class GeneModel {
                     Promise.all(promises)
                         .then(() => {
                             // Compose list of gene objects for return
-                            let somaticGeneObjs = [];
                             Object.keys(genesWithVars).forEach(gene => {
+                                somaticGeneNames.push(gene);
                                 let currGeneObj = self.geneObjects[gene];
                                 if (!currGeneObj) {
                                     console.log('Something went wrong fetching gene object for somatic gene: ' + gene);
                                 } else {
                                     let strippedChr = currGeneObj.chr.startsWith('chr') ? currGeneObj.chr.substring(3) : currGeneObj.chr;
-                                    somaticGeneObjs.push({
+                                    formattedGeneObj.push({
                                         name: strippedChr,
                                         start: currGeneObj.start,
                                         end: currGeneObj.end,
                                     });
+                                    fullGeneObj.push(currGeneObj);
                                 }
                             })
                             let retObj = {
-                                genes: somaticGeneObjs,
+                                formattedGeneObjs: formattedGeneObj,
+                                fullGeneObjs: fullGeneObj,
                                 somaticCount: totalSomaticVarCount,
                                 unmatchedSymbols: unmatchedGeneSymbols,
-                                somaticGeneObjs: self.geneObjects
+                                somaticGeneNames: somaticGeneNames
                             }
                             resolve(retObj);
                         }).catch(err => {
@@ -1522,8 +1530,8 @@ class GeneModel {
         return new Promise((resolve, reject) => {
 
             // Once each variant is assigned to its gene object, we can score them
-            Object.keys(genesWithVars).forEach(geneName => {
-                let scoreP = self.promiseScoreGene(geneName);
+            genesWithVars.forEach(geneObj => {
+                let scoreP = self.promiseScoreGene(geneObj);
                 promises.push(scoreP);
             });
             Promise.all(promises)
@@ -1533,7 +1541,7 @@ class GeneModel {
                             resolve({
                                 'gene': topGene,
                                 "count": totalSomaticVarCount,
-                                "geneCount": Object.keys(genesWithVars).length,
+                                "geneCount": genesWithVars.length,
                                 'unmatchedGenes': unmatchedGeneSymbols
                             });
                         }).catch(error => {
@@ -1555,16 +1563,17 @@ class GeneModel {
      * +1 for each variant in region of TCN != 2 (aka abnormal copy number)
      * +1 for each CNV with TCN != 2, even without a variant contained within
      */
-    promiseScoreGene(geneName) {
-        const self = this;
+    promiseScoreGene(geneObj) {
         const VEP_HIGH = 'HIGH';
         const VEP_MODER = 'MODERATE';
         const VEP_LOW = 'LOW';
         let score = 0;
 
         return new Promise((resolve) => {
-            let geneObj = self.geneObjects[geneName];
             if (geneObj) {
+                // todo: figures out why coming in twice
+                if (geneObj.gene_name === 'RUNX1') {debugger;}
+
                 // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
                     let impact = Object.keys(feat.highestImpactVep);
@@ -1576,29 +1585,44 @@ class GeneModel {
                     if (impact === VEP_HIGH) {
                         score += 4;
                         geneObj.highCount += 1;
+                        if (feat.inCosmic) {
+                            score += 1;
+                            geneObj.cosmicHighCount += 1;
+                        }
                     } else if (impact === VEP_MODER) {
                         score += 3;
                         geneObj.moderCount += 1;
+                        if (feat.inCosmic) {
+                            score += 1;
+                            geneObj.cosmicModerCount += 1;
+                        }
                     } else if (impact === VEP_LOW) {
                         score += 2;
                         geneObj.lowCount += 1;
+                        if (feat.inCosmic) {
+                            score += 1;
+                            geneObj.cosmicLowCount += 1;
+                        }
                     } else {
                         score += 1;
                         geneObj.modifCount += 1;
+                        if (feat.inCosmic) {
+                            score += 1;
+                            geneObj.cosmicModifCount += 1;
+                        }
                     }
                     // In variant CNV scoring
                     if (feat.inCnv) {
                         score += 2;
                         geneObj.hasCnv = true;
                     }
+                });
 
-                    // todo: add point for in cosmic
-
-                    // Account for gene wide CNV events, independent of variants
-                    geneObj.somaticCnvList.forEach(() => {
-                        score += 1;
-                    })
-
+                // Account for gene wide CNV events, independent of variants
+                geneObj.somaticCnvList.forEach(() => {
+                    score += 1;
+                    geneObj.hasCnv = true;
+                    geneObj.cnvCount += 1;
                 });
                 geneObj.score = score;
             }
@@ -1673,10 +1697,44 @@ class GeneModel {
             self.geneObjects[key].moderCount = 0;
             self.geneObjects[key].lowCount = 0;
             self.geneObjects[key].modifCount = 0;
+            self.geneObjects[key].cnvCount = 0;
             self.geneObjects[key].inCnv = false;
             self.geneObjects[key].somaticCnvList = [];
             }
         )
+    }
+
+    /* Takes in start and end coordinates of a variant, returns the geneObject in which the variant lies.
+     * If it doesn't exist, object with null properties.
+     * Returns canonical transcript always for */
+    findGeneObjByCoords(chr, pos) {
+        const self = this;
+        let retObj = {
+            geneObj: null,
+            transObj: null,
+            transObjId: null
+        };
+        let geneObjList = Object.values(self.geneObjects);
+        for (let i = 0; i < geneObjList.length; i++) {
+            let geneObj = geneObjList[i];
+            let objChr = geneObj.chr.indexOf('chr') > -1 ? geneObj.chr.substring(3) : geneObj.chr;
+            let objStart = geneObj.startOrig ? geneObj.startOrig : geneObj.start;
+            let objEnd = geneObj.endOrig ? geneObj.endOrig : geneObj.end;
+
+            if (chr === objChr) {
+                if (+pos >= +objStart) {
+                    if (+pos <= +objEnd) {
+                        retObj.geneObj = geneObj;
+                        retObj.transObj = self.getCanonicalTranscript(geneObj);
+                        break;
+                    }
+                }
+            }
+        }
+        if (!retObj.geneObj) {
+            console.log('WARNING: mismatch between somatic variants pulled back and finding gene object in which they belong');
+        }
+        return retObj;
     }
 }
 

@@ -40,6 +40,7 @@ export default function vcfiobio(theGlobalApp) {
     var endpoint = null;
     var genericAnnotation = null;
     var genomeBuildHelper = null;
+    var geneModel = null;
 
     // Url for offline Clinvar URL
     var OFFLINE_CLINVAR_VCF_BASE_URL = globalApp.isOffline ? ("http://" + globalApp.serverInstance + globalApp.serverCacheDir) : "";
@@ -157,6 +158,15 @@ export default function vcfiobio(theGlobalApp) {
     exports.getGenomeBuildHelper = function () {
         return genomeBuildHelper;
     }
+
+    exports.setGeneModel = function (theGeneModel) {
+        geneModel = theGeneModel;
+    }
+
+    exports.getGeneModel = function () {
+        return geneModel;
+    }
+
     exports.getAnnotators = function () {
         return this.infoFields ? Object.keys(this.infoFields) : [];
     }
@@ -624,7 +634,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
     /* Returns dictionary with IDs as keys and values from INFO column according to infoValueField if provided. Else true as value. */
-    exports.promiseGetVariantIds = function (regions) {
+    exports.promiseGetVariantIds = function (regions, infoValueField) {
         const me = this;
 
         return new Promise(function (resolve, reject) {
@@ -639,39 +649,39 @@ export default function vcfiobio(theGlobalApp) {
                     annotatedData += data;
                 });
                 cmd.on('end', function () {
-                    let idLookup = annotatedData.split("\n");
-                    // let idLookup = {};
-                    // annotatedRecs.forEach(function (record) {
-                    //     if (record.charAt(0) !== "#") {
-                    //         // Parse the vcf record into its fields
-                    //         let fields = record.split('\t');
-                    //         let refName = fields[0];
-                    //         let pos = fields[1];
-                    //         let ref = fields[3];
-                    //         let alt = fields[4];
-                    //         let info = fields[7];
-                    //
-                    //         let strand = '';
-                    //         let infoVal = '';
-                    //         if (info && info !== '') {
-                    //             let infoFields = info.split(';');
-                    //             infoFields.forEach((field) => {
-                    //                 if (field.startsWith('STRAND')) {
-                    //                     strand = field.split('=')[1];
-                    //                 }
-                    //                 if (infoValueField && field.startsWith(infoValueField.toUpperCase())) {
-                    //                     infoVal = field.split('=')[1];
-                    //                 }
-                    //             })
-                    //         }
-                    //         strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
-                    //         let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
-                    //
-                    //         // Parse ids and return as array
-                    //         let id = 'var_' + pos + '_' + chr + '_' + strand + '_' + ref + '_' + alt;
-                    //         idLookup[id] = infoVal === '' ? true : infoVal;
-                    //     }
-                    // });
+                    let annotatedRecs = annotatedData.split("\n");
+                    let idLookup = {};
+                    annotatedRecs.forEach(function (record) {
+                        if (record.charAt(0) !== "#" && record !== '') {
+                            // Parse the vcf record into its fields
+                            let fields = record.split('\t');
+                            let refName = fields[0];
+                            let pos = fields[1];
+                            let ref = fields[3];
+                            let alt = fields[4];
+                            let info = fields[7];
+
+                            //let strand = '';
+                            let infoVal = '';
+                            if (info && info !== '') {
+                                let infoFields = info.split(';');
+                                infoFields.forEach((field) => {
+                                    // if (field.startsWith('STRAND')) {
+                                    //     strand = field.split('=')[1];
+                                    // }
+                                    if (infoValueField && field.startsWith(infoValueField.toUpperCase())) {
+                                        infoVal = field.split('=')[1];
+                                    }
+                                })
+                            }
+                            //strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
+                            let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
+
+                            // Parse ids and return as array
+                            let id = 'var_' + pos + '_' + chr + '_' + ref + '_' + alt;
+                            idLookup[id] = infoVal === '' ? true : infoVal;
+                        }
+                    });
                     resolve(idLookup);
                 });
                 cmd.on('error', function (error) {
@@ -1596,10 +1606,18 @@ export default function vcfiobio(theGlobalApp) {
                         end = +rec.pos + len;
                     }
 
-                    // Since we have multiple sites coming back, null these args out
-                    let geneObject = null;
+                    // Since we have multiple sites coming back, have to pull out gene object by coords
+                    // Cannot rely on VEP annotation because some genes pull back transcriptional annotations that have DIFF gene symbols (ex: TET2 and TET2-AS1)
+
+                    let geneTransObj = me.getGeneModel().findGeneObjByCoords(me.stripChr(rec.chrom), rec.pos);
+                    let geneObject = geneTransObj.geneObj;
+
+                    // For oncogene, we want to allow all valid transcripts through
                     let selectedTranscript = null;
                     let selectedTranscriptID = null;
+                    //let selectedTranscript = geneTransObj.transObj;
+                    //let selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
+
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
                     const keepHomRefs = true;
                     var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
@@ -1974,12 +1992,11 @@ export default function vcfiobio(theGlobalApp) {
             return 'var';
         }
         let trimmedChromName = rec.chrom.indexOf("chr") === 0 ? rec.chrom.slice(3) : rec.chrom; // We have to synonymize chromosome name between versions - no chr13 vs 13 b/c messes up track filtering
-        return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_[' + alt + ']');
+        return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_' + alt);
     };
 
     exports._parseAnnot = function (rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {
         var me = this;
-
         var annot = {
             af: null,
             typeAnnotated: null,
@@ -2081,7 +2098,6 @@ export default function vcfiobio(theGlobalApp) {
     */
     exports._parseVepAnnot = function (altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {
         var me = this;
-
         var vepFields = me.infoFields.VEP;
         var tokenValue = annotToken.substring(4, annotToken.length);
         var transcriptTokens = tokenValue.split(",");
@@ -2174,7 +2190,6 @@ export default function vcfiobio(theGlobalApp) {
                     // transcripts
                     var validTranscript = false;
 
-                    // Oncogene performs calls w/out specfic gene/transcript
                     if (geneObject) {
                         geneObject.transcripts.forEach(function (transcript) {
                             if (transcript.transcript_id.indexOf(theTranscriptId) === 0) {
@@ -2245,9 +2260,8 @@ export default function vcfiobio(theGlobalApp) {
 
                     } else {
                         consequence = vepTokens[vepFields.Consequence];
-                        //console.log(geneObject.gene_name + " " + consequence + ": throwing out invalid transcript " + theTranscriptId);
+                        console.log(geneObject.gene_name + " " + consequence + ": throwing out invalid transcript " + theTranscriptId);
                     }
-
                 }
             }
         });

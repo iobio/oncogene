@@ -10,8 +10,8 @@ export default class EndpointCmd {
         this.launchedFromUtah = this.globalApp.IOBIO_SERVICES.indexOf('mosaic.chpc.utah.edu') === 0;
 
         // talk to gru
-        //this.api = new Client('backend.iobio.io', {secure: true});
-        this.api = new Client('mosaic.chpc.utah.edu/gru-dev', {secure: true});
+        this.api = new Client('backend.iobio.io', {secure: true});
+        this.devApi = new Client('mosaic.chpc.utah.edu/gru-dev-9003/', {secure: true});
         this.gruBackend = true;
         this.iobio = {};  // TODO: making this null to circumvent linter for now
 

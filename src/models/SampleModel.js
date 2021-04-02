@@ -842,6 +842,7 @@ class SampleModel {
         this.vcf.setEndpoint(this.cohort.endpoint);
         this.vcf.setGenericAnnotation(this.cohort.genericAnnotation);
         this.vcf.setGenomeBuildHelper(this.cohort.genomeBuildHelper);
+        this.vcf.setGeneModel(this.getGeneModel());
         this.vcf.setIsEduMode(this.cohort.isEduMode);
         this.bam = new bamiobio(this.globalApp, this.cohort.endpoint);
         this.cnv = new cnviobio(this.cohort.endpoint);
@@ -1619,25 +1620,48 @@ class SampleModel {
         });
     }
 
+    /* Takes in a list of regions, calls 5 regions at a time to process. */
     promiseGetVariantIds(regions) {
         const self = this;
+        const batchCount = 5;
+
         return new Promise((resolve, reject) => {
             let resultMap = {};
-            self.vcf.promiseGetVariantIds(regions, 'LEGACY_ID')
-              .then(function (data) {
-                if (data) {
-                    if (Object.keys(data).length === 0) {
-                        console.log('Warning: no cosmic variants found for this gene.');
-                    }
-                    // TODO: cache this once we know its working
-                    resultMap[self.id + '-ids'] = data;
+            let promises = [];
+
+            for (let i = 0; i < regions.length; i += batchCount) {
+                let regionBatch = regions.slice(i, Math.min((i + batchCount), regions.length));
+                let varIdP = self.vcf.promiseGetVariantIds(regionBatch, 'LEGACY_ID')
+                    .then(function (data) {
+                        if (data) {
+                            if (Object.keys(data).length === 0) {
+                                let regionStr = '';
+                                regionBatch.forEach(region => {
+                                    regionStr += (region.name + ':' + region.start + '-' + region.end + ', ');
+                                })
+                                console.log('Warning: no cosmic variants found for the batch: ' + regionStr);
+                            }
+                            let modelKey = self.id + '-ids';
+                            if (resultMap[modelKey]) {
+                                let varObj = resultMap[modelKey];
+                                for (var varId in data) {
+                                    varObj[varId] = data[varId];
+                                }
+                            } else {
+                                resultMap[self.id + '-ids'] = data;
+                            }
+                        } else {
+                            reject('Warning: no result obtained from getting variant ids for ' + self.id);
+                        }
+                    }).catch(function (err) {
+                    reject('Could not obtain variant ids for ' + self.id + ' because: ' + err);
+                    });
+                promises.push(varIdP);
+            }
+            Promise.all(promises)
+                .then(() => {
                     resolve(resultMap);
-                } else {
-                    reject('Warning: no result obtained from getting variant ids for ' + self.id);
-                }
-            }).catch(function (err) {
-                reject('Could not obtain variant ids for ' + self.id + ' because: ' + err);
-            })
+                })
         });
     }
 
