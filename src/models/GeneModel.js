@@ -1483,8 +1483,10 @@ class GeneModel {
                         let name = geneName.toUpperCase();
                         if (self.geneObjects[name]) {
                             self.geneObjects[name].somaticCnvList = somaticCnvs[geneName];
+                        } else {
+                            console.log('WARNING: could not find gene object to match CNV with for: ' + geneName);
                         }
-                        fullGeneObj.push(self.geneObjects[name]);
+                        genesWithVars[name] = true;
                     })
 
                     // Fetch NCBI summary for all somatic genes
@@ -1571,9 +1573,6 @@ class GeneModel {
 
         return new Promise((resolve) => {
             if (geneObj) {
-                // todo: figures out why coming in twice
-                if (geneObj.gene_name === 'RUNX1') {debugger;}
-
                 // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
                     let impact = Object.keys(feat.highestImpactVep);

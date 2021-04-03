@@ -199,9 +199,6 @@
             getTotalVarCount: function(geneObj) {
                 let count = 0;
                 if (geneObj) {
-                  if (geneObj.gene_name === 'RUNX1') {
-                    debugger;
-                  }
                     count = geneObj.highCount + geneObj.moderCount + geneObj.lowCount + geneObj.modifCount + geneObj.cnvCount;
                 }
                 return count;
