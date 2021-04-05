@@ -382,7 +382,7 @@
                                         Download Config
                                     </v-btn>
                                     <v-btn large color="secondary" class="launch-btn" :disabled="!isReadyToLaunch()"
-                                           @click="launch">
+                                           @click="launch(false)">
                                         Launch
                                     </v-btn>
                                 </v-card-actions>
@@ -1118,7 +1118,7 @@
             mountVcfSlide: function () {
                 this.carouselModel = 4;
             },
-            launch: function () {
+            launch: function (demoMode = false) {
                 this.cohortModel.setInputDataTypes(this.selectedUserData);
                 this.cohortModel.setBuild(this.selectedBuild);
                 this.cohortModel.setCallType(this.somaticCallsOnly);
@@ -1139,7 +1139,7 @@
                   }
                   modelInfo.selectedSampleIdx = bound - numSkipBefore;
                 });
-              this.$emit('launched', this.modelInfoList, this.listInput, true);
+              this.$emit('launched', this.modelInfoList, this.listInput, demoMode);
             },
           loadDemo: function() {
             const self = this;
@@ -1236,7 +1236,7 @@
                   for (let i = 0; i < sampleNames.length; i++) {
                     self.vcfSampleNames.push(sampleNames[i]);
                   }
-                  self.launch();
+                  self.launch(true);
                 } else {
                   let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
                   self.displayAlert('error', alertText);

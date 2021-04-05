@@ -62,10 +62,10 @@
                     </v-list>
                 </v-menu>
             </div>
-            <v-btn color="secondary" v-if="filesLoaded && !demoMode" @click="displayFilesCarousel">Files</v-btn>
-          <v-btn color="secondary" class="mx-2" v-if="filesLoaded" @click="displayAbout">
-            Docs
-          </v-btn>
+            <v-btn color="secondary" v-if="(filesLoaded && (!demoMode))" @click="displayFilesCarousel">Files</v-btn>
+            <v-btn color="secondary" class="mx-2" v-if="filesLoaded" @click="displayAbout">
+              Docs
+            </v-btn>
             <v-btn
                     text
                     href="http://iobio.io"
@@ -90,7 +90,7 @@
                   @set-global-display="setGlobalDisplay"
                   @set-filter-display="setFilterDisplay"
                   @display-unmatched-genes-btn="onUnmatchedGenes"
-                  @hide-files-btn="demoMode = true"
+                  @hide-files-btn="demoMode=true"
             >
             </Home>
         </v-main>

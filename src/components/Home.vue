@@ -457,6 +457,7 @@ export default {
       self.displayLoader = true;
       self.analysisHistoryList = [];
       if (demoMode) {
+        debugger;
         self.$emit('hide-files-btn');
       }
       self.cohortModel.promiseInit(modelInfos, userGeneList)
