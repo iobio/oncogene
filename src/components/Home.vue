@@ -9,6 +9,7 @@
              :firstLoadComplete="firstLoadComplete"
              @toggle-carousel="toggleCarousel"
              @load-demo="$emit('load-demo')"
+             @display-about="aboutDialog = true"
              @launched="onLaunch">
     </Welcome>
     <v-row no-gutters>
@@ -251,6 +252,16 @@
           @toggle-cnv-tooltip="toggleCnvTooltip">
       </cnv-dialog>
     </v-dialog>
+    <v-dialog
+        v-model="aboutDialog"
+        fullscreen
+        hide-overlay
+        transition="dialog-bottom-transition">
+      <About
+          :height="screenHeight"
+          @exit-about="aboutDialog = false">
+      </About>
+    </v-dialog>
     <v-overlay :value="displayLoader">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
@@ -267,6 +278,7 @@ import HistoryTab from './HistoryTab.vue'
 import CnvDialog from './CnvDialog.vue'
 import SomaticGenesCard from './SomaticGenesCard.vue'
 import GeneCard from './GeneCard.vue'
+import About from './partials/About.vue'
 
 import '@/assets/css/v-tooltip.css'
 
@@ -282,7 +294,8 @@ export default {
     GeneCard,
     SomaticGenesCard,
     Pileup,
-    CnvDialog
+    CnvDialog,
+    About
   },
   props: {
     d3: {
@@ -344,6 +357,7 @@ export default {
       firstLoadComplete: false,
       cnvDialog: false,
       cnvDialogWidth: 0,
+      aboutDialog: false,
 
       // selection state
       selectedGene: null,
@@ -859,6 +873,9 @@ export default {
     toggleCarousel: function (display) {
       this.displayCarousel = display;
     },
+    displayAbout: function() {
+      this.aboutDialog = true;
+    },
     onTranscriptIdSelected: function (transcriptId) {
       const self = this;
       let theTranscript = null;
@@ -997,7 +1014,6 @@ export default {
       }
     },
     displayCnvDialog: function(cnvObj, width, selectedSample) {
-      // todo: cnvObj still coming in incorrectly here
       this.cnvDialogWidth = width;
       this.selectedCnv = {
         cnvObj: cnvObj,
@@ -1092,6 +1108,12 @@ export default {
 .blur-content
   filter: blur(1px) !important
   -webkit-filter: blur(1px) !important
+
+.dialog-title
+  font-family: Quicksand
+    color: white
+    font-weight: 500
+    font-size: 18px
 
 .summary-card
   padding-top: 15px

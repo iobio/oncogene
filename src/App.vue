@@ -63,12 +63,15 @@
                 </v-menu>
             </div>
             <v-btn color="secondary" v-if="filesLoaded" @click="displayFilesCarousel">Files</v-btn>
+          <v-btn color="secondary" class="mx-2" v-if="filesLoaded" @click="displayAbout">
+            Docs
+          </v-btn>
             <v-btn
                     text
                     href="http://iobio.io"
                     target="_blank"
             >
-                <span class="mr-2 ml-2">an iobio project</span>
+              <span class="mr-2 ml-2">an iobio project</span>
             </v-btn>
         </v-app-bar>
         <v-main style="background-color: #7f1010">
@@ -218,6 +221,9 @@
             },
             displayFilesCarousel: function () {
                 this.$refs.homePanel.toggleCarousel(true);
+            },
+            displayAbout: function() {
+                this.$refs.homePanel.displayAbout();
             },
             onUnmatchedGenes: function(unmatchedGeneList) {
                 this.unmatchedGenesList = unmatchedGeneList;

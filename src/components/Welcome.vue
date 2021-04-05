@@ -62,9 +62,6 @@
                         <v-col class="grow">
                             {{ warningText }}
                         </v-col>
-<!--                        <v-col class="shrink">-->
-<!--                            <v-btn>Proceed</v-btn>-->
-<!--                        </v-col>-->
                     </v-row>
                 </v-alert>
                 <v-carousel light class="start-carousel"
@@ -78,40 +75,49 @@
                         <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
                             <v-col class="d-flex align-stretch"
                                    cols="12" height="100">
+<!--                                todo: left off put transition on here for buttons-->
                                 <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
                                          :color="slideBackground">
-                                    <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
-                                        <v-col md="auto">
-                                            <v-row justify-center class="pb-8">
-                                                <div style="text-align: center; width: 100%; font-family: Quicksand; font-size: 48px; color: #7f1010">
-                                                    ONCOGENE.IOBIO
-                                                </div>
-                                            </v-row>
-                                            <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="secondary" class="carousel-btn"
-                                                       @click="advanceSlide">
-                                                    Start New Analysis
-                                                </v-btn>
-                                            </v-row>
-<!--                                            <v-row justify="center" class="pa-3">-->
-<!--                                                <v-btn x-large color="secondary" class="carousel-btn"-->
-<!--                                                       @click="$emit('load-demo')">-->
-<!--                                                    Try Demo Analysis-->
-<!--                                                </v-btn>-->
-<!--                                            </v-row>-->
-                                            <v-row justify="center" class="pa-3">
-                                                <v-btn x-large color="secondary" class="carousel-btn"
-                                                       @click="displayConfigUploadSlide">Upload Analysis
-                                                </v-btn>
-                                            </v-row>
-                                            <v-row v-show="showUploadEntry" justify="center" class="pa-3">
-                                                <v-file-input v-model="configFile" accept=".json"
-                                                              label="Click to Select File"
-                                                              @change="checkAndUploadConfig">
-                                                </v-file-input>
-                                            </v-row>
+                                  <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
+                                    <v-col md="10">
+                                      <v-row justify-center class="pb-8">
+                                        <div style="text-align: center; width: 100%; font-family: Quicksand; font-size: 54px; color: #7f1010">
+                                          ONCOGENE.IOBIO
+                                        </div>
+                                      </v-row>
+                                      <v-row justify="center" class="pa-3">
+                                        <v-col md="5" class="mx-2">
+                                          <v-btn x-large block color="secondary" class="carousel-btn"
+                                                 @click="advanceSlide">
+                                            Start New Analysis
+                                          </v-btn>
                                         </v-col>
-                                    </v-row>
+                                        <v-col md="5" class="mx-2">
+                                          <v-btn x-large block color="secondary" class="carousel-btn"
+                                                 @click="displayConfigUploadSlide">Upload Analysis
+                                          </v-btn>
+                                        </v-col>
+                                      </v-row>
+                                      <v-row justify="center" class="pa-3">
+                                        <v-col md="5" class="mx-2">
+                                          <v-btn x-large block color="#3a77ab" class="carousel-btn"
+                                                 @click="$emit('display-about')">About & Help
+                                          </v-btn>
+                                        </v-col>
+                                        <v-col md="5" class="mx-2">
+                                          <v-btn x-large block color="#3a77ab" class="carousel-btn"
+                                                 @click="$emit('load-demo')">Try Demo Analysis
+                                          </v-btn>
+                                        </v-col>
+                                      </v-row>
+                                      <v-row v-show="showUploadEntry" justify="center" class="pa-3">
+                                        <v-file-input v-model="configFile" accept=".json"
+                                                      label="Click to Select File"
+                                                      @change="checkAndUploadConfig">
+                                        </v-file-input>
+                                      </v-row>
+                                    </v-col>
+                                  </v-row>
                                 </v-sheet>
                             </v-col>
                         </v-row>
@@ -508,7 +514,7 @@
 
                     cnv: 'Oncogene.iobio requires one copy number file per sample. This file must be tab-delimited and contain ' +
                         'the following five headers: chr, start, end, lcn.em, and tcn.em (corresponding to chromosome, start coordinate, ' +
-                        'end coordinate, lesser copy number, and total copy number, respectively). Other data columns may exist in your tab-delimited file,' +
+                        'end coordinate, lesser copy number, and total copy number, respectively). Other data columns may exist in your tab-delimited file, ' +
                         'however they will be ignored. The Facets program (by MSKCC) program outputs an ideal file for this purpose.',
 
                     summary: 'Please review the summary at left to confirm the type of data uploaded. Steps highlighted ' +
