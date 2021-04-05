@@ -2239,7 +2239,12 @@ class SampleModel {
 
         var pushVcfFile = function (model) {
             if (model.vcfUrlEntered) {
-                theVcfs[model.vcf.getVcfURL()] = true;
+                let url = model.vcf.getVcfURL();
+                // If we're working with pre-signed urls, we may have a different timestamp and accessId
+                if (url.indexOf('?') > -1) {
+                    url = url.substring(0, url.indexOf('?'));
+                }
+                theVcfs[url] = true;
             } else {
                 theVcfs[model.vcf.getVcfFile().name] = true;
             }

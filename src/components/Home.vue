@@ -8,8 +8,8 @@
              :navBarHeight="navBarHeight"
              :firstLoadComplete="firstLoadComplete"
              @toggle-carousel="toggleCarousel"
-             @load-demo="$emit('load-demo')"
              @display-about="aboutDialog = true"
+             @hide-welcome="demoHide"
              @launched="onLaunch">
     </Welcome>
     <v-row no-gutters>
@@ -442,14 +442,23 @@ export default {
     }
   },
   methods: {
+    demoHide: function() {
+      const self = this;
+      self.dataEntered = true;
+      self.displayCarousel = false;
+      self.$forceUpdate();
+    },
     // Point of entry for launch
-    onLaunch: function (modelInfos, userGeneList) {
+    onLaunch: function (modelInfos, userGeneList, demoMode = false) {
       const self = this;
       self.dataEntered = true;
       self.displayCarousel = false;
       self.firstLoadComplete = true;
       self.displayLoader = true;
       self.analysisHistoryList = [];
+      if (demoMode) {
+        self.$emit('hide-files-btn');
+      }
       self.cohortModel.promiseInit(modelInfos, userGeneList)
           .then(() => {
             self.sampleModels = self.cohortModel.sampleModels;

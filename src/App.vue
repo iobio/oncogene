@@ -62,7 +62,7 @@
                     </v-list>
                 </v-menu>
             </div>
-            <v-btn color="secondary" v-if="filesLoaded" @click="displayFilesCarousel">Files</v-btn>
+            <v-btn color="secondary" v-if="filesLoaded && !demoMode" @click="displayFilesCarousel">Files</v-btn>
           <v-btn color="secondary" class="mx-2" v-if="filesLoaded" @click="displayAbout">
             Docs
           </v-btn>
@@ -86,11 +86,11 @@
                   :hoverTooltip="hoverTooltip"
                   :navbarHeight="navBarHeight"
                   :geneList="allGenes"
-                  @load-demo="onLoadDemo"
                   @gene-changed="onGeneChanged"
                   @set-global-display="setGlobalDisplay"
                   @set-filter-display="setFilterDisplay"
                   @display-unmatched-genes-btn="onUnmatchedGenes"
+                  @hide-files-btn="demoMode = true"
             >
             </Home>
         </v-main>
@@ -150,6 +150,7 @@
                 filesLoaded: false,
                 displayUnmatchedGenesBtn: false,
                 unmatchedGenesList: [],
+                demoMode: false,
 
                 // static data
                 allGenes: allGenesData
@@ -174,9 +175,6 @@
                 } else {
                     self.globalApp.$('main.content .container').addClass("small");
                 }
-            },
-            onLoadDemo: function () {
-                alert('Load demo not implemented in app yet');
             },
             promiseInitCache: function () {
                 let self = this;

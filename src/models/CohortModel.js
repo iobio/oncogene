@@ -424,7 +424,6 @@ class CohortModel {
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
-
             self.geneModel.promiseCopyPasteGenes(userGeneList, {replace: true, warnOnDup: false})
                 .then(() => {
                     let samplePromises = [];
