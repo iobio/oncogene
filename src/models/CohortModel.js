@@ -1124,6 +1124,7 @@ class CohortModel {
                 }
             });
             const somaticFilterPhrase = self.onlySomaticCalls ? '' : self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
+            self.selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
                 self.selectedSamples.push(model.selectedSample);
             });
