@@ -8,7 +8,7 @@
              :navBarHeight="navBarHeight"
              :firstLoadComplete="firstLoadComplete"
              @toggle-carousel="toggleCarousel"
-             @display-about="aboutDialog = true"
+             @display-about="openAbout"
              @hide-welcome="demoHide"
              @launched="onLaunch">
     </Welcome>
@@ -1048,6 +1048,10 @@ export default {
             .duration(500)
             .style('opacity', 0);
       }
+    },
+    openAbout: function() {
+      this.$gtag.pageview("/about");
+      this.aboutDialog = true;
     }
   },
   computed: {

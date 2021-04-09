@@ -955,6 +955,7 @@
                 a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
                 e.initEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
                 a.dispatchEvent(e);
+                self.$gtag.pageview("/downloadConfig");
             },
             checkAndUploadConfig: function () {
                 const self = this;
@@ -1066,6 +1067,7 @@
                             });
                         }
                         self.mountVcfSlide();
+                      self.$gtag.pageview("/uploadConfig");
                     }
                 };
                 reader.onerror = () => {
@@ -1236,6 +1238,7 @@
                   for (let i = 0; i < sampleNames.length; i++) {
                     self.vcfSampleNames.push(sampleNames[i]);
                   }
+                  self.$gtag.pageview("/demo");
                   self.launch(true);
                 } else {
                   let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
