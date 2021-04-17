@@ -18,6 +18,7 @@
     "ideogram": "^1.29.0",
     "igv": "^2.6.3",
     "iobio-api-client": "^0.7.2",
+    "iobio-launch": "^0.7.0",
     "jquery": "^3.5.1",
     "lodash": "^4.17.19",
     "material-design-icons-iconfont": "^5.0.1",
@@ -26,6 +27,7 @@
     "vue-cli-plugin-s3-deploy": "^4.0.0-rc3",
     "vue-gtag": "^1.11.0",
     "vue-material": "^1.0.0-beta-14",
+    "vue-router": "^3.5.1",
     "vuedraggable": "^2.24.0",
     "vuetify": "^2.3.14"
   },

@@ -87,6 +87,7 @@
             :hoverTooltip="hoverTooltip"
             :navbarHeight="navBarHeight"
             :geneList="allGenes"
+            :launchParams="launchParams"
             @gene-changed="onGeneChanged"
             @set-global-display="setGlobalDisplay"
             @set-filter-display="setFilterDisplay"
@@ -107,7 +108,7 @@ import Glyph from './js/Glyph.js'
 import VariantTooltip from './js/VariantTooltip.js'
 
 // models
-import CacheHelper from "./models/CacheHelper";
+import CacheHelper from "./models/CacheHelper"
 import CohortModel from './models/CohortModel.js'
 import EndpointCmd from './models/EndpointCmd.js'
 import FeatureMatrixModel from './models/FeatureMatrixModel.js'
@@ -116,6 +117,7 @@ import GeneModel from './models/GeneModel.js'
 import GenericAnnotation from './models/GenericAnnotation.js'
 import GenomeBuildHelper from './models/GenomeBuildHelper.js'
 import Translator from './models/Translator.js'
+import { createIntegration } from './models/Integration.js'
 
 // static data
 import allGenesData from './data/genes.json'
@@ -139,6 +141,7 @@ export default {
       filterModel: null,
       geneModel: null,
       genomeBuildHelper: null,
+      integration: null,
 
       // view props
       mainContentWidth: 0,
@@ -152,6 +155,9 @@ export default {
       displayUnmatchedGenesBtn: false,
       unmatchedGenesList: [],
       demoMode: false,
+
+      // integration
+      launchParams: null,
 
       // static data
       allGenes: allGenesData
@@ -233,6 +239,19 @@ export default {
     const self = this;
     this.$gtag.pageview("/");
 
+    const leadQuery = this.$route.query;
+    this.integration = createIntegration(leadQuery);
+    const query = this.integration.buildQuery();
+    this.launchParams = this.integration.buildParams();
+
+    // catching errors to get rid of
+    this.$router.push({
+      name: '/',
+      query,
+    }).catch(err => {
+      console.log('Problem routing to integration specified path: ' + err);
+    });
+
     self.cardWidth = window.innerWidth;
     self.globalApp.$(window).resize(function () {
       self.onResize();
@@ -272,11 +291,11 @@ export default {
 
 
           // Instantiate helper class than encapsulates IOBIO commands
+          const backendUrl = this.launchParams.backendUrl;
           let endpoint = new EndpointCmd(self.globalApp,
-              //self.cacheHelper.launchTimestamp, TODO: fix this when add cache back and remove Date below
-              Date.now().valueOf(),
               self.genomeBuildHelper,
-              self.globalApp.utility.getHumanRefNames);
+              self.globalApp.utility.getHumanRefNames,
+              backendUrl);
 
           // self.variantExporter = new VariantExporter(self.globalApp);
 
