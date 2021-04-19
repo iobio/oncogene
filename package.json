@@ -17,7 +17,7 @@
     "d3-transition": "^1.3.2",
     "ideogram": "^1.29.0",
     "igv": "^2.6.3",
-    "iobio-api-client": "^0.7.2",
+    "iobio-api-client": "^0.8.0",
     "iobio-launch": "^0.7.0",
     "jquery": "^3.5.1",
     "lodash": "^4.17.19",

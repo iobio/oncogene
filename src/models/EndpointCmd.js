@@ -11,7 +11,7 @@ export default class EndpointCmd {
         if (backendUrl == null) {
             backendUrl = 'backend.iobio.io';
         }
-        this.api = new Client(backendUrl, {secure: true});
+        this.api = new Client(backendUrl);
         this.devApi = new Client('mosaic.chpc.utah.edu/gru-dev-9003/', {secure: true});
         this.gruBackend = true;
     }

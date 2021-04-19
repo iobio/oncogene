@@ -10,12 +10,13 @@ import VueGtag from "vue-gtag";
 import VueRouter from "vue-router";
 import App from './App.vue'
 
+// todo: can now just throw router into here and take out path specific tag pushes everywhere
 Vue.use(VueGtag, {
     config: { id: "UA-47481907-15" }
 });
 Vue.use(VueRouter);
 
-const routes = [{ path: '/', component: App }]
+const routes = [{ name: 'home', path: '/', component: App }]
 const router = new VueRouter({
     routes
 });

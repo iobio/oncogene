@@ -241,16 +241,19 @@ export default {
 
     const leadQuery = this.$route.query;
     this.integration = createIntegration(leadQuery);
-    const query = this.integration.buildQuery();
-    this.launchParams = this.integration.buildParams();
+    this.integration.init().then(() => {
+      const query = self.integration.buildQuery();
+      self.launchParams = this.integration.buildParams();
 
-    // catching errors to get rid of
-    this.$router.push({
-      name: '/',
-      query,
-    }).catch(err => {
-      console.log('Problem routing to integration specified path: ' + err);
-    });
+      if (Object.keys(query).length > 0) {
+        self.$router.push({
+          name: 'home',
+          query,
+        }).catch(err => {
+          console.log('Problem routing to integration specified path: ' + err);
+        });
+      }
+    })
 
     self.cardWidth = window.innerWidth;
     self.globalApp.$(window).resize(function () {
@@ -291,13 +294,11 @@ export default {
 
 
           // Instantiate helper class than encapsulates IOBIO commands
-          const backendUrl = this.launchParams.backendUrl;
+          const backendUrl = self.launchParams.backendUrl;
           let endpoint = new EndpointCmd(self.globalApp,
               self.genomeBuildHelper,
               self.globalApp.utility.getHumanRefNames,
               backendUrl);
-
-          // self.variantExporter = new VariantExporter(self.globalApp);
 
           self.cohortModel = new CohortModel(
               self.globalApp,
@@ -309,16 +310,9 @@ export default {
               null, //new FreebayesSettings(),
               self.cacheHelper);
 
-          // self.geneModel.on("geneDangerSummarized", function (dangerSummary) {
-          //     self.cohortModel.captureFlaggedVariants(dangerSummary)
-          // });
-
           self.cacheHelper.cohort = self.cohortModel;
 
-          // self.variantExporter.cohort = self.cohortModel;
-
           self.inProgress = self.cohortModel.inProgress;
-
 
           self.featureMatrixModel = new FeatureMatrixModel(self.globalApp, self.cohortModel, false, false, 0);
           self.featureMatrixModel.init();

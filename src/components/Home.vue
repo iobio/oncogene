@@ -335,6 +335,10 @@ export default {
       default: () => {
         return [];
       }
+    },
+    launchParams: {
+      type: Object,
+      default: null
     }
   },
   data: () => {
@@ -1053,6 +1057,21 @@ export default {
       this.$gtag.pageview("/about");
       this.aboutDialog = true;
     }
+  },
+  mounted: function() {
+        if (this.launchParams) {
+          // parse out params
+          // these should be vcfUrl, tbiUrl, bamUrls, cnvUrls
+          // users will need to specify sample order (after vcf header check)
+          // users will need to pick if vcf has somatic variants only
+          // users will need to pick gene list
+          // users will need to confirm bam order from drop down list
+          // users will need to press launch
+        }
+      // todo: left off here - need to parse out launchParams passed from integration
+      // if galaxy, need to show modified launcher with urls hard coded in - just allow sample selection
+      // if mosaic, should need to just launch
+      // if normal integration, just launch per usual
   },
   computed: {
     overlayWidth: function () {
