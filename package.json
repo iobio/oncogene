@@ -20,7 +20,7 @@
     "iobio-api-client": "^0.8.0",
     "iobio-launch": "^0.7.0",
     "jquery": "^3.5.1",
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.21",
     "material-design-icons-iconfont": "^5.0.1",
     "node-sass": "^4.14.1",
     "vue": "^2.6.12",
