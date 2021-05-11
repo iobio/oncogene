@@ -88,6 +88,7 @@
             :navbarHeight="navBarHeight"
             :geneList="allGenes"
             :launchParams="launchParams"
+            :launchSource="launchSource"
             @gene-changed="onGeneChanged"
             @set-global-display="setGlobalDisplay"
             @set-filter-display="setFilterDisplay"
@@ -158,6 +159,8 @@ export default {
 
       // integration
       launchParams: null,
+      launchSource: null,
+      localGalaxyTestMode: false,
 
       // static data
       allGenes: allGenesData
@@ -239,8 +242,14 @@ export default {
     const self = this;
     this.$gtag.pageview("/");
 
-    const leadQuery = this.$route.query;
+    let leadQuery = this.$route.query;
+    if (this.localGalaxyTestMode) {
+      leadQuery = {
+        source: 'galaxy'
+      }
+    }
     this.integration = createIntegration(leadQuery);
+    this.launchSource = this.integration.getSource();
     this.integration.init().then(() => {
       const query = self.integration.buildQuery();
       self.launchParams = this.integration.buildParams();
@@ -253,100 +262,99 @@ export default {
           console.log('Problem routing to integration specified path: ' + err);
         });
       }
-    })
+      self.cardWidth = window.innerWidth;
+      self.globalApp.$(window).resize(function () {
+        self.onResize();
+      });
 
-    self.cardWidth = window.innerWidth;
-    self.globalApp.$(window).resize(function () {
-      self.onResize();
-    });
+      document.addEventListener("visibilitychange", function () {
+        if (!document.hidden) {
+          setTimeout(function () {
+            self.onResize();
+          }, 1000)
+        }
+      }, false);
 
-    document.addEventListener("visibilitychange", function () {
-      if (!document.hidden) {
-        setTimeout(function () {
-          self.onResize();
-        }, 1000)
+      // Safari can't use IndexedDB in iframes, so in this situation, use
+      // local storage instead.
+      if (window != top && self.utility.detectSafari()) {
+        self.forceLocalStorage = true;
       }
-    }, false);
+      // self.setAppMode();
 
-    // Safari can't use IndexedDB in iframes, so in this situation, use
-    // local storage instead.
-    if (window != top && self.utility.detectSafari()) {
-      self.forceLocalStorage = true;
-    }
-    // self.setAppMode();
+      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp);
+      self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
+          .then(function () {
+            return self.promiseInitCache();
+          })
+          .then(function () {
+            let glyph = new Glyph(self.globalApp.d3, self.globalApp.$);
+            let translator = new Translator(self.globalApp, glyph, self.globalApp.utility);
+            glyph.translator = translator;
+            let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
-    self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp);
-    self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
-        .then(function () {
-          return self.promiseInitCache();
-        })
-        .then(function () {
-          let glyph = new Glyph(self.globalApp.d3, self.globalApp.$);
-          let translator = new Translator(self.globalApp, glyph, self.globalApp.utility);
-          glyph.translator = translator;
-          let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
-
-          self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);
-          self.geneModel.geneSource = "gencode";
-          self.geneModel.genomeBuildHelper = self.genomeBuildHelper;
-          self.geneModel.setAllKnownGenes(self.allGenes);
-          self.geneModel.translator = translator;
+            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);
+            self.geneModel.geneSource = "gencode";
+            self.geneModel.genomeBuildHelper = self.genomeBuildHelper;
+            self.geneModel.setAllKnownGenes(self.allGenes);
+            self.geneModel.translator = translator;
 
 
-          // Instantiate helper class than encapsulates IOBIO commands
-          const backendUrl = self.launchParams.backendUrl;
-          let endpoint = new EndpointCmd(self.globalApp,
-              self.genomeBuildHelper,
-              self.globalApp.utility.getHumanRefNames,
-              backendUrl);
+            // Instantiate helper class than encapsulates IOBIO commands
+            const backendUrl = self.launchParams.backendUrl;
+            let endpoint = new EndpointCmd(self.globalApp,
+                self.genomeBuildHelper,
+                self.globalApp.utility.getHumanRefNames,
+                backendUrl);
 
-          self.cohortModel = new CohortModel(
-              self.globalApp,
-              endpoint,
-              genericAnnotation,
-              translator,
-              self.geneModel,
-              self.genomeBuildHelper,
-              null, //new FreebayesSettings(),
-              self.cacheHelper);
+            self.cohortModel = new CohortModel(
+                self.globalApp,
+                endpoint,
+                genericAnnotation,
+                translator,
+                self.geneModel,
+                self.genomeBuildHelper,
+                null, //new FreebayesSettings(),
+                self.cacheHelper);
 
-          self.cacheHelper.cohort = self.cohortModel;
+            self.cacheHelper.cohort = self.cohortModel;
 
-          self.inProgress = self.cohortModel.inProgress;
+            self.inProgress = self.cohortModel.inProgress;
 
-          self.featureMatrixModel = new FeatureMatrixModel(self.globalApp, self.cohortModel, false, false, 0);
-          self.featureMatrixModel.init();
-          self.cohortModel.featureMatrixModel = self.featureMatrixModel;
+            self.featureMatrixModel = new FeatureMatrixModel(self.globalApp, self.cohortModel, false, false, 0);
+            self.featureMatrixModel.init();
+            self.cohortModel.featureMatrixModel = self.featureMatrixModel;
 
-          let tipType = "hover";
-          self.hoverTooltip = new VariantTooltip(
-              self.globalApp,
-              genericAnnotation,
-              glyph,
-              translator,
-              self.cohortModel.annotationScheme,
-              self.genomeBuildHelper,
-              tipType,
-              null);
+            let tipType = "hover";
+            self.hoverTooltip = new VariantTooltip(
+                self.globalApp,
+                genericAnnotation,
+                glyph,
+                translator,
+                self.cohortModel.annotationScheme,
+                self.genomeBuildHelper,
+                tipType,
+                null);
 
-          // tipType = "click";
-          // self.clickTooltip = new VariantTooltip(
-          //     self.globalApp,
-          //     genericAnnotation,
-          //     glyph,
-          //     translator,
-          //     self.cohortModel.annotationScheme,
-          //     self.genomeBuildHelper,
-          //     tipType,
-          //     self);
+            // tipType = "click";
+            // self.clickTooltip = new VariantTooltip(
+            //     self.globalApp,
+            //     genericAnnotation,
+            //     glyph,
+            //     translator,
+            //     self.cohortModel.annotationScheme,
+            //     self.genomeBuildHelper,
+            //     tipType,
+            //     self);
 
-          self.filterModel = new FilterModel(translator, self.cohortModel, self.globalApp.$);
-          self.cohortModel.filterModel = self.filterModel;
-        })
-        .catch((error) => {
-          console.log("Probably not connected to the internet... ");
-          console.log(error);
-        })
+            self.filterModel = new FilterModel(translator, self.cohortModel, self.globalApp.$);
+            self.cohortModel.filterModel = self.filterModel;
+          })
+          .catch((error) => {
+            console.log("Probably not connected to the internet... ");
+            console.log(error);
+          })
+    })
   },
 }
 </script>

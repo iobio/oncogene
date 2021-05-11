@@ -1,8 +1,10 @@
 import { LaunchConfigManager } from 'iobio-launch';
+const GALAXY = 'galaxy';
+const CONFIG_LOC = '/galaxy_config.json';
 
 // Called when home component mounted
 export function createIntegration(query) {
-    if (query.source === 'galaxy') {
+    if (query.source === GALAXY) {
         return new GalaxyIntegration(query);
     } else if (query.source && query.project_id && query.sample_id) {
         return new MosaicIntegration(query);
@@ -15,14 +17,13 @@ class Integration {
     constructor(query, configOpts) {
         this.query = query;
         configOpts = configOpts ? configOpts : {};
-
-        // if (BUILD_ENV_LOCAL_BACKEND) {
-        //     this.backend = window.location.origin + '/gru';
-        //     configOpts = {
-        //         configLocation: '/config/config.json',
-        //     }
-        // }
+        if (process.env.BUILD_ENV_LOCAL_BACKEND) {
+            this.backend = window.location.origin + '/gru';
+        }
         this.configMan = new LaunchConfigManager(configOpts);
+    }
+    getSource() {
+        return this.query ? this.query.source : null;
     }
 }
 
@@ -48,7 +49,7 @@ class StandardIntegration extends Integration {
 class GalaxyIntegration extends Integration {
     constructor(query) {
         let configOpts = {
-            configLocation: './config.json'
+            configLocation: CONFIG_LOC
         };
         super(query, configOpts);
     }
@@ -115,7 +116,6 @@ class MosaicIntegration extends Integration {
     buildParams() {
         return {
             backendUrl: this.config.backendUrl,
-
             // todo: determine what Mosaic will pass back to me - multiple urls? fetch a config like galaxy?
             // bam: this.alignmentURL,
             // bai: this.alignmentIndexURL,

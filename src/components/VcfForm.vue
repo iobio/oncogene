@@ -135,6 +135,10 @@
             parentModelInfoIdx: {
                 type: Number,
                 default: 0
+            },
+            launchedFromGalaxy: {
+                type: Boolean,
+                default: false
             }
         },
         data: function () {
@@ -302,7 +306,7 @@
                 if (this.url && this.indexUrl) {
                     this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
                 }
-            }
+            },
         },
         watch: {
             parentModelInfoIdx: function() {
