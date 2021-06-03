@@ -49,7 +49,8 @@
                               :items="indexList"
                               placeholder="Select index"
                               style="max-width: 185px"
-                              dense>
+                              dense
+                              @change="onUrlChange(i)">
                     </v-select>
                     <v-text-field v-else
                                   :label="'Enter .' + getIndexFileType() +  ' URL'"
@@ -61,9 +62,14 @@
                                   @change="onUrlChange(i)"
                     ></v-text-field>
                   </v-col>
-                  <v-col md="2">
+                  <v-col md="1">
                     <v-list-item-icon v-if="listInfo[verifiedKey]" class="pt-2">
                       <v-icon color="green">checkmark</v-icon>
+                    </v-list-item-icon>
+                  </v-col>
+                  <v-col md="1">
+                    <v-list-item-icon v-if="galaxyMode" class="pt-2">
+                      <v-icon @click="clearRow(i)">clear</v-icon>
                     </v-list-item-icon>
                   </v-col>
                 </v-row>
@@ -299,6 +305,12 @@ export default {
     populateRespectiveIndex: function (fileName, i) {
       let indexIdx = this.fileList.indexOf(fileName);
       this.modelInfoList[i][this.indexKey] = this.indexList[indexIdx];
+      this.onUrlChange(i);
+    },
+    clearRow: function (i) {
+      this.modelInfoList[i][this.key] = null;
+      this.modelInfoList[i][this.indexKey] = null;
+      this.onUrlChange(i);
     }
   },
   mounted: function () {

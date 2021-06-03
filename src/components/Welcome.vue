@@ -1131,48 +1131,75 @@ export default {
     },
     checkAndUploadGalaxyConfig: function () {
       const self = this;
-      let displayGalaxyWarning = function (warningText, warningType) {
-        self.$emit('show-alert', warningType, warningText);
+      let displayGalaxyWarning = function (warningText) {
+        const warningType = 'error';
+        self.displayAlert(warningType, warningText);
       }
       if (self.uploadedVcfUrl && self.uploadedTbiUrl) {
+        let coverageExists = false,
+            rnaSeqExists = false,
+            atacSeqExists = false,
+            cnvExists = false;
 
-        // Optional fields
-        if (self.launchParams.coverageBams.length > 0) {
-          if (self.launchParams.coverageBams.length !== self.launchParams.coverageBais.length) {
-            displayGalaxyWarning('There was a problem passing coverage BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance', 'error');
+        let samples = [self.launchParams.normal];
+        samples = samples.concat(self.launchParams.tumors);
+        samples.forEach(sample => {
+          // Optional fields
+          if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
+            displayGalaxyWarning('There was a problem passing coverage BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
-            self.fileLists[self.COVERAGE] = self.launchParams.coverageBams;
-            self.indexLists[self.COVERAGE] = self.launchParams.coverageBais;
-            self.addDataType(self.COVERAGE);
+            // Still need to check if this sample has optional data type
+            if (sample.coverageBam) {
+              self.fileLists[self.COVERAGE].push(sample.coverageBam);
+              self.indexLists[self.COVERAGE].push(sample.coverageBai);
+              coverageExists = true;
+            }
           }
-        }
-        if (self.launchParams.rnaSeqBams.length > 0) {
-          if (self.launchParams.rnaSeqBams.length !== self.launchParams.rnaSeqBais.length) {
-            displayGalaxyWarning('There was a problem passing RNA-Seq file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance', 'error');
+          if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
+            displayGalaxyWarning('There was a problem passing RNA-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
-            self.fileLists[self.RNASEQ] = self.launchParams.rnaSeqBams;
-            self.indexLists[self.RNASEQ] = self.launchParams.rnaSeqBais;
-            self.addDataType(self.RNASEQ);
+            // Still need to check if this sample has optional data type
+            if (sample.rnaSeqBam) {
+              self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
+              self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
+              rnaSeqExists = true;
+            }
           }
-        }
-        if (self.launchParams.atacSeqBams.length > 0) {
-          if (self.launchParams.atacSeqBams.length !== self.launchParams.atacSeqBais.length) {
-            displayGalaxyWarning('There was a problem passing ATAC-Seq file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance', 'error');
+          if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
+            displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
-            self.fileLists[self.ATACSEQ] = self.launchParams.atacSeqBams;
-            self.fileLists[self.ATACSEQ] = self.launchParams.atacSeqBais;
-            self.addDataType(self.ATACSEQ);
+            // Still need to check if this sample has optional data type
+            if (sample.atacSeqBam) {
+              self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
+              self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
+              atacSeqExists = true;
+            }
           }
+          if (sample.cnv) {
+            self.fileLists[self.CNV].push(sample.cnv);
+            cnvExists = true;
+          }
+        });
+
+        // Toggle switches in loader
+        if (coverageExists) {
+          self.addDataType(self.COVERAGE);
         }
-        if (self.launchParams.cnvs.length > 0) {
-          self.fileLists[self.CNV] = self.launchParams.cnvs;
+        if (rnaSeqExists) {
+          self.addDataType(self.RNASEQ);
+        }
+        if (atacSeqExists) {
+          self.addDataType(self.ATACSEQ);
+        }
+        if (cnvExists) {
           self.addDataType(self.CNV);
         }
+
       } else {
-        displayGalaxyWarning('Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance', 'error');
+        displayGalaxyWarning('Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
       if (!self.uploadedVcfUrl || !self.uploadedTbiUrl) {
-        displayGalaxyWarning('Missing required data files from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance', 'error');
+        displayGalaxyWarning('Missing required data files from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
     },
     clearUploadForm: function () {
@@ -1358,15 +1385,24 @@ export default {
     this.listInput = this.STARTING_INPUT;
     this.populateValidGenesMap();
     this.populateGeneLists();
-    if (this.launchParams) {
-      this.uploadedVcfUrl = this.launchParams.vcfs[0];
-      this.uploadedTbiUrl = this.launchParams.tbis[0];
+    if (this.launchParams && this.launchParams.vcf) {
+      this.uploadedVcfUrl = this.launchParams.vcf;
+      this.uploadedTbiUrl = this.launchParams.tbi;
       if (this.uploadedVcfUrl && this.uploadedTbiUrl) {
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, (success, sampleNames, build) => {
           if (success) {
             self.selectedBuild = build;
           } else {
-            console.log('Could not obtain build from galaxy vcf header');
+            if (this.launchSource === this.GALAXY) {
+                self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+                console.log('Could not read vcf header from file passed by Galaxy');
+            } else if (this.launchSource === this.MOSAIC) {
+              self.displayAlert('error', 'Could not read file data from Mosaic. Please try launching again, or contact iobioproject@gmail.com for assistance');
+              console.log('Could not read vcf header from file passed by Mosaic');
+            } else {
+              self.displayAlert('error', 'Could not read parameterized file data. Please try launching again, or contact iobioproject@gmail.com for assistance');
+              console.log('Something went wrong passing data to application...');
+            }
           }
         });
       }

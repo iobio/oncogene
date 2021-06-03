@@ -160,7 +160,6 @@ export default {
       // integration
       launchParams: null,
       launchSource: null,
-      localGalaxyTestMode: false,
 
       // static data
       allGenes: allGenesData
@@ -243,7 +242,8 @@ export default {
     this.$gtag.pageview("/");
 
     let leadQuery = this.$route.query;
-    if (this.localGalaxyTestMode) {
+    if (process.env.VUE_APP_GALAXY_MODE) {
+      console.log("Galaxy mode detected");
       leadQuery = {
         source: 'galaxy'
       }
@@ -254,6 +254,7 @@ export default {
       const query = self.integration.buildQuery();
       self.launchParams = this.integration.buildParams();
 
+      // todo: left off figuring out why routing stall...
       if (Object.keys(query).length > 0) {
         self.$router.push({
           name: 'home',

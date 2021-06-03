@@ -1,6 +1,5 @@
 import { LaunchConfigManager } from 'iobio-launch';
 const GALAXY = 'galaxy';
-const CONFIG_LOC = '/galaxy_config.json';
 
 // Called when home component mounted
 export function createIntegration(query) {
@@ -17,7 +16,7 @@ class Integration {
     constructor(query, configOpts) {
         this.query = query;
         configOpts = configOpts ? configOpts : {};
-        if (process.env.BUILD_ENV_LOCAL_BACKEND) {
+        if (process.env.VUE_APP_LOCAL_BACKEND) {
             this.backend = window.location.origin + '/gru';
         }
         this.configMan = new LaunchConfigManager(configOpts);
@@ -30,8 +29,9 @@ class Integration {
 // Stand-alone launch or Galaxy (TBD)
 class StandardIntegration extends Integration {
     init() {
+        const self = this;
         return this.configMan.getConfig().then(launchConfig => {
-            this.config = launchConfig;
+            self.config = launchConfig;
         });
     }
 
@@ -49,46 +49,62 @@ class StandardIntegration extends Integration {
 class GalaxyIntegration extends Integration {
     constructor(query) {
         let configOpts = {
-            configLocation: CONFIG_LOC
+            configLocation: (process.env.VUE_APP_CONFIG_LOCATION ? process.env.VUE_APP_CONFIG_LOCATION : '/config.json')
         };
         super(query, configOpts);
     }
 
     init() {
+        const self = this;
         return this.configMan.getConfig().then(launchConfig => {
-            this.config = launchConfig;
-            // todo: these should all be arrays
-            this.vcfs = this.config.params.vcfs;
-            this.tbis = this.config.params.tbis;
-            this.coverageBams = this.config.params.coverageBams;
-            this.coverageBais = this.config.params.coverageBais;
-            this.rnaSeqBams = this.config.params.coverageBams;
-            this.rnaSeqBais = this.config.params.coverageBais;
-            this.atacSeqBams = this.config.params.coverageBams;
-            this.atacSeqBais = this.config.params.coverageBais;
-            this.cnvs = this.config.params.cnvs;
+            self.config = launchConfig;
+
+            // Required params
+            self.vcf = self.config.params.vcfs[0];
+            self.tbi = self.config.params.tbis[0];
+            self.normal = self.config.params["0"];
+            self.t1 = self.config.params["1"];
+            if (self.vcf == null || self.tbi == null
+                || self.normal == null || self.t1 == null) {
+                console.log('ERROR: did not obtain required parameters from Galaxy configuration');
+            }
+
+            // Optional timepoints
+            self.t2 = self.config.params["2"];
+            self.t3 = self.config.params["3"];
+            self.t4 = self.config.params["4"];
+            self.t5 = self.config.params["5"];
         });
     }
 
     buildParams() {
+        let tumors = [this.t1];
+        if (this.t2) {
+            tumors.push(this.t2);
+        }
+        if (this.t3) {
+            tumors.push(this.t3);
+        }
+        if (this.t4) {
+            tumors.push(this.t4);
+        }
+        if (this.t5) {
+            tumors.push(this.t5);
+        }
+
         return {
             backendUrl: this.backend ? this.backend : this.config.backendUrl,
-            vcfs: this.vcfs,
-            tbis: this.tbis,
-            coverageBams: this.coverageBams,
-            coverageBais: this.coverageBais,
-            rnaSeqBams: this.coverageBams,
-            rnaSeqBais: this.coverageBais,
-            atacSeqBams: this.coverageBams,
-            atacSeqBais: this.coverageBais,
-            cnvs: this.cnvs
+            vcf: this.vcf,
+            tbi: this.tbi,
+            normal: this.normal,
+            tumors: tumors
         };
     }
 
     buildQuery() {
         return {
             source: this.config.params.source,
-            project_id: this.config.params.project_id,
+            //project_id: this.config.params.project_id,
             // todo: whatever else info from galaxy that would be helpful
         };
     }
@@ -96,16 +112,17 @@ class GalaxyIntegration extends Integration {
 
 class MosaicIntegration extends Integration {
     init() {
+        const self = this;
         return this.configMan.getConfig().then(launchConfig => {
-            this.config = launchConfig;
+            self.config = launchConfig;
 
             return new Promise((resolve) => {
                 const projectId = this.config.params.project_id;
                 if (projectId) {
                     // todo: port for all file types after implemented on FS side
                     this.getMosaicIobioUrls((alignmentURL, alignmentIndexURL) => {
-                        this.alignmentURL = alignmentURL;
-                        this.alignmentIndexURL = alignmentIndexURL;
+                        self.alignmentURL = alignmentURL;
+                        self.alignmentIndexURL = alignmentIndexURL;
                         resolve(alignmentURL, alignmentIndexURL);
                     });
                 }

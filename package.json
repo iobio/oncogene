@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
+    "serve-galaxy": "vue-cli-service serve --mode galaxy",
     "build": "vue-cli-service build",
+    "build-galaxy": "vue-cli-service build --mode galaxy",
     "lint": "vue-cli-service lint",
     "deploy": "vue-cli-service s3-deploy"
   },
