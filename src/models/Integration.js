@@ -16,7 +16,7 @@ class Integration {
     constructor(query, configOpts) {
         this.query = query;
         configOpts = configOpts ? configOpts : {};
-        if (process.env.VUE_APP_LOCAL_BACKEND) {
+        if (process.env.VUE_APP_LOCAL_BACKEND === true) {
             this.backend = window.location.origin + '/gru';
         }
         this.configMan = new LaunchConfigManager(configOpts);
@@ -48,6 +48,7 @@ class StandardIntegration extends Integration {
 
 class GalaxyIntegration extends Integration {
     constructor(query) {
+        console.log('Galaxy mode detected');
         let configOpts = {
             configLocation: (process.env.VUE_APP_CONFIG_LOCATION ? process.env.VUE_APP_CONFIG_LOCATION : '/config.json')
         };
@@ -113,6 +114,7 @@ class GalaxyIntegration extends Integration {
 class MosaicIntegration extends Integration {
     init() {
         const self = this;
+        console.log('Mosaic mode detected');
         return this.configMan.getConfig().then(launchConfig => {
             self.config = launchConfig;
 

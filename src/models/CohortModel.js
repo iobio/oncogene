@@ -424,7 +424,7 @@ class CohortModel {
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
-            self.geneModel.promiseCopyPasteGenes(userGeneList, {replace: true, warnOnDup: false})
+            self.geneModel.promiseCopyPasteGenes(userGeneList, null, {replace: true, warnOnDup: false})
                 .then(() => {
                     let samplePromises = [];
                     modelInfos.forEach(modelInfo => {
@@ -950,6 +950,9 @@ class CohortModel {
                         // Have to wait until each track is processed to add ptCov annotations
                         let geneObj = self.geneModel.geneObjects[theGene.gene_name];
 
+                        // todo: this geneObj may not have been on our list, and not have any somaticVariants yet (or at all)
+
+
                         // NOTE: leaving this out for now since opting for pileup modal instead of coverage bar chart
                         // Get coverage point data (non-sampled) for somatic variants
                         // self.getCanonicalModels().forEach(model => {
@@ -1130,13 +1133,13 @@ class CohortModel {
             });
             const regions = self.geneModel.getFormattedGeneRegions();
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.geneModel.geneObjects)
-                .then((somaticVariants) => {
+                .then((sampleMap) => {
                     // Have to mark each individual variant object, even if duplicates across samples
-                    for (var objKey in somaticVariants) {
-                        self.filterModel.markFilteredVariants(somaticVariants[objKey].features, self.onlySomaticCalls);
+                    for (var objKey in sampleMap) {
+                        self.filterModel.markFilteredVariants(sampleMap[objKey].features, self.onlySomaticCalls);
                     }
                     const globalMode = true;
-                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, somaticVariants, globalMode, self.onlySomaticCalls)
+                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
                         .then((somaticVarMap) => {
                             resolve(somaticVarMap);
                         }).catch(error => {

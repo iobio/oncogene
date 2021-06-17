@@ -133,6 +133,9 @@
                         </v-expansion-panel-content>
                     </v-expansion-panel>
                 </v-expansion-panels>
+              <v-chip v-if="noVarsFound" color="red">
+                No somatic variants found - enter genes manually above
+              </v-chip>
             </v-row>
         </v-container>
     </v-card>
@@ -154,6 +157,10 @@
             totalSomaticVarCount: {
                 type: Number,
                 default: -1
+            },
+            noVarsFound: {
+                type: Boolean,
+                default: false
             }
         },
         data() {

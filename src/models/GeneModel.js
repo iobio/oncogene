@@ -158,10 +158,10 @@ class GeneModel {
         })
     }
 
-    promiseCopyPasteGenes(genesString, options = {replace: true, warnOnDup: true}) {
+    promiseCopyPasteGenes(genesString, geneList, options = {replace: true, warnOnDup: true}) {
         const me = this;
         return new Promise(function (resolve, reject) {
-            me.copyPasteGenes(genesString, options);
+            me.copyPasteGenes(genesString, geneList, options);
             me.promiseGetGeneObjects(me.geneNames)
                 .then(function () {
                     resolve();
@@ -178,10 +178,14 @@ class GeneModel {
         return geneNameList.length;
     }
 
-    copyPasteGenes(genesString, options = {replace: true, warnOnDup: true}) {
+    copyPasteGenes(genesString, geneList, options = {replace: true, warnOnDup: true}) {
         var me = this;
-        genesString = genesString.replace(/\s*$/, "");
-        var geneNameList = genesString.split(/(?:\s+|,\s+|,|^W|\n)/g);
+        var geneNameList = geneList;
+
+        if (!geneNameList) {
+            genesString = genesString.replace(/\s*$/, "");
+            geneNameList = genesString.split(/(?:\s+|,\s+|,|^W|\n)/g);
+        }
 
         var genesToAdd = [];
         var unknownGeneNames = {};

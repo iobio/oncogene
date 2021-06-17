@@ -1193,7 +1193,8 @@ class SampleModel {
         const self = this;
         return new Promise((resolve, reject) => {
             if (featureList.length === 0) {
-                reject('No features to return depth for');
+                console.log('Warning: tried to get bam depth for empty feature list');
+                resolve();
             }
             self.bam.getFilteredCoverageForRegion(featureList, bamType, qualityCutoff,
                 function (countMap) {

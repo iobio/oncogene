@@ -243,7 +243,6 @@ export default {
 
     let leadQuery = this.$route.query;
     if (process.env.VUE_APP_GALAXY_MODE) {
-      console.log("Galaxy mode detected");
       leadQuery = {
         source: 'galaxy'
       }
@@ -254,7 +253,6 @@ export default {
       const query = self.integration.buildQuery();
       self.launchParams = this.integration.buildParams();
 
-      // todo: left off figuring out why routing stall...
       if (Object.keys(query).length > 0) {
         self.$router.push({
           name: 'home',

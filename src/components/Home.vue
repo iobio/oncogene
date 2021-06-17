@@ -24,6 +24,7 @@
             <v-toolbar-items class="justify-center">
               <v-autocomplete v-model="lookupGene"
                               @change="onGeneSelected"
+                              @click="showGeneSnackbar = false"
                               :items="geneList"
                               :allow-overflow="false"
                               :eager="true"
@@ -69,6 +70,7 @@
                     :rankedGeneList="rankedGeneList"
                     :selectedGeneName="selectedGeneName"
                     :totalSomaticVarCount="totalSomaticVarCount"
+                    :noVarsFound="noVarsFound"
                     @variant-hover="onCohortVariantHover"
                     @variant-hover-exit="onCohortVariantHoverEnd"
                     @variant-selected="onCohortVariantClick"
@@ -212,8 +214,8 @@
         width="40%"
         height="350"
         style="z-index: 1033">
-      <v-card id="unmatched-genes-modal">
-        <v-card-title class="unmatched-headline mb-3">Unmatched Gene Names Warning</v-card-title>
+      <v-card class="warning-modal">
+        <v-card-title class="warning-headline mb-3">Unmatched Gene Names Warning</v-card-title>
         <v-card-text>
           The following gene targets contain somatic variants according to the current filtering criteria,
           but could not be matched to the entered loci names. To view these targets, please search for gene
@@ -235,6 +237,43 @@
         <v-footer style="font-size: 12px">
           *Note: we're currently working to eliminate these mismatches
         </v-footer>
+      </v-card>
+    </v-dialog>
+    <v-snackbar
+        v-model="expandSnackbar"
+        :timeout="expandTimeout"
+        shaped
+        top
+        color="secondary"
+    >
+      No somatic variants found in supplied list. Expanding to UCSC500 targets and retrying...
+      <template v-slot:action="{ attrs }">
+        <v-btn
+            color="blue"
+            text
+            v-bind="attrs"
+            @click="snackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+    <v-dialog
+        v-model="noVarsDialog"
+        width="40%"
+        height="350"
+        style="z-index: 1033">
+      <v-card class="warning-modal">
+        <v-card-title class="warning-headline mb-3">No Variants Found</v-card-title>
+        <v-card-text>
+          No somatic variants found within the supplied gene list and the UCSC500 gene panel.
+          Genes may be manually investigated one-by-one using the individual entry box, or you
+          may enter another list and try again.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="secondary" @click="noVarsDialog=false">OK</v-btn>
+        </v-card-actions>
       </v-card>
     </v-dialog>
     <v-dialog
@@ -283,6 +322,7 @@ import GeneCard from './GeneCard.vue'
 import About from './partials/About.vue'
 
 import '@/assets/css/v-tooltip.css'
+import geneListsByCancerType from "@/data/genes_by_cancer_type_ncgv6.json";
 
 export default {
   name: "Home.vue",
@@ -368,6 +408,10 @@ export default {
       cnvDialog: false,
       cnvDialogWidth: 0,
       aboutDialog: false,
+      noVarsDialog: false,
+      showGeneSnackbar: false,
+      expandSnackbar: false,
+      expandTimeout: 5000,
 
       // selection state
       selectedGene: null,
@@ -420,10 +464,10 @@ export default {
       sampleModels: null,
       analysisHistoryList: [],    // List of different calling criteria used in current session
       rankedGeneList: [],
+      expandedUserList: false,    // True if we have automatically expanded the user supplied list to include UCSC500 (b/c no targets from their list returned)
+      noVarsFound: false,
 
-      allGeneNames: ['test', 'moo', 'oink'],
       lookupGene: null,
-
       debugMode: false
     };
   },
@@ -517,34 +561,54 @@ export default {
             };
             self.$emit('set-global-display', chipInfo);
 
-            // Turn on track loaders
-            self.cohortModel.setLoaders(true);
+            // Need to check to see if we actually have somatic vars/genes returned
+            if (totalSomaticVarCount === 0 && !self.expandedUserList) {
+              // Automatically expand user list to include more genes (UCSC500)
+              //let ucscList = geneListsByCancerType['General (UCSF500)'];
+              let ucscList = geneListsByCancerType['test'];
+              self.geneModel.promiseCopyPasteGenes('', ucscList, {replace: true, warnOnDup: false})
+              .then(() => {
+                self.expandedUserList = true;
+                self.expandSnackbar = true;
+                self.callSomaticVariants();
+              })
+            } else if (totalSomaticVarCount === 0 && self.expandedUserList) {
+              // Already tried to expand user list, give them warning to manually explore
+              self.noVarsDialog = true;
+              self.displayLoader = false;
+              self.noVarsFound = true;
+              self.showGeneSnackbar = true;
+              self.selectedTab = 'filter-tab';
+            } else {
+              // Turn on track loaders
+              self.cohortModel.setLoaders(true);
 
-            self.rankedGeneList = geneModel.rankedGeneList;
-            self.selectedGene = topRankedGene;
-            self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
-            self.geneRegionStart = self.selectedGene.start;
-            self.geneRegionEnd = self.selectedGene.end;
+              self.rankedGeneList = geneModel.rankedGeneList;
+              self.selectedGene = topRankedGene;
+              self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+              self.geneRegionStart = self.selectedGene.start;
+              self.geneRegionEnd = self.selectedGene.end;
 
-            const globalMode = true;
-            // Get rid of global loader
-            self.displayLoader = false;
-            self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
-                .then(() => {
-                  if (self.unmatchedGenes.length > 0) {
-                    self.displayUnmatchedGenesWarning = true;
-                  }
-                })
-                .catch(error => {
-                  Promise.reject('Could not load data: ' + error);
-                })
-            let rankedGeneNames = [];
-            self.geneModel.rankedGeneList.forEach(geneObj => {
-              rankedGeneNames.push(geneObj.gene_name);
-            });
-            self.filterModel.addFilterHistory(totalSomaticVarCount, totalSomaticGenes, rankedGeneNames);
-            if (self.$refs.historyTabRef) {
-              self.$refs.historyTabRef.refreshList();
+              const globalMode = true;
+              // Get rid of global loader
+              self.displayLoader = false;
+              self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
+                  .then(() => {
+                    if (self.unmatchedGenes.length > 0) {
+                      self.displayUnmatchedGenesWarning = true;
+                    }
+                  })
+                  .catch(error => {
+                    Promise.reject('Could not load data: ' + error);
+                  })
+              let rankedGeneNames = [];
+              self.geneModel.rankedGeneList.forEach(geneObj => {
+                rankedGeneNames.push(geneObj.gene_name);
+              });
+              self.filterModel.addFilterHistory(totalSomaticVarCount, totalSomaticGenes, rankedGeneNames);
+              if (self.$refs.historyTabRef) {
+                self.$refs.historyTabRef.refreshList();
+              }
             }
           }).catch(error => {
             console.log('There was a problem calling global somatics: ' + error);
@@ -1148,10 +1212,10 @@ export default {
     background-color: #7f1010
     padding-bottom: 5px
 
-  #unmatched-genes-modal
+  .warning-modal
     font-family: 'Open Sans'
 
-    .unmatched-headline
+    .warning-headline
       font-family: 'Quicksand'
       font-size: 18px
       background-color: #7f1010

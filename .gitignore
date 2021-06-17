@@ -4,7 +4,9 @@ node_modules
 
 # local env files
 demo.json
+public/galaxy_config.json
 .env.*.local
+.env.galaxy
 
 # Log files
 npm-debug.log*

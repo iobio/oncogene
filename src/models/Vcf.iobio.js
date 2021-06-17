@@ -756,6 +756,10 @@ export default function vcfiobio(theGlobalApp) {
                                 vcfObjects.push(vcfObject);
                             }
                         });
+                        if (vcfObjects.length === 0) {
+                            console.log('WARNING: no results returned for somatic variants');
+                        }
+
                         let vepAf = true;
                         let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf);
                         resolve(results);
