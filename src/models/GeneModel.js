@@ -1568,6 +1568,7 @@ class GeneModel {
      * Additionally:
      * +1 for each variant in region of TCN != 2 (aka abnormal copy number)
      * +1 for each CNV with TCN != 2, even without a variant contained within
+     * +1 if variant is in COSMIC database
      */
     promiseScoreGene(geneObj) {
         const VEP_HIGH = 'HIGH';
