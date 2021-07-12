@@ -20,5 +20,5 @@ npm run build
 ```
 git clone {repo} -b galaxy
 npm install
-npm run serve-galaxy
+npm build serve-galaxy
 ```
