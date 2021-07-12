@@ -15,15 +15,12 @@ npm run serve
 npm run build
 ```
 
-### Run your tests
+
+## For Galaxy branch
 ```
-npm run test
+npm install
 ```
 
-### Lints and fixes files
 ```
-npm run lint
+npm run serve-galaxy
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
