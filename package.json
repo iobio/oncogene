@@ -5,6 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
+    "serve-galaxy": "vue-cli-service serve --mode galaxy",
     "build-galaxy": "vue-cli-service build --mode galaxy",
     "lint": "vue-cli-service lint",
     "deploy": "vue-cli-service s3-deploy"

@@ -407,7 +407,7 @@ import MultiSourceForm from './MultiSourceForm.vue'
 import geneListsByCancerType from '../data/genes_by_cancer_type_ncgv6.json'
 import geneListsByTissueType from '../data/genes_by_tissue_type_ncgv6.json'
 import validGenes from '../data/genes.json'
-import demoFile from '../../demo.json'
+// import demoFile from '../data/demo.json'
 
 export default {
   name: "Welcome",
@@ -1259,112 +1259,113 @@ export default {
       this.$emit('launched', this.modelInfoList, this.listInput, demoMode);
     },
     loadDemo: function () {
-      const self = this;
-      self.displayDemoLoader = true;
+      console.log('Demo functionality not supported for galaxy mode');
 
-      const exportFile = JSON.stringify(demoFile);
-      self.configFile = new Blob([exportFile], {type: 'text/plain'});
-
-      let reader = new FileReader();
-      reader.readAsText(self.configFile);
-      reader.onload = () => {
-        let result = reader.result;
-        let infoObj = JSON.parse(result);
-        if (!(infoObj['samples'] && infoObj['listInput'] && infoObj['dataTypes'])) {
-          self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-          self.showError = true;
-        } else {
-          self.modelInfoList = infoObj['samples'];
-          //self.vcfSampleNames = infoObj['vcfSampleNames'];
-          self.selectedUserData = [];
-          self.userData = infoObj['dataTypes'];
-          self.userData.forEach(data => {
-            if (data.model) {
-              self.selectedUserData.push(data.name);
-            }
-          });
-
-          self.listInput = infoObj['listInput'];
-          self.somaticCallsOnly = infoObj['somaticCallsOnly'];
-          self.selectedList = infoObj['selectedList'];
-          self.selectedBuild = infoObj['build'];
-
-          // Little extra work to fill in fields for vcf/tbi form
-          // Note: assumes single vcf
-          let firstSample = self.modelInfoList[0];
-          self.uploadedVcfUrl = firstSample.vcfUrl;
-          self.uploadedTbiUrl = firstSample.tbiUrl;
-
-          // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
-          let coverageActiveCount = 0;
-          let rnaSeqActiveCount = 0;
-          // let atacSeqActiveCount = 0;
-          let cnvActiveCount = 0;
-          for (let i = 0; i < self.modelInfoList.length; i++) {
-            let currModelInfo = self.modelInfoList[i];
-            if (currModelInfo['coverageBamUrl']) {
-              coverageActiveCount++;
-            }
-            if (currModelInfo['rnaSeqBamUrl']) {
-              rnaSeqActiveCount++;
-            }
-            // if (currModelInfo['atacSeqBamUrl']) {
-            //   atacSeqActiveCount++;
-            // }
-            if (currModelInfo['cnvUrl']) {
-              cnvActiveCount++;
-            }
-          }
-          self.configSampleCount['cnv'] = cnvActiveCount;
-          self.configSampleCount['coverage'] = coverageActiveCount;
-          self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
-          // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
-
-          let selectedSamples = [];
-          self.modelInfoIdx = 0;
-          let modelInfoCount = 0;
-
-          self.modelInfoList.forEach((modelInfo) => {
-            modelInfoCount++;
-            if (typeof modelInfo.isTumor !== 'boolean') {
-              modelInfo.isTumor = modelInfo.isTumor === 'true';  // Get rid of type casting issues
-            }
-            selectedSamples.push(modelInfo.selectedSample);
-          });
-          self.modelInfoIdx = modelInfoCount; // Update child component to stay on count
-          self.uploadedSelectedSamples = selectedSamples;
-          self.launchedFromConfig = true;
-
-          if (!(self.uploadedSelectedSamples && self.userData && self.listInput &&
-              self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
-            self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-            self.showError = true;
-          }
-          self.clearGeneListFlag = false;
-        }
-
-        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, function (success, sampleNames, hdrBuild) {
-          if (success) {
-            if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
-              let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
-              self.$emit('show-alert', 'warning', warningText);
-            }
-            // Still populate drop-down lists
-            for (let i = 0; i < sampleNames.length; i++) {
-              self.vcfSampleNames.push(sampleNames[i]);
-            }
-            self.$gtag.pageview("/demo");
-            self.launch(true);
-          } else {
-            let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
-            self.displayAlert('error', alertText);
-          }
-        })
-      };
-      reader.onerror = () => {
-        self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-        self.showError = true;
-      };
+      // const self = this;
+      // self.displayDemoLoader = true;
+      //
+      // const exportFile = JSON.stringify(demoFile);
+      // self.configFile = new Blob([exportFile], {type: 'text/plain'});
+      // let reader = new FileReader();
+      // reader.readAsText(self.configFile);
+      // reader.onload = () => {
+      //   let result = reader.result;
+      //   let infoObj = JSON.parse(result);
+      //   if (!(infoObj['samples'] && infoObj['listInput'] && infoObj['dataTypes'])) {
+      //     self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+      //     self.showError = true;
+      //   } else {
+      //     self.modelInfoList = infoObj['samples'];
+      //     //self.vcfSampleNames = infoObj['vcfSampleNames'];
+      //     self.selectedUserData = [];
+      //     self.userData = infoObj['dataTypes'];
+      //     self.userData.forEach(data => {
+      //       if (data.model) {
+      //         self.selectedUserData.push(data.name);
+      //       }
+      //     });
+      //
+      //     self.listInput = infoObj['listInput'];
+      //     self.somaticCallsOnly = infoObj['somaticCallsOnly'];
+      //     self.selectedList = infoObj['selectedList'];
+      //     self.selectedBuild = infoObj['build'];
+      //
+      //     // Little extra work to fill in fields for vcf/tbi form
+      //     // Note: assumes single vcf
+      //     let firstSample = self.modelInfoList[0];
+      //     self.uploadedVcfUrl = firstSample.vcfUrl;
+      //     self.uploadedTbiUrl = firstSample.tbiUrl;
+      //
+      //     // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
+      //     let coverageActiveCount = 0;
+      //     let rnaSeqActiveCount = 0;
+      //     // let atacSeqActiveCount = 0;
+      //     let cnvActiveCount = 0;
+      //     for (let i = 0; i < self.modelInfoList.length; i++) {
+      //       let currModelInfo = self.modelInfoList[i];
+      //       if (currModelInfo['coverageBamUrl']) {
+      //         coverageActiveCount++;
+      //       }
+      //       if (currModelInfo['rnaSeqBamUrl']) {
+      //         rnaSeqActiveCount++;
+      //       }
+      //       // if (currModelInfo['atacSeqBamUrl']) {
+      //       //   atacSeqActiveCount++;
+      //       // }
+      //       if (currModelInfo['cnvUrl']) {
+      //         cnvActiveCount++;
+      //       }
+      //     }
+      //     self.configSampleCount['cnv'] = cnvActiveCount;
+      //     self.configSampleCount['coverage'] = coverageActiveCount;
+      //     self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
+      //     // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
+      //
+      //     let selectedSamples = [];
+      //     self.modelInfoIdx = 0;
+      //     let modelInfoCount = 0;
+      //
+      //     self.modelInfoList.forEach((modelInfo) => {
+      //       modelInfoCount++;
+      //       if (typeof modelInfo.isTumor !== 'boolean') {
+      //         modelInfo.isTumor = modelInfo.isTumor === 'true';  // Get rid of type casting issues
+      //       }
+      //       selectedSamples.push(modelInfo.selectedSample);
+      //     });
+      //     self.modelInfoIdx = modelInfoCount; // Update child component to stay on count
+      //     self.uploadedSelectedSamples = selectedSamples;
+      //     self.launchedFromConfig = true;
+      //
+      //     if (!(self.uploadedSelectedSamples && self.userData && self.listInput &&
+      //         self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
+      //       self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+      //       self.showError = true;
+      //     }
+      //     self.clearGeneListFlag = false;
+      //   }
+      //
+      //   self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, function (success, sampleNames, hdrBuild) {
+      //     if (success) {
+      //       if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
+      //         let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
+      //         self.$emit('show-alert', 'warning', warningText);
+      //       }
+      //       // Still populate drop-down lists
+      //       for (let i = 0; i < sampleNames.length; i++) {
+      //         self.vcfSampleNames.push(sampleNames[i]);
+      //       }
+      //       self.$gtag.pageview("/demo");
+      //       self.launch(true);
+      //     } else {
+      //       let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
+      //       self.displayAlert('error', alertText);
+      //     }
+      //   })
+      // };
+      // reader.onerror = () => {
+      //   self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+      //   self.showError = true;
+      // };
     }
   },
   mounted: function () {
