@@ -72,7 +72,7 @@ class SampleModel {
             'coverageLoading': false,   // Note: must keep coverage keys like this
             'cnvLoading' : false,
             'rnaSeqLoading': false,
-            'atacSeqLoading': false
+            // 'atacSeqLoading': false
         };
     }
 

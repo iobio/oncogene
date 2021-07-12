@@ -147,7 +147,7 @@
                   (Select all that apply)
                 </v-card-subtitle>
                 <v-divider class="mx-12"></v-divider>
-                <v-card-actions class="function-card-body">
+                <v-card-actions class="mt-3">
                   <v-container fluid>
                     <v-row v-for="i in userData.length"
                            :key="'checkbox-' + i"
@@ -341,14 +341,13 @@
                                  @hide-alerts="hideAlerts"
                                  @multi-source-mounted="markMultiSourceMounted">
               </multi-source-form>
-              <!--                            todo: not sure how we want to do last slide for galaxy/mosaic-->
               <v-card v-else light flat :color="slideBackground" class="pa-2 pl-0 function-card"
                       width="70%">
                 <v-card-title class="justify-center function-card-title">
                   Data Summary
                 </v-card-title>
                 <v-divider class="mx-12"></v-divider>
-                <v-card-actions class="function-card">
+                <v-card-actions class="function-card pt-3">
                   <v-stepper class="summary-stepper"
                              light
                              vertical
@@ -360,7 +359,7 @@
                                     :complete="s.complete"
                                     :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
                                     :step="s.index"
-                                    class="summary-label">
+                                    class="summary-label my-2">
                       {{ s.text }}
                       <small v-if="s.optional && !s.active">Not Selected</small>
                       <small v-if="(!s.optional || (s.optional && s.active)) && !s.complete">Incomplete</small>
@@ -482,13 +481,13 @@ export default {
       fileLists: {
         'coverage': [],
         'rnaSeq': [],
-        'atacSeq': [],
+        // 'atacSeq': [],
         'cnv': []
       },
       indexLists: {
         'coverage': [],
         'rnaSeq': [],
-        'atacSeq': [],
+        // 'atacSeq': [],
       },
 
       uploadedSelectedSamples: [],
@@ -511,21 +510,21 @@ export default {
         'Read Coverage',
         'Copy Number',
         'Raw RNAseq',
-        'Raw ATACseq'
+        // 'Raw ATACseq'
       ],
       DATA_MODELS: [
         'vcf',
         'coverage',
         'cnv',
         'rnaSeq',
-        'atacSeq'
+        // 'atacSeq'
       ],
       LOCKED_DATA: {
         'vcf': true,
         'coverage': false,
         'cnv': false,
         'rnaSeq': false,
-        'atacSeq': false
+        // 'atacSeq': false
       },
       FILE_DESCRIPTORS: [
         'vcf',
@@ -564,23 +563,12 @@ export default {
             'subsequent analyses, download the configuration file, and use it on the first screen.',
       },
       MAX_SAMPLES: 6,
-      aboutText: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, ' +
-          'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
-          'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
-          'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
-          'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
-          ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.' +
-          ' sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ' +
-          'ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ' +
-          'ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate ' +
-          'velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat' +
-          ' cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
       dataText: 'Oncogene.iobio consumes primary data including Variant Call Format (vcf), ' +
           'Binary Sequencing Alignment/Map (bam) files. Both variant calls and sequencing read data ' +
           'are required for the application to work. Optionally, copy number data ' +
           'may be provided in the form of a tab-delimited file with certain required headers ' +
           '(see the CNV panel for details), and raw ' +
-          'RNAseq and ATACseq reads may be provided in bam file format.',
+          'RNAseq reads may be provided in bam file format.',
       somaticText: 'Oncogene.iobio will perform somatic filtering on your variant data for you ' +
           'if your file contains both somatic and inherited variants. This is ' +
           'performed by requiring each variant to pass a certain criteria of ' +
@@ -643,22 +631,22 @@ export default {
           optional: true,
           text: 'Upload RNAseq Data'
         },
-        {
-          step: 'atacSeq',
-          active: false,
-          complete: false,
-          index: 7,
-          optional: true,
-          text: 'Upload ATACseq Data'
-        },
-        {
-          step: 'review',
-          active: true,
-          complete: false,
-          index: 8,
-          optional: false,
-          text: 'Complete Required Data'
-        },
+        // {
+        //   step: 'atacSeq',
+        //   active: false,
+        //   complete: false,
+        //   index: 7,
+        //   optional: true,
+        //   text: 'Upload ATACseq Data'
+        // },
+        // {
+        //   step: 'review',
+        //   active: true,
+        //   complete: false,
+        //   index: 7,
+        //   optional: false,
+        //   text: 'Complete Required Data'
+        // },
       ],
       geneRules: [
         v => !!v || 'At least one gene is required',
@@ -684,7 +672,7 @@ export default {
         'coverage': false,
         'cnv': false,
         'rnaSeq': false,
-        'atacSeq': false
+        // 'atacSeq': false
       },
       // retained (model) state
       userData: [
@@ -692,13 +680,13 @@ export default {
         {name: 'coverage', model: false},
         {name: 'cnv', model: false},
         {name: 'rnaSeq', model: false},
-        {name: 'atacSeq', model: false},
+        // {name: 'atacSeq', model: false},
         {name: 'summary', model: true}],        // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
       selectedUserData: ['vcf', 'summary'],       // List of current cards in carousel
       configSampleCount: {                        // Used to advance slide when optional data count less than total sample count
         'cnv': this.MAX_SAMPLES,
         'rnaSeq': this.MAX_SAMPLES,
-        'atacSeq': this.MAX_SAMPLES
+        // 'atacSeq': this.MAX_SAMPLES
       },
       somaticCallsOnly: false,
       selectedBuild: null,
@@ -992,8 +980,8 @@ export default {
         newVal.coverageBaiUrl = modelInfo.coverageBaiUrl;
         newVal.rnaSeqBamUrl = modelInfo.rnaSeqBamUrl;
         newVal.rnaSeqBaiUrl = modelInfo.rnaSeqBaiUrl;
-        newVal.atacSeqBamUrl = modelInfo.atacSeqBamUrl;
-        newVal.atacSeqBaiUrl = modelInfo.atacSeqBaiUrl;
+        // newVal.atacSeqBamUrl = modelInfo.atacSeqBamUrl;
+        // newVal.atacSeqBaiUrl = modelInfo.atacSeqBaiUrl;
         newVal.cnvUrl = modelInfo.cnvUrl;
         sampleArr.push(newVal);
         order++;
@@ -1053,7 +1041,7 @@ export default {
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
           let rnaSeqActiveCount = 0;
-          let atacSeqActiveCount = 0;
+          // let atacSeqActiveCount = 0;
           let cnvActiveCount = 0;
           for (let i = 0; i < self.modelInfoList.length; i++) {
             let currModelInfo = self.modelInfoList[i];
@@ -1071,13 +1059,13 @@ export default {
                 self.updateStepProp('rnaSeq', 'active', true);
               }
             }
-            if (currModelInfo['atacSeqBamUrl']) {
-              atacSeqActiveCount++;
-              // Just update for first one found
-              if (atacSeqActiveCount === 1) {
-                self.updateStepProp('atacSeq', 'active', true);
-              }
-            }
+            // if (currModelInfo['atacSeqBamUrl']) {
+            //   atacSeqActiveCount++;
+            //   // Just update for first one found
+            //   if (atacSeqActiveCount === 1) {
+            //     self.updateStepProp('atacSeq', 'active', true);
+            //   }
+            // }
             if (currModelInfo['cnvUrl']) {
               cnvActiveCount++;
               // Just update for first one found
@@ -1089,7 +1077,7 @@ export default {
           self.configSampleCount['cnv'] = cnvActiveCount;
           self.configSampleCount['coverage'] = coverageActiveCount;
           self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
-          self.configSampleCount['atacSeq'] = atacSeqActiveCount;
+          // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
 
           let selectedSamples = [];
           self.modelInfoIdx = 0;
@@ -1138,7 +1126,7 @@ export default {
       if (self.uploadedVcfUrl && self.uploadedTbiUrl) {
         let coverageExists = false,
             rnaSeqExists = false,
-            atacSeqExists = false,
+            // atacSeqExists = false,
             cnvExists = false;
 
         let samples = [self.launchParams.normal];
@@ -1165,16 +1153,16 @@ export default {
               rnaSeqExists = true;
             }
           }
-          if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
-            displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
-          } else {
+          // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
+          //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+          // } else {
             // Still need to check if this sample has optional data type
-            if (sample.atacSeqBam) {
-              self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
-              self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
-              atacSeqExists = true;
-            }
-          }
+            // if (sample.atacSeqBam) {
+            //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
+            //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
+            //   atacSeqExists = true;
+            // }
+          // }
           if (sample.cnv) {
             self.fileLists[self.CNV].push(sample.cnv);
             cnvExists = true;
@@ -1188,9 +1176,9 @@ export default {
         if (rnaSeqExists) {
           self.addDataType(self.RNASEQ);
         }
-        if (atacSeqExists) {
-          self.addDataType(self.ATACSEQ);
-        }
+        // if (atacSeqExists) {
+        //   self.addDataType(self.ATACSEQ);
+        // }
         if (cnvExists) {
           self.addDataType(self.CNV);
         }
@@ -1211,13 +1199,13 @@ export default {
         {name: 'coverage', model: false},
         {name: 'cnv', model: false},
         {name: 'rnaSeq', model: false},
-        {name: 'atacSeq', model: false},
+        // {name: 'atacSeq', model: false},
         {name: 'summary', model: true}];
       this.configSampleCount = {
         'cnv': this.MAX_SAMPLES,
         'coverage': this.MAX_SAMPLES,
         'rnaSeq': this.MAX_SAMPLES,
-        'atacSeq': this.MAX_SAMPLES
+        // 'atacSeq': this.MAX_SAMPLES
       };
       this.listInput = '';
       this.somaticCallsOnly = false;
@@ -1310,7 +1298,7 @@ export default {
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
           let rnaSeqActiveCount = 0;
-          let atacSeqActiveCount = 0;
+          // let atacSeqActiveCount = 0;
           let cnvActiveCount = 0;
           for (let i = 0; i < self.modelInfoList.length; i++) {
             let currModelInfo = self.modelInfoList[i];
@@ -1320,9 +1308,9 @@ export default {
             if (currModelInfo['rnaSeqBamUrl']) {
               rnaSeqActiveCount++;
             }
-            if (currModelInfo['atacSeqBamUrl']) {
-              atacSeqActiveCount++;
-            }
+            // if (currModelInfo['atacSeqBamUrl']) {
+            //   atacSeqActiveCount++;
+            // }
             if (currModelInfo['cnvUrl']) {
               cnvActiveCount++;
             }
@@ -1330,7 +1318,7 @@ export default {
           self.configSampleCount['cnv'] = cnvActiveCount;
           self.configSampleCount['coverage'] = coverageActiveCount;
           self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
-          self.configSampleCount['atacSeq'] = atacSeqActiveCount;
+          // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
 
           let selectedSamples = [];
           self.modelInfoIdx = 0;

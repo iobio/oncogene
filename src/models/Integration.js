@@ -63,6 +63,8 @@ class GalaxyIntegration extends Integration {
             // Required params
             self.vcf = self.config.params.vcfs[0];
             self.tbi = self.config.params.tbis[0];
+
+            // todo: take this out of requirement! can just have vcf/tbi
             self.normal = self.config.params["0"];
             self.t1 = self.config.params["1"];
             if (self.vcf == null || self.tbi == null

@@ -292,7 +292,7 @@
                                         <v-card-text class="pt-3">
                                             <div>
                                                 Raw counts are sourced from the provided bam files to populate the displayed
-                                                bar charts for RNA-Seq and ATAC-Seq. The counts covering a specific location may differ slightly from
+                                                bar charts for RNA-Seq. The counts covering a specific location may differ slightly from
                                                 those in 'Alternate Allele Frequencies', as they are filtered based on mapping quality (MAPQ).
                                                 Advanced users may change the filtering criteria below, and only reads with MAPQ values greater
                                                 than or equal to the provided number will be included in the bar chart counts.
@@ -350,14 +350,14 @@
                                      :bamType="'rnaSeq'"
                                      :d3="d3">
                     </bar-feature-viz>
-                    <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz"
-                                     style="padding-top: 10px"
-                                     ref="atacSeqBarFeatureViz"
-                                     :counts="atacSeqCounts"
-                                     :selectedVariant="variant"
-                                     :bamType="'atacSeq'"
-                                     :d3="d3">
-                    </bar-feature-viz>
+<!--                    <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz"-->
+<!--                                     style="padding-top: 10px"-->
+<!--                                     ref="atacSeqBarFeatureViz"-->
+<!--                                     :counts="atacSeqCounts"-->
+<!--                                     :selectedVariant="variant"-->
+<!--                                     :bamType="'atacSeq'"-->
+<!--                                     :d3="d3">-->
+<!--                    </bar-feature-viz>-->
                 </v-row>
             </v-container>
         </v-container>

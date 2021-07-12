@@ -227,11 +227,11 @@
                                     <span class="loader-label">Analyzing RNA-Seq coverage</span>
                                     <img src="../assets/images/wheel.gif">
                                 </div>
-                                <div v-show="loadingAtacSeq" class="loader covloader"
-                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">
-                                    <span class="loader-label">Analyzing ATAC-Seq coverage</span>
-                                    <img src="../assets/images/wheel.gif">
-                                </div>
+<!--                                <div v-show="loadingAtacSeq" class="loader covloader"-->
+<!--                                     style="display: inline-block; padding-left: 20px; padding-bottom:10px">-->
+<!--                                    <span class="loader-label">Analyzing ATAC-Seq coverage</span>-->
+<!--                                    <img src="../assets/images/wheel.gif">-->
+<!--                                </div>-->
                             </div>
                         </div>
 

@@ -70,10 +70,10 @@
                 type: Boolean,
                 default: false
             },
-            hasAtacSeq: {
-                type: Boolean,
-                default: false
-            }
+            // hasAtacSeq: {
+            //     type: Boolean,
+            //     default: false
+            // }
         },
         data() {
             return {
@@ -82,16 +82,16 @@
                 bamTypes: ['Coverage'],
                 browserParams: null,
                 RNASEQ_TYPE: 'RNA-seq',
-                ATACSEQ_TYPE: 'ATAC-seq'
+                // ATACSEQ_TYPE: 'ATAC-seq'
             }
         },
         mounted: function () {
             if (this.hasRnaSeq) {
                 this.bamTypes.push(this.RNASEQ_TYPE);
             }
-            if (this.hasAtacSeq) {
-                this.bamTypes.push(this.ATACSEQ_TYPE);
-            }
+            // if (this.hasAtacSeq) {
+            //     this.bamTypes.push(this.ATACSEQ_TYPE);
+            // }
 
             if (this.visible) {
                 this.init();
@@ -146,10 +146,11 @@
                 if (this.selectedBamType === this.RNASEQ_TYPE) {
                     urlKey = 'rnaSeqBam';
                     indexUrlKey = 'rnaSeqBai';
-                } else if (this.selectedBamType === this.ATACSEQ_TYPE) {
-                    urlKey = 'atacSeqBam';
-                    indexUrlKey = 'atacSeqBai';
                 }
+                // else if (this.selectedBamType === this.ATACSEQ_TYPE) {
+                //     urlKey = 'atacSeqBam';
+                //     indexUrlKey = 'atacSeqBai';
+                // }
 
                 // Clear out existing tracks
                 this.tracks.forEach((track) => {

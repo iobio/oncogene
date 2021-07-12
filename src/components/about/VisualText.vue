@@ -31,7 +31,7 @@ name: "VisualText.vue",
       aboutText1:
         "Oncogene.iobio integrates powerful visualizations to aid in data exploration and discovery.",
       aboutText2: "Examine single nucleotide variations and small insertions/deletions along the coordinate space",
-      aboutText3: "Examine coverage, RNA-seq, and ATAC-seq reads alongside variants",
+      aboutText3: "Examine genomic and RNA-seq reads alongside variants",
       aboutText4: "Quickly assess copy number variation within the coordinate space, and click to view details",
       aboutText5: "Inspect variants of interest guided by key annotations from VEP, COSMIC, and ClinVar",
       aboutText6: "Examine alignments for a variant in the pileup view"
