@@ -407,7 +407,7 @@ import MultiSourceForm from './MultiSourceForm.vue'
 import geneListsByCancerType from '../data/genes_by_cancer_type_ncgv6.json'
 import geneListsByTissueType from '../data/genes_by_tissue_type_ncgv6.json'
 import validGenes from '../data/genes.json'
-import demoFile from '../../demo.json'
+import demoFile from '../data/demo.json'
 
 export default {
   name: "Welcome",
