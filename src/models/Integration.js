@@ -16,7 +16,7 @@ class Integration {
     constructor(query, configOpts) {
         this.query = query;
         configOpts = configOpts ? configOpts : {};
-        if (process.env.VUE_APP_LOCAL_BACKEND === true) {
+        if (process.env.VUE_APP_LOCAL_BACKEND === 'true') {
             this.backend = window.location.origin + '/gru';
         }
         this.configMan = new LaunchConfigManager(configOpts);
