@@ -16,4 +16,4 @@ npm run build
 ```
 
 
-## For Galaxy deployment please see ReadMe on Galaxy branch
+### For Galaxy deployment please see ReadMe on Galaxy branch
