@@ -1562,7 +1562,7 @@ class GeneModel {
      * Points are assigned in the following manner:
      * +4 for each variant with HIGH VEP impact
      * +3 for each variant with MODERATE VEP impact
-     * +2 for each variant with LOW VEP impact
+     * +1 for each variant with LOW VEP impact
      * +1 for each variant with MODIFIER/OTHER VEP impact
      *
      * Additionally:
@@ -1601,7 +1601,7 @@ class GeneModel {
                             geneObj.cosmicModerCount += 1;
                         }
                     } else if (impact === VEP_LOW) {
-                        score += 2;
+                        score += 1;
                         geneObj.lowCount += 1;
                         if (feat.inCosmic) {
                             score += 1;
