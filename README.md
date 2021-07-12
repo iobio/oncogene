@@ -16,9 +16,4 @@ npm run build
 ```
 
 
-## For Galaxy branch
-```
-git clone {repo} -b galaxy
-npm install
-npm run serve-galaxy
-```
+#### For Galaxy deployment please see ReadMe on Galaxy branch
