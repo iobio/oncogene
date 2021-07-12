@@ -110,7 +110,7 @@ class cnviobio {
     // Two options here - multiple lines encompass our given section
     // or our section falls within one CNV event
     // Returns a single continuous CNV (for viz purposes) as well as a list of the individual ones covering the gene
-    // If abnormalOnly is true, returns only CNVs where TCN != 2
+    // If abnormalOnly is true, returns only CNVs where TCN != 2 OR LCN != 1
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
     findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false) {
         let cnvObj = {
@@ -142,7 +142,7 @@ class cnviobio {
                 break;
             }
             // If we only want abnormal CNVs, perform check before adding
-            let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2) : true;
+            let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2 || (+chrData[i].lcn) !== 1) : true;
 
             // We're in a gene encompasses by a CNV larger than the entire gene
             if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end && abnormalSatisfied) {

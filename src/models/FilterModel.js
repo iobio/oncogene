@@ -475,7 +475,7 @@ class FilterModel {
         })
     }
 
-    /* For each region, compares the abnormal (TCN != 2) CNVs for the normal model to those of the tumor model(s).
+    /* For each region, compares the abnormal (TCN != 2 || LCN != 1) CNVs for the normal model to those of the tumor model(s).
      * Any CNVs present in only the tumor samples as a dictionary organized by geneName: list of abnormal CNVs.
      * If no normalCnvModel is provided, just includes all tumor sample CNVs that are abnormal. */
     annotateSomaticCnvs(normalCnvModel, tumorCnvModels, geneObjects) {
