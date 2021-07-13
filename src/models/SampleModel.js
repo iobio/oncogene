@@ -589,10 +589,8 @@ class SampleModel {
                 reject("Error SampleModel.promiseGetBamData(): geneObject is null");
             }
 
-            let bamData = this.atacSeqData;
-            if (bamType === this.globalApp.COVERAGE_TYPE) {
-                bamData = this.coverageData;
-            } else if (bamType === this.globalApp.RNASEQ_TYPE) {
+            let bamData = this.coverageData;
+            if (bamType === this.globalApp.RNASEQ_TYPE) {
                 bamData = this.rnaSeqData;
             }
 
@@ -3239,7 +3237,7 @@ class SampleModel {
         } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             me.rnaSeqData = data;
         } else {
-            me.atacSeqData = data;
+            console.log('Could not assign bam data b/c type not coverage or rnaseq');
         }
     }
 
@@ -3250,7 +3248,7 @@ class SampleModel {
         } else if (bamType === me.globalApp.RNASEQ_TYPE) {
             return me.rnaSeqData;
         } else {
-            return me.atacSeqData;
+            console.log('Could not get bam data b/c type not coverage or rnaseq');
         }
     }
 
@@ -3260,7 +3258,8 @@ class SampleModel {
         } else if (bamType === this.globalApp.RNASEQ_TYPE) {
             return 'rnaSeqCoverage';
         } else {
-            return 'atacSeqCoverage';
+            // return 'atacSeqCoverage';
+            return '';
         }
     }
 }

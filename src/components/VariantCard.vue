@@ -338,33 +338,33 @@
                                 >
                                 </depth-viz>
                             </div>
-                            <div class="chart-label" v-show="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">
-                                atac-seq
-                            </div>
-                            <div id="atac-bam-track" v-show="sampleModel.atacSeqUrlEntered">
-                                <depth-viz
-                                        v-show="showDepthViz"
-                                        ref="depthVizRef"
-                                        :type="globalAppProp.ATACSEQ_TYPE"
-                                        :coverage="sampleModel.atacSeqCoverage"
-                                        :coverageMedian="geneCoverageMedian"
-                                        :coverageDangerRegions="coverageDangerRegions"
-                                        :currentPoint="coveragePoint"
-                                        :maxDepth="sampleModel.cohort.maxAtacSeqDepth"
-                                        :regionStart="regionStart"
-                                        :regionEnd="regionEnd"
-                                        :width="width"
-                                        :margin="depthVizMargin"
-                                        :height="60"
-                                        :showTooltip="false"
-                                        :showXAxis="false"
-                                        :regionGlyph="depthVizRegionGlyph"
-                                        :d3="d3"
-                                        :$="$"
-                                        @region-selected="showExonTooltip"
-                                >
-                                </depth-viz>
-                            </div>
+<!--                            <div class="chart-label" v-show="showDepthViz && sampleModel.atacSeqCoverage && sampleModel.atacSeqCoverage.length > 1">-->
+<!--                                atac-seq-->
+<!--                            </div>-->
+<!--                            <div id="atac-bam-track" v-show="sampleModel.atacSeqUrlEntered">-->
+<!--                                <depth-viz-->
+<!--                                        v-show="showDepthViz"-->
+<!--                                        ref="depthVizRef"-->
+<!--                                        :type="globalAppProp.ATACSEQ_TYPE"-->
+<!--                                        :coverage="sampleModel.atacSeqCoverage"-->
+<!--                                        :coverageMedian="geneCoverageMedian"-->
+<!--                                        :coverageDangerRegions="coverageDangerRegions"-->
+<!--                                        :currentPoint="coveragePoint"-->
+<!--                                        :maxDepth="sampleModel.cohort.maxAtacSeqDepth"-->
+<!--                                        :regionStart="regionStart"-->
+<!--                                        :regionEnd="regionEnd"-->
+<!--                                        :width="width"-->
+<!--                                        :margin="depthVizMargin"-->
+<!--                                        :height="60"-->
+<!--                                        :showTooltip="false"-->
+<!--                                        :showXAxis="false"-->
+<!--                                        :regionGlyph="depthVizRegionGlyph"-->
+<!--                                        :d3="d3"-->
+<!--                                        :$="$"-->
+<!--                                        @region-selected="showExonTooltip"-->
+<!--                                >-->
+<!--                                </depth-viz>-->
+<!--                            </div>-->
 <!--                            <gene-viz id="gene-viz"-->
 <!--                                      v-bind:class="{ hide: !showGeneViz }"-->
 <!--                                      :data="[selectedTranscript]"-->

@@ -348,7 +348,8 @@ class CohortModel {
                     self.hasRnaSeqData = true;
                     break;
                 case 'atacSeq':
-                    self.hasAtacSeqData = true;
+                    console.log('Note: user input contains atac-seq data but ignoring for now');
+                    //self.hasAtacSeqData = true;
                     break;
                 default:
             }
