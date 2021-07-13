@@ -506,7 +506,8 @@
                                 // For synonymous variants, we don't have a second AA in the array
                                 actualAa = this.cohortModel.globalApp.convertAa(acids[0]);
                             }
-                            aaChange = expectAa + '->' + actualAa;
+                            let posDelim = this.variant.vepAminoAcids['position'] ? this.variant.vepAminoAcids['position'] : '->';
+                            aaChange = expectAa + posDelim + actualAa;
                         }
                     }
                 }

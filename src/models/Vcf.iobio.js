@@ -2146,6 +2146,7 @@ export default function vcfiobio(theGlobalApp) {
                         annot.vep.vepHGVSc[vepTokens[vepFields.HGVSc]] = vepTokens[vepFields.HGVSc];
                         annot.vep.vepHGVSp[vepTokens[vepFields.HGVSp]] = vepTokens[vepFields.HGVSp];
                         annot.vep.vepAminoAcids[vepTokens[vepFields.Amino_acids]] = vepTokens[vepFields.Amino_acids];
+                        annot.vep.vepAminoAcids['position'] = vepTokens[vepFields.Protein_position];
                         annot.vep.vepVariationIds[vepTokens[vepFields.Existing_variation]] = vepTokens[vepFields.Existing_variation];
 
                         var siftString = vepTokens[vepFields.SIFT];
