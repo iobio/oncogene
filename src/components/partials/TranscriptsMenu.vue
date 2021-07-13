@@ -79,7 +79,7 @@
                        v-bind="attrs"
                        v-on="on"
                        text>
-                    Transcript
+                    {{ transcriptText }}
                     <v-icon>expand_more</v-icon>
                 </v-btn>
             </template>
@@ -151,7 +151,11 @@
                 isCanonical: true
             }
         },
-
+        computed: {
+          transcriptText: function() {
+            return this.$vuetify.breakpoint.width > 1750 ? ('Transcript ' + this.selectedTranscript.transcript_id) : 'Transcript';
+          }
+        },
         mounted: function () {
             this.geneSource = this.geneModel.geneSource;
         },

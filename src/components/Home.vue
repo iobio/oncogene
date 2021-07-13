@@ -168,6 +168,7 @@
                 :sampleIds="sampleIds"
                 :selectedSamples="selectedSamples"
                 :selectedGene="selectedGeneName"
+                :selectedTranscript="selectedTranscript"
                 :variant="selectedVariant"
                 :variantInfo="selectedVariantInfo"
                 :$="globalApp.$"

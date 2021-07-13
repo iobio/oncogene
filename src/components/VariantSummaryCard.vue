@@ -233,7 +233,7 @@
                 <v-col v-if="variant" cols="12" sm="12" xl="7">
                     <v-chip outlined
                             small
-                            color="appColor"
+                            color="primary"
                             style="margin-top: 4px"
                             @input="summaryCardVariantDeselect()">
                         <span style="padding-right: 10px; font-size: 16px; text-align:center;"
@@ -241,6 +241,18 @@
                         <span style="padding-top: 1px; font-size: 14px; padding-right: 4px">{{selectedVariantLocation}}</span>
                     </v-chip>
                 </v-col>
+            </v-row>
+            <v-row v-if="smallScreen && variant" no-gutters flat style="font-family: Quicksand">
+              <v-col cols="12">
+                <v-chip outlined
+                        small
+                        style="margin-top: 4px"
+                        color="secondary">
+                  <span style="padding-right: 10px; font-size: 14px; text-align:center;">
+                    {{ 'Transcript ' + selectedTranscript.transcript_id }}
+                  </span>
+                </v-chip>
+              </v-col>
             </v-row>
             <v-container fluid grid-list-md style="overflow-y: scroll !important; padding-top: 0">
                 <v-row wrap>
@@ -383,6 +395,7 @@
             variant: null,
             variantInfo: null,
             selectedGene: null,
+            selectedTranscript: null,
             d3: null,
             $: null,
             cohortModel: null,
@@ -557,6 +570,9 @@
             },
             validQualityCutoff: function() {
                 return (!isNaN(this.qualityCutoff)) && parseInt(this.qualityCutoff) >= 0
+            },
+            smallScreen: function() {
+                return this.$vuetify.breakpoint.width < 1750;
             }
         },
         methods: {
