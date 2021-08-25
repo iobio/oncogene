@@ -1813,24 +1813,6 @@ class SampleModel {
                                 .then(function () {
                                     let regions = me.getGeneModel().getFormattedGeneRegions({ 'gene' : theGene });
                                     return me.vcf.promiseAnnotateSomaticVariants('', me.cohortModel.selectedSamples, regions);
-
-                                    //let samplesInFile = me._getSamplesToRetrieve();
-                                    // return me.vcf.promiseGetVariants(
-                                    //     me.getVcfRefName(theGene.chr),
-                                    //     theGene,
-                                    //     theTranscript,
-                                    //     null,   // regions
-                                    //     isMultiSample, // is multi-sample
-                                    //     samplesInFile,
-                                    //     me.getAnnotationScheme().toLowerCase(),
-                                    //     me.getTranslator().clinvarMap,
-                                    //     me.getGeneModel().geneSource === 'refseq',
-                                    //     me.isBasicMode || me.globalApp.getVariantIdsForGene,  // hgvs notation
-                                    //     me.globalApp.getVariantIdsForGene,  // rsid
-                                    //     me.globalApp.vepAF,   // vep af
-                                    //     null,   // cache
-                                    //     me.id
-                                    // );
                                 })
                                 .then(function (data) {
                                         let results = data[1];
