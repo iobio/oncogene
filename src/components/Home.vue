@@ -267,9 +267,7 @@
       <v-card class="warning-modal">
         <v-card-title class="warning-headline mb-3">No Variants Found</v-card-title>
         <v-card-text>
-          No somatic variants found within the supplied gene list and the UCSC500 gene panel.
-          Genes may be manually investigated one-by-one using the individual entry box, or you
-          may enter another list and try again.
+          {{ noVarsText }}
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -469,7 +467,7 @@ export default {
       noVarsFound: false,
 
       lookupGene: null,
-      debugMode: false
+      debugMode: false,
     };
   },
   watch: {
@@ -1184,6 +1182,19 @@ export default {
         return '';
       }
     },
+    noVarsText: function() {
+      if (!this.cohortModel.onlySomaticCalls) {
+        return "No somatic variants found within the supplied gene list and the UCSC500 gene panel.\n" +
+            "It's possible the provided VCF file only contains somatic variants: please re-launch the application \n" +
+            "with the setting 'Somatic Variants Only.' Or, if you're confident your VCF contains inherited and somatic variants, \n" +
+            "try relaxing filtering restrictions in the 'Filters' tab, or manually investigate other gene targets using " +
+            "the individual entry box."
+      } else {
+        return 'No somatic variants found within the supplied gene list and the UCSC500 gene panel.\n' +
+            'Genes may be manually investigated one-by-one using the individual entry box, or you\n' +
+            'may enter another list and try again.'
+      }
+    }
   }
 }
 </script>
