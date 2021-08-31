@@ -1078,7 +1078,6 @@ export default function vcfiobio(theGlobalApp) {
             me.infoFields.AVIA3 = fieldMap;
         } else if (record.indexOf("subclone") > 0 && !me.infoFields.SUBCLONES) {
             //me.infoFields.SUBCLONES = me._parseSubcloneStructure(record);
-            console.log('Implement parseSubcloneStructure');
             // todo: implement this helper fxn
             // todo: understand what data structure is appropriate here in conjunction with lineage values, etc
         }
@@ -1547,7 +1546,6 @@ export default function vcfiobio(theGlobalApp) {
         cmd.run();
     };
 
-    // todo: left off accumulating variants into same clone (do I need new model class for clone?)
     exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF) {
         const me = this;
 
@@ -1735,6 +1733,7 @@ export default function vcfiobio(theGlobalApp) {
             };
             results.push(data);
         }
+        results['subcloneStr'] = me.infoFields.SUBCLONES;
         return results;
     };
 

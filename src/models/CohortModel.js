@@ -2,6 +2,7 @@
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
 import CmmlUrls from '../data/cmml_urls.json'
+import SubcloneModel from './SubcloneModel.js';
 
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
@@ -56,6 +57,7 @@ class CohortModel {
         this.onlySomaticCalls = false;
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
+        this.subcloneModel = null;              // Subclone model; only present if header field from Subclone Seeker detected
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -461,6 +463,10 @@ class CohortModel {
                 reject('Problem copying and pasting genes in.');
             })
         })
+    }
+
+    initSubclones(subcloneStr) {
+        this.subcloneModel = new SubcloneModel(subcloneStr);
     }
 
     assignCategoryOrders() {
