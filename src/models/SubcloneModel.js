@@ -12,6 +12,7 @@ class SubcloneModel {
     insertNode(node, subclone) {
         if (!subclone.nodes || !node.id) {
             console.log('Could not insert node, nodes list DNE in subclone object or no node ID in node object');
+            return false;
         } else {
             if (node.id === 'N') {
                 subclone.nodes.splice(0, 0, node);
@@ -19,13 +20,16 @@ class SubcloneModel {
                 let idx = +(node.id.substring(1));
                 subclone.nodes.splice(idx, 0, node);
             }
+            return true;
         }
     }
 
     /* Returns the node object corresponding to the given ID in constant time.
      * Returns null if node DNE. */
     getNode(nodeId, subclone) {
-        if (!subclone || !subclone.nodes)
+        if (!subclone || !subclone.nodes) {
+            return null;
+        }
         if (nodeId === 'N') {
             return subclone.nodes[0];
         } else {
@@ -34,6 +38,7 @@ class SubcloneModel {
         }
     }
 
+    /* Extracts nodes and edges for a single subclone tree from ##SUBCLONE seeker lines in vcf header */
     parseNodesAndEdges(lineage, subclone) {
         let edgeStr = lineage.substring(lineage.indexOf('\"') + 1, lineage.length - 1);
         let edges = edgeStr.split(',');
@@ -42,8 +47,7 @@ class SubcloneModel {
             let nodes = edge.split('->');
             if (nodes.length !== 2) {
                 console.log('Something went wrong parsing edge for subclones from line: ' + edge);
-                console.log('Parsing subclones failed...');
-                break;
+                return false;
             }
             const sourceNodeId = nodes[0];
             let sourceNode = { id: sourceNodeId, freqs: {} };
@@ -51,36 +55,39 @@ class SubcloneModel {
             let destNode = { id: destNodeId, freqs: {} };
 
             // Add source node
+            let success = true;
             if (!subclone.edges[sourceNodeId]) {
                 subclone.edges[sourceNodeId] = [destNodeId];
-                this.insertNode(sourceNode, subclone);
-                //subclone.nodes.push(sourceNode);
+                success &= this.insertNode(sourceNode, subclone);
             } else {
                 subclone.edges[sourceNodeId].push(destNodeId);
             }
-
             // Add dest node
             if (!subclone.edges[destNodeId]) {
                 subclone.edges[destNodeId] = [];
-                subclone.nodes.push(destNode);
+                success &= this.insertNode(destNode, subclone);
+            }
+            // Short-circuit if something went wrong
+            if (!success) {
+                return false;
             }
         }
     }
 
+    /* Assigns clonal frequencies for each sample listed in ##SUBCLONE seeker lines in vcf header */
     assignFreqs(trace, subclone) {
         let traceStr = trace.substring(trace.indexOf('<') + 1, trace.length - 2);   // Trim off 'TRACE=<' and '\">'
         let traceEls = trace.split('=');
         if (traceEls.length !== 2) {
             console.log('Could not parse trace string from subclone line: ' + traceStr);
-            console.log('Parsing subclones failed...');
+            return false;
         } else {
             const sampleId = traceEls[0];
             let freqs = traceEls[1];
             let sampleFreqs = freqs.split("\",");
             if (sampleFreqs.length < 1) {
                 console.log('Could not parse trace string from subclone line: ' + sampleFreqs);
-                console.log('Parsing subclones failed...');
-                return;
+                return false;
             }
 
             // todo: put some sanity checks here - should always have same node assignments for each sampleID
@@ -95,16 +102,20 @@ class SubcloneModel {
                     let freqEls = freq.split(':');
                     if (freqEls.length !== 2) {
                         console.log('Could not parse trace string from subclone line: ' + freq);
-                        console.log('Parsing subclones failed...');
-                        return;
+                        return false;
                     } else {
                         let nodeId = freqEls[0];
                         let freq = freqEls[1];
                         let node = this.getNode(nodeId, subclone);
+                        if (node == null) {
+                            console.log('Could not get node ' + nodeId + ' to assign frequencies');
+                            return false;
+                        }
                         node.freqs[sampleId] = freq;
                     }
                 }
             }
+            return true;
         }
     }
 
@@ -125,26 +136,36 @@ class SubcloneModel {
             'edges' : {}        // nodeId : listOf child nodeIds
         }
         // Extract nodes and edges
-        this.parseNodesAndEdges(lineage, subclone);
-        // todo: need to detect errors here - wrap in promise?
+        let success = this.parseNodesAndEdges(lineage, subclone);
+        if (!success) {
+            console.log('Could not parse nodes and edges from header');
+            return null;
+        }
 
         // Annotate frequencies to each clone for each sample
-        this.assignFreqs(trace, subclone);
-        // todo: same detect errors here
-
+        success = this.assignFreqs(trace, subclone);
+        if (!success) {
+            console.log('Could not assign clonal frequencies');
+            return null;
+        }
+        return subclone;
     }
 
     /* Extracts all possible subclone trees annotated in the header section of the vcf file
      * and adds them to the list of possible trees. */
-    parseSubcloneTrees() {
-        let trees = this.subcloneHeaderStr.split('\n');
-        trees.forEach(tree => {
-            let possibleTree = this.parseSubclone(tree);
-            if (possibleTree != null) {
-                this.possibleTrees.push(possibleTree);
-            }
+    promsieParseSubcloneTrees() {
+        return new Promise((resolve, reject) => {
+            let trees = this.subcloneHeaderStr.split('\n');
+            trees.forEach(tree => {
+                let possibleTree = this.parseSubclone(tree);
+                if (possibleTree != null) {
+                    this.possibleTrees.push(possibleTree);
+                } else {
+                    return reject('Parsing subclones failed...');
+                }
+            });
+            return resolve(this.possibleTrees);
         })
     }
-
 }
 export default SubcloneModel

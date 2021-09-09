@@ -57,7 +57,8 @@ class CohortModel {
         this.onlySomaticCalls = false;
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
-        this.subcloneModel = null;              // Subclone model; only present if header field from Subclone Seeker detected
+        this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
+        this.hasSubcloneAnno = false;
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -466,6 +467,7 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
+        this.hasSubcloneAnno = true;
         this.subcloneModel = new SubcloneModel(subcloneStr);
     }
 
