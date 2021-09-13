@@ -1076,10 +1076,11 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
-        } else if (record.indexOf("subclone") > 0 && !me.infoFields.SUBCLONES) {
-            //me.infoFields.SUBCLONES = me._parseSubcloneStructure(record);
-            // todo: implement this helper fxn
-            // todo: understand what data structure is appropriate here in conjunction with lineage values, etc
+        } else if (record.indexOf("subclone") > 0) {
+            if (!me.infoFields.SUBCLONES) {
+                me.infoFields.SUBCLONES = [];
+            }
+            me.infoFields.SUBCLONES.push(record);
         }
     }
 
@@ -1712,7 +1713,6 @@ export default function vcfiobio(theGlobalApp) {
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
-                                    // 'sampleModelId': sampleModelId    // TODO: going to have to put this in somehow?
                                 };
                                 allVariants[i].push(variant);
                             }
@@ -2069,7 +2069,7 @@ export default function vcfiobio(theGlobalApp) {
             } else if (annotToken.indexOf("AVIA3") === 0) {
                 me._parseGenericAnnot("AVIA3", annotToken, annot);
             } else if (annotToken.indexOf("AFCLU=") === 0) {
-                annot.clusterId = annotToken.substring(6, annotToken.length);
+                annot.nodeId = annotToken.substring(6, annotToken.length);
             }
         });
         return annot;

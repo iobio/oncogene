@@ -1,7 +1,8 @@
 class SubcloneModel {
-    constructor(subcloneStr) {
-        this.subcloneHeaderStr = subcloneStr
+    constructor(subcloneArr) {
+        this.subcloneHeaderStrs = subcloneArr;
         this.possibleTrees = [];
+        this.NORMAL = 'n';
     }
     // todo: possible that user won't select all samples and that all samples present in subclone structure
     // todo: also possible that user will select all samples and that not all sample present in subclone structure
@@ -14,7 +15,7 @@ class SubcloneModel {
             console.log('Could not insert node, nodes list DNE in subclone object or no node ID in node object');
             return false;
         } else {
-            if (node.id === 'N') {
+            if (node.id === this.NORMAL) {
                 subclone.nodes.splice(0, 0, node);
             } else {
                 let idx = +(node.id.substring(1));
@@ -30,7 +31,7 @@ class SubcloneModel {
         if (!subclone || !subclone.nodes) {
             return null;
         }
-        if (nodeId === 'N') {
+        if (nodeId === this.NORMAL) {
             return subclone.nodes[0];
         } else {
             let idx = +(nodeId.substring(1));
@@ -49,9 +50,9 @@ class SubcloneModel {
                 console.log('Something went wrong parsing edge for subclones from line: ' + edge);
                 return false;
             }
-            const sourceNodeId = nodes[0];
+            const sourceNodeId = (nodes[0]).trim();
             let sourceNode = { id: sourceNodeId, freqs: {} };
-            const destNodeId = nodes[1];
+            const destNodeId = (nodes[1]).trim();
             let destNode = { id: destNodeId, freqs: {} };
 
             // Add source node
@@ -72,51 +73,51 @@ class SubcloneModel {
                 return false;
             }
         }
+        return true;
     }
 
     /* Assigns clonal frequencies for each sample listed in ##SUBCLONE seeker lines in vcf header */
     assignFreqs(trace, subclone) {
         let traceStr = trace.substring(trace.indexOf('<') + 1, trace.length - 2);   // Trim off 'TRACE=<' and '\">'
-        let traceEls = trace.split('=');
-        if (traceEls.length !== 2) {
-            console.log('Could not parse trace string from subclone line: ' + traceStr);
-            return false;
-        } else {
-            const sampleId = traceEls[0];
-            let freqs = traceEls[1];
-            let sampleFreqs = freqs.split("\",");
-            if (sampleFreqs.length < 1) {
-                console.log('Could not parse trace string from subclone line: ' + sampleFreqs);
+        let traceSamples = traceStr.split('\",');
+        for (let i = 0; i < traceSamples.length; i++) {
+            let traceSample = traceSamples[i];
+            let traceEls = traceSample.split("=");
+            if (traceEls.length !== 2) {
+                console.log('Could not parse trace string from subclone line: ' + traceStr);
                 return false;
-            }
-
-            // todo: put some sanity checks here - should always have same node assignments for each sampleID
-            for (let i = 0; i < sampleFreqs.length; i++) {
-                let currSampleFreqs = sampleFreqs[i];
-                if (i === 0) {
-                    currSampleFreqs = currSampleFreqs.substring(1);   // Trim off first sample '\"'
+            } else {
+                const sampleId = traceEls[0];
+                let freqs = traceEls[1];
+                let nodeFreqs = freqs.split(',');
+                if (freqs.length < 1) {
+                    console.log('Could not parse trace string from subclone line: ' + nodeFreqs);
+                    return false;
                 }
-                let nodeFreqs = currSampleFreqs.split(', ');
                 for (let i = 0; i < nodeFreqs.length; i++) {
-                    let freq = nodeFreqs[i];
-                    let freqEls = freq.split(':');
+                    let currNodeFreq = nodeFreqs[i];
+                    if (i === 0) {
+                        currNodeFreq = currNodeFreq.substring(1);   // Trim off first sample '\"'
+                    }
+                    let freqEls = currNodeFreq.split(':');
                     if (freqEls.length !== 2) {
-                        console.log('Could not parse trace string from subclone line: ' + freq);
+                        console.log('Could not parse trace string from clonal frequency: ' + currNodeFreq);
                         return false;
                     } else {
-                        let nodeId = freqEls[0];
+                        let nodeId = (freqEls[0]).trim();
                         let freq = freqEls[1];
                         let node = this.getNode(nodeId, subclone);
                         if (node == null) {
                             console.log('Could not get node ' + nodeId + ' to assign frequencies');
                             return false;
                         }
-                        node.freqs[sampleId] = freq;
+                        node.freqs[sampleId] = +freq;
                     }
+
                 }
             }
-            return true;
         }
+        return true;
     }
 
     /* Extracts an individual subclone tree from the provided string. Parsing is specific to
@@ -153,18 +154,19 @@ class SubcloneModel {
 
     /* Extracts all possible subclone trees annotated in the header section of the vcf file
      * and adds them to the list of possible trees. */
-    promsieParseSubcloneTrees() {
+    promiseParseSubcloneTrees() {
+        const self = this;
         return new Promise((resolve, reject) => {
-            let trees = this.subcloneHeaderStr.split('\n');
+            let trees = self.subcloneHeaderStrs;
             trees.forEach(tree => {
                 let possibleTree = this.parseSubclone(tree);
                 if (possibleTree != null) {
-                    this.possibleTrees.push(possibleTree);
+                    self.possibleTrees.push(possibleTree);
                 } else {
                     return reject('Parsing subclones failed...');
                 }
             });
-            return resolve(this.possibleTrees);
+            return resolve(self.possibleTrees);
         })
     }
 }

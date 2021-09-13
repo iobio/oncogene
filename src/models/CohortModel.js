@@ -1143,17 +1143,29 @@ class CohortModel {
             const regions = self.geneModel.getFormattedGeneRegions();
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.geneModel.geneObjects)
                 .then((sampleMap) => {
+                    // Pull subclone info out of return object
+                    let subcloneP = Promise.resolve();
+                    if (sampleMap['subcloneStr']) {
+                        self.initSubclones(sampleMap['subcloneStr']);
+                        subcloneP = self.subcloneModel.promiseParseSubcloneTrees();
+                    }
+                    delete(sampleMap['subcloneStr']);
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in sampleMap) {
                         self.filterModel.markFilteredVariants(sampleMap[objKey].features, self.onlySomaticCalls);
                     }
                     const globalMode = true;
-                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
-                        .then((somaticVarMap) => {
-                            resolve(somaticVarMap);
-                        }).catch(error => {
-                        reject('Something went wrong annotating inheritance for global somatics:' + error);
-                    });
+                    subcloneP.then(() => {
+                        self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
+                            .then((somaticVarMap) => {
+                                resolve(somaticVarMap);
+                            }).catch(error => {
+                            reject('Something went wrong annotating inheritance for global somatics:' + error);
+                            });
+                    }).catch(err => {
+                        console.log('Something went wrong parsing subclones: ' + err);
+                        reject(err);
+                    })
                 }).catch((error) => {
                 reject('Problem pulling back somatic variants: ' + error);
             });

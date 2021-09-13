@@ -1821,10 +1821,6 @@ class SampleModel {
                                             results = [results];
                                         }
 
-                                        if (results && results['subcloneStr']) {
-                                            me.getCohortModel().initSubclones(results['subcloneStr']);
-                                        }
-
                                         if (results && results.length > 0) {
                                             // Base this off of ID
                                             let filtData = results.filter((item) => {
