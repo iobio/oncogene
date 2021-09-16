@@ -695,7 +695,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions) {
+    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions, somaticOnlyMode) {
         const self = this;
         return new Promise((resolve, reject) => {
                 if (!vcfURL) {
@@ -761,7 +761,7 @@ export default function vcfiobio(theGlobalApp) {
                         }
 
                         let vepAf = true;
-                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf);
+                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode);
                         resolve(results);
                     });
 
@@ -1547,7 +1547,7 @@ export default function vcfiobio(theGlobalApp) {
         cmd.run();
     };
 
-    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF) {
+    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF, somaticOnlyMode) {
         const me = this;
 
         // Use the sample index to grab the right genotype column from the vcf record
@@ -1568,6 +1568,7 @@ export default function vcfiobio(theGlobalApp) {
 
         // We're always assuming a multi-sample VCF for now
         var allVariants = gtSampleIndices.map(function () { return []; });
+        let somaticGenes = {};
 
         vcfRecs.forEach(function (rec) {
             if (rec.pos && rec.id) {
@@ -1615,11 +1616,14 @@ export default function vcfiobio(theGlobalApp) {
                         end = +rec.pos + len;
                     }
 
-                    // Since we have multiple sites coming back, have to pull out gene object by coords
-                    // Cannot rely on VEP annotation because some genes pull back transcriptional annotations that have DIFF gene symbols (ex: TET2 and TET2-AS1)
-
-                    let geneTransObj = me.getGeneModel().findGeneObjByCoords(me.stripChr(rec.chrom), rec.pos);
-                    let geneObject = geneTransObj.geneObj;
+                    let geneObject = null;
+                    if (!somaticOnlyMode) {
+                        // Since we have multiple sites coming back, have to pull out gene object by coords
+                        // Cannot rely on VEP annotation because some genes pull back transcriptional annotations
+                        // that have DIFF gene symbols (ex: TET2 and TET2-AS1)
+                        let geneTransObj = me.getGeneModel().findGeneObjByCoords(me.stripChr(rec.chrom), rec.pos);
+                        geneObject = geneTransObj.geneObj;
+                    }
 
                     // For oncogene, we want to allow all valid transcripts through
                     let selectedTranscript = null;
@@ -1627,6 +1631,7 @@ export default function vcfiobio(theGlobalApp) {
                     //let selectedTranscript = geneTransObj.transObj;
                     //let selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
 
+                    // If we don't have a gene list for somaticOnlyMode though, have to rely on VEP annotation and take majority
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
                     const keepHomRefs = true;
                     var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
@@ -1713,8 +1718,12 @@ export default function vcfiobio(theGlobalApp) {
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
+                                    'subcloneId': annot.nodeId
                                 };
-                                allVariants[i].push(variant);
+                                if (somaticOnlyMode && annot.vep.symbol !== '') {
+                                    allVariants[i].push(variant);
+                                    somaticGenes[annot.vep.symbol] = true;
+                                }
                             }
                         }
                     }
@@ -1734,6 +1743,9 @@ export default function vcfiobio(theGlobalApp) {
             results.push(data);
         }
         results['subcloneStr'] = me.infoFields.SUBCLONES;
+        if (somaticOnlyMode) {
+            results['somaticGenes'] = Object.keys(somaticGenes);
+        }
         return results;
     };
 
@@ -2037,6 +2049,7 @@ export default function vcfiobio(theGlobalApp) {
                 vepREVEL: {},
                 sift: {},       // need a special field for filtering purposes
                 symbol: '',     // oncogene-specific, annotate multiple genes at a time
+                symbols: {},    // VEP may provide multiple gene names - keep track of all and take majority
                 polyphen: {},   // need a special field for filtering purposes
                 regulatory: {}, // need a special field for filtering purposes
                 vepRegs: [],
@@ -2066,6 +2079,7 @@ export default function vcfiobio(theGlobalApp) {
                 me._parseSnpEffAnnot(annotToken, annot, geneObject, selectedTranscriptID);
             } else if (annotToken.indexOf("CSQ") === 0) {
                 me._parseVepAnnot(altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF)
+                annot.vep.symbol = me._getMajorityGeneSymbol(annot);
             } else if (annotToken.indexOf("AVIA3") === 0) {
                 me._parseGenericAnnot("AVIA3", annotToken, annot);
             } else if (annotToken.indexOf("AFCLU=") === 0) {
@@ -2074,6 +2088,30 @@ export default function vcfiobio(theGlobalApp) {
         });
         return annot;
     };
+
+    exports._getMajorityGeneSymbol = function(annot) {
+        let maxCount = 0;
+        let maxSymbol = '';
+        let tieExists = false;
+        if (annot.vep && annot.vep.symbols && Object.keys(annot.vep.symbols).length > 0) {
+            for (let symbol in annot.vep.symbols) {
+                let currCount = annot.vep.symbols[symbol];
+                if (currCount > maxCount) {
+                    maxCount = annot.vep.symbols[symbol];
+                    maxSymbol = symbol;
+                    tieExists = false;
+                } else if (currCount === maxCount) {
+                    tieExists = true;
+                }
+            }
+        } else {
+            console.log('No symbols reported in VEP annotation for provided variant');
+        }
+        if (tieExists) {
+            console.log('Warning: multiple symbols reported equal times for a single variant by VEP: ' + Object.keys(annot.vep.symbols));
+        }
+        return maxSymbol;
+    }
 
     /* To parse the VEP annot, split the CSQ string into its parts.
        Each part represents the annotations for a given transcript.
@@ -2185,6 +2223,7 @@ export default function vcfiobio(theGlobalApp) {
                     // transcripts
                     var validTranscript = false;
 
+                    // We won't have a gene object if we're in somatic only mode though
                     if (geneObject) {
                         geneObject.transcripts.forEach(function (transcript) {
                             if (transcript.transcript_id.indexOf(theTranscriptId) === 0) {
@@ -2222,7 +2261,11 @@ export default function vcfiobio(theGlobalApp) {
 
                         me._appendTranscript(consequencesObject, theConsequences, theTranscriptId);
                         annot.vep.allVep[theImpact] = consequencesObject;
-                        annot.vep.symbol = theSymbol;
+                        if (annot.vep.symbols[theSymbol]) {
+                            annot.vep.symbols[theSymbol] = annot.vep.symbols[theSymbol] + 1;
+                        } else {
+                            annot.vep.symbols[theSymbol] = 1;
+                        }
 
                         var siftObject = annot.vep.allSIFT[siftScore];
                         if (siftObject == null) {
@@ -2244,7 +2287,6 @@ export default function vcfiobio(theGlobalApp) {
                         }
                         me._appendTranscript(revelObject, revelScore, theTranscriptId);
                         annot.vep.allREVEL[revelScore] = revelObject;
-
 
                         if (vepAF) {
                             me._parseVepAfAnnot(VEP_FIELDS_AF_GNOMAD, vepFields, vepTokens, "gnomAD", "gnomAD", annot);

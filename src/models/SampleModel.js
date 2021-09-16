@@ -1812,7 +1812,7 @@ class SampleModel {
                             me._promiseVcfRefName(theGene.chr)
                                 .then(function () {
                                     let regions = me.getGeneModel().getFormattedGeneRegions({ 'gene' : theGene });
-                                    return me.vcf.promiseAnnotateSomaticVariants('', me.cohortModel.selectedSamples, regions);
+                                    return me.vcf.promiseAnnotateSomaticVariants('', me.cohortModel.selectedSamples, regions, false);
                                 })
                                 .then(function (data) {
                                         let results = data[1];

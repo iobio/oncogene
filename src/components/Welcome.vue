@@ -191,7 +191,8 @@
                     <v-row align="center">
                       <v-col cols="4"></v-col>
                       <v-col cols="6">
-                        <v-radio-group v-model="somaticCallsOnly">
+                        <v-radio-group v-model="somaticCallsOnly"
+                                       @change="updateGeneListReq">
                           <v-radio color="appColor"
                                    key="som-false"
                                    label="No"
@@ -210,7 +211,8 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="launchSource !== MOSAIC" :style="'background-color: ' + slideBackground">
+          <v-carousel-item v-if="launchSource !== MOSAIC && !somaticCallsOnly"
+                           :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
               <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
@@ -347,40 +349,42 @@
                   Data Summary
                 </v-card-title>
                 <v-divider class="mx-12"></v-divider>
-                <v-card-actions class="function-card pt-3">
-                  <v-stepper class="summary-stepper"
-                             light
-                             vertical
-                             non-linear
-                             value="1"
-                  >
-                    <v-stepper-step v-for="(s,i) in firstHalfSteps"
-                                    :key="'step-' + i"
-                                    :complete="s.complete"
-                                    :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
-                                    :step="s.index"
-                                    class="summary-label my-2">
-                      {{ s.text }}
-                      <small v-if="s.optional && !s.active">Not Selected</small>
-                      <small v-if="(!s.optional || (s.optional && s.active)) && !s.complete">Incomplete</small>
-                    </v-stepper-step>
-                  </v-stepper>
-                  <v-stepper class="summary-stepper"
-                             light
-                             vertical
-                             non-linear
-                             :value="reqSteps.length">
-                    <v-stepper-step v-for="(s,i) in secondHalfSteps" :key="'step-' + i"
-                                    :complete="s.complete"
-                                    :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
-                                    :step="s.index"
-                                    class="summary-label">
-                      {{ s.text }}
-                      <small v-if="s.optional && !s.active">Not Selected</small>
-                      <small v-if="(!s.optional || (s.optional && s.active)) && !s.complete">Incomplete</small>
-                    </v-stepper-step>
-                  </v-stepper>
-                </v-card-actions>
+                <v-lazy>
+                  <v-card-actions class="function-card pt-3">
+                    <v-stepper class="summary-stepper"
+                               light
+                               vertical
+                               non-linear
+                               value="1"
+                    >
+                      <v-stepper-step v-for="(s,i) in firstHalfSteps"
+                                      :key="'step-' + i"
+                                      :complete="s.complete"
+                                      :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
+                                      :step="s.index"
+                                      class="summary-label my-2">
+                        {{ s.text }}
+                        <small v-if="isNotSelected(s)">{{ (s.step === 'geneList') ? 'Not Applicable' : 'Not Selected' }}</small>
+                        <small v-if="isIncomplete(s)">Incomplete</small>
+                      </v-stepper-step>
+                    </v-stepper>
+                    <v-stepper class="summary-stepper"
+                               light
+                               vertical
+                               non-linear
+                               :value="reqSteps.length">
+                      <v-stepper-step v-for="(s,i) in secondHalfSteps" :key="'step-' + i"
+                                      :complete="s.complete"
+                                      :rules="[() => (!s.optional || (s.optional && s.active) ? s.complete : true)]"
+                                      :step="s.index"
+                                      class="summary-label">
+                        {{ s.text }}
+                        <small v-if="isNotSelected(s)">Not Selected</small>
+                        <small v-if="isIncomplete(s)">Incomplete</small>
+                      </v-stepper-step>
+                    </v-stepper>
+                  </v-card-actions>
+                </v-lazy>
                 <v-card-actions style="justify-content: center">
                   <v-btn large class="config-btn" :disabled="!isReadyToLaunch()"
                          @click="downloadConfig">
@@ -1029,6 +1033,11 @@ export default {
           self.listInput = infoObj['listInput'];
           self.updateStepProp('geneList', 'complete', true);
           self.somaticCallsOnly = infoObj['somaticCallsOnly'];
+
+          // Clear out starting string from gene list if somatic only
+          if (self.somaticCallsOnly) {
+            self.listInput = "";
+          }
           self.selectedList = infoObj['selectedList'];
           self.selectedBuild = infoObj['build'];
 
@@ -1108,7 +1117,8 @@ export default {
               ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
             });
           }
-          self.mountVcfSlide();
+          //this.$forceUpdate();
+          self.mountVcfSlide(self.somaticCallsOnly);
           self.$gtag.pageview("/uploadConfig");
         }
       };
@@ -1156,12 +1166,12 @@ export default {
           // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
           //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
           // } else {
-            // Still need to check if this sample has optional data type
-            // if (sample.atacSeqBam) {
-            //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
-            //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
-            //   atacSeqExists = true;
-            // }
+          // Still need to check if this sample has optional data type
+          // if (sample.atacSeqBam) {
+          //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
+          //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
+          //   atacSeqExists = true;
+          // }
           // }
           if (sample.cnv) {
             self.fileLists[self.CNV].push(sample.cnv);
@@ -1232,8 +1242,27 @@ export default {
     updateBuild: function (build) {
       this.selectedBuild = build;
     },
-    mountVcfSlide: function () {
-      this.carouselModel = 4;
+    mountVcfSlide: function (somaticCallsOnly) {
+      const self = this;
+      // Sloppy but works
+      if (somaticCallsOnly) {
+        setTimeout(() => {
+          self.carouselModel = 3;
+        }, 200);
+      } else {
+        this.carouselModel = 4;
+      }
+    },
+    updateGeneListReq: function () {
+      this.updateStepProp('geneList', 'optional', this.somaticCallsOnly);
+      this.updateStepProp('geneList', 'active', !this.somaticCallsOnly);
+      this.listInput = this.somaticCallsOnly ? '' : this.STARTING_INPUT;
+    },
+    isNotSelected: function (s) {
+      return s.optional && !s.active;
+    },
+    isIncomplete: function (s) {
+      return (!s.optional || (s.optional && s.active)) && !s.complete;
     },
     launch: function (demoMode = false) {
       this.cohortModel.setInputDataTypes(this.selectedUserData);
@@ -1382,8 +1411,8 @@ export default {
             self.selectedBuild = build;
           } else {
             if (this.launchSource === this.GALAXY) {
-                self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
-                console.log('Could not read vcf header from file passed by Galaxy');
+              self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+              console.log('Could not read vcf header from file passed by Galaxy');
             } else if (this.launchSource === this.MOSAIC) {
               self.displayAlert('error', 'Could not read file data from Mosaic. Please try launching again, or contact iobioproject@gmail.com for assistance');
               console.log('Could not read vcf header from file passed by Mosaic');

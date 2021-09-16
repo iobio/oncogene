@@ -2,6 +2,7 @@ class SubcloneModel {
     constructor(subcloneArr) {
         this.subcloneHeaderStrs = subcloneArr;
         this.possibleTrees = [];
+        this.clonalVarMap = {};
         this.NORMAL = 'n';
     }
     // todo: possible that user won't select all samples and that all samples present in subclone structure
@@ -167,6 +168,18 @@ class SubcloneModel {
                 }
             });
             return resolve(self.possibleTrees);
+        })
+    }
+
+    populateSubcloneVariants(variants) {
+        const self = this;
+        variants.forEach(variant => {
+            let subcloneId = variant.subcloneId;
+            if (self.clonalVarMap[subcloneId]) {
+                self.clonalVarMap[subcloneId].push(variant);
+            } else {
+                self.clonalVarMap[subcloneId] = [variant];
+            }
         })
     }
 }
