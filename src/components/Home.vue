@@ -183,6 +183,13 @@
                 @summaryCardVariantDeselect="deselectVariant"
                 @show-pileup="onShowPileupForVariant">
             </variant-summary-card>
+            <subclone-summary-card
+                v-if="cohortModel && cohortModel.hasSubcloneAnno"
+                ref="subcloneSummaryCardRef"
+                :subcloneModel="cohortModel.subcloneModel"
+                :d3="globalApp.d3"
+                :$="globalApp.$">
+            </subclone-summary-card>
 <!--            <cnv-summary-card-->
 <!--                v-if="cohortModel.hasCnvData"-->
 <!--                :d3="globalApp.d3"-->
@@ -312,6 +319,7 @@
 import Welcome from './Welcome.vue'
 import VariantCard from './VariantCard.vue'
 import VariantSummaryCard from './VariantSummaryCard.vue'
+import SubcloneSummaryCard from './SubcloneSummaryCard.vue'
 import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
 import HistoryTab from './HistoryTab.vue'
@@ -329,6 +337,7 @@ export default {
     Welcome,
     VariantCard,
     VariantSummaryCard,
+    SubcloneSummaryCard,
     // CnvSummaryCard,
     FilterPanelMenu,
     HistoryTab,

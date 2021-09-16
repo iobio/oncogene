@@ -469,8 +469,8 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
-        this.hasSubcloneAnno = true;
         this.subcloneModel = new SubcloneModel(subcloneStr);
+        this.hasSubcloneAnno = true;
     }
 
     assignCategoryOrders() {
@@ -1171,8 +1171,6 @@ class CohortModel {
                             self.composedSomaticGenes = sampleMap['somaticGenes'];
                             delete(sampleMap['somaticGenes']);
 
-                            // todo: left off verifying number of variants being pulled back from file vs those here
-                            // todo: also need to get rid of annoying giant modal with only one unidentified gene
                             let allVariants = self.getAllUniqVars(sampleMap);
                             self.subcloneModel.populateSubcloneVariants(allVariants);
 

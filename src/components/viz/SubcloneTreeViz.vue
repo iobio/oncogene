@@ -33,11 +33,11 @@
     <v-container>
         <v-row no-gutters>
             <v-col cols="12" sm="12" xl="3" class="bar-chart-label">
-                {{ chartLabel }}:
+                Clonal Evolution Tree
             </v-col>
             <v-col v-show="!showLoader"
                    cols="12" sm="12"
-                   :id="bamType + 'Bar'"
+                   :id="'subclone-tree'"
                    style="padding-bottom: 5px">
             </v-col>
             <v-col v-show="showLoader"
@@ -45,7 +45,7 @@
                 <div style="text-align: center; clear: both">
                     <div class="loader vcfloader"
                          style="display: inline-block">
-                        <span class="loader-label">Fetching reads</span>
+                        <span class="loader-label">Fetching evolution</span>
                         <img src="../../assets/images/wheel.gif">
                     </div>
                 </div>
@@ -58,7 +58,7 @@
     import barChart from '../../d3/barChart.d3.js'
 
     export default {
-        name: 'bar-feature-viz',
+        name: 'subclone-tree-viz',
         data() {
             return {
                 chart: null,
@@ -66,20 +66,14 @@
             }
         },
         props: {
-            selectedVariant: {
-                type: Object,
-                default: null
-            },
-            cohortModel: {
+            subcloneModel: {
                 type: Object,
                 default: null
             },
             d3: null
         },
         computed: {
-            chartLabel: function() {
-                return this.bamType === 'coverage' ? 'Coverage' : this.bamType === 'rnaSeq' ? 'Rna-Seq' : 'Atac-Seq';
-            }
+
         },
         methods: {
             drawSubclones(updatedCounts) {
@@ -139,12 +133,7 @@
             }
         },
         mounted: function() {
-            this.subcloneModel.promsieParseSubcloneTrees()
-              .then((possibleTrees) => {
-                this.drawSubclones(possibleTrees);
-              }).catch(err => {
-                console.log('Parsing subclone trees failed...' + err);
-            })
+            // draw tree
         }
     }
 </script>

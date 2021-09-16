@@ -4,7 +4,7 @@ export default class EndpointCmd {
 
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
         this.DEV_MODE = false;
-        this.MOSAIC_MODE = true;
+        this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
         this.genomeBuildHelper = genomeBuildHelper;
