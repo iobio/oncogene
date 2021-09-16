@@ -1723,6 +1723,8 @@ export default function vcfiobio(theGlobalApp) {
                                 if (somaticOnlyMode && annot.vep.symbol !== '') {
                                     allVariants[i].push(variant);
                                     somaticGenes[annot.vep.symbol] = true;
+                                } else if (!somaticOnlyMode) {
+                                    allVariants[i].push(variant);
                                 }
                             }
                         }
@@ -1742,7 +1744,9 @@ export default function vcfiobio(theGlobalApp) {
             };
             results.push(data);
         }
-        results['subcloneStr'] = me.infoFields.SUBCLONES;
+        if (me.infoFields.SUBCLONES) {
+            results['subcloneStr'] = me.infoFields.SUBCLONES;
+        }
         if (somaticOnlyMode) {
             results['somaticGenes'] = Object.keys(somaticGenes);
         }
