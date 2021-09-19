@@ -225,8 +225,8 @@
       <v-card class="warning-modal">
         <v-card-title class="warning-headline mb-3">Unmatched Gene Names Warning</v-card-title>
         <v-card-text>
-          The following gene targets contain somatic variants according to the current filtering criteria,
-          but could not be matched to the entered loci names. To view these targets, please search for gene
+          The following genes contain somatic variants according to the current filtering criteria,
+          but could not be matched with our annotation engine. To view these targets, please search for gene
           name
           synonyms using Gene Cards and manually search for them within Oncogene.*
           <v-list>

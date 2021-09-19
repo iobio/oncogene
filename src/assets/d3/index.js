@@ -1,6 +1,7 @@
 import {
     select,
     selectAll,
+    create
 } from 'd3-selection';
 
 import {
@@ -21,9 +22,11 @@ import { easeBounce, easeLinear } from 'd3-ease';
 
 import { brushX } from 'd3-brush';
 
-import { line, area, curveLinear } from 'd3-shape';
+import { line, area, curveLinear, linkHorizontal } from 'd3-shape';
 
 import { range, extent } from 'd3-array';
+
+import { hierarchy, tree } from 'd3-hierarchy'
 
 import {
     dispatch,
@@ -39,6 +42,7 @@ import {event as currentEvent} from 'd3';
 export default {
     select,
     selectAll,
+    create,
     currentEvent,
     scaleLinear,
     scaleQuantile,
@@ -54,6 +58,7 @@ export default {
     line,
     area,
     curveLinear,
+    linkHorizontal,
     dispatch,
     tsv, json,
     max, min,
@@ -61,5 +66,6 @@ export default {
     symbol, symbolTriangle, symbolCircle, symbolDiamond, symbolCross, symbolSquare, symbolStar, symbolWye,
     easeBounce, easeLinear,
     mouse,
-    active
+    active,
+    hierarchy, tree
 };

@@ -10,30 +10,6 @@
             background-color: #7f1010
             color: white
 
-    #getStartedBlock
-        position: absolute
-        width: 100%
-        height: 100%
-        top: 30%
-        left: 50%
-        transform: translate(-50%, -50%)
-        -ms-transform: translate(-50%, -50%)
-        z-index: 1
-
-    .getStartedText
-        position: absolute
-        border-radius: 25px
-        width: 100%
-        height: 50px
-        padding-top: 8px
-        top: 55%
-        font-family: Poppins
-        font-size: 22px
-        background-color: $app-color
-        text-align: center
-        color: white
-
-
     .summary-card
         height: 100%
 
@@ -44,13 +20,11 @@
         padding-left: 2px
         text-align: left
 
-    .summary-viz
+    .subclone-viz
         min-height: 100px
         max-height: 600px
         padding-top: 0px
         overflow-x: hidden
-        filter: blur(1px)
-        -webkit-filter: blur(1px)
 
         .content
             font-size: 12px
@@ -224,23 +198,28 @@
     <v-card class="px-0 mx-1 my-1" outlined>
         <v-container class="summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">
-                <v-col cols="12" sm="12" xl="5" style="font-size: 22px">
+                <v-col cols="12" sm="12" xl="12" style="font-size: 22px">
                     Subclone Evolution
                 </v-col>
             </v-row>
             <v-container fluid grid-list-md style="overflow-y: scroll !important; padding-top: 0">
                 <v-row wrap>
-                    <subclone-bar-viz id="subclone-bar-viz" class="summary-viz"
+                    <subclone-bar-viz id="subclone-bar-viz" class="subclone-viz"
                                  ref="subcloneBarViz"
                                  :d3="d3">
                     </subclone-bar-viz>
-                    <subclone-tree-viz id="subclone-tree-viz" class="summary-viz"
+                    <subclone-tree-viz id="subclone-tree-viz" class="subclone-viz"
                                           ref="subcloneTreeViz"
+                                          :subcloneModel="subcloneModel"
                                           :d3="d3">
                     </subclone-tree-viz>
-                  <v-pagination v-model="subcloneIdx"
-                  :length="subcloneModel.possibleTrees.length"></v-pagination>
                 </v-row>
+              <v-row no-gutters justify="center">
+                <v-pagination v-model="subcloneIdx"
+                              :length="subcloneModel.possibleTrees.length"
+                              @next="transitionViz"
+                              @previous="transitionViz"></v-pagination>
+              </v-row>
             </v-container>
         </v-container>
     </v-card>
@@ -274,7 +253,10 @@
 
         },
         methods: {
-
+          transitionViz: function() {
+            this.$.subcloneBarViz.changeViz(this.subcloneIdx);
+            this.$.subcloneTreeViz.changeViz(this.subcloneIdx);
+          },
         },
         mounted: function () {
 
