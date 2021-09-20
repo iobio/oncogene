@@ -34,7 +34,7 @@
 <template>
   <v-container>
     <v-row no-gutters>
-      <v-col cols="12" sm="12" xl="3" class="bar-chart-label">
+      <v-col cols="12" sm="12" xl="12" class="bar-chart-label">
         Clonal Evolution Tree
       </v-col>
       <v-col v-show="!showLoader"
@@ -43,7 +43,7 @@
              style="padding-bottom: 5px">
       </v-col>
       <v-col v-show="showLoader"
-             cols="12" sm="12" xl="9">
+             cols="12" sm="12" xl="12">
         <div style="text-align: center; clear: both">
           <div class="loader vcfloader"
                style="display: inline-block">
@@ -58,7 +58,7 @@
 
 <script>
 import TidyTreeD3 from '../../d3/TidyTree.d3.js'
-import demoTreeData from '@/data/flare-2.json'
+import demoTreeData from '@/data/subclone_tree_demo.json'
 
 export default {
   name: 'subclone-tree-viz',
@@ -74,7 +74,11 @@ export default {
       type: Object,
       default: null
     },
-    d3: null
+    d3: null,
+    colorMap: {
+      type: Map,
+      default: null
+    },
   },
   computed: {},
   methods: {
@@ -109,7 +113,7 @@ export default {
     },
     changeViz(offsetIdx) {
       let treeInfo = this.subcloneModel.possibleTrees[offsetIdx - 1];
-      this.drawTree(treeInfo);
+      this.populateTree(treeInfo);
     },
   },
   mounted: function () {

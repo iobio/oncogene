@@ -206,12 +206,14 @@
                 <v-row wrap>
                     <subclone-bar-viz id="subclone-bar-viz" class="subclone-viz"
                                  ref="subcloneBarViz"
-                                 :d3="d3">
+                                 :d3="d3"
+                                 :colorMap="colors">
                     </subclone-bar-viz>
                     <subclone-tree-viz id="subclone-tree-viz" class="subclone-viz"
                                           ref="subcloneTreeViz"
                                           :subcloneModel="subcloneModel"
-                                          :d3="d3">
+                                          :d3="d3"
+                                          :colorMap="colors">
                     </subclone-tree-viz>
                 </v-row>
               <v-row no-gutters justify="center">
@@ -244,22 +246,38 @@
         data() {
             return {
               subcloneIdx: 1,
+              colors: new Map([
+                ["C1", "#2A5784"],
+                ["C2", "#E1575A"],
+                ["C3", "#EE7423"],
+                ["C4", "#7C4D79"],
+                ["C5", "#24693D"],
+                ["C6", "#43719F"],
+                ["C7", "#F59D3D"],
+                ["C8", "#9B6A97"],
+                ["C9", "#398949"],
+                ["C10", "#5B8DB8"],
+                ["C11", "#FFC686"],
+                ["C12", "#BE89AC"],
+                ["C13", "#61AA57"],
+                ["C14", "#7AAAD0"],
+                ["C15", "#9D7760"],
+                ["C16", "#D5A5C4"],
+                ["C17", "#7DC470"],
+                ["C18", "#9BC7E4"],
+                ["C19", "#BBB1AC"],
+                ["C20", "#BADDF1"],
+                ["C21", "#F1CF63"],
+                ["C22", "#EFC9E6"],
+                ["C23", "#B4E0A7"]
+              ])
             }
-        },
-        watch: {
-
-        },
-        computed: {
-
         },
         methods: {
           transitionViz: function() {
             this.$.subcloneBarViz.changeViz(this.subcloneIdx);
             this.$.subcloneTreeViz.changeViz(this.subcloneIdx);
           },
-        },
-        mounted: function () {
-
         }
     }
 </script>

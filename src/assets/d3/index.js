@@ -22,9 +22,9 @@ import { easeBounce, easeLinear } from 'd3-ease';
 
 import { brushX } from 'd3-brush';
 
-import { line, area, curveLinear, linkHorizontal } from 'd3-shape';
+import { line, area, curveLinear, linkHorizontal, stack, stackOrderReverse } from 'd3-shape';
 
-import { range, extent } from 'd3-array';
+import { range, extent, rollup } from 'd3-array';
 
 import { hierarchy, tree } from 'd3-hierarchy'
 
@@ -59,6 +59,8 @@ export default {
     area,
     curveLinear,
     linkHorizontal,
+    stack,
+    stackOrderReverse,
     dispatch,
     tsv, json,
     max, min,
@@ -67,5 +69,6 @@ export default {
     easeBounce, easeLinear,
     mouse,
     active,
+    rollup,
     hierarchy, tree
 };
