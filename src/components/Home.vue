@@ -19,7 +19,7 @@
         <v-card flat
                 tile
                 class="nav-card"
-                :style="{ 'height': screenHeight + 'px !important' }">
+                :style="{ 'height': '1475px !important' }">
           <v-toolbar style="background-color: transparent" flat>
             <v-toolbar-items class="justify-center">
               <v-autocomplete v-model="lookupGene"

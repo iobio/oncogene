@@ -6,6 +6,7 @@
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
         padding: 0
         background-color: transparent
+        height: 1440px
 
     .variant-text
         font-size: 15px !important
