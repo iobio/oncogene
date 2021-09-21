@@ -656,7 +656,6 @@ export default {
     onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
       const self = this;
       self.deselectVariant();
-      // todo: make sure that variant object is the same here coming from ranked gene list
       if (variant) {
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();
@@ -672,6 +671,11 @@ export default {
           variantCard.showCoverageCircle(variant);
           // }
         });
+
+        let matchingVar = self.cohortModel.allUniqueFeaturesObj[variant.id];
+        if (matchingVar) {
+          self.$refs.subcloneSummaryCardRef.highlightNode(matchingVar.subcloneId);
+        }
 
         // Hide banner
         if (self.$refs.variantSummaryCardRef) {
@@ -735,6 +739,9 @@ export default {
       }
       if (self.$refs.somaticGenesCard) {
         self.$refs.somaticGenesCard.deselectListVar();
+      }
+      if (self.$refs.subcloneSummaryCardRef) {
+        self.$refs.subcloneSummaryCardRef.highlightNode();
       }
     },
     showVariantExtraAnnots: function (parentSampleId, variant) {

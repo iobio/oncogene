@@ -154,7 +154,8 @@ class SubcloneModel {
         }
 
         // Iterate back through nodes and assign full lineage
-        //this.annotateLineage(subclone);
+        //let founderClone = this.getNode('C1', subclone);  // todo: is this a safe assumption - C1 will always be founder clone?
+        //this.annotateLineage(founderClone.id, subclone, []);
 
         // Annotate frequencies to each clone for each sample
         success = this.assignFreqs(trace, subclone);
@@ -162,7 +163,34 @@ class SubcloneModel {
             console.log('Could not assign clonal frequencies');
             return null;
         }
+
         return subclone;
+    }
+
+    /* Used to assign parent nodes to children - not currently using but may prove useful in future */
+    annotateLineage(nodeId, subclone, parentIds) {
+        let node = this.getNode(nodeId, subclone);
+        let childIds = subclone.edges[nodeId];
+
+        // We've reached a leaf node, annotate the parent IDs we've seen until now
+        if (childIds.length === 0) {
+            let parentCopy = parentIds.slice();
+            node.parents = parentCopy;
+        } else {
+            // We haven't hit a leaf node yet
+
+            // Add ourselves to the list of parents
+            parentIds.push(nodeId);
+
+            // Iterate through our children
+            childIds.forEach(childId => {
+                if (childId !== 'n') {
+                    this.annotateLineage(childId, subclone, parentIds);
+                }
+            })
+            // Get rid of ourselves before we return to last call
+            parentIds.pop();
+        }
     }
 
     /* Extracts all possible subclone trees annotated in the header section of the vcf file
@@ -195,13 +223,35 @@ class SubcloneModel {
         })
     }
 
+    /* Use for fish plot in future but todo: needs to be reversed - sum children into parent, not parent into children */
+    sumCps(subclone, staticSubclone) {
+        const self = this;
+        let nodes = subclone.nodes;
+        nodes.forEach(node => {
+            if (node.id !== 'n') {
+                node.edges.forEach(parent => {
+                    if (parent !== 'n') {
+                        let parentNode = self.getNode(parent, staticSubclone);
+                        Object.keys(node.freqs).forEach(timept => {
+                            if (timept !== 'B0') {
+                                node.freqs[timept] += parentNode.freqs[timept];
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
+
     getBarVizTree(paginationIdx) {
         const self = this;
         if (self.barVizTrees[paginationIdx]) {
             return self.barVizTrees[paginationIdx];
         } else {
-            // Compose treeF
-            let nodes = self.possibleTrees[paginationIdx - 1].nodes;
+            // Make a copy of object so we don't lose original CPs
+            let subclone = self.possibleTrees[paginationIdx - 1];
+
+            let nodes = subclone.nodes;
             for (let i = 0; i < nodes.length; i++) {
                 let node = nodes[i];
                 let id = node.id;
@@ -219,12 +269,6 @@ class SubcloneModel {
                         return parseInt(a.timepoint.substr(1)) < parseInt(b.timepoint.substr(1)) ? -1 : 0
                     });
 
-                    // Accumulate prevalence values over time
-                    for (let j = 1; j < subnodeList.length; j++) {
-                        let prevNode = subnodeList[j - 1];
-                        let currNode = subnodeList[j];
-                        currNode.prev += prevNode.prev;
-                    }
                     if (self.barVizTrees[paginationIdx]) {
                         self.barVizTrees[paginationIdx] = self.barVizTrees[paginationIdx].concat(subnodeList);
                     } else {

@@ -1,6 +1,6 @@
 export default function TidyTreeD3(d3) {
 
-  var margin = {top: 30, right: 20, bottom: 20, left: 200},
+  var margin = {top: 35, right: 20, bottom: 20, left: 200},
       width = 300,
       height = 250;
 
@@ -63,6 +63,8 @@ export default function TidyTreeD3(d3) {
         .attr("transform", d => `translate(${d.y},${d.x})`);
 
     node.append("circle")
+        .attr("id", d => 'node_' + d.data.name)
+        .attr("class", "subclone_node")
         .attr("fill", d => colorMap.get(d.data.name))
         .attr("r", 30);
 
@@ -82,7 +84,17 @@ export default function TidyTreeD3(d3) {
     g.attr("transform", "rotate(90)");
 
     return svg.node();
+  }
 
+  /*** OUTWARD FACING FUNCTIONS ***/
+  chart.highlightNode = function(subcloneId) {
+    if (subcloneId) {
+      d3.select('#node_' + subcloneId)
+          .style('stroke', 'rgb(53, 134, 192)')
+          .style('stroke-width', '5');
+    } else {
+      d3.selectAll('.subclone_node').style('stroke', 'transparent');
+    }
   }
 
   // This adds the "on" methods to our custom exports

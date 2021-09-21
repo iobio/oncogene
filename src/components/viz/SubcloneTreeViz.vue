@@ -127,6 +127,9 @@ export default {
       }
       return colorMap;
     },
+    highlightNode: function(subcloneId) {
+      this.chart.highlightNode(subcloneId);
+    }
   },
   mounted: function () {
     let firstTreeInfo = this.subcloneModel.getTreeViz(1);

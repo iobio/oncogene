@@ -121,6 +121,7 @@ export default {
     },
   },
   mounted: function () {
+    debugger;
     let firstTreeInfo = this.subcloneModel.getBarVizTree(1);
     this.drawChart(firstTreeInfo);
   }

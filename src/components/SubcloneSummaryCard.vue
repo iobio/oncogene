@@ -283,6 +283,9 @@ export default {
       this.$refs.subcloneBarVizRef.changeViz(this.subcloneIdx);
       this.$refs.subcloneTreeVizRef.changeViz(this.subcloneIdx);
     },
+    highlightNode: function(subcloneId) {
+      this.$refs.subcloneTreeVizRef.highlightNode(subcloneId);
+    }
   }
 }
 </script>
