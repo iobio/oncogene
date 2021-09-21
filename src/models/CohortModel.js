@@ -1173,6 +1173,7 @@ class CohortModel {
 
                             let allVariants = self.getAllUniqVars(sampleMap);
                             self.subcloneModel.populateSubcloneVariants(allVariants);
+                            debugger;
 
                         } else {
                             console.log('Subclone visualization not supported for combined inherited/somatic vcfs');

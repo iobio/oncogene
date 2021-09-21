@@ -91,6 +91,12 @@ export default {
       let options = {};
       self.chart = TidyTreeD3(self.d3, options);
 
+      // Register listeners
+      let dispatch = this.chart.getDispatch();
+      dispatch.on('d3subcloneClick', function(subcloneId) {
+        self.onSubcloneClick(subcloneId);
+      });
+
       // Draw tree
       self.populateTree(tree, offsetIdx);
       self.showLoader = false;
@@ -129,6 +135,9 @@ export default {
     },
     highlightNode: function(subcloneId) {
       this.chart.highlightNode(subcloneId);
+    },
+    onSubcloneClick: function(subcloneId) {
+      this.$emit('display-subclone-dialog', subcloneId);
     }
   },
   mounted: function () {

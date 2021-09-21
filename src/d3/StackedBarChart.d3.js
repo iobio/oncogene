@@ -93,7 +93,7 @@ export default function stackedBarChartD3(d3) {
         .style("text-anchor", "middle")
         .style("font-family", "Raleway")
         .style("fill", 'black')
-        .text("Clonal Prevalence");
+        .text("Prevalence");
 
     return svg.node();
   }

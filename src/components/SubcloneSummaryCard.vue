@@ -210,7 +210,8 @@
                              v-if="subcloneModel.possibleTrees.length > 0"
                              :subcloneModel="subcloneModel"
                              :d3="d3"
-                             :colors="colors">
+                             :colors="colors"
+                             @display-subclone-dialog="displaySubcloneDialog">
           </subclone-tree-viz>
           <subclone-bar-viz id="subclone-bar-viz" class="subclone-viz"
                             style="padding-top: 30px; padding-bottom: 30px"
@@ -225,6 +226,7 @@
           <v-pagination v-model="subcloneIdx"
                         :length="subcloneModel.possibleTrees.length"
                         @next="transitionViz"
+                        @input="transitionViz"
                         @previous="transitionViz"></v-pagination>
         </v-row>
       </v-container>
@@ -285,6 +287,9 @@ export default {
     },
     highlightNode: function(subcloneId) {
       this.$refs.subcloneTreeVizRef.highlightNode(subcloneId);
+    },
+    displaySubcloneDialog: function(subcloneId) {
+      this.$emit('display-subclone-dialog', subcloneId);
     }
   }
 }

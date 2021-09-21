@@ -12,6 +12,10 @@ class SubcloneModel {
     // todo: also possible that user will select all samples and that not all sample present in subclone structure
     // todo: also possible that user will pick wrong sample as normal... will this affect anything?
 
+    getVariants(nodeId) {
+        return this.clonalVarMap[nodeId];
+    }
+
     /* Inserts node into the subclone node list at a position corresponding to its clone ID.
      * For example, C1 is inserted at index 1, C2 is inserted at index 2, etc (N is always at index 0) */
     insertNode(node, subclone) {
@@ -215,10 +219,15 @@ class SubcloneModel {
         const self = this;
         variants.forEach(variant => {
             let subcloneId = variant.subcloneId;
-            if (self.clonalVarMap[subcloneId]) {
-                self.clonalVarMap[subcloneId].push(variant);
+            let gene = variant.geneSymbol;
+
+            if (self.clonalVarMap[subcloneId] && self.clonalVarMap[subcloneId][gene]) {
+                self.clonalVarMap[subcloneId][gene].push(variant);
+            } else if (self.clonalVarMap[subcloneId]) {
+                self.clonalVarMap[subcloneId][gene] = [variant];
             } else {
-                self.clonalVarMap[subcloneId] = [variant];
+                self.clonalVarMap[subcloneId] = {};
+                self.clonalVarMap[subcloneId][gene] = [variant];
             }
         })
     }

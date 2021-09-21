@@ -188,7 +188,8 @@
                 ref="subcloneSummaryCardRef"
                 :subcloneModel="cohortModel.subcloneModel"
                 :d3="globalApp.d3"
-                :$="globalApp.$">
+                :$="globalApp.$"
+                @display-subclone-dialog="displaySubcloneDialog">
             </subclone-summary-card>
 <!--            <cnv-summary-card-->
 <!--                v-if="cohortModel.hasCnvData"-->
@@ -300,6 +301,17 @@
       </cnv-dialog>
     </v-dialog>
     <v-dialog
+        width="30%"
+        style="z-index: 1033"
+        v-model="subcloneDialog">
+      <subclone-dialog
+          :selectedSubclone="selectedSubclone"
+          :variantObj="selectedSubcloneVariants"
+          :dialogOpen="subcloneDialog"
+          :d3="d3">
+      </subclone-dialog>
+    </v-dialog>
+    <v-dialog
         v-model="aboutDialog"
         fullscreen
         hide-overlay
@@ -324,6 +336,7 @@ import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
 import HistoryTab from './HistoryTab.vue'
 import CnvDialog from './CnvDialog.vue'
+import SubcloneDialog from './SubcloneDialog.vue'
 import SomaticGenesCard from './SomaticGenesCard.vue'
 import GeneCard from './GeneCard.vue'
 import About from './partials/About.vue'
@@ -345,6 +358,7 @@ export default {
     SomaticGenesCard,
     Pileup,
     CnvDialog,
+    SubcloneDialog,
     About
   },
   props: {
@@ -417,6 +431,9 @@ export default {
       cnvDialogWidth: 0,
       aboutDialog: false,
       noVarsDialog: false,
+      subcloneDialog: false,
+      selectedSubclone: '',
+      selectedSubcloneVariants: [],
       showGeneSnackbar: false,
       expandSnackbar: false,
       expandTimeout: 5000,
@@ -1118,6 +1135,12 @@ export default {
         selectedSample: selectedSample
       };
       this.cnvDialog = true;
+    },
+    displaySubcloneDialog: function(subcloneId) {
+      this.selectedSubclone = subcloneId;
+      this.selectedSubcloneVariants = [];
+      this.selectedSubcloneVariants = this.cohortModel.subcloneModel.getVariants(subcloneId);
+      this.subcloneDialog = true;
     },
     toggleExonTooltip: function (exonInfo) {
       const self = this;

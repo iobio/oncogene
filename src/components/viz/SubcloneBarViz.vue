@@ -119,9 +119,11 @@ export default {
       }
       return colorMap;
     },
+    displaySubcloneDialog: function(subcloneId) {
+      this.$emit('display-subclone-dialog', subcloneId);
+    }
   },
   mounted: function () {
-    debugger;
     let firstTreeInfo = this.subcloneModel.getBarVizTree(1);
     this.drawChart(firstTreeInfo);
   }

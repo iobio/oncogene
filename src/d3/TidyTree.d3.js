@@ -4,6 +4,8 @@ export default function TidyTreeD3(d3) {
       width = 300,
       height = 250;
 
+  var dispatch = d3.dispatch("d3subcloneClick");
+
   function chart(data, theOptions) {
 
     const parentId = theOptions.parentId;
@@ -71,6 +73,7 @@ export default function TidyTreeD3(d3) {
     node.append("text")
         .attr("dx", "0.05em")
         .attr("y", 5)
+        .attr("class", "subclone_node")
         .attr("transform", "rotate(-90)")
         .attr("text-anchor", "middle")
         .attr("font-family", "Raleway")
@@ -80,6 +83,17 @@ export default function TidyTreeD3(d3) {
         .text(d => d.data.name)
         .clone(true).lower()
         .attr("stroke", "white");
+
+    d3.selectAll('.subclone_node')
+        .on("click", function(d) {
+          dispatch.call('d3subcloneClick', this,  d.data.name);
+        })
+        .on("mouseover", function() {
+          d3.select(this).style("cursor", "pointer");
+        })
+        .on("mouseout", function() {
+          d3.select(this).style("cursor", "default");
+        });
 
     g.attr("transform", "rotate(90)");
 
@@ -95,7 +109,11 @@ export default function TidyTreeD3(d3) {
     } else {
       d3.selectAll('.subclone_node').style('stroke', 'transparent');
     }
-  }
+  };
+
+  chart.getDispatch = function() {
+    return dispatch;
+  };
 
   // This adds the "on" methods to our custom exports
   // d3.rebind(chart, dispatch, "on");
