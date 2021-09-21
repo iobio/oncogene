@@ -58,7 +58,7 @@
 
 <script>
 import TidyTreeD3 from '../../d3/TidyTree.d3.js'
-import demoTreeData from '@/data/subclone_tree_demo.json'
+// import demoTreeData from '@/data/subclone_tree_demo.json'
 
 export default {
   name: 'subclone-tree-viz',
@@ -75,15 +75,14 @@ export default {
       default: null
     },
     d3: null,
-    colorMap: {
-      type: Map,
+    colors: {
+      type: Object,
       default: null
     },
   },
   computed: {},
   methods: {
-    drawTree(tree) {
-      console.log(tree); // satisfying linter - get rid of when working
+    drawTree(tree, offsetIdx) {
 
       const self = this;
       self.showLoader = true;
@@ -93,13 +92,14 @@ export default {
       self.chart = TidyTreeD3(self.d3, options);
 
       // Draw tree
-      let data = demoTreeData;
-      // todo: data will change to tree arg here with properly formatted hierarchy - use d3.stratify
-      self.populateTree(data);
+      self.populateTree(tree, offsetIdx);
       self.showLoader = false;
     },
-    populateTree(data) {
-      let options = { 'parentId' : this.svgId };
+    populateTree(data, offsetIdx) {
+      let options = {
+        'parentId' : this.svgId,
+        'colorMap': this.getColorMap(offsetIdx)
+      };
       this.chart(data, options);
     },
     clear() {
@@ -112,14 +112,25 @@ export default {
       this.showLoader = isLoading;
     },
     changeViz(offsetIdx) {
-      let treeInfo = this.subcloneModel.possibleTrees[offsetIdx - 1];
-      this.populateTree(treeInfo);
+      let treeInfo = this.subcloneModel.getTreeViz(offsetIdx);
+      this.populateTree(treeInfo, offsetIdx);
+    },
+    getColorMap: function(offsetIdx) {
+      let colorMap = new Map();
+      let i = 0;
+      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length - 1;
+      for (var clone in this.colors) {
+        if (i < maxClones) {
+          colorMap.set(clone, this.colors[clone]);
+          i++;
+        }
+      }
+      return colorMap;
     },
   },
   mounted: function () {
-    let firstTreeInfo = this.subcloneModel.possibleTrees[0];
-    // todo: need to translate graph format into json or object that hierarchy can parse - use d3.stratify
-    this.drawTree(firstTreeInfo);
+    let firstTreeInfo = this.subcloneModel.getTreeViz(1);
+    this.drawTree(firstTreeInfo,1);
   }
 }
 </script>

@@ -28,6 +28,10 @@ import { range, extent, rollup } from 'd3-array';
 
 import { hierarchy, tree } from 'd3-hierarchy'
 
+import { csvParse } from 'd3-dsv'
+
+import { nest } from 'd3-collection'
+
 import {
     dispatch,
     tsv, json,
@@ -70,5 +74,7 @@ export default {
     mouse,
     active,
     rollup,
+    nest,
+    csvParse,
     hierarchy, tree
 };

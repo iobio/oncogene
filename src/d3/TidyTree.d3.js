@@ -2,11 +2,12 @@ export default function TidyTreeD3(d3) {
 
   var margin = {top: 30, right: 20, bottom: 20, left: 200},
       width = 300,
-      height = 200;
+      height = 250;
 
   function chart(data, theOptions) {
 
     const parentId = theOptions.parentId;
+    const colorMap = theOptions.colorMap;
 
     // Remove any old chart
     d3.select('#' + parentId).select('svg').remove();
@@ -20,7 +21,7 @@ export default function TidyTreeD3(d3) {
 
     let tree = data => {
       const root = d3.hierarchy(data);
-      root.dx = 50;
+      root.dx = 70;
       root.dy = width / (root.height + 1);
       return d3.tree().nodeSize([root.dx, root.dy])(root);
     }
@@ -62,8 +63,8 @@ export default function TidyTreeD3(d3) {
         .attr("transform", d => `translate(${d.y},${d.x})`);
 
     node.append("circle")
-        .attr("fill", d => d.data.color)
-        .attr("r", 20);
+        .attr("fill", d => colorMap.get(d.data.name))
+        .attr("r", 30);
 
     node.append("text")
         .attr("dx", "0.05em")

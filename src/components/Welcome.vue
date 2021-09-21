@@ -1017,7 +1017,8 @@ export default {
       reader.onload = () => {
         let result = reader.result;
         let infoObj = JSON.parse(result);
-        if (!(infoObj['samples'] && infoObj['listInput'] && infoObj['dataTypes'])) {
+        let fulfillsList = infoObj['somaticCallsOnly'] || infoObj['listInput'];
+        if (!(infoObj['samples'] && fulfillsList && infoObj['dataTypes'])) {
           self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
           self.showError = true;
         } else {
@@ -1103,7 +1104,7 @@ export default {
           self.uploadedSelectedSamples = selectedSamples;
           self.launchedFromConfig = true;
 
-          if (!(self.uploadedSelectedSamples && self.userData && self.listInput &&
+          if (!(self.uploadedSelectedSamples && self.userData && fulfillsList &&
               self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
             self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
             self.showError = true;

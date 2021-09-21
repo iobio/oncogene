@@ -1,12 +1,12 @@
 <!-- Displays proportions of subclones per timepoint -->
 
 <style>
-.axis text {
-  font: 10px sans-serif;
+.sub-axis text {
+  font: 13px Raleway;
 }
 
-.axis path,
-.axis line {
+.sub-axis path,
+.sub-axis line {
   fill: none;
   stroke: #000;
   shape-rendering: crispEdges;
@@ -34,8 +34,8 @@
 <template>
   <v-container>
     <v-row no-gutters>
-      <v-col cols="12" sm="12" xl="12" class="bar-chart-label">
-        Clonal Prevalence
+      <v-col cols="12" sm="12" xl="12" class="bar-chart-label" style="margin-bottom: -30px">
+        Clonal Prevalence Over Time
       </v-col>
       <v-col v-show="!showLoader"
              cols="12" sm="12"
@@ -58,7 +58,7 @@
 
 <script>
 import barChart from '../../d3/StackedBarChart.d3.js'
-import demoBarData from '@/data/subclone_counts_demo.csv'
+// import demoBarData from '@/data/subclone_counts_demo.json'
 
 export default {
   name: 'subclone-bar-viz',
@@ -70,31 +70,31 @@ export default {
     }
   },
   props: {
-    counts: {
+    subcloneModel: {
       type: Object,
       default: null
     },
     d3: null,
-    colorMap: {
-      type: Map,
+    colors: {
+      type: Object,
       default: null
     },
   },
   methods: {
     drawChart(data) {
       const self = this;
-      console.log(data);  //todo: get rid of
 
       self.showLoader = true;
-      let options = {
-        'parentId': self.svgId,
-        'colorMap': self.colorMap
-      };
+
       self.chart = barChart(self.d3);
-      self.fillChart(demoBarData, options);  // todo: change with real data
+      self.fillChart(data, 1);
       self.showLoader = false;
     },
-    fillChart(clonalCounts, options) {
+    fillChart(clonalCounts, offsetIdx) {
+      let options = {
+        'parentId': this.svgId,
+        'colorMap': this.getColorMap(offsetIdx)
+      };
       this.chart(clonalCounts, options);
     },
     clear() {
@@ -104,13 +104,24 @@ export default {
       this.showLoader = isLoading;
     },
     changeViz(offsetIdx) {
-      let treeInfo = this.subcloneModel.possibleTrees[offsetIdx - 1];
-      this.fillChart(treeInfo);
+      let treeInfo = this.subcloneModel.getBarVizTree(offsetIdx);
+      this.fillChart(treeInfo, offsetIdx);
+    },
+    getColorMap: function(offsetIdx) {
+      let colorMap = new Map();
+      let i = 0;
+      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length - 1;
+      for (var clone in this.colors) {
+        if (i < maxClones) {
+          colorMap.set(clone, this.colors[clone]);
+          i++;
+        }
+      }
+      return colorMap;
     },
   },
   mounted: function () {
-    //let firstTreeInfo = this.subcloneModel.possibleTrees[0];
-    let firstTreeInfo = 'getRidOfMe'; //todo
+    let firstTreeInfo = this.subcloneModel.getBarVizTree(1);
     this.drawChart(firstTreeInfo);
   }
 }

@@ -2,9 +2,12 @@ class SubcloneModel {
     constructor(subcloneArr) {
         this.subcloneHeaderStrs = subcloneArr;
         this.possibleTrees = [];
+        this.barVizTrees = {};  // An object with pagination_id: [{ subclone: 'C1', timepoint: 'B1', prev: 0.5 }]
+        this.treeVizObjs = {};
         this.clonalVarMap = {};
         this.NORMAL = 'n';
     }
+
     // todo: possible that user won't select all samples and that all samples present in subclone structure
     // todo: also possible that user will select all samples and that not all sample present in subclone structure
     // todo: also possible that user will pick wrong sample as normal... will this affect anything?
@@ -52,9 +55,9 @@ class SubcloneModel {
                 return false;
             }
             const sourceNodeId = (nodes[0]).trim();
-            let sourceNode = { id: sourceNodeId, freqs: {} };
+            let sourceNode = {id: sourceNodeId, freqs: {}, parents: []};
             const destNodeId = (nodes[1]).trim();
-            let destNode = { id: destNodeId, freqs: {} };
+            let destNode = {id: destNodeId, freqs: {}, parents: []};
 
             // Add source node
             let success = true;
@@ -64,11 +67,17 @@ class SubcloneModel {
             } else {
                 subclone.edges[sourceNodeId].push(destNodeId);
             }
-            // Add dest node
+            // Add dest node if it doesn't already exist
             if (!subclone.edges[destNodeId]) {
                 subclone.edges[destNodeId] = [];
+                destNode.parents.push(sourceNodeId);
                 success &= this.insertNode(destNode, subclone);
+            } else {
+                // Otherwise just add immediate parent
+                let existNode = this.getNode(destNodeId, subclone);
+                existNode.parents.push(sourceNodeId);
             }
+
             // Short-circuit if something went wrong
             if (!success) {
                 return false;
@@ -88,7 +97,7 @@ class SubcloneModel {
                 console.log('Could not parse trace string from subclone line: ' + traceStr);
                 return false;
             } else {
-                const sampleId = traceEls[0];
+                const sampleId = traceEls[0].trim();
                 let freqs = traceEls[1];
                 let nodeFreqs = freqs.split(',');
                 if (freqs.length < 1) {
@@ -132,10 +141,10 @@ class SubcloneModel {
             console.log('Could not parse lineage or trace fields from ##SUBCLONE header line: ' + tree);
             return null;
         }
-        // Return object
+        // Return object - a subclone tree
         let subclone = {
-            'nodes' : [],       // list of nodes objects in tree
-            'edges' : {}        // nodeId : listOf child nodeIds
+            'nodes': [],       // list of nodes objects in tree
+            'edges': {}        // nodeId : listOf child nodeIds
         }
         // Extract nodes and edges
         let success = this.parseNodesAndEdges(lineage, subclone);
@@ -143,6 +152,9 @@ class SubcloneModel {
             console.log('Could not parse nodes and edges from header');
             return null;
         }
+
+        // Iterate back through nodes and assign full lineage
+        //this.annotateLineage(subclone);
 
         // Annotate frequencies to each clone for each sample
         success = this.assignFreqs(trace, subclone);
@@ -182,5 +194,94 @@ class SubcloneModel {
             }
         })
     }
+
+    getBarVizTree(paginationIdx) {
+        const self = this;
+        if (self.barVizTrees[paginationIdx]) {
+            return self.barVizTrees[paginationIdx];
+        } else {
+            // Compose treeF
+            let nodes = self.possibleTrees[paginationIdx - 1].nodes;
+            for (let i = 0; i < nodes.length; i++) {
+                let node = nodes[i];
+                let id = node.id;
+                let subnodeList = [];
+
+                if (id !== 'n') {
+                    Object.keys(node.freqs).forEach(timepoint => {
+                        if (timepoint !== 'B0') {
+                            let freq = node.freqs[timepoint];
+                            subnodeList.push({'subclone': id, 'timepoint': timepoint, 'prev': freq})
+                        }
+                    })
+                    // Sort nodes so they appear in correct timepoint order
+                    subnodeList.sort((a, b) => {
+                        return parseInt(a.timepoint.substr(1)) < parseInt(b.timepoint.substr(1)) ? -1 : 0
+                    });
+
+                    // Accumulate prevalence values over time
+                    for (let j = 1; j < subnodeList.length; j++) {
+                        let prevNode = subnodeList[j - 1];
+                        let currNode = subnodeList[j];
+                        currNode.prev += prevNode.prev;
+                    }
+                    if (self.barVizTrees[paginationIdx]) {
+                        self.barVizTrees[paginationIdx] = self.barVizTrees[paginationIdx].concat(subnodeList);
+                    } else {
+                        self.barVizTrees[paginationIdx] = subnodeList;
+                    }
+                }
+            }
+            return self.barVizTrees[paginationIdx];
+        }
+    }
+
+    getTreeViz(paginationIdx) {
+        const self = this;
+        if (self.treeVizObjs[paginationIdx]) {
+            return self.treeVizObjs[paginationIdx];
+        } else {
+            let subclone = self.possibleTrees[paginationIdx - 1];
+            let nodes = subclone.nodes;
+            let firstNode = nodes[1];
+
+            let retObj = {
+                "name": firstNode.id,
+                "children": []
+            };
+
+            let edges = subclone.edges[firstNode.id];
+            edges.forEach(childId => {
+                let childObject = self.getChildObject(childId, subclone);
+                retObj.children.push(childObject);
+            })
+            self.treeVizObjs[paginationIdx] = retObj;
+            return self.treeVizObjs[paginationIdx];
+        }
+    }
+
+    getChildObject(childId, subclone) {
+        let childNode = this.getNode(childId, subclone);
+        let grandchildIds = subclone.edges[childId];
+
+        // We've reached a leaf node, return object
+        if (grandchildIds.length === 0) {
+            return {
+                "name": childNode.id
+            };
+        } else {
+            // We have more grandchildren to explore
+            let node = {
+                "name": childNode.id,
+                "children": []
+            };
+            grandchildIds.forEach(grandchildId => {
+                let granchildObj = this.getChildObject(grandchildId, subclone);
+                node.children.push(granchildObj);
+            })
+            return node;
+        }
+    }
 }
+
 export default SubcloneModel
