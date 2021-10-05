@@ -1,7 +1,7 @@
 class SubcloneModel {
     constructor(subcloneArr, selectedSamples) {
         this.subcloneHeaderStrs = subcloneArr;
-        this.selectedSamples = selectedSamples; // Map of selected samples/timepoints - only include these in the histogram - also use this for ordering in histogram
+        this.selectedSamples = selectedSamples; // Array of selected samples/timepoints - used this for ordering in histogram
         this.possibleTrees = [];
         this.barVizTrees = {};  // An object with pagination_id: [{ subclone: 'C1', timepoint: 'B1', prev: 0.5 }]
         this.treeVizObjs = {};
@@ -244,6 +244,7 @@ class SubcloneModel {
         })
     }
 
+    /* Returns only selected samples for stacked bar viz */
     getBarVizTree(paginationIdx) {
         const self = this;
         if (self.barVizTrees[paginationIdx]) {
@@ -260,15 +261,14 @@ class SubcloneModel {
 
                 if (id !== 'n') {
                     Object.keys(node.freqs).forEach(timepoint => {
-                        if (timepoint !== 'B0') {
+                        if (timepoint !== 'B0' && self.selectedSamples.indexOf(timepoint) > -1) {
                             let freq = node.freqs[timepoint];
                             subnodeList.push({'subclone': id, 'timepoint': timepoint, 'prev': freq})
                         }
                     })
-                    // Sort nodes so they appear in correct timepoint order
-                    // todo: change this to selectedSample order
+                    // Sort nodes to appear in user selected order
                     subnodeList.sort((a, b) => {
-                        return parseInt(a.timepoint.substr(1)) < parseInt(b.timepoint.substr(1)) ? -1 : 0
+                        return self.selectedSamples.indexOf(a.timepoint) < self.selectedSamples.indexOf(b.timepoint) ? -1 : 0
                     });
 
                     if (self.barVizTrees[paginationIdx]) {
@@ -282,6 +282,7 @@ class SubcloneModel {
         }
     }
 
+    /* Returns all clones in provided tree for tidy tree viz */
     getTreeViz(paginationIdx) {
         const self = this;
         if (self.treeVizObjs[paginationIdx]) {

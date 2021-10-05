@@ -33,7 +33,7 @@ class CohortModel {
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
-        this.cosmicVariantIdHash = {};        // Contains the multiple genes cosmic IDs
+        this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
 
         this.mode = 'time';                     // Indicates time-series mode
@@ -469,7 +469,7 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
-        this.subcloneModel = new SubcloneModel(subcloneStr);
+        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples);
         this.hasSubcloneAnno = true;
     }
 

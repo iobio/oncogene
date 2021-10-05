@@ -1,9 +1,9 @@
 export default function TidyTreeD3(d3) {
   var NORMAL = 'n';
 
-  var margin = {top: 35, right: 20, bottom: 20, left: 200},
+  var margin = {top: 35, right: 20, bottom: 20, left: 180}, //todo: test w/ big screen
       width = 350,
-      height = 275;
+      height = 300;
 
   var dispatch = d3.dispatch("d3subcloneClick");
 

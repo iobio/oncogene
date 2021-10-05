@@ -189,6 +189,7 @@
                 :subcloneModel="cohortModel.subcloneModel"
                 :d3="globalApp.d3"
                 :$="globalApp.$"
+                :width="screenWidth"
                 @display-subclone-dialog="displaySubcloneDialog">
             </subclone-summary-card>
 <!--            <cnv-summary-card-->

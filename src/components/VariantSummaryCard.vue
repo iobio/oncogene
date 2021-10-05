@@ -235,21 +235,21 @@
       <v-container fluid grid-list-md style="overflow-y: scroll !important;">
         <v-row wrap>
           <v-container class="summary-viz">
-            <v-row class="no-gutters mb-3">
-              <v-col sm="6" lg="2" class="summary-field-label">Gene:</v-col>
-              <v-col sm="6" lg="4" class="summary-field-value">
+            <v-row dense>
+              <v-col md="3" xl="2" class="summary-field-label">Gene:</v-col>
+              <v-col md="9" xl="4" class="summary-field-value">
                 <span>{{ geneName }}</span>
               </v-col>
-              <v-col sm="6" lg="2" class="summary-field-label">Transcript:</v-col>
-              <v-col sm="6" lg="4" class="summary-field-value">
+              <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
+              <v-col md=9 xl="4" class="summary-field-value">
                 <span v-if="variantSelected">
                     {{ selectedTranscript.transcript_id }}
                 </span>
               </v-col>
             </v-row>
-            <v-row class="no-gutters mb-3">
-              <v-col sm="6" lg="2" class="summary-field-label">Position:</v-col>
-              <v-col sm="6" lg="10" class="summary-field-value">
+            <v-row dense>
+              <v-col md="3" xl="2" class="summary-field-label">Position:</v-col>
+              <v-col md="9" xl="10" class="summary-field-value">
                 <span>{{ selectedVariantLocation }}</span>
               </v-col>
             </v-row>

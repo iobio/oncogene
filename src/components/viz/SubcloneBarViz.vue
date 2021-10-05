@@ -58,7 +58,6 @@
 
 <script>
 import barChart from '../../d3/StackedBarChart.d3.js'
-// import demoBarData from '@/data/subclone_counts_demo.json'
 
 export default {
   name: 'subclone-bar-viz',
@@ -79,14 +78,14 @@ export default {
       type: Object,
       default: null
     },
+    width: null
   },
   methods: {
     drawChart(data) {
       const self = this;
-
       self.showLoader = true;
-
-      self.chart = barChart(self.d3);
+      let smallChart = self.width <= 720;
+      self.chart = barChart(self.d3, smallChart);
       self.fillChart(data, 1);
       self.showLoader = false;
     },

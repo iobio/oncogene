@@ -1,11 +1,8 @@
-export default function stackedBarChartD3(d3) {
+export default function stackedBarChartD3(d3, smallVersion) {
 
-  //var dispatch = d3.dispatch("d3click");
-
-  var margin = {top: 30, right: 20, bottom: 20, left: 50},
-      width = 310,
+  var margin = {top: 30, right: 20, bottom: 20, left: 10},
+      width = smallVersion ? 270 : 330, //todo: test with big screen
       height = 300;
-
 
   function chart(subcloneObjs, theOptions) {
     const parentId = theOptions.parentId;
@@ -19,7 +16,7 @@ export default function stackedBarChartD3(d3) {
         .attr('height', height + margin.top + margin.bottom)
         .attr('width', width + margin.left + margin.right)
         .append("g")
-        .attr("transform", "translate(" + margin.left + "," + (margin.top - 15) + ")");
+        .attr("transform", "translate(" + (margin.left + 40) + "," + (margin.top - 15) + ")");
 
 
     var vals = d3.rollup(subcloneObjs, ([d]) => d, d => d.timepoint, d => d.subclone).values();

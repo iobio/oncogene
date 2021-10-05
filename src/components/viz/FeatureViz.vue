@@ -16,17 +16,17 @@
             <div class="field-label-header" style="text-align: left">Annotation Details</div>
         </v-row>
         <v-row class="no-gutters mb-3">
-            <v-col cols="12" sm="6" md="1" lg="2" class="summary-field-label">Effect:</v-col>
-            <v-col cols="12" sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
+            <v-col cols="12" sm="6" lg="2" class="summary-field-label">Effect:</v-col>
+            <v-col cols="12" sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 {{effect}}
             </v-col>
-            <v-col cols="12" sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
+            <v-col cols="12" sm="6" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
             </v-col>
-            <v-col sm="6" md="1" lg="2" class="summary-field-label">Impact:</v-col>
-            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
+            <v-col sm="6" lg="2" class="summary-field-label">Impact:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                  <span v-show="impactText !== '-'">
                    <svg v-if="type === 'mnp' || type === 'snp'" class="impact-badge" height="12" width="12">
                      <g transform="translate(1,3)" class="filter-symbol" v-bind:class="impactColor">
@@ -56,15 +56,15 @@
                    {{impactText}}
                  </span>
             </v-col>
-            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
+            <v-col sm="6" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
             </v-col>
         </v-row>
         <v-row class="no-gutters mb-3">
-            <v-col sm="6" md="1" lg="2" class="summary-field-label">Type:</v-col>
-            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
+            <v-col sm="6" lg="2" class="summary-field-label">Type:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 <span v-show="type !== '-'">
                     <svg v-if="type==='snp'" id="snp" class="legend-element" height="12" width="12" transform="translate(1,2)">
                         <rect class="legend-symbol snp" rx="2" ry="1" x="1" width="10" y="1" height="10" style="opacity: 1; fill: none; stroke: rgb(0, 0, 0); stroke-width: 1px;">
@@ -93,13 +93,13 @@
                     {{type}}
                 </span>
             </v-col>
-            <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
+            <v-col sm="6" lg="4" v-if="loadingExtraAnnotations">
                 <div class="loader">
                     <img src="../../assets/images/wheel.gif">
                 </div>
             </v-col>
-            <v-col sm="6" md="1" lg="2" class="summary-field-label">Bases:</v-col>
-            <v-col sm="6" md="5" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
+            <v-col sm="6" lg="2" class="summary-field-label">Bases:</v-col>
+            <v-col sm="6" lg="4" v-if="!loadingExtraAnnotations" class="summary-field-value">
                 {{ refAlt }}
             </v-col>
             <div class="loader" v-if="loadingExtraAnnotations">

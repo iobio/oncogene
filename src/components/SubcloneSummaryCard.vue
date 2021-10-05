@@ -219,7 +219,8 @@
                             ref="subcloneBarVizRef"
                             :subcloneModel="subcloneModel"
                             :d3="d3"
-                            :colors="colors">
+                            :colors="colors"
+                            :width="width">
           </subclone-bar-viz>
         </v-row>
         <v-row no-gutters justify="center">
@@ -249,6 +250,7 @@ export default {
     subcloneModel: null,
     d3: null,
     $: null,
+    width: null
   },
   data() {
     return {
