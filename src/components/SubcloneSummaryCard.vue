@@ -22,7 +22,7 @@
 
 .subclone-viz
   min-height: 100px
-  max-height: 600px
+  max-height: 700px
   padding-top: 0px
   overflow-x: hidden
 
@@ -254,6 +254,7 @@ export default {
     return {
       subcloneIdx: 1,
       colors: {
+        "n": "white",
         "C1": "#F8B195",
         "C2": "#F67280",
         "C3": "#6C5B7B",

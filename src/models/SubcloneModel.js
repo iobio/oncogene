@@ -1,16 +1,13 @@
 class SubcloneModel {
-    constructor(subcloneArr) {
+    constructor(subcloneArr, selectedSamples) {
         this.subcloneHeaderStrs = subcloneArr;
+        this.selectedSamples = selectedSamples; // Map of selected samples/timepoints - only include these in the histogram - also use this for ordering in histogram
         this.possibleTrees = [];
         this.barVizTrees = {};  // An object with pagination_id: [{ subclone: 'C1', timepoint: 'B1', prev: 0.5 }]
         this.treeVizObjs = {};
         this.clonalVarMap = {};
         this.NORMAL = 'n';
     }
-
-    // todo: possible that user won't select all samples and that all samples present in subclone structure
-    // todo: also possible that user will select all samples and that not all sample present in subclone structure
-    // todo: also possible that user will pick wrong sample as normal... will this affect anything?
 
     getVariants(nodeId) {
         return this.clonalVarMap[nodeId];
@@ -157,10 +154,6 @@ class SubcloneModel {
             return null;
         }
 
-        // Iterate back through nodes and assign full lineage
-        //let founderClone = this.getNode('C1', subclone);  // todo: is this a safe assumption - C1 will always be founder clone?
-        //this.annotateLineage(founderClone.id, subclone, []);
-
         // Annotate frequencies to each clone for each sample
         success = this.assignFreqs(trace, subclone);
         if (!success) {
@@ -178,8 +171,7 @@ class SubcloneModel {
 
         // We've reached a leaf node, annotate the parent IDs we've seen until now
         if (childIds.length === 0) {
-            let parentCopy = parentIds.slice();
-            node.parents = parentCopy;
+            node.parents = parentIds.slice();
         } else {
             // We haven't hit a leaf node yet
 
@@ -274,6 +266,7 @@ class SubcloneModel {
                         }
                     })
                     // Sort nodes so they appear in correct timepoint order
+                    // todo: change this to selectedSample order
                     subnodeList.sort((a, b) => {
                         return parseInt(a.timepoint.substr(1)) < parseInt(b.timepoint.substr(1)) ? -1 : 0
                     });
@@ -296,7 +289,7 @@ class SubcloneModel {
         } else {
             let subclone = self.possibleTrees[paginationIdx - 1];
             let nodes = subclone.nodes;
-            let firstNode = nodes[1];
+            let firstNode = nodes[0];
 
             let retObj = {
                 "name": firstNode.id,

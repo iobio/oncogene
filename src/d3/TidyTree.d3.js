@@ -1,8 +1,9 @@
 export default function TidyTreeD3(d3) {
+  var NORMAL = 'n';
 
   var margin = {top: 35, right: 20, bottom: 20, left: 200},
-      width = 300,
-      height = 250;
+      width = 350,
+      height = 275;
 
   var dispatch = d3.dispatch("d3subcloneClick");
 
@@ -66,8 +67,11 @@ export default function TidyTreeD3(d3) {
 
     node.append("circle")
         .attr("id", d => 'node_' + d.data.name)
-        .attr("class", "subclone_node")
+        .attr("class", d => d.data.name === NORMAL ? "normal_node" : "subclone_node")
         .attr("fill", d => colorMap.get(d.data.name))
+        .style("stroke", d => d.data.name === NORMAL ? '#555' : '')
+        .style("stroke-width", d => d.data.name === NORMAL ? '1.5' : '')
+        .style("stroke-opacity", d => d.data.name === NORMAL ? '0.4' : '')
         .attr("r", 30);
 
     node.append("text")
@@ -79,8 +83,9 @@ export default function TidyTreeD3(d3) {
         .attr("font-family", "Raleway")
         .attr("font-weight", 500)
         .attr("font-size", "16")
-        .attr("fill", "black")
-        .text(d => d.data.name)
+        .attr("fill", d => d.data.name === NORMAL ? "#555" : "black")
+        .attr("opacity", d => d.data.name === NORMAL ? "0.8" : "1")
+        .text(d => d.data.name.toUpperCase())
         .clone(true).lower()
         .attr("stroke", "white");
 

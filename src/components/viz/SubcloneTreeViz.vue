@@ -58,7 +58,6 @@
 
 <script>
 import TidyTreeD3 from '../../d3/TidyTree.d3.js'
-// import demoTreeData from '@/data/subclone_tree_demo.json'
 
 export default {
   name: 'subclone-tree-viz',
@@ -124,7 +123,7 @@ export default {
     getColorMap: function(offsetIdx) {
       let colorMap = new Map();
       let i = 0;
-      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length - 1;
+      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length;
       for (var clone in this.colors) {
         if (i < maxClones) {
           colorMap.set(clone, this.colors[clone]);

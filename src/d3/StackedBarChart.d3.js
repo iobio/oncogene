@@ -26,9 +26,12 @@ export default function stackedBarChartD3(d3) {
 
     var colorArr = [];
     for (let key of colors.keys()) {
-      colorArr.push(key);
+      if (key !== 'n') {
+        colorArr.push(key);
+      }
     }
 
+    // NOTE: colorArr must match the number of subclones in length exactly
     var stack = d3.stack()
         .keys(colorArr)
         .value((group, key) => group.get(key).prev)
@@ -64,6 +67,8 @@ export default function stackedBarChartD3(d3) {
             .attr("y", d => y(d[1]))
             .attr("width", x.bandwidth())
             .attr("height", d => y(d[0]) - y(d[1]))
+            .attr("stroke", "#444")
+            .attr("stroke-width", "0.5")
             .append("title")
             .text(d => `${d.data.subclone}@${d.data.timepoint}: ${d.data.prev}`));
 
