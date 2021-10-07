@@ -860,9 +860,7 @@ class CohortModel {
                     geneP.then(() => {
                         self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap)
                             .then(groupObj => {
-                                // todo: change this back once we hook up to production
                                 self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-                                //Promise.resolve()
                                     .then(() => {
                                         let cosmicPs = [];
                                         groupObj.fullGeneObjs.forEach(geneObj => {
@@ -1157,6 +1155,9 @@ class CohortModel {
             }
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
                 .then((sampleMap) => {
+                    // Always populate unqiue variant dictionary
+                    let allVariants = self.getAllUniqVars(sampleMap);
+
                     let subclonesExist = false;
 
                     // Pull subclone info out of return object
@@ -1171,7 +1172,6 @@ class CohortModel {
                             self.composedSomaticGenes = sampleMap['somaticGenes'];
                             delete(sampleMap['somaticGenes']);
 
-                            let allVariants = self.getAllUniqVars(sampleMap);
                             self.subcloneModel.populateSubcloneVariants(allVariants);
 
                         } else {
