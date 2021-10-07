@@ -8,6 +8,7 @@
             v-for="item in geneVarItems"
             :key="item.gene"
             v-model="item.active"
+            value="true"
             no-action
         >
           <template v-slot:activator>

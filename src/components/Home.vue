@@ -15,11 +15,11 @@
              @launched="onLaunch">
     </Welcome>
     <v-row no-gutters>
-      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }" :style="{ 'height': screenHeight + ' !important', 'overflow-y': 'scroll'}">
+      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
         <v-card flat
                 tile
                 class="nav-card"
-                :style="{ 'height': '1475px !important' }">
+                :height="screenHeight">
           <v-toolbar style="background-color: transparent" flat>
             <v-toolbar-items class="justify-center">
               <v-autocomplete v-model="lookupGene"
@@ -691,7 +691,7 @@ export default {
         });
 
         let matchingVar = self.cohortModel.allUniqueFeaturesObj[variant.id];
-        if (matchingVar) {
+        if (matchingVar && self.$refs.subcloneSummaryCardRef) {
           self.$refs.subcloneSummaryCardRef.highlightNode(matchingVar.subcloneId);
         }
 
@@ -1241,8 +1241,8 @@ export default {
 
 <style lang="sass">
 .nav-card
-  overflow-y: scroll
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
+  overflow-y: scroll
 
 .blur-content
   filter: blur(1px) !important

@@ -69,9 +69,9 @@ export default function TidyTreeD3(d3) {
         .attr("id", d => 'node_' + d.data.name)
         .attr("class", d => d.data.name === NORMAL ? "normal_node" : "subclone_node")
         .attr("fill", d => colorMap.get(d.data.name))
-        .style("stroke", d => d.data.name === NORMAL ? '#555' : '')
-        .style("stroke-width", d => d.data.name === NORMAL ? '1.5' : '')
-        .style("stroke-opacity", d => d.data.name === NORMAL ? '0.4' : '')
+        .style("stroke", '#555')
+        .style("stroke-width", '1.5')
+        .style("stroke-opacity", '0.4')
         .attr("r", 30);
 
     node.append("text")
@@ -110,9 +110,13 @@ export default function TidyTreeD3(d3) {
     if (subcloneId) {
       d3.select('#node_' + subcloneId)
           .style('stroke', 'rgb(53, 134, 192)')
-          .style('stroke-width', '5');
+          .style("stroke-opacity", '0.5')
+          .style('stroke-width', '6');
     } else {
-      d3.selectAll('.subclone_node').style('stroke', 'transparent');
+      d3.selectAll('.subclone_node')
+          .style("stroke", '#555')
+          .style("stroke-width", '1.5')
+          .style("stroke-opacity", '0.4');
     }
   };
 

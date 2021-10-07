@@ -6,7 +6,10 @@
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
         padding: 0
         background-color: transparent
-        height: 1440px
+
+    .ranked-sub-card
+      overflow-y: scroll
+      background-color: transparent !important
 
     .variant-text
         font-size: 15px !important
@@ -33,53 +36,55 @@
         <v-card-subtitle style="font-style: italic" class="mt-2 pb-1">
             The following loci contain somatic variants
         </v-card-subtitle>
-        <v-container fluid grid-list-md style="overflow-y: scroll !important">
-            <v-row justify="center">
-                <v-expansion-panels class="mx-1" style="background-color: transparent !important"
-                        inset
-                        v-if="rankedGeneList">
-                    <v-expansion-panel style="background-color: transparent"
-                            v-for="(geneObj,i) in rankedGeneList"
-                            :key="'gene-' + i">
-                        <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#965757' : 'transparent'}">
-                            <v-row>
-                                <template class="d-inline">
-                                    <v-icon v-if="getHighCount(geneObj)>0" color="highColor">bookmark</v-icon>
-                                    <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
-                                    <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
-                                    <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
-                                    <v-icon v-if="getCnvCount(geneObj)>0" color="brightPrimary">bookmark_border</v-icon>
-                                  <v-avatar style="margin-top: 2px; margin-left: 5px"
-                                              size="22"
-                                              color="secondary">
+        <v-card-text>
+          <v-card class="ranked-sub-card">
+            <v-container fluid grid-list-md>
+              <v-row justify="center">
+                <v-expansion-panels class="mx-1" style="background-color: transparent !important; overflow-y: scroll"
+                                    inset
+                                    v-if="rankedGeneList">
+                  <v-expansion-panel style="background-color: transparent"
+                                     v-for="(geneObj,i) in rankedGeneList"
+                                     :key="'gene-' + i">
+                    <v-expansion-panel-header v-bind:style="{ 'background-color': isSelectedGene(geneObj) ? '#965757' : 'transparent'}">
+                      <v-row>
+                        <template class="d-inline">
+                          <v-icon v-if="getHighCount(geneObj)>0" color="highColor">bookmark</v-icon>
+                          <v-icon v-if="getModerCount(geneObj)>0" color="moderColor">bookmark</v-icon>
+                          <v-icon v-if="getLowCount(geneObj)>0" color="lowColor">bookmark</v-icon>
+                          <v-icon v-if="getModifCount(geneObj)>0" color="modifColor">bookmark</v-icon>
+                          <v-icon v-if="getCnvCount(geneObj)>0" color="brightPrimary">bookmark_border</v-icon>
+                          <v-avatar style="margin-top: 2px; margin-left: 5px"
+                                    size="22"
+                                    color="secondary">
                                         <span style="color: white; font-family: Quicksand; font-size: 15px">
                                             {{getTotalVarCount(geneObj)}}
                                         </span>
-                                    </v-avatar>
-<!--                                    <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>-->
-                                  <v-chip v-if="getCnvCount(geneObj)>0" small light color="brightPrimary" style="margin-top: 2px; margin-left: 5px">CNV</v-chip>
-                                  <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
-                                        {{ getGeneText(geneObj) }}
-                                    </div>
-                                    <v-btn small
-                                           outlined
-                                           color="brightPrimary"
-                                           v-show="!isSelectedGene(geneObj)"
-                                           @click="loadGene(geneObj)"
-                                           style="padding-left: 3px; padding-right: 3px; margin-left: 5px">
-                                        Load
-                                        <v-icon color="brightPrimary">arrow_right_alt</v-icon>
-                                    </v-btn>
-                                </template>
-                            </v-row>
-                        </v-expansion-panel-header>
-                        <v-expansion-panel-content style="background-color: transparent !important;">
-                            <v-list style="background-color: transparent" dense>
-                                <v-list-item-group v-model="selectedVarIdx">
-                                    <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
-                                            <v-list-item-content>
-                                                <v-row style="padding-bottom: 2px" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">
-                                                    <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
+                          </v-avatar>
+                          <!--                                    <v-avatar style="margin-top: 2px; margin-left: 5px; font-size: 10px" color="brightPrimary" size="22" v-if="geneObj.hasCnv">CNV</v-avatar>-->
+                          <v-chip v-if="getCnvCount(geneObj)>0" small light color="brightPrimary" style="margin-top: 2px; margin-left: 5px">CNV</v-chip>
+                          <div style="padding-left: 10px; padding-top: 5px; padding-right: 5px; font-size: 17px">
+                            {{ getGeneText(geneObj) }}
+                          </div>
+                          <v-btn small
+                                 outlined
+                                 color="brightPrimary"
+                                 v-show="!isSelectedGene(geneObj)"
+                                 @click="loadGene(geneObj)"
+                                 style="padding-left: 3px; padding-right: 3px; margin-left: 5px">
+                            Load
+                            <v-icon color="brightPrimary">arrow_right_alt</v-icon>
+                          </v-btn>
+                        </template>
+                      </v-row>
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content style="background-color: transparent !important;">
+                      <v-list style="background-color: transparent" dense>
+                        <v-list-item-group v-model="selectedVarIdx">
+                          <v-list-item v-for="(feat,i) in geneObj.somaticVariantList" :key="'var-' + i">
+                            <v-list-item-content>
+                              <v-row style="padding-bottom: 2px" @mouseover="onVariantHover(geneObj, feat)" @mouseleave="onVariantHoverExit">
+                                <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
                                                     <span class="d-inline">
                                                        <svg v-if="feat.type === 'mnp' || feat.type === 'snp'" class="impact-badge" height="14" width="12">
                                                          <g transform="translate(1,3)" class="filter-symbol" :class="getImpactColor(feat)">
@@ -105,16 +110,16 @@
                                                          </g>
                                                        </svg>
                                                      </span>
-                                                        <v-list-item-title class="variant-text" v-text="getVarText(feat)" @click="onVariantSelected(feat)"></v-list-item-title>
-                                                    </v-col>
-                                                </v-row>
-                                            </v-list-item-content>
-                                    </v-list-item>
-                                    <v-list-item v-for="(cnv, i) in geneObj.somaticCnvList" :key="'cnv-' + i">
-                                      <v-list-item-content>
-                                        <v-list-item-content>
-                                          <v-row style="padding-bottom: 2px" @mouseover="onCnvHover(geneObj, cnv)" @mouseleave="onCnvHoverExit">
-                                            <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
+                                  <v-list-item-title class="variant-text" v-text="getVarText(feat)" @click="onVariantSelected(feat)"></v-list-item-title>
+                                </v-col>
+                              </v-row>
+                            </v-list-item-content>
+                          </v-list-item>
+                          <v-list-item v-for="(cnv, i) in geneObj.somaticCnvList" :key="'cnv-' + i">
+                            <v-list-item-content>
+                              <v-list-item-content>
+                                <v-row style="padding-bottom: 2px" @mouseover="onCnvHover(geneObj, cnv)" @mouseleave="onCnvHoverExit">
+                                  <v-col xs12 style="padding-top: 0; padding-bottom: 0; white-space: nowrap; text-overflow: ellipsis">
                                                     <span class="d-inline">
                                                        <svg class="impact-badge" height="12" width="10">
                                                          <g transform="translate(4,6)" class="filter-symbol" style="stroke: #cf7676 !important; fill: #cf7676 !important;">
@@ -123,22 +128,24 @@
                                                          </g>
                                                        </svg>
                                                      </span>
-                                              <v-list-item-title class="variant-text" v-text="getCnvText(cnv)" @click="onCnvSelected(cnv)"></v-list-item-title>
-                                            </v-col>
-                                          </v-row>
-                                        </v-list-item-content>
-                                      </v-list-item-content>
-                                    </v-list-item>
-                                </v-list-item-group>
-                            </v-list>
-                        </v-expansion-panel-content>
-                    </v-expansion-panel>
+                                    <v-list-item-title class="variant-text" v-text="getCnvText(cnv)" @click="onCnvSelected(cnv)"></v-list-item-title>
+                                  </v-col>
+                                </v-row>
+                              </v-list-item-content>
+                            </v-list-item-content>
+                          </v-list-item>
+                        </v-list-item-group>
+                      </v-list>
+                    </v-expansion-panel-content>
+                  </v-expansion-panel>
                 </v-expansion-panels>
-              <v-chip v-if="noVarsFound" color="red">
-                No somatic variants found - enter genes manually above
-              </v-chip>
-            </v-row>
-        </v-container>
+                <v-chip v-if="noVarsFound" color="red">
+                  No somatic variants found - enter genes manually above
+                </v-chip>
+              </v-row>
+            </v-container>
+          </v-card>
+        </v-card-text>
     </v-card>
 </template>
 

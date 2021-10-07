@@ -35,7 +35,7 @@
   <v-container>
     <v-row no-gutters>
       <v-col cols="12" sm="12" xl="12" class="bar-chart-label" style="margin-bottom: -30px">
-        Clonal Prevalence Over Time
+        Clonal Prevalence
       </v-col>
       <v-col v-show="!showLoader"
              cols="12" sm="12"

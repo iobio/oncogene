@@ -35,7 +35,7 @@
   <v-container>
     <v-row no-gutters>
       <v-col cols="12" sm="12" xl="12" class="bar-chart-label">
-        Clonal Evolution Tree
+        Clonal Evolution
       </v-col>
       <v-col v-show="!showLoader"
              cols="12" sm="12"

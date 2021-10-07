@@ -223,155 +223,167 @@
 
 <template>
   <v-card class="px-0 mx-1 my-1" outlined>
-    <div id="getStartedBlock">
-      <span class="getStartedText">Click on a variant for details</span>
-    </div>
-    <v-container class="summary-card">
-      <v-row no-gutters flat style="font-family: Quicksand">
-        <v-col cols="12" style="font-size: 22px">
-          Variant Details
-        </v-col>
-      </v-row>
-      <v-container fluid grid-list-md style="overflow-y: scroll !important;">
-        <v-row wrap>
-          <v-container class="summary-viz">
-            <v-row dense>
-              <v-col md="3" xl="2" class="summary-field-label">Gene:</v-col>
-              <v-col md="9" xl="4" class="summary-field-value">
-                <span>{{ geneName }}</span>
+    <v-expansion-panels v-model="openState" style="width: 100%" multiple>
+      <v-expansion-panel class="app-card" id="variant-card" :key="0">
+        <v-expansion-panel-header class="pt-2 pb-1 pl-2 pr-2" style="min-height: 50px">
+          <v-container class="summary-card">
+            <v-row no-gutters flat style="font-family: Quicksand">
+              <v-col cols="12" style="font-size: 22px">
+                Variant Details
               </v-col>
-              <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
-              <v-col md=9 xl="4" class="summary-field-value">
+            </v-row>
+          </v-container>
+        </v-expansion-panel-header>
+        <v-expansion-panel-content :value="openState">
+          <v-container class="summary-card" style="padding-top: 0">
+            <div id="getStartedBlock">
+              <span class="getStartedText">Click on a variant for details</span>
+            </div>
+            <v-container fluid grid-list-md style="overflow-y: scroll !important; padding-top: 0">
+              <v-row wrap>
+                <v-container class="summary-viz">
+                  <v-row dense>
+                    <v-col md="3" xl="2" class="summary-field-label">Gene:</v-col>
+                    <v-col md="9" xl="4" class="summary-field-value">
+                      <span>{{ geneName }}</span>
+                    </v-col>
+                    <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
+                    <v-col md=9 xl="4" class="summary-field-value">
                 <span v-if="variantSelected">
                     {{ selectedTranscript.transcript_id }}
                 </span>
-              </v-col>
-            </v-row>
-            <v-row dense>
-              <v-col md="3" xl="2" class="summary-field-label">Position:</v-col>
-              <v-col md="9" xl="10" class="summary-field-value">
-                <span>{{ selectedVariantLocation }}</span>
-              </v-col>
-            </v-row>
+                    </v-col>
+                  </v-row>
+                  <v-row dense>
+                    <v-col md="3" xl="2" class="summary-field-label">Position:</v-col>
+                    <v-col md="9" xl="10" class="summary-field-value">
+                      <span>{{ selectedVariantLocation }}</span>
+                    </v-col>
+                  </v-row>
+                </v-container>
+                <feature-viz id="loaded-feature-viz" class="summary-viz"
+                             ref="summaryFeatureViz"
+                             :effect="effect"
+                             :impactText="impactText"
+                             :impactColor="impactColor"
+                             :type="variantType"
+                             :refAlt="variantRefAlt"
+                             :aaText="variantAaChange"
+                             :clinVarText="clinVarText"
+                             :clinVarColor="clinVarColor"
+                             :cosmicText="cosmicText"
+                             :revelText="revelText"
+                             :somaticText="somaticText"
+                             :variantSelected="variantSelected">
+                </feature-viz>
+                <allele-frequency-viz id="loaded-freq-viz" class="summary-viz" style="padding-top: 10px"
+                                      ref="summaryFrequencyViz"
+                                      :sampleIds="sampleIds"
+                                      :selectedSamples="selectedSamples"
+                                      :selectedVariant="variant"
+                                      :sampleMap="sampleReadsMap"
+                                      :d3="d3">
+                </allele-frequency-viz>
+                <v-container v-if="hasCoverageData">
+                  <v-row no-gutters class="summary-viz">
+                    <v-col sm="7" class="field-label-header">
+                      Raw Read Counts
+                      <v-dialog v-model="rawBamDialog" persistent max-width="500px">
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-btn v-if="hasAtacSeq || hasRnaSeq"
+                                 x-small
+                                 text
+                                 fab
+                                 color="transparent"
+                                 v-bind="attrs"
+                                 v-on="on">
+                            <v-icon small color="secondary" class="pb-1">
+                              info_outline
+                            </v-icon>
+                          </v-btn>
+                        </template>
+                        <v-card id="raw-bam-dialog">
+                          <v-card-title class="raw-bam-headline">
+                            <span>Raw Read Counts</span>
+                          </v-card-title>
+                          <v-card-text class="pt-3">
+                            <div>
+                              Raw counts are sourced from the provided bam files to populate the displayed
+                              bar charts for RNA-Seq. The counts covering a specific location may differ slightly from
+                              those in 'Alternate Allele Frequencies', as they are filtered based on mapping quality
+                              (MAPQ).
+                              Advanced users may change the filtering criteria below, and only reads with MAPQ values
+                              greater
+                              than or equal to the provided number will be included in the bar chart counts.
+                            </div>
+                            <v-container>
+                              <v-row>
+                                <v-col cols="4"></v-col>
+                                <v-col cols="4">
+                                  <v-text-field class="quality-input"
+                                                v-model="qualityCutoff"
+                                                dense
+                                                single-line
+                                                :rules="[rules.numericRule]"
+                                                persistent-hint
+                                  ></v-text-field>
+                                </v-col>
+                                <v-col cols="4"></v-col>
+                              </v-row>
+                            </v-container>
+                          </v-card-text>
+                          <v-card-actions class="px-3">
+                            <v-spacer></v-spacer>
+                            <v-btn @click="rawBamDialog = false">Close</v-btn>
+                            <v-btn :disabled="!validQualityCutoff" color="secondary" @click="updateBamReadQuality">Save
+                            </v-btn>
+                          </v-card-actions>
+                        </v-card>
+                      </v-dialog>
+                    </v-col>
+                    <v-col sm="3"></v-col>
+                    <v-col sm="2" style="float: right">
+                      <v-tooltip bottom>
+                        <template v-slot:activator="{ on, attrs }">
+                          <v-btn v-show="variantSelected"
+                                 fab
+                                 dark
+                                 small
+                                 elevation="3"
+                                 color="secondary"
+                                 class="mx-2"
+                                 v-bind="attrs"
+                                 v-on="on"
+                                 @click="onIgvClick">
+                            <v-icon>clear_all</v-icon>
+                          </v-btn>
+                        </template>
+                        <span>Display IGV Pileup</span>
+                      </v-tooltip>
+                    </v-col>
+                  </v-row>
+                </v-container>
+                <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz"
+                                 style="padding-top: 10px"
+                                 ref="rnaSeqBarFeatureViz"
+                                 :counts="rnaSeqCounts"
+                                 :bamType="'rnaSeq'"
+                                 :d3="d3">
+                </bar-feature-viz>
+                <!--                    <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz"-->
+                <!--                                     style="padding-top: 10px"-->
+                <!--                                     ref="atacSeqBarFeatureViz"-->
+                <!--                                     :counts="atacSeqCounts"-->
+                <!--                                     :selectedVariant="variant"-->
+                <!--                                     :bamType="'atacSeq'"-->
+                <!--                                     :d3="d3">-->
+                <!--                    </bar-feature-viz>-->
+              </v-row>
+            </v-container>
           </v-container>
-          <feature-viz id="loaded-feature-viz" class="summary-viz"
-                       ref="summaryFeatureViz"
-                       :effect="effect"
-                       :impactText="impactText"
-                       :impactColor="impactColor"
-                       :type="variantType"
-                       :refAlt="variantRefAlt"
-                       :aaText="variantAaChange"
-                       :clinVarText="clinVarText"
-                       :clinVarColor="clinVarColor"
-                       :cosmicText="cosmicText"
-                       :revelText="revelText"
-                       :somaticText="somaticText"
-                       :variantSelected="variantSelected">
-          </feature-viz>
-          <allele-frequency-viz id="loaded-freq-viz" class="summary-viz" style="padding-top: 10px"
-                                ref="summaryFrequencyViz"
-                                :sampleIds="sampleIds"
-                                :selectedSamples="selectedSamples"
-                                :selectedVariant="variant"
-                                :sampleMap="sampleReadsMap"
-                                :d3="d3">
-          </allele-frequency-viz>
-          <v-container v-if="hasCoverageData">
-            <v-row no-gutters class="summary-viz">
-              <v-col sm="7" class="field-label-header">
-                Raw Read Counts
-                <v-dialog v-model="rawBamDialog" persistent max-width="500px">
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn v-if="hasAtacSeq || hasRnaSeq"
-                           x-small
-                           text
-                           fab
-                           color="transparent"
-                           v-bind="attrs"
-                           v-on="on">
-                      <v-icon small color="secondary" class="pb-1">
-                        info_outline
-                      </v-icon>
-                    </v-btn>
-                  </template>
-                  <v-card id="raw-bam-dialog">
-                    <v-card-title class="raw-bam-headline">
-                      <span>Raw Read Counts</span>
-                    </v-card-title>
-                    <v-card-text class="pt-3">
-                      <div>
-                        Raw counts are sourced from the provided bam files to populate the displayed
-                        bar charts for RNA-Seq. The counts covering a specific location may differ slightly from
-                        those in 'Alternate Allele Frequencies', as they are filtered based on mapping quality (MAPQ).
-                        Advanced users may change the filtering criteria below, and only reads with MAPQ values greater
-                        than or equal to the provided number will be included in the bar chart counts.
-                      </div>
-                      <v-container>
-                        <v-row>
-                          <v-col cols="4"></v-col>
-                          <v-col cols="4">
-                            <v-text-field class="quality-input"
-                                          v-model="qualityCutoff"
-                                          dense
-                                          single-line
-                                          :rules="[rules.numericRule]"
-                                          persistent-hint
-                            ></v-text-field>
-                          </v-col>
-                          <v-col cols="4"></v-col>
-                        </v-row>
-                      </v-container>
-                    </v-card-text>
-                    <v-card-actions class="px-3">
-                      <v-spacer></v-spacer>
-                      <v-btn @click="rawBamDialog = false">Close</v-btn>
-                      <v-btn :disabled="!validQualityCutoff" color="secondary" @click="updateBamReadQuality">Save
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-dialog>
-              </v-col>
-              <v-col sm="3"></v-col>
-              <v-col sm="2" style="float: right">
-                <v-tooltip bottom>
-                  <template v-slot:activator="{ on, attrs }">
-                    <v-btn v-show="variantSelected"
-                           fab
-                           dark
-                           small
-                           elevation="3"
-                           color="secondary"
-                           class="mx-2"
-                           v-bind="attrs"
-                           v-on="on"
-                           @click="onIgvClick">
-                      <v-icon>clear_all</v-icon>
-                    </v-btn>
-                  </template>
-                  <span>Display IGV Pileup</span>
-                </v-tooltip>
-              </v-col>
-            </v-row>
-          </v-container>
-          <bar-feature-viz v-if="hasRnaSeq" id="rnaseq-bar-feature-viz" class="summary-viz"
-                           style="padding-top: 10px"
-                           ref="rnaSeqBarFeatureViz"
-                           :counts="rnaSeqCounts"
-                           :bamType="'rnaSeq'"
-                           :d3="d3">
-          </bar-feature-viz>
-          <!--                    <bar-feature-viz v-if="hasAtacSeq" id="atacseq-bar-feature-viz" class="summary-viz"-->
-          <!--                                     style="padding-top: 10px"-->
-          <!--                                     ref="atacSeqBarFeatureViz"-->
-          <!--                                     :counts="atacSeqCounts"-->
-          <!--                                     :selectedVariant="variant"-->
-          <!--                                     :bamType="'atacSeq'"-->
-          <!--                                     :d3="d3">-->
-          <!--                    </bar-feature-viz>-->
-        </v-row>
-      </v-container>
-    </v-container>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </v-expansion-panels>
   </v-card>
 </template>
 
@@ -426,7 +438,8 @@ export default {
       rules: {
         numericRule: value => (!isNaN(value)) && parseInt(value) >= 0 || 'Must be a positive integer',
       },
-      qualityCutoff: 10
+      qualityCutoff: 10,
+      openState: [0]
     }
   },
   watch: {
