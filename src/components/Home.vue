@@ -1190,8 +1190,13 @@ export default {
 
 <style lang="sass">
 .nav-card
+<<<<<<< Updated upstream
   overflow-y: scroll
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
+=======
+  background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
+  overflow-y: hidden
+>>>>>>> Stashed changes
 
 .blur-content
   filter: blur(1px) !important

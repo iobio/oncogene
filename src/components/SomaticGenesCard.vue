@@ -7,6 +7,13 @@
         padding: 0
         background-color: transparent
 
+<<<<<<< Updated upstream
+=======
+    .ranked-sub-card
+      overflow-y: scroll !important
+      background-color: transparent !important
+
+>>>>>>> Stashed changes
     .variant-text
         font-size: 15px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important
