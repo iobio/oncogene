@@ -3,7 +3,8 @@ import {Client} from 'iobio-api-client';
 export default class EndpointCmd {
 
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
-        this.DEV_MODE = true;
+        this.DEV_MODE = false;
+        this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
         this.genomeBuildHelper = genomeBuildHelper;
@@ -13,7 +14,9 @@ export default class EndpointCmd {
         if (backendUrl == null) {
             backendUrl = 'https://backend.iobio.io';
         }
-        if (this.DEV_MODE) {
+        if (this.MOSAIC_MODE) {
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
+        } else if (this.DEV_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9002';
         }
         this.api = new Client(backendUrl);

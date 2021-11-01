@@ -2,6 +2,7 @@
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
 import CmmlUrls from '../data/cmml_urls.json'
+import SubcloneModel from './SubcloneModel.js';
 
 /* One per patient - contains sample models for tumor and normal samples. */
 class CohortModel {
@@ -32,7 +33,7 @@ class CohortModel {
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
-        this.cosmicVariantIdHash = {};        // Contains the multiple genes cosmic IDs
+        this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
 
         this.mode = 'time';                     // Indicates time-series mode
@@ -56,6 +57,9 @@ class CohortModel {
         this.onlySomaticCalls = false;
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
+        this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
+        this.hasSubcloneAnno = false;
+        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from VEP annotations b/c somaticOnlyMode does not take in gene list
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -425,8 +429,9 @@ class CohortModel {
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
-            self.geneModel.promiseCopyPasteGenes(userGeneList, null, {replace: true, warnOnDup: false})
-                .then(() => {
+            let geneP = self.onlySomaticCalls ? Promise.resolve() :
+                self.geneModel.promiseCopyPasteGenes(userGeneList, null, {replace: true, warnOnDup: false});
+            geneP.then(() => {
                     let samplePromises = [];
                     modelInfos.forEach(modelInfo => {
                         samplePromises.push(self.promiseAddSample(modelInfo, modelInfo.order));
@@ -461,6 +466,11 @@ class CohortModel {
                 reject('Problem copying and pasting genes in.');
             })
         })
+    }
+
+    initSubclones(subcloneStr) {
+        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples);
+        this.hasSubcloneAnno = true;
     }
 
     assignCategoryOrders() {
@@ -844,31 +854,38 @@ class CohortModel {
             }
             Promise.all(promises)
                 .then(() => {
-                    self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap)
-                        .then(groupObj => {
-                            self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-                                .then(() => {
-                                    let cosmicPs = [];
-                                    groupObj.fullGeneObjs.forEach(geneObj => {
-                                        cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-                                    });
-                                    Promise.all(cosmicPs)
-                                        .then(() => {
-                                            self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
-                                                .then((rankObj) => {
-                                                    resolve(rankObj);
-                                                }).catch(err => {
-                                                reject('Fatal error scoring and ranking somatic genes: ' + err);
-                                            })
+                    let geneP = self.onlySomaticCalls ?
+                        self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {replace: true, warnOnDup: false})
+                        : Promise.resolve();
+                    geneP.then(() => {
+                        self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap)
+                            .then(groupObj => {
+                                self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
+                                    .then(() => {
+                                        let cosmicPs = [];
+                                        groupObj.fullGeneObjs.forEach(geneObj => {
+                                            cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
                                         });
-                                }).catch(err => {
+                                        Promise.all(cosmicPs)
+                                            .then(() => {
+                                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                                    .then((rankObj) => {
+                                                        resolve(rankObj);
+                                                    }).catch(err => {
+                                                    reject('Fatal error scoring and ranking somatic genes: ' + err);
+                                                })
+                                            });
+                                    }).catch(err => {
                                     reject('Problem getting cosmic variants for global somatic regions: ' + err);
-                            })
-                        }).catch(error => {
+                                })
+                            }).catch(error => {
                             console.log('Something went wrong grouping and assigning somatic variants ' + error);
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
-                })
+                    }).catch(err => {
+                        console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
+                    })
+                });
         });
     }
 
@@ -1132,24 +1149,72 @@ class CohortModel {
             self.getCanonicalModels().forEach(model => {
                 self.selectedSamples.push(model.selectedSample);
             });
-            const regions = self.geneModel.getFormattedGeneRegions();
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.geneModel.geneObjects)
+            let regions = [];
+            if (!self.onlySomaticCalls) {
+                regions = self.geneModel.getFormattedGeneRegions();
+            }
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
                 .then((sampleMap) => {
+                    // Always populate unqiue variant dictionary
+                    let allVariants = self.getAllUniqVars(sampleMap);
+
+                    let subclonesExist = false;
+
+                    // Pull subclone info out of return object
+                    if (sampleMap['subcloneStr']) {
+                        subclonesExist = true;
+                        self.initSubclones(sampleMap['subcloneStr']);
+                        delete(sampleMap['subcloneStr']);
+
+                        // Organize subclone variants
+                        if (self.onlySomaticCalls) {
+                            // Pull out somatic genes from return object
+                            self.composedSomaticGenes = sampleMap['somaticGenes'];
+                            delete(sampleMap['somaticGenes']);
+
+                            self.subcloneModel.populateSubcloneVariants(allVariants);
+
+                        } else {
+                            console.log('Subclone visualization not supported for combined inherited/somatic vcfs');
+                            // NOTE: we would need a new backend service to pull back just variant IDs filtered by AFCLU
+                        }
+                    }
+
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in sampleMap) {
                         self.filterModel.markFilteredVariants(sampleMap[objKey].features, self.onlySomaticCalls);
                     }
-                    const globalMode = true;
-                    self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
-                        .then((somaticVarMap) => {
-                            resolve(somaticVarMap);
-                        }).catch(error => {
-                        reject('Something went wrong annotating inheritance for global somatics:' + error);
-                    });
+                    let subcloneP = subclonesExist ? self.subcloneModel.promiseParseSubcloneTrees() : Promise.resolve();
+                    subcloneP.then(() => {
+                        const globalMode = true;
+                        self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
+                            .then((somaticVarMap) => {
+                                resolve(somaticVarMap);
+                            }).catch(error => {
+                            reject('Something went wrong annotating inheritance for global somatics:' + error);
+                            });
+                    }).catch(err => {
+                        console.log('Something went wrong parsing subclones: ' + err);
+                        reject(err);
+                    })
                 }).catch((error) => {
                 reject('Problem pulling back somatic variants: ' + error);
             });
         });
+    }
+
+    /* Returns a list of all unique variants */
+    getAllUniqVars(sampleMap) {
+        const self = this;
+        self.allUniqueFeaturesObj = {};
+        Object.values(sampleMap).forEach(varObj => {
+            if (varObj.features) {
+                varObj.features.forEach(variant => {
+                    self.allUniqueFeaturesObj[variant.id] = variant;
+                })
+            }
+        });
+        return Object.values(self.allUniqueFeaturesObj);
     }
 
     /* Appends the readPtCov, rnaSeqPtCov, or atacSeqPtCov data to the selected variant within each sample model's variant hash.

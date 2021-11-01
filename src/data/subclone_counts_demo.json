@@ -7402,5 +7402,352 @@
     "Units": "300000",
     "Revenue": 5300000,
     "Revenueinflationadjusted": 5300000
+<<<<<<< HEAD
+=======
+  },
+  // Primate only tax ID
+  {
+    "status": "ok",
+    "message": null,
+    "data": [
+      {
+        "species_statistics": {
+          "genes_count": 21416,
+          "in_clusters_count": 156629,
+          "mapping_type": "C"
+        },
+        "organism": {
+          "param": "species in Primates",
+          "type": "taxonomy",
+          "description": "human",
+          "id": "9606_0",
+          "name": "Homo sapiens"
+        },
+        "genes": [
+          {
+            "uniprot": {
+              "type": "uniprot",
+              "id": "P51587",
+              "name": "Breast cancer type 2 susceptibility protein"
+            },
+            "aas": "3418",
+            "exons": "43",
+            "more_info": true,
+            "interpro": [
+              {
+                "param": "1..1823",
+                "type": "interpro",
+                "id": "IPR015525",
+                "description": "Breast cancer type 2 susceptibility protein"
+              },
+              {
+                "param": "1002..1035",
+                "type": "interpro",
+                "id": "IPR002093",
+                "description": "BRCA2 repeat"
+              },
+              {
+                "param": "2479..2668",
+                "type": "interpro",
+                "id": "IPR036315",
+                "description": "BRCA2 helical domain superfamily"
+              },
+              {
+                "param": "2482..2667",
+                "type": "interpro",
+                "id": "IPR015252",
+                "description": "Breast cancer type 2 susceptibility protein, helical domain"
+              },
+              {
+                "param": "2669..2801",
+                "type": "interpro",
+                "id": "IPR012340",
+                "description": "Nucleic acid-binding, OB-fold"
+              },
+              {
+                "param": "2670..2794",
+                "type": "interpro",
+                "id": "IPR015187",
+                "description": "BRCA2, OB1"
+              },
+              {
+                "param": "2831..2872",
+                "type": "interpro",
+                "id": "IPR015205",
+                "description": "Tower domain"
+              },
+              {
+                "param": "3052..3167",
+                "type": "interpro",
+                "id": "IPR015188",
+                "description": "BRCA2, OB3"
+              }
+            ],
+            "how_much_more_info": 4,
+            "gene_id": {
+              "param": "9606_0:003557",
+              "id": "BRCA2"
+            },
+            "description": "Breast cancer type 2 susceptibility protein"
+          }
+        ]
+      }
+    ],
+    "url": "https://www.orthodb.org//orthologs?id=331at9443&species=7955,10090,9606"
+  },
+  // Eukaryota tax ID
+  {
+    "status": "ok",
+    "message": null,
+    "data": [
+      {
+        "species_statistics": {
+          "genes_count": 22003,
+          "in_clusters_count": 136537,
+          "mapping_type": "C"
+        },
+        "organism": {
+          "param": "species in Rodents",
+          "type": "taxonomy",
+          "description": "mouse",
+          "id": "10090_0",
+          "name": "Mus musculus"
+        },
+        "genes": [
+          {
+            "uniprot": {
+              "type": "uniprot",
+              "id": "P97929",
+              "name": "Breast cancer type 2 susceptibility protein homolog"
+            },
+            "aas": "3329",
+            "exons": "52",
+            "more_info": true,
+            "interpro": [
+              {
+                "param": "1..3280",
+                "type": "interpro",
+                "id": "IPR015525",
+                "description": "Breast cancer type 2 susceptibility protein"
+              },
+              {
+                "param": "981..1014",
+                "type": "interpro",
+                "id": "IPR002093",
+                "description": "BRCA2 repeat"
+              },
+              {
+                "param": "2400..2589",
+                "type": "interpro",
+                "id": "IPR036315",
+                "description": "BRCA2 helical domain superfamily"
+              },
+              {
+                "param": "2403..2588",
+                "type": "interpro",
+                "id": "IPR015252",
+                "description": "Breast cancer type 2 susceptibility protein, helical domain"
+              },
+              {
+                "param": "2590..2721",
+                "type": "interpro",
+                "id": "IPR012340",
+                "description": "Nucleic acid-binding, OB-fold"
+              },
+              {
+                "param": "2591..2715",
+                "type": "interpro",
+                "id": "IPR015187",
+                "description": "BRCA2, OB1"
+              },
+              {
+                "param": "2752..2793",
+                "type": "interpro",
+                "id": "IPR015205",
+                "description": "Tower domain"
+              },
+              {
+                "param": "2971..3085",
+                "type": "interpro",
+                "id": "IPR015188",
+                "description": "BRCA2, OB3"
+              }
+            ],
+            "how_much_more_info": 3,
+            "gene_id": {
+              "param": "10090_0:00177d",
+              "id": "Brca2"
+            },
+            "description": "Breast cancer type 2 susceptibility protein homolog"
+          }
+        ]
+      },
+      {
+        "species_statistics": {
+          "genes_count": 21416,
+          "in_clusters_count": 156629,
+          "mapping_type": "C"
+        },
+        "organism": {
+          "param": "species in Primates",
+          "type": "taxonomy",
+          "description": "human",
+          "id": "9606_0",
+          "name": "Homo sapiens"
+        },
+        "genes": [
+          {
+            "uniprot": {
+              "type": "uniprot",
+              "id": "P51587",
+              "name": "Breast cancer type 2 susceptibility protein"
+            },
+            "aas": "3418",
+            "exons": "43",
+            "more_info": true,
+            "interpro": [
+              {
+                "param": "1..1823",
+                "type": "interpro",
+                "id": "IPR015525",
+                "description": "Breast cancer type 2 susceptibility protein"
+              },
+              {
+                "param": "1002..1035",
+                "type": "interpro",
+                "id": "IPR002093",
+                "description": "BRCA2 repeat"
+              },
+              {
+                "param": "2479..2668",
+                "type": "interpro",
+                "id": "IPR036315",
+                "description": "BRCA2 helical domain superfamily"
+              },
+              {
+                "param": "2482..2667",
+                "type": "interpro",
+                "id": "IPR015252",
+                "description": "Breast cancer type 2 susceptibility protein, helical domain"
+              },
+              {
+                "param": "2669..2801",
+                "type": "interpro",
+                "id": "IPR012340",
+                "description": "Nucleic acid-binding, OB-fold"
+              },
+              {
+                "param": "2670..2794",
+                "type": "interpro",
+                "id": "IPR015187",
+                "description": "BRCA2, OB1"
+              },
+              {
+                "param": "2831..2872",
+                "type": "interpro",
+                "id": "IPR015205",
+                "description": "Tower domain"
+              },
+              {
+                "param": "3052..3167",
+                "type": "interpro",
+                "id": "IPR015188",
+                "description": "BRCA2, OB3"
+              }
+            ],
+            "how_much_more_info": 4,
+            "gene_id": {
+              "param": "9606_0:003557",
+              "id": "BRCA2"
+            },
+            "description": "Breast cancer type 2 susceptibility protein"
+          }
+        ]
+      },
+      {
+        "species_statistics": {
+          "genes_count": 28407,
+          "in_clusters_count": 53796,
+          "mapping_type": "C"
+        },
+        "organism": {
+          "param": "species in Vertebrates",
+          "type": "taxonomy",
+          "description": "leopard danio;zebra danio;zebra fish",
+          "id": "7955_0",
+          "name": "Danio rerio"
+        },
+        "genes": [
+          {
+            "uniprot": {
+              "type": "uniprot",
+              "id": "F1R8E8",
+              "name": "Breast cancer 2, early onset"
+            },
+            "aas": "2874",
+            "exons": "27",
+            "more_info": true,
+            "interpro": [
+              {
+                "param": "1..323",
+                "type": "interpro",
+                "id": "IPR015525",
+                "description": "Breast cancer type 2 susceptibility protein"
+              },
+              {
+                "param": "894..925",
+                "type": "interpro",
+                "id": "IPR002093",
+                "description": "BRCA2 repeat"
+              },
+              {
+                "param": "2022..2213",
+                "type": "interpro",
+                "id": "IPR036315",
+                "description": "BRCA2 helical domain superfamily"
+              },
+              {
+                "param": "2027..2212",
+                "type": "interpro",
+                "id": "IPR015252",
+                "description": "Breast cancer type 2 susceptibility protein, helical domain"
+              },
+              {
+                "param": "2214..2345",
+                "type": "interpro",
+                "id": "IPR012340",
+                "description": "Nucleic acid-binding, OB-fold"
+              },
+              {
+                "param": "2215..2339",
+                "type": "interpro",
+                "id": "IPR015187",
+                "description": "BRCA2, OB1"
+              },
+              {
+                "param": "2376..2417",
+                "type": "interpro",
+                "id": "IPR015205",
+                "description": "Tower domain"
+              },
+              {
+                "param": "2596..2714",
+                "type": "interpro",
+                "id": "IPR015188",
+                "description": "BRCA2, OB3"
+              }
+            ],
+            "how_much_more_info": 2,
+            "gene_id": {
+              "param": "7955_0:003c5f",
+              "id": "brca2"
+            },
+            "description": "Breast cancer 2, early onset"
+          }
+        ]
+      }
+    ],
+    "url": "https://www.orthodb.org//orthologs?id=257485at2759&species=7955,10090,9606"
+>>>>>>> add_subclone_viz
   }
 ]

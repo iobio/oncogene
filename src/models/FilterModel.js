@@ -912,7 +912,6 @@ class FilterModel {
         const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria);
         const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
         const qualPhrase = '(QUAL' + somaticCriteria[this.QUAL_LOGIC] + somaticCriteria[this.QUAL_CUTOFF] + ')';
-
         return qualPhrase + '&&' + samplePhrase;
     }
 

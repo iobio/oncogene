@@ -695,7 +695,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions) {
+    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions, somaticOnlyMode) {
         const self = this;
         return new Promise((resolve, reject) => {
                 if (!vcfURL) {
@@ -761,7 +761,7 @@ export default function vcfiobio(theGlobalApp) {
                         }
 
                         let vepAf = true;
-                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf);
+                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode);
                         resolve(results);
                     });
 
@@ -776,7 +776,6 @@ export default function vcfiobio(theGlobalApp) {
             }
         );
     };
-
 
     exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, keepHomRef) {
         var me = this;
@@ -1076,6 +1075,11 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
+        } else if (record.indexOf("subclone") > 0) {
+            if (!me.infoFields.SUBCLONES) {
+                me.infoFields.SUBCLONES = [];
+            }
+            me.infoFields.SUBCLONES.push(record);
         }
     }
 
@@ -1542,7 +1546,7 @@ export default function vcfiobio(theGlobalApp) {
         cmd.run();
     };
 
-    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF) {
+    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF, somaticOnlyMode) {
         const me = this;
 
         // Use the sample index to grab the right genotype column from the vcf record
@@ -1563,6 +1567,7 @@ export default function vcfiobio(theGlobalApp) {
 
         // We're always assuming a multi-sample VCF for now
         var allVariants = gtSampleIndices.map(function () { return []; });
+        let somaticGenes = {};
 
         vcfRecs.forEach(function (rec) {
             if (rec.pos && rec.id) {
@@ -1610,11 +1615,14 @@ export default function vcfiobio(theGlobalApp) {
                         end = +rec.pos + len;
                     }
 
-                    // Since we have multiple sites coming back, have to pull out gene object by coords
-                    // Cannot rely on VEP annotation because some genes pull back transcriptional annotations that have DIFF gene symbols (ex: TET2 and TET2-AS1)
-
-                    let geneTransObj = me.getGeneModel().findGeneObjByCoords(me.stripChr(rec.chrom), rec.pos);
-                    let geneObject = geneTransObj.geneObj;
+                    let geneObject = null;
+                    if (!somaticOnlyMode) {
+                        // Since we have multiple sites coming back, have to pull out gene object by coords
+                        // Cannot rely on VEP annotation because some genes pull back transcriptional annotations
+                        // that have DIFF gene symbols (ex: TET2 and TET2-AS1)
+                        let geneTransObj = me.getGeneModel().findGeneObjByCoords(me.stripChr(rec.chrom), rec.pos);
+                        geneObject = geneTransObj.geneObj;
+                    }
 
                     // For oncogene, we want to allow all valid transcripts through
                     let selectedTranscript = null;
@@ -1622,9 +1630,10 @@ export default function vcfiobio(theGlobalApp) {
                     //let selectedTranscript = geneTransObj.transObj;
                     //let selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
 
+                    // If we don't have a gene list for somaticOnlyMode though, have to rely on VEP annotation and take majority
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
-                    const keepHomRefs = true;
-                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
+                    const keepHomRefs = !somaticOnlyMode;
+                    var gtResult = me._parseSomaticGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
 
                     if (gtResult.keep) {
                         var highestImpactSnpeff = me._getHighestImpact(annot.snpEff.allSnpeff, me._cullTranscripts, selectedTranscriptID);
@@ -1708,9 +1717,14 @@ export default function vcfiobio(theGlobalApp) {
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
-                                    // 'sampleModelId': sampleModelId    // TODO: going to have to put this in somehow?
+                                    'subcloneId': annot.nodeId
                                 };
-                                allVariants[i].push(variant);
+                                if (somaticOnlyMode && annot.vep.symbol !== '') {
+                                    allVariants[i].push(variant);
+                                    somaticGenes[annot.vep.symbol] = true;
+                                } else if (!somaticOnlyMode) {
+                                    allVariants[i].push(variant);
+                                }
                             }
                         }
                     }
@@ -1728,6 +1742,12 @@ export default function vcfiobio(theGlobalApp) {
                 'features': allVariants[i],
             };
             results.push(data);
+        }
+        if (me.infoFields.SUBCLONES) {
+            results['subcloneStr'] = me.infoFields.SUBCLONES;
+        }
+        if (somaticOnlyMode) {
+            results['somaticGenes'] = Object.keys(somaticGenes);
         }
         return results;
     };
@@ -1835,7 +1855,7 @@ export default function vcfiobio(theGlobalApp) {
 
                     var clinvarResult = me.parseClinvarInfo(rec.info, clinvarMap);
 
-                    var gtResult = me._parseGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRef);
+                    var gtResult = me._parseSomaticGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRef);
 
                     var clinvarObject = me._formatClinvarCoordinates(rec, alt);
 
@@ -1848,9 +1868,6 @@ export default function vcfiobio(theGlobalApp) {
                         var highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
 
                         for (var i = 0; i < allVariants.length; i++) {
-
-                            // todo: left off here - problem is that normal samples that are just homref are being excluded, when we need the normal variants to also be pulled back
-                            // todo: for local somatic filtering
                             var genotype = gtResult.genotypes[i];
 
                             // Keep the variant if we are just parsing a single sample (parseMultiSample=false)
@@ -2032,6 +2049,7 @@ export default function vcfiobio(theGlobalApp) {
                 vepREVEL: {},
                 sift: {},       // need a special field for filtering purposes
                 symbol: '',     // oncogene-specific, annotate multiple genes at a time
+                symbols: {},    // VEP may provide multiple gene names - keep track of all and take majority
                 polyphen: {},   // need a special field for filtering purposes
                 regulatory: {}, // need a special field for filtering purposes
                 vepRegs: [],
@@ -2044,46 +2062,56 @@ export default function vcfiobio(theGlobalApp) {
 
         annotTokens.forEach(function (annotToken) {
             if (annotToken.indexOf("BGAF_1KG=") === 0) {
-
                 annot.af1000G = annotToken.substring(9, annotToken.length);
-
             } else if (annotToken.indexOf("BGAF_EXAC=") === 0) {
-
                 annot.afExAC = annotToken.substring(10, annotToken.length);
-
             } else if (annotToken.indexOf("RS=") === 0) {
-
                 annot.rs = annotToken.substring(3, annotToken.length);
-
             } else if (annotToken.indexOf("AF=") === 0) {
-
                 // For now, just grab first af
                 //af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), altIdx);
                 annot.af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), 0);
-
             } else if (annotToken.indexOf("TYPE=") === 0) {
-
                 annot.typeAnnotated = me._parseAnnotForAlt(annotToken.substring(5, annotToken.length), altIdx);
-
             } else if (annotToken.indexOf("DP=") === 0) {
-
                 annot.combinedDepth = annotToken.substring(3, annotToken.length);
-
             } else if (annotToken.indexOf("EFF=") === 0) {
-
                 me._parseSnpEffAnnot(annotToken, annot, geneObject, selectedTranscriptID);
-
             } else if (annotToken.indexOf("CSQ") === 0) {
-
                 me._parseVepAnnot(altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF)
-
+                annot.vep.symbol = me._getMajorityGeneSymbol(annot);
             } else if (annotToken.indexOf("AVIA3") === 0) {
                 me._parseGenericAnnot("AVIA3", annotToken, annot);
-
+            } else if (annotToken.indexOf("AFCLU=") === 0) {
+                annot.nodeId = annotToken.substring(6, annotToken.length);
             }
         });
         return annot;
     };
+
+    exports._getMajorityGeneSymbol = function(annot) {
+        let maxCount = 0;
+        let maxSymbol = '';
+        let tieExists = false;
+        if (annot.vep && annot.vep.symbols && Object.keys(annot.vep.symbols).length > 0) {
+            for (let symbol in annot.vep.symbols) {
+                let currCount = annot.vep.symbols[symbol];
+                if (currCount > maxCount) {
+                    maxCount = annot.vep.symbols[symbol];
+                    maxSymbol = symbol;
+                    tieExists = false;
+                } else if (currCount === maxCount) {
+                    tieExists = true;
+                }
+            }
+        } else {
+            console.log('No symbols reported in VEP annotation for provided variant');
+        }
+        if (tieExists) {
+            console.log('Warning: multiple symbols reported equal times for a single variant by VEP: ' + Object.keys(annot.vep.symbols));
+        }
+        return maxSymbol;
+    }
 
     /* To parse the VEP annot, split the CSQ string into its parts.
        Each part represents the annotations for a given transcript.
@@ -2195,6 +2223,7 @@ export default function vcfiobio(theGlobalApp) {
                     // transcripts
                     var validTranscript = false;
 
+                    // We won't have a gene object if we're in somatic only mode though
                     if (geneObject) {
                         geneObject.transcripts.forEach(function (transcript) {
                             if (transcript.transcript_id.indexOf(theTranscriptId) === 0) {
@@ -2232,7 +2261,11 @@ export default function vcfiobio(theGlobalApp) {
 
                         me._appendTranscript(consequencesObject, theConsequences, theTranscriptId);
                         annot.vep.allVep[theImpact] = consequencesObject;
-                        annot.vep.symbol = theSymbol;
+                        if (annot.vep.symbols[theSymbol]) {
+                            annot.vep.symbols[theSymbol] = annot.vep.symbols[theSymbol] + 1;
+                        } else {
+                            annot.vep.symbols[theSymbol] = 1;
+                        }
 
                         var siftObject = annot.vep.allSIFT[siftScore];
                         if (siftObject == null) {
@@ -2254,7 +2287,6 @@ export default function vcfiobio(theGlobalApp) {
                         }
                         me._appendTranscript(revelObject, revelScore, theTranscriptId);
                         annot.vep.allREVEL[revelScore] = revelObject;
-
 
                         if (vepAF) {
                             me._parseVepAfAnnot(VEP_FIELDS_AF_GNOMAD, vepFields, vepTokens, "gnomAD", "gnomAD", annot);
@@ -2468,58 +2500,61 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    /* Parses genotypes for somatic records. Behaves similarly to _parseGenotypes but accounts for multi-allelics or multiple bi-allelics
-     * at a single site. */
-    exports._parseSomaticGenotypes = function (rec, alt, altIdx, sampleIndices, sampleNames) {
-        var me = this;
+    /* Parses genotypes for somatic records. Behaves similarly to _parseGenotypes but has
+       different rules for keeping genotypes. Doesn't assume first sample is proband or
+       sample of interest that determines if we keep variant.
+     */
+    exports._parseSomaticGenotypes = function(rec, alt, altIdx, sampleIndices, sampleNames, keepHomRef) {
+        const me = this;
 
         // The result returned will be an object representing all
         // genotypes for the sample indices provided.
         //
-        //  alt      the alternate for which these genotype(s) apply
+        //  all      the alternate for which these genotype(s) apply
         //  keep     a boolean indicating if any of the sample genotypes
         //           contains this alternate.  For example, if this is a
-        //           multiallelic, if none of the samples contains this
+        //           multiallelic, if non of the samples contains this
         //           alternate, keep will be set to false.
-        //  gtNumber Normally, the gtNumber for an alternate will equal
+        //  gtNumber Normally, the gtNumber for an alterate will equal
         //           1.  For multi-allelics, this number ranges from
         //           1 to the number of alternate alleles.
         //
         //
-        var result = {
-            alt: alt,
-            keep: false,
-            gtNumber: altIdx + 1,
-            genotype: {},
-            genotypes: [],
+        let result = {
+            alt:         alt,
+            keep:        false,
+            gtNumber:    altIdx +1,
+            genotype:    {},
+            genotypes:   [],
             genotypeMap: {}
         };
 
-
         // The results will contain an array of genotype objects for
-        // each sample index provided. The first element in the
-        // array is assumed to be the normal genotype.
-        result.genotypes = sampleIndices.map(function (sampleIndex) {
-            return {sampleIndex: sampleIndex, zygosity: null, phased: null};
+        // each sample index provided.  The first element in the
+        // array is assumed to be the normal (non-tumor) sample.  For example,
+        // if we are parsing the genotypes for a normal/tumor pair,
+        // the first genotype will be for the normal, followed by
+        // a tumor sample.
+        result.genotypes = sampleIndices.map(function(sampleIndex) {
+            return { sampleIndex: sampleIndex, zygosity: null, phased: null};
         });
 
         // The results will also contain a map to obtain
         // the genotype by sample name.  If sample names were not provided,
         // we will use the index as the key to the map.
         result.genotypes.forEach(function (gt) {
-            var key = sampleNames ? sampleNames[gt.sampleIndex] : gt.sampleIndex.toString();
+            let key = sampleNames ? sampleNames[gt.sampleIndex] : gt.sampleIndex.toString();
             result.genotypeMap[key] = gt;
         });
 
         // Determine the format of the genotype fields
-        var gtTokens = {};
-        var idx = 0;
-        if (rec.format && rec.format !== '') {
-            var tokens = rec.format.split(":");
-            tokens.forEach(function (token) {
+        let gtTokens = {};
+        let idx = 0;
+        if (rec.format && rec.format != '') {
+            (rec.format.split(":")).forEach(token => {
                 gtTokens[token] = idx;
                 idx++;
-            })
+            });
         }
 
         //
@@ -2540,95 +2575,91 @@ export default function vcfiobio(theGlobalApp) {
         //    eduGenotype         - The simplified format for showing genotype (e.g. C->T)
         //    eduGenotypeReversed - For reverse strand, show the compliment of the simplified genotype (e.g. A->G)
         //
-        result.genotypes.forEach(function (gt) {
-            var genotype = rec.genotypes.length > gt.sampleIndex ? rec.genotypes[gt.sampleIndex] : null;
 
-            if (genotype == null || genotype === "" || genotype === '.' || genotype.startsWith('.')) {
+        result.genotypes.forEach(gt => {
+            let genotype = rec.genotypes.length > gt.sampleIndex ? rec.genotypes[gt.sampleIndex] : null;
+            if (genotype == null  || genotype == "" || genotype == '.') {
                 gt.zygosity = 'gt_unknown';
-                gt.keep = rec.genotypes.length === 0;
-                gt.absent = rec.genotypes.length === 0;
+                gt.keep     = rec.genotypes.length === 0;
+                gt.absent   = rec.genotypes.length === 0;
             } else {
-                var tokens = genotype.split(":");
-                var gtFieldIndex = gtTokens["GT"];
+                let tokens = genotype.split(":");
+
+                let gtFieldIndex = gtTokens["GT"];
                 gt.gt = tokens[gtFieldIndex];
 
-                var gtDepthIndex = gtTokens["DP"];
+                let gtDepthIndex = gtTokens["DP"];
                 if (gtDepthIndex) {
                     gt.filteredDepth = tokens[gtDepthIndex];
                 } else {
                     gt.filteredDepths = null;
                 }
 
-                var gtAlleleCountIndex = gtTokens["AD"];
-                var gtAltCountIndex = gtTokens["AO"];
+                let gtAlleleCountIndex = gtTokens["AD"];
+                let gtAltCountIndex = gtTokens["AO"];
                 if (gtAlleleCountIndex) {
                     //
                     // GATK allele counts
                     //
-                    var countTokens = tokens[gtAlleleCountIndex].split(",");
-                    if (countTokens.length >= 2) {
-                        var refAlleleCount = countTokens[0];
-                        var altAlleleCounts = countTokens.slice(1).join(",");
+                    let countTokens = tokens[gtAlleleCountIndex].split(",");
+                    let totalAllelicDepth = 0;
 
-                        var totalAllelicDepth = 0;
-                        countTokens.forEach(function (allelicDepth) {
+                    if (countTokens.length >= 2 ) {
+                        let refAlleleCount = countTokens[0];
+                        let altAlleleCounts = countTokens.slice(1).join(",");
+
+                        countTokens.forEach(function(allelicDepth) {
                             if (allelicDepth) {
                                 totalAllelicDepth += +allelicDepth;
                             }
                         });
-
-                        gt.altCount = altAlleleCounts;
-                        gt.refCount = refAlleleCount;
+                        gt.altCount      = altAlleleCounts;
+                        gt.refCount      = refAlleleCount;
                         gt.genotypeDepth = totalAllelicDepth;
                     } else {
-                        gt.altCount = null;
-                        gt.refCount = null;
+                        gt.altCount      = null;
+                        gt.refCount      = null;
                         gt.genotypeDepth = null;
                     }
                 } else if (gtAltCountIndex) {
                     //
                     // Freebayes allele counts
                     //
-                    totalAllelicDepth = 0;
-
                     gt.altCount = tokens[gtAltCountIndex];
 
-                    var altCountTokens = gt.altCount.split(",");
-                    altCountTokens.forEach(function (allelicDepth) {
+                    let altCountTokens = gt.altCount.split(",");
+                    let totalAllelicDepth = 0;
+                    altCountTokens.forEach(function(allelicDepth) {
                         if (allelicDepth) {
                             totalAllelicDepth += +allelicDepth;
                         }
-                    });
+                    })
 
-                    var gtRefCountIndex = gtTokens["RO"];
+                    let gtRefCountIndex = gtTokens["RO"];
                     if (gtRefCountIndex) {
                         gt.refCount = tokens[gtRefCountIndex];
                         totalAllelicDepth += +gt.refCount;
                     } else {
                         gt.refCount = null;
                     }
-
                     gt.genotypeDepth = totalAllelicDepth;
-
-
                 } else {
                     gt.altCount = null;
                     gt.refCount = null;
                 }
 
-                gt.altCount = me._parseMultiAllelic(result.gtNumber - 1, gt.altCount, ",");
-
-                var strandAlleleCountIndex = gtTokens["SAC"]; // GATK
-                var strandRefForwardIndex = gtTokens["SRF"]; // Freebayes
-                var strandRefReverseIndex = gtTokens["SRR"]; // Freebayes
-                var strandAltForwardIndex = gtTokens["SAF"]; // Freebayes
-                var strandAltReverseIndex = gtTokens["SAR"]; // Freebayes
+                gt.altCount = me._parseMultiAllelic(result.gtNumber-1, gt.altCount, ",");
+                let strandAlleleCountIndex = gtTokens["SAC"]; // GATK
+                let strandRefForwardIndex  = gtTokens["SRF"]; // Freebayes
+                let strandRefReverseIndex  = gtTokens["SRR"]; // Freebayes
+                let strandAltForwardIndex  = gtTokens["SAF"]; // Freebayes
+                let strandAltReverseIndex  = gtTokens["SAR"]; // Freebayes
                 if (strandAlleleCountIndex) {
                     //
                     // GATK Strand allele counts, comma separated
                     //
-                    countTokens = tokens[strandAlleleCountIndex].split(",");
-                    if (countTokens.length == 4) {
+                    const countTokens = tokens[strandAlleleCountIndex].split(",");
+                    if (countTokens.length === 4) {
                         gt.refForwardCount = tokens[0];
                         gt.refReverseCount = tokens[1];
                         gt.altForwardCount = tokens[2];
@@ -2639,7 +2670,7 @@ export default function vcfiobio(theGlobalApp) {
                         gt.altForwardCount = null;
                         gt.altReverseCount = null;
                     }
-                } else if (strandRefForwardIndex && strandRefReverseIndex && strandAltForwardIndex && strandAltReverseIndex) {
+                } else if (strandRefForwardIndex && strandRefReverseIndex && strandAltForwardIndex && strandAltReverseIndex ) {
                     //
                     // Freebayes Strand bias counts (SRF, SRR, SAF, SAR)
                     //
@@ -2654,7 +2685,6 @@ export default function vcfiobio(theGlobalApp) {
                     gt.altReverseCount = null;
                 }
 
-
                 // Only keep the alt if we have a genotype that matches.
                 // For example
                 // A->G    0|1 keep
@@ -2662,26 +2692,28 @@ export default function vcfiobio(theGlobalApp) {
                 // A->G,C  0|2 bypass A->G, keep A->C
                 // A->G,C  1|2 keep A->G, keep A->C
                 // unknown .   bypass
-                var delim = null;
+                let delim = null;
 
                 if (gt.gt.indexOf("|") > 0) {
                     delim = "|";
                     gt.phased = true;
-                } else if (gt.gt.indexOf("/") > 0) {
+                } else if (gt.gt.indexOf("/") > 0){
                     delim = "/";
                     gt.phased = false;
+                } else if (gt.gt == ".") {
+                    gt.keep = false;
+                    gt.zygosity = "HOMREF";
                 } else {
                     gt.keep = false;
                     gt.zygosity = "gt_unknown";
                 }
                 if (delim) {
-                    tokens = gt.gt.split(delim);
-                    if (tokens.length == 2) {
+                    let tokens = gt.gt.split(delim);
+                    if (tokens.length === 2) {
                         if (isEduMode && alt.indexOf(",") > 0) {
-                            if ((tokens[0] == 1) && (tokens[1] == 2)) {
+                            if ((tokens[0] == 1 ) && (tokens[1] == 2)) {
                                 gt.keep = true;
-                            }
-                            if (tokens[0] == tokens[1]) {
+                            } if (tokens[0] == tokens[1]) {
                                 gt.keep = true;
                                 let theAltIdx = tokens[0] - 1;
                                 result.alt = alt.split(',')[theAltIdx] + ',' + alt.split(',')[theAltIdx];
@@ -2700,58 +2732,83 @@ export default function vcfiobio(theGlobalApp) {
                                 }
                             }
 
-                        } else if (tokens[0] == result.gtNumber || tokens[1] == result.gtNumber) {
+                        }  else if (tokens[0] == result.gtNumber || tokens[1] == result.gtNumber) {
+                            //  result.gtNumber will be a number > 1 if this is a multi-allelic
+                            //  in this case, we have a genotype that is not 0 and matches
+                            //  the "alt"
+                            //    simple het example:
+                            //      ref    alt   gt
+                            //      A      T     0/1
+                            //    simple hom example:
+                            //      ref    alt   gt
+                            //      A      T     1/1
+                            //    multi-allelic het example:
+                            //      ref    alt   gt
+                            //      A      T,G   1/2  if gt.number is "2", that means we will is het for A->G
+                            //    multi-allelic hom example:
+                            //      ref    alt   gt
+                            //      A      T,G   2/2  if gt.number is "2", that means we will is hom for A->G
                             gt.keep = true;
                             if (tokens[0] == tokens[1]) {
                                 gt.zygosity = "HOM";
                             } else {
                                 gt.zygosity = "HET";
                             }
-                        } else if (tokens[0] == "0" && tokens[1] == "0") {
-                            gt.keep = false;
+                        }
+                        else if (tokens[0] == "0" && tokens[1] == "0" ) {
+                            // Homozygous ref 0/0
+                            gt.keep = !!keepHomRef;
                             gt.zygosity = "HOMREF"
+                        } else if (tokens[0] != result.gtNumber && tokens[1] != result.gtNumber ) {
+                            // Multi-allelic, but this genotype doesn't have the alternate
+                            //    multi-allelic  example:
+                            //      ref    alt   gt
+                            //      A      T,G   0/1  if gt.number is "2", that means this allele is not present
+                            gt.keep = !!keepHomRef;
+                            gt.zygosity = "gt_unknown"
                         }
                     }
 
                     gt.eduGenotype = "";
                     if (isEduMode) {
-                        var alts = alt.split(",");
-                        var gtIdx1 = +tokens[0];
-                        var gtIdx2 = +tokens[1];
+                        let alts = alt.split(",");
+                        let gtIdx1 = +tokens[0];
+                        let gtIdx2 = +tokens[1];
                         if (gt.zygosity == "HET" && gtIdx1 == 0) {
                             gt.eduGenotype = rec.ref + " " + alts[altIdx];
                         } else if (gt.zygosity == "HET" && gtIdx1 > 0) {
-                            gt.eduGenotype = alts[gtIdx1 - 1] + " " + alts[gtIdx2 - 1];
+                            gt.eduGenotype = alts[gtIdx1-1] + " " + alts[gtIdx2-1];
                         } else if (gt.zygosity == "HOM") {
-                            gt.eduGenotype = alts[gtIdx1 - 1] + " " + alts[gtIdx1 - 1];
+                            gt.eduGenotype = alts[gtIdx1-1] + " " + alts[gtIdx1-1];
                         } else if (gt.zygosity == "HOMREF") {
                             gt.eduGenotype = rec.ref + " " + rec.ref;
                         }
                     }
                     gt.eduGenotypeReversed = globalApp.utility.switchGenotype(gt.eduGenotype);
-
                 }
             }
-
         });
-
-
-        result.genotypes.forEach(function (gt) {
+        result.genotypes.forEach(function(gt) {
             if (gt.keep) {
                 result.keep = true;
             }
         });
-
         // The 'target' genotype will be the first genotype in the array
-        // For example, if the sampleIndex of '1' was sent in (sampleIndices = [1]),
-        // the first element in the the array will be the second genotype
-        // column in the vcf record (sample index is 0 based).
+        // besides the first (normal sample) that is not HOMREF (specifically 0/0)
+        // todo: what do we do about multi-allelics here? aka what if gx are 0/1 0/2 1/1 etc
         if (result.genotypes.length > 0) {
-            result.genotype = result.genotypes[0];
+            let resultGx = null;
+            for (let i = 1; i < result.genotypes.length; i++) {
+                let currGx = result.genotypes[i];
+                if (currGx.zygosity !== "HOMREF") {
+                    resultGx = currGx;
+                    break;
+                }
+            }
+            result.genotype = resultGx;
         }
-
         return result;
-    };
+    }
 
     /*
      *
@@ -2941,7 +2998,6 @@ export default function vcfiobio(theGlobalApp) {
                     gt.altForwardCount = null;
                     gt.altReverseCount = null;
                 }
-
 
                 // Only keep the alt if we have a genotype that matches.
                 // For example

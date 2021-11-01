@@ -15,11 +15,11 @@
              @launched="onLaunch">
     </Welcome>
     <v-row no-gutters>
-      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }" :style="{ 'height': screenHeight + ' !important', 'overflow-y': 'scroll'}">
+      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
         <v-card flat
                 tile
                 class="nav-card"
-                :style="{ 'height': screenHeight + 'px !important' }">
+                :height="screenHeight">
           <v-toolbar style="background-color: transparent" flat>
             <v-toolbar-items class="justify-center">
               <v-autocomplete v-model="lookupGene"
@@ -183,6 +183,15 @@
                 @summaryCardVariantDeselect="deselectVariant"
                 @show-pileup="onShowPileupForVariant">
             </variant-summary-card>
+            <subclone-summary-card
+                v-if="cohortModel && cohortModel.hasSubcloneAnno"
+                ref="subcloneSummaryCardRef"
+                :subcloneModel="cohortModel.subcloneModel"
+                :d3="globalApp.d3"
+                :$="globalApp.$"
+                :width="screenWidth"
+                @display-subclone-dialog="displaySubcloneDialog">
+            </subclone-summary-card>
 <!--            <cnv-summary-card-->
 <!--                v-if="cohortModel.hasCnvData"-->
 <!--                :d3="globalApp.d3"-->
@@ -218,8 +227,8 @@
       <v-card class="warning-modal">
         <v-card-title class="warning-headline mb-3">Unmatched Gene Names Warning</v-card-title>
         <v-card-text>
-          The following gene targets contain somatic variants according to the current filtering criteria,
-          but could not be matched to the entered loci names. To view these targets, please search for gene
+          The following genes contain somatic variants according to the current filtering criteria,
+          but could not be matched with our annotation engine. To view these targets, please search for gene
           name
           synonyms using Gene Cards and manually search for them within Oncogene.*
           <v-list>
@@ -267,9 +276,7 @@
       <v-card class="warning-modal">
         <v-card-title class="warning-headline mb-3">No Variants Found</v-card-title>
         <v-card-text>
-          No somatic variants found within the supplied gene list and the UCSC500 gene panel.
-          Genes may be manually investigated one-by-one using the individual entry box, or you
-          may enter another list and try again.
+          {{ noVarsText }}
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
@@ -295,6 +302,17 @@
       </cnv-dialog>
     </v-dialog>
     <v-dialog
+        width="30%"
+        style="z-index: 1033"
+        v-model="subcloneDialog">
+      <subclone-dialog
+          :selectedSubclone="selectedSubclone"
+          :variantObj="selectedSubcloneVariants"
+          :dialogOpen="subcloneDialog"
+          :d3="d3">
+      </subclone-dialog>
+    </v-dialog>
+    <v-dialog
         v-model="aboutDialog"
         fullscreen
         hide-overlay
@@ -314,10 +332,12 @@
 import Welcome from './Welcome.vue'
 import VariantCard from './VariantCard.vue'
 import VariantSummaryCard from './VariantSummaryCard.vue'
+import SubcloneSummaryCard from './SubcloneSummaryCard.vue'
 import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
 import HistoryTab from './HistoryTab.vue'
 import CnvDialog from './CnvDialog.vue'
+import SubcloneDialog from './SubcloneDialog.vue'
 import SomaticGenesCard from './SomaticGenesCard.vue'
 import GeneCard from './GeneCard.vue'
 import About from './partials/About.vue'
@@ -331,6 +351,7 @@ export default {
     Welcome,
     VariantCard,
     VariantSummaryCard,
+    SubcloneSummaryCard,
     // CnvSummaryCard,
     FilterPanelMenu,
     HistoryTab,
@@ -338,6 +359,7 @@ export default {
     SomaticGenesCard,
     Pileup,
     CnvDialog,
+    SubcloneDialog,
     About
   },
   props: {
@@ -410,6 +432,9 @@ export default {
       cnvDialogWidth: 0,
       aboutDialog: false,
       noVarsDialog: false,
+      subcloneDialog: false,
+      selectedSubclone: '',
+      selectedSubcloneVariants: [],
       showGeneSnackbar: false,
       expandSnackbar: false,
       expandTimeout: 5000,
@@ -469,7 +494,7 @@ export default {
       noVarsFound: false,
 
       lookupGene: null,
-      debugMode: false
+      debugMode: false,
     };
   },
   watch: {
@@ -649,7 +674,6 @@ export default {
     onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
       const self = this;
       self.deselectVariant();
-      // todo: make sure that variant object is the same here coming from ranked gene list
       if (variant) {
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();
@@ -665,6 +689,11 @@ export default {
           variantCard.showCoverageCircle(variant);
           // }
         });
+
+        let matchingVar = self.cohortModel.allUniqueFeaturesObj[variant.id];
+        if (matchingVar && self.$refs.subcloneSummaryCardRef) {
+          self.$refs.subcloneSummaryCardRef.highlightNode(matchingVar.subcloneId);
+        }
 
         // Hide banner
         if (self.$refs.variantSummaryCardRef) {
@@ -728,6 +757,9 @@ export default {
       }
       if (self.$refs.somaticGenesCard) {
         self.$refs.somaticGenesCard.deselectListVar();
+      }
+      if (self.$refs.subcloneSummaryCardRef) {
+        self.$refs.subcloneSummaryCardRef.highlightNode();
       }
     },
     showVariantExtraAnnots: function (parentSampleId, variant) {
@@ -1105,6 +1137,12 @@ export default {
       };
       this.cnvDialog = true;
     },
+    displaySubcloneDialog: function(subcloneId) {
+      this.selectedSubclone = subcloneId;
+      this.selectedSubcloneVariants = [];
+      this.selectedSubcloneVariants = this.cohortModel.subcloneModel.getVariants(subcloneId);
+      this.subcloneDialog = true;
+    },
     toggleExonTooltip: function (exonInfo) {
       const self = this;
       const mouseCoords = self.d3.mouse(self.$el);
@@ -1184,12 +1222,26 @@ export default {
         return '';
       }
     },
+    noVarsText: function() {
+      if (!this.cohortModel.onlySomaticCalls) {
+        return "No somatic variants found within the supplied gene list and the UCSC500 gene panel.\n" +
+            "It's possible the provided VCF file only contains somatic variants: please re-launch the application \n" +
+            "with the setting 'Somatic Variants Only.' Or, if you're confident your VCF contains inherited and somatic variants, \n" +
+            "try relaxing filtering restrictions in the 'Filters' tab, or manually investigate other gene targets using " +
+            "the individual entry box."
+      } else {
+        return 'No somatic variants found within the supplied gene list and the UCSC500 gene panel.\n' +
+            'Genes may be manually investigated one-by-one using the individual entry box, or you\n' +
+            'may enter another list and try again.'
+      }
+    }
   }
 }
 </script>
 
 <style lang="sass">
 .nav-card
+<<<<<<< HEAD
 <<<<<<< Updated upstream
   overflow-y: scroll
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
@@ -1197,6 +1249,10 @@ export default {
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
   overflow-y: hidden
 >>>>>>> Stashed changes
+=======
+  background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
+  overflow-y: scroll
+>>>>>>> add_subclone_viz
 
 .blur-content
   filter: blur(1px) !important

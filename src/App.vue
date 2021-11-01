@@ -390,6 +390,5 @@ export default {
 .var-chip
   font-family: Quicksand
   font-size: 14px
-  margin-left: 150px
 
 </style>

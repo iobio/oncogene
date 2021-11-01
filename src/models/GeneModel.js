@@ -221,12 +221,11 @@ class GeneModel {
             alert('Warning: ' + message);
         }
         if (Object.keys(duplicateGeneNames).length > 0 && options.warnOnDup) {
+            message = '';
             if (message.length > 0) {
                 message += "   ";
             }
             message += "Bypassing duplicate gene name(s): " + Object.keys(duplicateGeneNames).join(", ") + ".";
-        }
-        if (message.length > 0) {
             alert('Warning: ' + message);
         }
         if (me.limitGenes) {
@@ -591,8 +590,7 @@ class GeneModel {
                     })
                     .fail(function() {
                         delete me.pendingNCBIRequests[theGeneNames];
-                        console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
-                        reject();
+                        reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
                     })
             }
         })
@@ -631,8 +629,7 @@ class GeneModel {
                 })
                 .fail(function() {
                     delete me.pendingNCBIRequests[theGeneNames];
-                    console.log("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
-                    reject();
+                    reject("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
                 })
         })
     }
@@ -1494,8 +1491,9 @@ class GeneModel {
                     })
 
                     // Fetch NCBI summary for all somatic genes
-                    let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
-                    promises.push(summaryP);
+                    //todo: this seems to be breaking - can we just get a single summary at a time after we rank?
+                    //let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
+                    //promises.push(summaryP);
 
                     Promise.all(promises)
                         .then(() => {
@@ -1544,12 +1542,17 @@ class GeneModel {
                 .then(() => {
                     self.promiseRankGenes()
                         .then(topGene => {
-                            resolve({
-                                'gene': topGene,
-                                "count": totalSomaticVarCount,
-                                "geneCount": genesWithVars.length,
-                                'unmatchedGenes': unmatchedGeneSymbols
-                            });
+                            let summaryP = [];
+                            summaryP.push(self.promiseGetNCBIGeneSummaries([topGene]));
+                            Promise.all(summaryP)
+                                .then(() => {
+                                    resolve({
+                                        'gene': topGene,
+                                        "count": totalSomaticVarCount,
+                                        "geneCount": genesWithVars.length,
+                                        'unmatchedGenes': unmatchedGeneSymbols
+                                    });
+                            })
                         }).catch(error => {
                         reject('There was a problem ranking genes: ' + error);
                     })

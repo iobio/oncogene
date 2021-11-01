@@ -1,0 +1,30 @@
+{
+ "name": "C1",
+ "color": "#F8B195",
+ "children":
+ [
+  {
+   "name": "C2",
+   "color": "#F67280",
+   "children":
+   [
+    {
+     "name": "C4",
+     "color": "#C06C84"
+    }
+   ]
+  },
+    {
+     "name": "C3",
+     "color": "#6C5B7B",
+     "children":
+     [
+      {
+       "name": "C5",
+       "color": "#355C7D"
+      }
+     ]
+    }
+  ]
+}
+
