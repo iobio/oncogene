@@ -221,22 +221,47 @@
     </v-dialog>
     <v-dialog
         v-model="displayUnmatchedGenesWarning"
+        persistent
         width="40%"
         height="350"
         style="z-index: 1033">
       <v-card class="warning-modal">
         <v-card-title class="warning-headline mb-3">Unmatched Gene Names Warning</v-card-title>
         <v-card-text>
-          The following genes contain somatic variants according to the current filtering criteria,
-          but could not be matched with our annotation engine. To view these targets, please search for gene
-          name
-          synonyms using Gene Cards and manually search for them within Oncogene.*
-          <v-list>
-            <v-list-item v-for="(gene, i) in unmatchedGenes"
+          The following variants qualify as somatic according to the current filtering criteria,
+          but could not be matched to genes using our VEP & ClinGen annotation pipeline. Below you
+          may view the variant line within the vcf file and, if possible, our best guess as to which gene they
+          belong to.*
+          <v-list style="overflow-y: scroll" flat tile>
+            <v-list-item v-for="(geneObj, i) in unmatchedGeneList"
                          :key="i">
-              <v-list-item-content>
-                <v-list-item-title>{{ gene }}</v-list-item-title>
-              </v-list-item-content>
+              <v-list-group
+                  :value="false"
+                  no-action
+                  sub-group>
+                <template v-slot:activator>
+                  <v-list-item-content style="padding-left: 8px">
+                    <v-list-item-title style="padding-left: 8px">{{ geneObj.gene + ' (' + geneObj.vars.length + ')'}}</v-list-item-title>
+                  </v-list-item-content>
+                </template>
+                <v-list-item
+                    v-for="(varObj, i) in geneObj.vars"
+                    :key="i"
+                    style="padding-left: 8px"
+                    dense
+                    link>
+                  <v-list-item-content style="padding-left: 16px; width: 650px">
+                    <v-text-field
+                    single-line
+                    readonly
+                    dense
+                    outlined
+                    :value="varObj.rec"
+                    style="overflow-x: scroll; font-family: Courier New">
+                    </v-text-field>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list-group>
             </v-list-item>
           </v-list>
         </v-card-text>
@@ -620,7 +645,7 @@ export default {
               self.displayLoader = false;
               self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                   .then(() => {
-                    if (self.unmatchedGenes.length > 0) {
+                    if (Object.keys(self.unmatchedGenes).length > 0) {
                       self.displayUnmatchedGenesWarning = true;
                     }
                   })
@@ -906,10 +931,7 @@ export default {
         }).catch(function (error) {
           console.log(error);
           geneModel.removeGene(geneName);
-          self.onShowSnackbar({
-            message: 'Bypassing ' + geneName + '. Unable to find transcripts.',
-            timeout: 60000
-          })
+          console.log('Could not find transcript for ' + geneName + ' BYPASSING');
         });
       })
     },
@@ -1165,6 +1187,9 @@ export default {
     openAbout: function() {
       this.$gtag.pageview("/about");
       this.aboutDialog = true;
+    },
+    displayUnmatchedGenesModal: function () {
+      this.displayUnmatchedGenesWarning = true;
     }
   },
   computed: {
@@ -1234,6 +1259,22 @@ export default {
             'Genes may be manually investigated one-by-one using the individual entry box, or you\n' +
             'may enter another list and try again.'
       }
+    },
+    unmatchedGeneList: function () {
+      const self = this;
+
+      let list = [];
+      let sortedGenes = Object.keys(this.unmatchedGenes).sort();
+      sortedGenes.forEach(gene => {
+        let geneObj = {
+          'gene' : gene,
+          'vars' : self.unmatchedGenes[gene]
+        };
+        list.push(geneObj);
+      });
+
+
+      return list;
     }
   }
 }
@@ -1241,18 +1282,8 @@ export default {
 
 <style lang="sass">
 .nav-card
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-  overflow-y: scroll
-  background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
-=======
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
   overflow-y: hidden
->>>>>>> Stashed changes
-=======
-  background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
-  overflow-y: scroll
->>>>>>> add_subclone_viz
 
 .blur-content
   filter: blur(1px) !important

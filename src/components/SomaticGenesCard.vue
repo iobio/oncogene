@@ -7,20 +7,10 @@
         padding: 0
         background-color: transparent
 
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-=======
     .ranked-sub-card
       overflow-y: scroll !important
       background-color: transparent !important
 
->>>>>>> Stashed changes
-=======
-    .ranked-sub-card
-      overflow-y: scroll
-      background-color: transparent !important
-
->>>>>>> add_subclone_viz
     .variant-text
         font-size: 15px !important
         font-family: 'Open Sans', 'Quattrocento Sans', 'sans serif' !important

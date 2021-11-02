@@ -1436,14 +1436,13 @@ class GeneModel {
      *
      * Adds NCBI summary to each gene with a somatic variant.
      */
-    promiseGroupAndAssign(somaticVars, somaticCnvs) {
+    promiseGroupAndAssign(somaticVars, somaticCnvs, unmatchedVars) {
         const self = this;
         let genesWithVars = {};
         let somaticGeneNames = [];
         let promises = [];
         let genePromises = [];
         let totalSomaticVarCount = 0;
-        let unmatchedGeneSymbols = [];
         let formattedGeneObj = [];  // Only contains genes with snps/small indels to compare to COSMIC
         let fullGeneObj = [];       // Contains genes with snps, small indels, and CNVs - any gene which somaticVars/somaticCnvs fall into
 
@@ -1458,22 +1457,30 @@ class GeneModel {
                 } else {
                     // We might have a different, valid name for the geneSymbol
                     // First try to get gene object
-                    let p = self.promiseAddGeneName(feat.geneSymbol)
-                        .then(() => {
-                            if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
-                                self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
-                                totalSomaticVarCount++;
-                                genesWithVars[feat.geneSymbol] = true;
-                            } else {
-                                // If we can't find the gene object, then add to unmatched
-                                unmatchedGeneSymbols.push(feat.geneSymbol);
-                                console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
-                            }
-                        }).catch(err => {
-                            unmatchedGeneSymbols.push(feat.geneSymbol);
-                            console.log('Could not match VEP gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
-                    });
-                    genePromises.push(p);
+                    if (feat.geneSymbol !== '') { // These are those VEP could not assign a single (or any) gene names to
+                        let p = self.promiseAddGeneName(feat.geneSymbol)
+                            .then(() => {
+                                if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
+                                    self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
+                                    totalSomaticVarCount++;
+                                    genesWithVars[feat.geneSymbol] = true;
+                                } else {
+                                    // If we can't find the gene object, then add to unmatched
+                                    if (!unmatchedVars[feat.geneSymbol]) {
+                                        unmatchedVars[feat.geneSymbol] = [];
+                                    }
+                                    unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
+                                    console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                                }
+                            }).catch(err => {
+                                if (!unmatchedVars[feat.geneSymbol]) {
+                                    unmatchedVars[feat.geneSymbol] = [];
+                                }
+                                unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
+                                console.log('ERROR: Could not match VEP gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
+                            });
+                        genePromises.push(p);
+                    }
                 }
             });
             Promise.all(genePromises)
@@ -1517,7 +1524,7 @@ class GeneModel {
                                 formattedGeneObjs: formattedGeneObj,
                                 fullGeneObjs: fullGeneObj,
                                 somaticCount: totalSomaticVarCount,
-                                unmatchedSymbols: unmatchedGeneSymbols,
+                                unmatchedSymbols: unmatchedVars,
                                 somaticGeneNames: somaticGeneNames
                             }
                             resolve(retObj);

@@ -57,6 +57,7 @@ class CohortModel {
         this.onlySomaticCalls = false;
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
+        this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
         this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
         this.hasSubcloneAnno = false;
         this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from VEP annotations b/c somaticOnlyMode does not take in gene list
@@ -858,7 +859,7 @@ class CohortModel {
                         self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {replace: true, warnOnDup: false})
                         : Promise.resolve();
                     geneP.then(() => {
-                        self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap)
+                        self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
                             .then(groupObj => {
                                 self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
                                     .then(() => {
@@ -1155,9 +1156,8 @@ class CohortModel {
             }
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
                 .then((sampleMap) => {
-                    // Always populate unqiue variant dictionary
+                    // Always populate unique variant dictionary
                     let allVariants = self.getAllUniqVars(sampleMap);
-
                     let subclonesExist = false;
 
                     // Pull subclone info out of return object
@@ -1179,6 +1179,11 @@ class CohortModel {
                             // NOTE: we would need a new backend service to pull back just variant IDs filtered by AFCLU
                         }
                     }
+                    if (sampleMap['unmatchedVars']) {
+                        // Pull out unmatched variants
+                        self.unmatchedSomaticVarMap = sampleMap['unmatchedVars'];
+                        delete(sampleMap['unmatchedVars']);
+                    }
 
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in sampleMap) {
@@ -1189,6 +1194,7 @@ class CohortModel {
                         const globalMode = true;
                         self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
                             .then((somaticVarMap) => {
+                                self.unmatchedSomaticVarMap = self.filterUnmatchedVars(self.allUniqueFeaturesObj, self.unmatchedSomaticVarMap);
                                 resolve(somaticVarMap);
                             }).catch(error => {
                             reject('Something went wrong annotating inheritance for global somatics:' + error);
@@ -1201,6 +1207,28 @@ class CohortModel {
                 reject('Problem pulling back somatic variants: ' + error);
             });
         });
+    }
+
+    /* Unmatched somatic variants need to pass front-end checks before we tell the user about them.
+     * Make sure they */
+    filterUnmatchedVars(uniqueSomaticVarMap, unmatchedVarMap) {
+        let filteredMap = {};
+
+        let geneNames =  Object.keys(unmatchedVarMap);
+        geneNames.forEach(currGene => {
+            let filteredVarObjs = [];
+            let currVarObjs =  unmatchedVarMap[currGene];
+            currVarObjs.forEach(varObj => {
+                let currId = varObj['id'];
+                if (uniqueSomaticVarMap[currId]) {
+                    filteredVarObjs.push(varObj);
+                }
+            })
+            if (filteredVarObjs.length > 0) {
+                filteredMap[currGene] = filteredVarObjs;
+            }
+        });
+        return filteredMap;
     }
 
     /* Returns a list of all unique variants */

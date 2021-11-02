@@ -751,7 +751,8 @@ export default function vcfiobio(theGlobalApp) {
                                     'filter': filter,
                                     'info': info,
                                     'format': format,
-                                    'genotypes': genotypes
+                                    'genotypes': genotypes,
+                                    'rawRecord': record
                                 };
                                 vcfObjects.push(vcfObject);
                             }
@@ -1568,6 +1569,7 @@ export default function vcfiobio(theGlobalApp) {
         // We're always assuming a multi-sample VCF for now
         var allVariants = gtSampleIndices.map(function () { return []; });
         let somaticGenes = {};
+        let unmatchedVars = {};
 
         vcfRecs.forEach(function (rec) {
             if (rec.pos && rec.id) {
@@ -1632,6 +1634,29 @@ export default function vcfiobio(theGlobalApp) {
 
                     // If we don't have a gene list for somaticOnlyMode though, have to rely on VEP annotation and take majority
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
+
+                    // Amend VEP AF annotation for multi/no gene matches
+                    let majSymArr = annot.vep.symbol;
+                    if (majSymArr.length === 1) {
+                        annot.vep.symbol = majSymArr[0];
+                    } else if (somaticOnlyMode) {
+                        if (majSymArr.length === 0) {
+                            if (unmatchedVars['Unknown']) {
+                                unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                            } else {
+                                unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                            }
+                        } else {
+                            let combinedSymStr = majSymArr.join(' / ');
+                            if (unmatchedVars[combinedSymStr]) {
+                                unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                            } else {
+                                unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                            }
+                        }
+                        annot.vep.symbol = '';
+                    }
+
                     const keepHomRefs = !somaticOnlyMode;
                     var gtResult = me._parseSomaticGenotypes(rec, alt, altIdx, gtSampleIndices, gtSampleNames, keepHomRefs);
 
@@ -1719,7 +1744,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'subcloneId': annot.nodeId
                                 };
-                                if (somaticOnlyMode && annot.vep.symbol !== '') {
+                                if (somaticOnlyMode) {
                                     allVariants[i].push(variant);
                                     somaticGenes[annot.vep.symbol] = true;
                                 } else if (!somaticOnlyMode) {
@@ -1748,7 +1773,9 @@ export default function vcfiobio(theGlobalApp) {
         }
         if (somaticOnlyMode) {
             results['somaticGenes'] = Object.keys(somaticGenes);
+            results['unmatchedVars'] = unmatchedVars;
         }
+
         return results;
     };
 
@@ -1851,7 +1878,7 @@ export default function vcfiobio(theGlobalApp) {
                     }
 
 
-                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
+                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF, false);
 
                     var clinvarResult = me.parseClinvarInfo(rec.info, clinvarMap);
 
@@ -2091,14 +2118,14 @@ export default function vcfiobio(theGlobalApp) {
 
     exports._getMajorityGeneSymbol = function(annot) {
         let maxCount = 0;
-        let maxSymbol = '';
+        let maxSymbolArr = [];
         let tieExists = false;
         if (annot.vep && annot.vep.symbols && Object.keys(annot.vep.symbols).length > 0) {
             for (let symbol in annot.vep.symbols) {
                 let currCount = annot.vep.symbols[symbol];
                 if (currCount > maxCount) {
                     maxCount = annot.vep.symbols[symbol];
-                    maxSymbol = symbol;
+                    maxSymbolArr.push(symbol);
                     tieExists = false;
                 } else if (currCount === maxCount) {
                     tieExists = true;
@@ -2109,8 +2136,9 @@ export default function vcfiobio(theGlobalApp) {
         }
         if (tieExists) {
             console.log('Warning: multiple symbols reported equal times for a single variant by VEP: ' + Object.keys(annot.vep.symbols));
+            maxSymbolArr.concat(Object.keys(annot.vep.symbols));
         }
-        return maxSymbol;
+        return maxSymbolArr;
     }
 
     /* To parse the VEP annot, split the CSQ string into its parts.

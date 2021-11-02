@@ -9,31 +9,13 @@
         {{ numSomaticVars + ' Somatic Variants Found in ' + numSomaticGenes + ' Genes' }}
       </v-chip>
       <div class="text-center mx-2" v-if="displayUnmatchedGenesBtn">
-        <v-menu bottom offset-y>
-          <template v-slot:activator="{ on: menu, attrs }">
-            <v-tooltip dark bottom>
-              <template v-slot:activator="{ on: tooltip }">
-                <v-btn
-                    color="secondary"
-                    dark
-                    v-bind="attrs"
-                    v-on="{ ...tooltip, ...menu }"
-                >
-                  Unmatched Genes
-                </v-btn>
-              </template>
-            </v-tooltip>
-          </template>
-          <v-list>
-            <v-list-item
-                v-for="(gene, index) in unmatchedGenesList"
-                :key="index"
-                style="font-family: Quicksand"
-            >
-              <v-list-item-title>{{ gene }}</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
+        <v-btn
+            color="secondary"
+            dark
+            @click="displayUnmatchedGenesModal"
+        >
+          Unmatched Variants
+        </v-btn>
       </div>
       <div class="text-center mx-2" v-if="activeFilters.length > 0">
         <v-menu bottom offset-y>
@@ -235,6 +217,11 @@ export default {
     onUnmatchedGenes: function (unmatchedGeneList) {
       this.unmatchedGenesList = unmatchedGeneList;
       this.displayUnmatchedGenesBtn = true;
+    },
+    displayUnmatchedGenesModal: function () {
+      if (this.$refs.homePanel) {
+        this.$refs.homePanel.displayUnmatchedGenesModal();
+      }
     }
   },
   mounted: function () {
