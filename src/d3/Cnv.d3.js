@@ -9,10 +9,13 @@ export default function cnvD3(d3, divId, vizSettings) {
     var dispatch = d3.dispatch('d3mouseover', 'd3mouseout', 'd3click');
 
     // Viz-level sizing
-    var margin = vizSettings.margin ? vizSettings.margin : {top: 10, right: 10, bottom: 10, left: 30};
+    var margin = vizSettings.margin ? vizSettings.margin : {top: -10, right: 10, bottom: 10, left: 30};
     var width = 600,
         height = 50;
     var lineColor = vizSettings.lineColor ? vizSettings.lineColor : '#464646';
+    var tcnRed = vizSettings.tcnRed ? vizSettings.tcnRed : "red";
+    var tcnBlue = vizSettings.tcnBlue ? vizSettings.tcnBlue : "blue";
+    var tcnGray = vizSettings.tcnGray ? vizSettings.tcnGray : "gray";
 
     // Scales, Axes, Deltas
     var x = vizSettings.x ? vizSettings.x : d3.scaleLinear(),
@@ -24,7 +27,7 @@ export default function cnvD3(d3, divId, vizSettings) {
     var id = divId;
     var inDialog = vizSettings.inDialog ? vizSettings.inDialog : false;
 
-    var cnvColors = ['rgb(127, 16, 16, 0.5)', 'rgb(204, 151, 142, 0.5)', 'rgb(0, 119, 136, 0.5)', 'rgb(38, 20, 71, 0.5)', 'rgb(243, 156, 107, 0.5)', 'rgb(192, 189, 165, 0.5)'];
+    var cnvModalColors = ['rgb(127, 16, 16, 0.5)', 'rgb(204, 151, 142, 0.5)', 'rgb(0, 119, 136, 0.5)', 'rgb(38, 20, 71, 0.5)', 'rgb(243, 156, 107, 0.5)', 'rgb(192, 189, 165, 0.5)'];
 
 
     /**** CHART DRAWING ****/
@@ -74,25 +77,8 @@ export default function cnvD3(d3, divId, vizSettings) {
                         + (width) + " "
                         + (height + adj *3))
                     .style("margin", margin.top + 'px ' + margin.right + 'px ' + margin.bottom + 'px ' + margin.left + 'px')
-                    .classed("svg-content", true);
-
-                // Add color gradient for TCN
-                const topGradient = maxTcnAllSamples > 2 ? "red" : "#888888";
-                svg.append("linearGradient")
-                    .attr("id", "tcn-gradient")
-                    .attr("gradientUnits", "userSpaceOnUse")
-                    .attr("x1", 0)
-                    .attr("y1", y(0))
-                    .attr("x2", 0)
-                    .attr("y2", y(maxTcnAllSamples))
-                    .selectAll("stop")
-                    .data([
-                        {offset: "0%", color: "#194d81"},
-                        {offset: "100%", color: topGradient }
-                    ])
-                    .enter().append("stop")
-                    .attr("offset", function(d) { return d.offset; })
-                    .attr("stop-color", function(d) { return d.color; });
+                    .classed("svg-content", true)
+                    .classed("cnv-svg", true);
 
                 // Y-Axis
                 var yAxis = d3.axisRight(y);
@@ -115,9 +101,8 @@ export default function cnvD3(d3, divId, vizSettings) {
 
                 // Draw area per element
                 tcnAreas.append("path")
-                    .attr('fill', (d, i) => { return inDialog ? cnvColors[i] : 'url(#tcn-gradient)' })
-                    .attr('stroke', (d, i) => { return inDialog ? cnvColors[i] : 'url(#line-gradient)' })
-                    .attr('opacity', () => { return inDialog ? 1.0 : 0.5 })
+                    .attr('fill', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn) })
+                    .attr('stroke', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn) })
                     .attr('stroke-width', '0.5px')
                     .attr("d", function(d) { return tcnArea(d.points); })
                     .on("mouseover", function (d) {
@@ -144,6 +129,7 @@ export default function cnvD3(d3, divId, vizSettings) {
                     const lcnPaths = lcnLines.append('path')
                         .attr('stroke-width', 1.5)
                         .attr('stroke', lineColor)
+                        .style('stroke-dasharray', ("3", "3"))
                         .attr('fill', 'none')
                         .attr("d", function(d) { return lcnLine(d.points); });
 
@@ -258,6 +244,16 @@ export default function cnvD3(d3, divId, vizSettings) {
         } else {
             let cnvObj = matchingCnvList[0];
             text += 'TCN: ' + cnvObj.tcn + '/LCN: ' + cnvObj.lcn;
+        }
+    }
+
+    function getCnvColor(tcn) {
+        if (tcn > 2) {
+            return tcnBlue;
+        } else if (tcn < 2) {
+            return tcnRed;
+        } else {
+            return tcnGray;
         }
     }
 

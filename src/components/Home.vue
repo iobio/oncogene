@@ -256,7 +256,7 @@
                     readonly
                     dense
                     outlined
-                    :value="varObj.rec"
+                    :value="varObj.rec + ' ' + varObj.cons"
                     style="overflow-x: scroll; font-family: Courier New">
                     </v-text-field>
                   </v-list-item-content>
@@ -1283,7 +1283,7 @@ export default {
 <style lang="sass">
 .nav-card
   background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
-  overflow-y: hidden
+  overflow-y: scroll
 
 .blur-content
   filter: blur(1px) !important

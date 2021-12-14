@@ -1640,13 +1640,13 @@ export default function vcfiobio(theGlobalApp) {
                     if (majSymArr.length === 1) {
                         annot.vep.symbol = majSymArr[0];
                     } else if (somaticOnlyMode) {
-                        if (majSymArr.length === 0) {
+                        if (majSymArr.length === 0 && !me._isIntergenic(annot.vep.vepConsequence)) {
                             if (unmatchedVars['Unknown']) {
                                 unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
                             } else {
                                 unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
                             }
-                        } else {
+                        } else if (majSymArr.length > 1) {
                             let combinedSymStr = majSymArr.join(' / ');
                             if (unmatchedVars[combinedSymStr]) {
                                 unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
@@ -1778,6 +1778,14 @@ export default function vcfiobio(theGlobalApp) {
 
         return results;
     };
+
+    exports._isIntergenic = function (conseqObj) {
+        let intergenicOnly = true;
+        Object.keys(conseqObj).forEach(conseq => {
+            intergenicOnly &= (conseq === 'intergenic_variant');
+        })
+        return intergenicOnly;
+    }
 
 
     exports._parseVcfRecords = function (vcfRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, parseMultiSample, sampleNames, sampleIndex, vepAF, sampleModelId, keepHomRef) {
@@ -2164,7 +2172,6 @@ export default function vcfiobio(theGlobalApp) {
 
         transcriptTokens.forEach(function (transcriptToken) {
             var vepTokens = transcriptToken.split("|");
-
             var keep = true;
             if (isMultiAllelic) {
                 if (vepFields.hasOwnProperty('ALLELE_NUM') && vepFields.ALLELE_NUM >= 0) {
@@ -2243,7 +2250,14 @@ export default function vcfiobio(theGlobalApp) {
                         valueUrl = reg.split("_").join(" ").toLowerCase();
                     }
                     annot.vep.regulatory[(featureType === 'RegulatoryFeature' ? "reg_" : "mot_") + regKey.toLowerCase()] = valueUrl;
+                } else {
+                    // Just annotate consequence here so somatic only can eliminate intergenic variants
+                    let consequence = vepTokens[vepFields.Consequence];
+                    consequence.split("&").forEach(function (token) {
+                        annot.vep.vepConsequence[token] = token;
+                    });
                 }
+
                 if (featureType === 'Transcript') {
                     var theTranscriptId = feature;
 
@@ -2261,6 +2275,7 @@ export default function vcfiobio(theGlobalApp) {
                     } else {
                         validTranscript = true;
                     }
+
                     if (validTranscript) {
                         // Keep track of all VEP impact and consequence so that we can determine the highest impact
                         // variant across all transcripts

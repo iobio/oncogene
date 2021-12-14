@@ -500,12 +500,14 @@ class FilterModel {
                         if (somaticCnvs[geneName] == null) {
                             somaticCnvs[geneName] = [];
                         }
-                        if (!tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn]) {
-                            tumorCnv.selectedSamples = [];
+                        let existingCnv = tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn];
+                        if (!existingCnv) {
+                            tumorCnv.selectedSamples = [tumorCnvModel.selectedSample];
                             somaticCnvs[geneName].push(tumorCnv);
-                            tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn] = true;
+                            tumorLookup[tumorCnv.start + '_' + tumorCnv.end + '_' + tumorCnv.tcn + '_' + tumorCnv.lcn] = tumorCnv;
+                        } else {
+                            existingCnv.selectedSamples.push(tumorCnvModel.selectedSample);
                         }
-                        tumorCnv.selectedSamples.push(tumorCnvModel.selectedSample);
                     }
                 })
             })

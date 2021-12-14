@@ -163,7 +163,8 @@ export default {
           annotations: annotations,
           annotationsLayout: 'overlay',
           legend: legend,
-          showAnnotTooltip: false
+          showAnnotTooltip: false,
+          chrFillColor: "transparent"
         };
         new Ideogram(config);
         this.loadingIdeogram = false;
@@ -294,6 +295,11 @@ export default {
 
     #_ideogram
         padding-top: 0 !important
+
+        //.acen
+        //  fill: transparent !important
+        //.gvar
+        //  fill: transparent !important
 
     .dialog-label
         font-family: Open Sans

@@ -311,11 +311,10 @@
                 copy number
               </div>
               <cnv-viz ref="cnvVizRef"
+                       v-if="selectedGene"
                        v-show="showCnvViz"
                        :model="sampleModel"
-                       :regionStart="regionStart"
-                       :regionEnd="regionEnd"
-                       :chromosome="selectedGene ? selectedGene.chr : null"
+                       :selectedGene="selectedGene"
                        :maxTcn="maxTcn"
                        :showTransition="true"
                        :width="width"

@@ -170,8 +170,8 @@ class cnviobio {
 
         // Make deep copy
         let firstObj = {
-            tcn: 0,
-            lcn: 0,
+            maxTcn: 0,
+            maxLcn: 0,
             points: [],
             delimiters: [], // The start and stop points of CNV events composing this single merged CNV
             start: Number.MAX_SAFE_INTEGER,
@@ -182,7 +182,7 @@ class cnviobio {
         // Append all other points to first and update end coord
         for (let i = 0; i < cnvList.length; i++) {
             let cnvObj = cnvList[i];
-            firstObj.delimiters.push([cnvObj.start, cnvObj.end])
+            firstObj.delimiters.push([cnvObj.start, cnvObj.end, cnvObj.tcn])
 
             firstObj.points = firstObj.points.concat(cnvObj.points);
             if (cnvObj.end > firstObj.end) {
@@ -191,12 +191,12 @@ class cnviobio {
             if (cnvObj.start < firstObj.start) {
                 firstObj.start = cnvObj.start;
             }
-            if (cnvObj.tcn > firstObj.tcn) {
-                firstObj.tcn = cnvObj.tcn;
+            if (cnvObj.tcn > firstObj.maxTcn) {
+                firstObj.maxTcn = cnvObj.tcn;
             }
             // sometimes lcn is NA
-            if (cnvObj.lcn >= 0 && cnvObj.lcn > firstObj.lcn) {
-                firstObj.lcn = cnvObj.lcn;
+            if (cnvObj.lcn >= 0 && cnvObj.lcn > firstObj.maxLcn) {
+                firstObj.maxLcn = cnvObj.lcn;
             }
         }
         return retList;
