@@ -5,7 +5,6 @@ export default function geneD3(d3, options) {
     // defaults
     var geneD3_showLabel = options.showLabel ? options.showLabel : false;
     var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
-    // var geneD3_showBrush = options.showBrush ? options.showBrush : false;
     var container = null;
     var selectedTranscript = null;
     var color = options.color ? options.color : '#424242';
@@ -115,6 +114,7 @@ export default function geneD3(d3, options) {
                     .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
                     .attr("preserveAspectRatio", "none");
             }
+
 
             g.selectAll(".x.axis").remove();
             if (geneD3_showXAxis) {

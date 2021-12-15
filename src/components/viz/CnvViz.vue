@@ -12,18 +12,31 @@
   .stalk
     fill: #AAA !important
 
-.cnv-psuedo-ideo
-  margin-top: -90px !important
+.cnv-pseudo-ideo
+  position: absolute
+  bottom: 95%
+  left: 23%
+  z-index: 4
 
   .bands
     display: none !important
 
+.cnv-ideo
+  position: absolute
+  bottom: 95%
+  left: 23%
+  z-index: 5
+
+.cnv-gene
+  position: relative
+  margin-top: 50px
+
 </style>
 
 <template>
-  <v-container class="pa-0 ma-0">
-    <div :id="'cnv-ideo-' + model.id" class="cnv-ideo float-right"></div>
-    <div :id="'cnv-pseudo-ideo-' + model.id" class="cnv-psuedo-ideo float-right"></div>
+  <v-container class="pa-0 ma-0" style="position: relative; height: 55px">
+    <div :id="'cnv-ideo-' + model.id" class="cnv-ideo"></div>
+    <div :id="'cnv-pseudo-ideo-' + model.id" class="cnv-pseudo-ideo"></div>
     <div :id="'cnv-' + model.id" class="cnv-gene"></div>
   </v-container>
 </template>
@@ -145,7 +158,9 @@ export default {
             name: (this.selectedGene.gene_name + " Location")
           }],
           annotationsLayout: 'tracks',
-          showAnnotTooltip: false
+          showAnnotTooltip: false,
+          showBandLabels: false,
+          showChromosomeLabels: true
         };
         let pseudoIdeo = new Ideogram(pseudoConfig);
         this.ideograms.push(pseudoIdeo);

@@ -104,6 +104,7 @@
                       :cdsHeight="cdsHeight"
                       :regionStart="geneRegionStart"
                       :regionEnd="geneRegionEnd"
+                      :geneName="selectedGene ? selectedGene.gene_name : null"
                       :isZoomTrack="true"
                       :zoomSwitchOn="showZoom"
                       :d3="d3"
