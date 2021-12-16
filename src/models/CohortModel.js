@@ -1706,6 +1706,45 @@ class CohortModel {
         })
     }
 
+    getCnvInfo(sampleModelId, varInfo) {
+        let cnvInfo = {
+            abnormal: false,
+            cnvType: null,
+            cnvStatusText: "",
+            tcn: 2,
+            lcn: 1,
+            cnvCoordString: ""
+        };
+        let sampleModel = this.sampleMap[sampleModelId];
+        if (sampleModel.cnv) {
+            let cnvObj = sampleModel.cnv.findEntryByCoord(varInfo.chr, varInfo.start, varInfo.end, false);
+            let mergeObj = cnvObj.mergedCnv[0];
+            if (+mergeObj.maxTcn < 2) {
+                cnvInfo.abnormal = true;
+                cnvInfo.cnvType = "del";
+                cnvInfo.cnvStatusText = "Lies in deletion area";
+            } else if (+mergeObj.maxTcn > 2) {
+                cnvInfo.abnormal = true;
+                cnvInfo.cnvType = "amp";
+                cnvInfo.cnvStatusText = "Lies in amplified area";
+            } else if (+mergeObj.maxLcn !== 1) {
+                cnvInfo.abnormal = true;
+                cnvInfo.cnvType = "minor";
+                cnvInfo.cnvStatusText = "Lies in area with abnormal minor copy number";
+            } else {
+                cnvInfo.abnormal = false;
+                cnvInfo.cnvType = "";
+                cnvInfo.cnvStatusText = "Lies in normal region";
+            }
+            cnvInfo.tcn = mergeObj.maxTcn;
+            cnvInfo.lcn = mergeObj.maxLcn;
+            cnvInfo.cnvCoordString = mergeObj.start + " - " + mergeObj.end;
+        } else {
+            console.log('Could not find CNV model to retrieve info for variant summary');
+        }
+        return cnvInfo;
+    }
+
     setCoverage(regionStart, regionEnd, bamType) {
         const self = this;
         self.getCanonicalModels().forEach(function (model) {

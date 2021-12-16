@@ -289,17 +289,12 @@ export default {
 </script>
 
 <style lang="sass">
-    .axis
-        text
-          font-size: 8px !important
+    //.axis
+    //    text
+    //      font-size: 8px !important
 
     #_ideogram
         padding-top: 0 !important
-
-        //.acen
-        //  fill: transparent !important
-        //.gvar
-        //  fill: transparent !important
 
     .dialog-label
         font-family: Open Sans

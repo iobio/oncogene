@@ -48,7 +48,7 @@
       padding-bottom: 0px
 
       text
-        font-size: 11px
+        font-size: 14px
         fill: rgb(120, 120, 120)
 
       line, path

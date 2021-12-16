@@ -3,6 +3,7 @@ export default function geneD3(d3, options) {
     var dispatch = d3.dispatch("d3selected", "d3featuretooltip", "d3featureglyphtooltip", "d3brush", "d3exontooltip");
 
     // defaults
+    var divId = options.divId ? options.divId : "gene-viz";
     var geneD3_showLabel = options.showLabel ? options.showLabel : false;
     var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
     var container = null;
@@ -11,7 +12,7 @@ export default function geneD3(d3, options) {
     var inDialog = options.inDialog ? options.inDialog : false;
 
     // dimensions
-    var margin = options.margin ? options.margin : {top: 10, right: 0, bottom: 15, left: 110},
+    var margin = options.margin ? options.margin : {top: 5, right: 0, bottom: 5, left: 110},
         geneD3_width = 1000,
         geneD3_height = 10;
 
@@ -24,7 +25,7 @@ export default function geneD3(d3, options) {
         .tickFormat(tickFormatter);
 
     // variables
-    var geneD3_trackHeight = options.trackHeight ? options.trackHeight : 40,
+    var geneD3_trackHeight = options.trackHeight ? options.trackHeight : 30,
         borderRadius = 1,
         minFtWidth = 0.5;
     var transcriptClass = function () {
@@ -61,7 +62,7 @@ export default function geneD3(d3, options) {
             var innerHeight = geneD3_height - margin.top - margin.bottom;
 
             // set svg element
-            container = d3.select(this);
+            container = d3.select("#" + divId);
             container.selectAll("svg").remove();
 
             // Update the x-scale.
@@ -97,7 +98,7 @@ export default function geneD3(d3, options) {
             var svg = container.selectAll("svg").data([0]);
             var g = svg.join("svg")
                 .attr("width", geneD3_widthPercent ? geneD3_widthPercent : geneD3_width)
-                .attr("height", geneD3_heightPercent ? geneD3_heightPercent : geneD3_height + margin.top + margin.bottom)
+                .attr("height", geneD3_heightPercent ? geneD3_heightPercent : geneD3_height + margin.bottom)
                 .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
                 .attr("preserveAspectRatio", "none")
                 .append('g')
@@ -123,6 +124,7 @@ export default function geneD3(d3, options) {
                     .attr("transform", "translate(0, " + parseInt(10) + ")")
                     .call(xAxis);
             }
+
 
             // Start gene model
             // add elements
@@ -398,7 +400,7 @@ export default function geneD3(d3, options) {
                     let offset = inDialog ? 50 : 0;
                     return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
                 })
-                .style('font', () => { return inDialog ? '9px Open Sans' : '16px Open Sans' })
+                .style('font', () => { return inDialog ? '12px Open Sans' : '16px Open Sans' })
                 .style('fill', '#424242')
                 .style('fill-opacity', 1);
 

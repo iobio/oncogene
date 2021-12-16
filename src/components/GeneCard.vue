@@ -46,7 +46,7 @@
   .gene-summary
     font-size: 13px
     margin-top: -40px
-    max-height: 95px
+    max-height: 135px
     overflow-y: scroll
 
 #gene-track
@@ -95,16 +95,18 @@
       <v-col cols="12" sm="8">
         <div id="gene-track">
           <div :id="geneVizName" v-if="showGene">
-            <gene-viz id="gene-viz"
+            <gene-viz id="gene-container"
                       ref="transcriptGeneVizRef"
                       :data="[selectedTranscript]"
                       :height="40"
+                      :width="width"
                       :margin="margin"
                       :trackHeight="trackHeight"
                       :cdsHeight="cdsHeight"
                       :regionStart="geneRegionStart"
                       :regionEnd="geneRegionEnd"
                       :geneName="selectedGene ? selectedGene.gene_name : null"
+                      :chr="selectedGene ? selectedGene.chr : ''"
                       :isZoomTrack="true"
                       :zoomSwitchOn="showZoom"
                       :d3="d3"
@@ -158,6 +160,10 @@ export default {
     geneRegionStart: null,
     geneRegionEnd: null,
     geneModel: null,
+    width: {
+      default: 0,
+      type: Number
+    },
     d3: null,
     $: null
   },
@@ -309,7 +315,7 @@ export default {
     },
     showZoom: function () {
       const self = this;
-      let container = this.d3.select('#' + self.geneVizName).select('#gene-viz');
+      let container = this.d3.select('#' + self.geneVizName).select('#gene-container');
       if (self.showZoom) {
         self.zoomMessage = "Drag to zoom";
         self.$refs.transcriptGeneVizRef.toggleBrush(self.showZoom, container);

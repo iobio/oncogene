@@ -114,6 +114,7 @@
                      :geneRegionStart="geneRegionStart"
                      :geneRegionEnd="geneRegionEnd"
                      :geneModel="geneModel"
+                     :width="screenWidth"
                      :d3="d3"
                      :$="$"
                      @transcript-selected="onTranscriptSelected"
@@ -723,6 +724,17 @@ export default {
         // Hide banner
         if (self.$refs.variantSummaryCardRef) {
           self.$refs.variantSummaryCardRef.hideGetStartedBanner();
+          // Populate CNV info
+          if (self.cohortModel.hasCnvData) {
+            self.$refs.variantSummaryCardRef.setCnvInfo(sampleModelId, variant);
+          }
+        }
+      } else {
+        if (self.$refs.variantSummaryCardRef) {
+          // Populate CNV info
+          if (self.cohortModel.hasCnvData) {
+            self.$refs.variantSummaryCardRef.setCnvInfo();
+          }
         }
       }
     },

@@ -274,7 +274,9 @@
                              :cosmicText="cosmicText"
                              :revelText="revelText"
                              :somaticText="somaticText"
-                             :variantSelected="variantSelected">
+                             :variantSelected="variantSelected"
+                             :chrom="variant ? variant.chrom : ''"
+                             :cnvInfo="cnvInfo">
                 </feature-viz>
                 <allele-frequency-viz id="loaded-freq-viz" class="summary-viz" style="padding-top: 10px"
                                       ref="summaryFrequencyViz"
@@ -431,7 +433,7 @@ export default {
     return {
       cohortFieldsValid: true,
       coverageCounts: null,
-      cnvCounts: null,
+      cnvInfo: null,
       rnaSeqCounts: null,
       atacSeqCounts: null,
       rawBamDialog: false,
@@ -698,6 +700,13 @@ export default {
       } else if (this.$refs.atacSeqBarFeatureViz) {
         this.$refs.atacSeqBarFeatureViz.clear();
         this.$refs.atacSeqBarFeatureViz.drawCharts(this.atacSeqCounts);
+      }
+    },
+    setCnvInfo: function (sampleModelId, variant) {
+      if (sampleModelId) {
+        this.cnvInfo = this.cohortModel.getCnvInfo(sampleModelId, { chr: variant.chrom, start: variant.start, end: variant.end });
+      } else {
+        this.cnvInfo = null;
       }
     },
     updateRnaSeqLoader: function (isLoading) {

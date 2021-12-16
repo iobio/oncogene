@@ -97,10 +97,6 @@
   shape-rendering: crispEdges;
 }
 
-.ibo-gene .x.axis text {
-  font-size: 13px;
-}
-
 .ibo-gene .tooltip {
   position: absolute;
   text-align: center;
@@ -148,25 +144,52 @@
     fill: $danger-exon-color
     stroke: $danger-exon-border-color
 
-.gene-pseudo-ideo
+  .gene.x.axis
+    font-size: 14px !important
+
+#gene-pseudo-ideo
   position: absolute
-  bottom: 95%
-  left: 20%
-  z-index: 4
+  bottom: 28%
+  left: 23%
+  z-index: 2
+
+  .chrLabel
+    font-family: Quicksand
+    font-size: 12px
+    color: #888
 
   .bands
     display: none !important
 
-.gene-ideo
+#gene-ideo
   position: absolute
-  bottom: 95%
-  left: 20%
-  z-index: 5
+  bottom: 28%
+  left: 23%
+  z-index: 3
+
+  .chrLabel
+    display: none
+
+  .acen
+    fill: #DDD !important
+
+  .gvar
+    fill: #EEE !important
+
+  .stalk
+    fill: #AAA !important
+
+#gene-container
+  position: relative
+  margin-top: 20px
+
+  #gene-viz
+    padding-top: 20px
 
 </style>
 
 <template>
-  <v-container style="position: relative">
+  <v-container id="gene-container" style="position: relative" class="pb-0">
     <div id="gene-ideo"></div>
     <div id="gene-pseudo-ideo"></div>
     <div id="gene-viz"></div>
@@ -201,6 +224,10 @@ export default {
       default: 100,
       type: Number
     },
+    width: {
+      default: 100,
+      type: Number
+    },
     trackHeight: {
       default: 20,
       type: Number
@@ -212,7 +239,7 @@ export default {
     margin: {
       type: Object,
       default: function () {
-        return {top: 10, bottom: 10, left: 10, right: 10}
+        return {top: 0, bottom: 0, left: 10, right: 10}
       }
     },
     transcriptClass: {
@@ -270,12 +297,10 @@ export default {
       ideograms: []
     }
   },
-  created: function () {
-  },
   mounted: function () {
     this.drawGene();
     this.drawChr();
-    this.update(false); // Don't want to show zoom brush on mount
+    this.updateGene(false); // Don't want to show zoom brush on mount
   },
   methods: {
     drawChr: function () {
@@ -288,39 +313,43 @@ export default {
       const chrHeight = this.width * 0.7;
 
       // Draw pseudo-ideogram with gene marker annotation
+      this.d3.select('#gene-pseudo-ideo').select('svg').remove();
+
       const pseudoConfig = {
         organism: 'human',
         assembly: this.assemblyVersion,
-        container: ('#chr-viz'),
+        container: ('#gene-pseudo-ideo'),
         orientation: 'horizontal',
         chrHeight: chrHeight,
         chrWidth: chrWidth,
         chromosome: strippedChr,
         annotations: [{
-          color: '#7f1010',
+          color: '#194d81',
           chr: strippedChr,
           start: +this.regionStart,
           stop: +this.regionEnd,
           name: (this.geneName + " Location")
         }],
         annotationsLayout: 'tracks',
-        showAnnotTooltip: true
+        showAnnotTooltip: false,
+        showBandLabels: false
       };
       let pseudoIdeo = new Ideogram(pseudoConfig);
       this.ideograms.push(pseudoIdeo);
 
       // Draw main ideogram on top
+      this.d3.select('#gene-ideo').select('svg').remove();
+
       const config = {
         organism: 'human',
         assembly: this.assemblyVersion,
-        container: ('#cnv-ideo-' + this.model.id),
+        container: ('#gene-ideo'),
         orientation: 'horizontal',
         chrHeight: chrHeight,
         chrWidth: chrWidth,
         chromosome: strippedChr,
-        annotations: [],
         annotationsLayout: 'overlay',
-        showAnnotTooltip: false,
+        showAnnotTooltip: false
       };
       let ideo = new Ideogram(config);
       this.ideograms.push(ideo);
@@ -336,15 +365,16 @@ export default {
         widthPercent: '100%',
         heightPercent: '100%',
         margin: self.margin,
-        showXAxis: false,
+        showXAxis: true,
         drawBrush: self.isZoomTrack,
         showBrush: false,
         trackHeight: self.trackHeight,
         cdsHeight: self.cdsHeight,
         showLabel: self.showLabel,
         transcriptClass: self.transcriptClass,
-        color: '#7f1010',
-        displayOnly: self.displayOnly
+        color: '#194d81',
+        displayOnly: self.displayOnly,
+        divId: "gene-viz"
       };
       self.geneChart = geneD3(self.d3, options);
 
@@ -366,7 +396,7 @@ export default {
             self.$emit("feature-selected", featureObject, feature, lock);
           });
     },
-    update: function () {
+    updateGene: function () {
       const self = this;
       if (self.data && self.data.length > 0 && self.data[0] != null && Object.keys(self.data[0]).length > 0) {
         let options = {
@@ -401,13 +431,14 @@ export default {
     data: function (newData, oldData) {
       const self = this;
       if (self && self.$(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
-        self.update(false);
+        self.updateGene(false);
+        self.drawChr();
       }
     },
     regionStart: function () {
       const self = this;
       const showZoomBrush = self.isZoomTrack && self.zoomSwitchOn;
-      self.update(showZoomBrush);
+      self.updateGene(showZoomBrush);
     }
   }
 }

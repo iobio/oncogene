@@ -21,11 +21,19 @@
   .bands
     display: none !important
 
+  .chrLabel
+    font-family: Quicksand !important
+    font-size: 12px !important
+    color: #888 !important
+
 .cnv-ideo
   position: absolute
   bottom: 95%
   left: 23%
   z-index: 5
+
+  .chrLabel
+    display: none
 
 .cnv-gene
   position: relative
@@ -151,7 +159,7 @@ export default {
           chrWidth: chrWidth,
           chromosome: strippedChr,
           annotations: [{
-            color: '#7f1010',
+            color: '#194d81',
             chr: strippedChr,
             start: +this.selectedGene.start,
             stop: +this.selectedGene.end,

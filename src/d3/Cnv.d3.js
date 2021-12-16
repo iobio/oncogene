@@ -110,10 +110,10 @@ export default function cnvD3(d3, divId, vizSettings) {
                     })
                     .on("mouseout", function () {
                         dispatch.call('d3mouseout');
-                    })
-                    .on("click", function () {
-                        dispatch.call('d3click', this, data, width);
                     });
+                    // .on("click", function () {
+                    //     dispatch.call('d3click', this, data, width);
+                    // });
 
                 // LCN Line
                 if (drawMinorAllele) {
