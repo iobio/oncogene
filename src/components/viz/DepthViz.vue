@@ -146,6 +146,10 @@
                 default: function () {
                 }
             },
+            sampleId : {
+                  type: String,
+                  default: ""
+            },
             d3: null,
             $: null
         },
@@ -174,7 +178,8 @@
                     showYAxis: this.showYAxis,
                     yTicks: this.yTicks,
                     maxDepth: this.maxDepth,
-                    regionGlyphFunc: this.regionGlyph
+                    regionGlyphFunc: this.regionGlyph,
+                    sampleId: this.sampleId
                 };
 
                 self.depthChart = lineD3(self.d3, lineVizOptions);

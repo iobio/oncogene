@@ -147,58 +147,14 @@
   .gene.x.axis
     font-size: 14px !important
 
-#gene-pseudo-ideo
-  position: absolute
-  bottom: 28%
-  left: 23%
-  z-index: 2
-
-  .chrLabel
-    font-family: Quicksand
-    font-size: 12px
-    color: #888
-
-  .bands
-    display: none !important
-
-#gene-ideo
-  position: absolute
-  bottom: 28%
-  left: 23%
-  z-index: 3
-
-  .chrLabel
-    display: none
-
-  .acen
-    fill: #DDD !important
-
-  .gvar
-    fill: #EEE !important
-
-  .stalk
-    fill: #AAA !important
-
-#gene-container
-  position: relative
-  margin-top: 20px
-
-  #gene-viz
-    padding-top: 20px
-
 </style>
 
 <template>
-  <v-container id="gene-container" style="position: relative" class="pb-0">
-    <div id="gene-ideo"></div>
-    <div id="gene-pseudo-ideo"></div>
-    <div id="gene-viz"></div>
-  </v-container>
+  <div></div>
 </template>
 
 <script>
 import geneD3 from '../../d3/Gene.d3.js'
-import Ideogram from "ideogram";
 
 export default {
   name: 'gene-viz',
@@ -293,68 +249,14 @@ export default {
   },
   data() {
     return {
-      geneChart: {},
-      ideograms: []
+      geneChart: {}
     }
   },
   mounted: function () {
     this.drawGene();
-    this.drawChr();
-    this.updateGene(false); // Don't want to show zoom brush on mount
+    this.updateGene(); // Don't want to show zoom brush on mount
   },
   methods: {
-    drawChr: function () {
-      let strippedChr = this.chr;
-      if (strippedChr && strippedChr.startsWith('chr')) {
-        strippedChr = this.chr.substring(3);
-      }
-
-      const chrWidth = 15;
-      const chrHeight = this.width * 0.7;
-
-      // Draw pseudo-ideogram with gene marker annotation
-      this.d3.select('#gene-pseudo-ideo').select('svg').remove();
-
-      const pseudoConfig = {
-        organism: 'human',
-        assembly: this.assemblyVersion,
-        container: ('#gene-pseudo-ideo'),
-        orientation: 'horizontal',
-        chrHeight: chrHeight,
-        chrWidth: chrWidth,
-        chromosome: strippedChr,
-        annotations: [{
-          color: '#194d81',
-          chr: strippedChr,
-          start: +this.regionStart,
-          stop: +this.regionEnd,
-          name: (this.geneName + " Location")
-        }],
-        annotationsLayout: 'tracks',
-        showAnnotTooltip: false,
-        showBandLabels: false
-      };
-      let pseudoIdeo = new Ideogram(pseudoConfig);
-      this.ideograms.push(pseudoIdeo);
-
-      // Draw main ideogram on top
-      this.d3.select('#gene-ideo').select('svg').remove();
-
-      const config = {
-        organism: 'human',
-        assembly: this.assemblyVersion,
-        container: ('#gene-ideo'),
-        orientation: 'horizontal',
-        chrHeight: chrHeight,
-        chrWidth: chrWidth,
-        chromosome: strippedChr,
-        annotationsLayout: 'overlay',
-        showAnnotTooltip: false
-      };
-      let ideo = new Ideogram(config);
-      this.ideograms.push(ideo);
-
-    },
     drawGene: function () {
       const self = this;
 
@@ -415,7 +317,7 @@ export default {
     },
     toggleBrush: function (showBrush, container) {
       const self = this;
-      self.geneChart.toggleBrush()(showBrush, container);
+      self.geneChart.toggleBrush(showBrush, container);
     },
     concatKeys: function (transcripts) {
       if (transcripts) {
@@ -431,8 +333,7 @@ export default {
     data: function (newData, oldData) {
       const self = this;
       if (self && self.$(self.$el).find("svg").length === 0 || self.concatKeys(newData) != self.concatKeys(oldData)) {
-        self.updateGene(false);
-        self.drawChr();
+        self.updateGene();
       }
     },
     regionStart: function () {

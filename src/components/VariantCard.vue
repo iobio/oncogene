@@ -281,6 +281,15 @@
                       color="secondary">
                 No variants in normal track for somatic only files
               </v-chip>
+              <ideo-viz ref="cnvIdeoRef"
+                        v-if="selectedGene"
+                        :model="sampleModel"
+                        :selectedGene="selectedGene"
+                        :cnvPalette="cnvPalette"
+                        :width="width"
+                        :margin="cnvVizMargin"
+                        :inGeneCard="false">
+              </ideo-viz>
               <variant-viz id="loaded-variant-viz"
                            ref="variantVizRef"
                            v-show="showVariantViz"
@@ -316,6 +325,7 @@
                        :model="sampleModel"
                        :selectedGene="selectedGene"
                        :maxTcn="maxTcn"
+                       :cnvPalette="cnvPalette"
                        :showTransition="true"
                        :width="width"
                        :margin="cnvVizMargin"
@@ -344,6 +354,7 @@
                     :showTooltip="false"
                     :showXAxis="false"
                     :regionGlyph="depthVizRegionGlyph"
+                    :sampleId="sampleModel.id"
                     :d3="d3"
                     :$="$"
                     @region-selected="showExonTooltip"
@@ -435,13 +446,15 @@
 import VariantViz from "./viz/VariantViz.vue"
 import DepthViz from "./viz/DepthViz.vue"
 import CnvViz from "./viz/CnvViz.vue"
+import IdeoViz from "./viz/IdeoViz.vue"
 
 export default {
   name: 'variant-card',
   components: {
     VariantViz,
     CnvViz,
-    DepthViz
+    DepthViz,
+    IdeoViz
   },
   props: {
     globalAppProp: null,  //For some reason, global mixin not working on variant card.  possible cause for-item?
@@ -495,6 +508,7 @@ export default {
       type: Boolean,
       default: false
     },
+    cnvPalette: null,
     d3: null,
     $: null
   },
@@ -955,7 +969,7 @@ export default {
   },
   filters: {},
   computed: {
-    showVariantViz: function() {
+    showVariantViz: function () {
       return !((!this.sampleModel.isTumor) && this.somaticOnlyMode);
     },
     sampleLabel: function () {

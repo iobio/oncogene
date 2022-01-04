@@ -115,6 +115,7 @@
                      :geneRegionEnd="geneRegionEnd"
                      :geneModel="geneModel"
                      :width="screenWidth"
+                     :cnvPalette="cnvPalette"
                      :d3="d3"
                      :$="$"
                      @transcript-selected="onTranscriptSelected"
@@ -149,6 +150,7 @@
                 :geneVizShowXAxis="false"
                 :annotationComplete="annotationComplete"
                 :somaticOnlyMode="cohortModel.onlySomaticCalls"
+                :cnvPalette="cnvPalette"
                 :d3="d3"
                 :$="$"
                 @cohort-variant-click="onCohortVariantClick"
@@ -438,7 +440,6 @@ export default {
   },
   data: () => {
     return {
-      // todo: get rid of unused vars
       screenWidth: (window.innerWidth * 0.5),
       screenHeight: window.innerHeight,
 
@@ -464,6 +465,11 @@ export default {
       showGeneSnackbar: false,
       expandSnackbar: false,
       expandTimeout: 5000,
+      cnvPalette: {
+        tcnRed: "rgb(200, 18, 18, 0.5)",
+        tcnBlue: "rgb(25, 77, 129, 0.5)",
+        tcnGray: "rgb(204, 199, 155, 0.5)"
+      },
 
       // selection state
       selectedGene: null,

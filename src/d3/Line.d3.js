@@ -38,6 +38,8 @@ export default function lineD3(d3, vizSettings) {
 
     var theData = null;
 
+    var sampleId = vizSettings.sampleId ? vizSettings.sampleId : '';
+
     // var pos = function (d) {
     //     return d.pos
     // };
@@ -100,7 +102,7 @@ export default function lineD3(d3, vizSettings) {
 
                 var lg = defs.selectAll("linearGradient").data([data]).enter()
                     .append("linearGradient")
-                    .attr("id", "area-chart-gradient")
+                    .attr("id", ("area-chart-gradient-" + sampleId))
                     .attr("x1", "0")
                     .attr("x2", "0")
                     .attr("y1", "0")
@@ -268,7 +270,7 @@ export default function lineD3(d3, vizSettings) {
                     .attr("d", area(data));
 
                 if (showGradient) {
-                    areaPath.style("fill", "url(#area-chart-gradient)");
+                    areaPath.style("fill", "url(#area-chart-gradient-" + sampleId + ")");
                 }
 
                 if (showTransition) {

@@ -54,6 +54,9 @@
   padding-left: 11px
   padding-right: 11px
 
+#gene-viz
+  padding-top: 5px
+
 </style>
 
 <template>
@@ -95,7 +98,7 @@
       <v-col cols="12" sm="8">
         <div id="gene-track">
           <div :id="geneVizName" v-if="showGene">
-            <gene-viz id="gene-container"
+            <gene-viz id="gene-viz"
                       ref="transcriptGeneVizRef"
                       :data="[selectedTranscript]"
                       :height="40"
@@ -115,6 +118,14 @@
                       @region-zoom="onRegionZoom"
                       @region-zoom-reset="onRegionZoomReset">
             </gene-viz>
+            <br/>
+            <ideo-viz ref="geneIdeoVizRef"
+                      :selectedGene="selectedGene"
+                      :cnvPalette="cnvPalette"
+                      :width="width"
+                      :margin="margin"
+                      :inGeneCard="true"
+            ></ideo-viz>
           </div>
         </div>
       </v-col>
@@ -147,10 +158,12 @@
 import GeneViz from './viz/GeneViz.vue'
 import TranscriptsMenu from './partials/TranscriptsMenu.vue'
 import Vue from 'vue'
+import IdeoViz from "@/components/viz/IdeoViz";
 
 export default {
   name: 'gene-card',
   components: {
+    IdeoViz,
     GeneViz,
     TranscriptsMenu,
   },
@@ -164,6 +177,7 @@ export default {
       default: 0,
       type: Number
     },
+    cnvPalette: null,
     d3: null,
     $: null
   },
