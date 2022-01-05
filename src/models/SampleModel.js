@@ -44,7 +44,8 @@ class SampleModel {
 
         // cnv data
         this.cnvUrlEntered = false;
-        this.cnvsInGeneObj = null;     // The CNVs within the currently selected gene
+        this.cnvsInGeneObj = null;          // The CNVs within the currently selected gene
+        this.cnvsOnSelectedChrom = null;    // The CNVs on the chromosome where currently selected gene located
 
         // model properties
         // TODO: I can get rid of some of these now
@@ -843,7 +844,7 @@ class SampleModel {
         this.vcf.setGeneModel(this.getGeneModel());
         this.vcf.setIsEduMode(this.cohort.isEduMode);
         this.bam = new bamiobio(this.globalApp, this.cohort.endpoint);
-        this.cnv = new cnviobio(this.cohort.endpoint);
+        this.cnv = new cnviobio(this.cohort.endpoint, this.cohort.genomeBuildHelper);
         this.cnv.init();
     }
 
@@ -1324,10 +1325,10 @@ class SampleModel {
     }
 
     /* Returns an object with the list of CNVs that occur within the boundaries of the provided gene, as well as a single merged continuous CNV. */
-    promiseGetCnvRegions(theGene) {
+    promiseGetCnvRegions(theRegion, abnormalOnly, chromLevel) {
         const self = this;
         return new Promise((resolve) => {
-            let cnvObj = self.cnv.findEntryByCoord(theGene.chr, theGene.start, theGene.end);
+            let cnvObj = self.cnv.findEntryByCoord(theRegion.chr, theRegion.start, theRegion.end, abnormalOnly, chromLevel);
             resolve(cnvObj);
         });
     }

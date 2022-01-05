@@ -104,6 +104,7 @@ import { createIntegration } from './models/Integration.js'
 
 // static data
 import allGenesData from './data/genes.json'
+import chromLengthMap from './data/chrom_lengths.json'
 
 export default {
   name: 'App',
@@ -268,7 +269,7 @@ export default {
       }
       // self.setAppMode();
 
-      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp);
+      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp, chromLengthMap);
       self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
           .then(function () {
             return self.promiseInitCache();

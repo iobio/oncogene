@@ -1,5 +1,5 @@
 export class GenomeBuildHelper {
-  constructor(globalApp) {
+  constructor(globalApp, chromLengthMap) {
     this.globalApp = globalApp;
     this.$ = globalApp.$;
     this.currentSpecies = null;
@@ -7,7 +7,7 @@ export class GenomeBuildHelper {
     this.speciesList = [];
     this.speciesNameToSpecies = {}; // map species name to the species object
     this.speciesToBuilds = {};      // map species to its genome builds
-    this.buildNameToBuild = {};     //
+    this.buildNameToBuild = {};
 
     this.DEFAULT_SPECIES = "Human";
     this.DEFAULT_BUILD   = "GRCh37";
@@ -24,6 +24,8 @@ export class GenomeBuildHelper {
     this.RESOURCE_COSMIC_VCF_S3_NON   = "NONCODING COSMIC VCF S3";
 
     this.genomeBuildServer            = this.globalApp.HTTP_SERVICES + "genomebuild/";
+
+    this.chromLengthMap = chromLengthMap;
   }
 
   promiseInit(options) {
@@ -482,7 +484,11 @@ export class GenomeBuildHelper {
     return this.currentBuild === this.DEFAULT_BUILD;
   }
 
-
+  /* Returns the length of the provided chromosome for the current build.
+   * Chr argument must be number only (i.e. 1 not chr1) */
+  getChromLength(chr) {
+    return this.currentBuild ? this.chromLengthMap[this.currentBuild.name][chr] : null;
+  }
 }
 
 

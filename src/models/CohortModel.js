@@ -1086,14 +1086,25 @@ class CohortModel {
                 }
 
                 if (self.hasCnvData) {
-                    let p5 = self.promiseLoadCopyNumbers(theGene)
-                        .then(function (cnvMap) {
+                    // Get CN events for gene level
+                    let p5 = self.promiseLoadCopyNumbers(theGene, false, false)
+                        .then(cnvMap => {
                             self.setMaxTcnForRegion(cnvMap);
-                            self.setCnvForRegion(cnvMap);
+                            self.setCnvForRegion(cnvMap, false);
                         }).catch(error => {
                             console.log("Problem loading cnv data: " + error);
                         });
                     promises.push(p5);
+
+                    // Get CN events for chromosome level
+                    // todo: need to get chromosome bounds
+                    let p6 = self.promiseLoadCopyNumbers(theGene, true, true)
+                        .then(cnvMap => {
+                            self.setCnvForRegion(cnvMap, true);
+                        }).catch(error => {
+                            console.log("Problem loading cnv data for chrom level: " + error);
+                        });
+                    promises.push(p6);
                 }
 
                 Promise.all(promises)
@@ -1468,12 +1479,12 @@ class CohortModel {
         })
     }
 
-    /* Loads the CNVs within the currently selected gene */
-    promiseLoadCopyNumbers(theGene) {
+    /* Loads the CNVs within the provided region */
+    promiseLoadCopyNumbers(theRegion, abnormalOnly, chromLevel) {
         const self = this;
         return new Promise((resolve, reject) => {
             // todo: insert cache layer here
-            self.promiseLoadCnvDatas(theGene)
+            self.promiseLoadCnvDatas(theRegion, abnormalOnly, chromLevel)
                 .then(function (data) {
                     resolve(data);
                 }).catch(function (error) {
@@ -1646,11 +1657,15 @@ class CohortModel {
     }
 
     /* Sets the region-specific property for each sample, if present. */
-    setCnvForRegion(cnvMap) {
+    setCnvForRegion(cnvMap, chromLevel) {
         const self = this;
         self.getCanonicalModels().forEach(model => {
            if (cnvMap[model.id]) {
-               model.cnvsInGeneObj = cnvMap[model.id];
+               if (chromLevel) {
+                   model.cnvsOnSelectedChrom = cnvMap[model.id];
+               } else {
+                   model.cnvsInGeneObj = cnvMap[model.id];
+               }
            }
             model.inProgress['cnvLoading'] = false;
         });
@@ -2177,8 +2192,8 @@ class CohortModel {
         })
     }
 
-    /* Loads the CNV data for each sample model, and returns CNVs within gene boundaries, for each sample. */
-    promiseLoadCnvDatas(theGene) {
+    /* Loads the CNV data for each sample model, and returns CNVs within the provided region boundaries, for each sample. */
+    promiseLoadCnvDatas(theRegion, abnormalOnly, chromLevel) {
         const self = this;
         return new Promise((resolve, reject) => {
             let promises = [];
@@ -2186,7 +2201,7 @@ class CohortModel {
             self.getCanonicalModels().forEach(function (model) {
                 if (model.isCnvLoaded()) {
                     model.inProgress['cnvLoading'] = true;
-                    let p = model.promiseGetCnvRegions(theGene)
+                    let p = model.promiseGetCnvRegions(theRegion, abnormalOnly, chromLevel)
                         .then(cnvObj => {
                             resultMap[model.id] = cnvObj;
                         });

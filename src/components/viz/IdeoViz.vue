@@ -104,7 +104,11 @@ export default {
     inGeneCard : {
       type: Boolean,
       default: false
-    }
+    },
+    assemblyVersion: {
+      type: String,
+      default: ''
+    },
   },
   data() {
     return {
@@ -126,17 +130,14 @@ export default {
       let annotations = [];
       // Fill in CNVs for variant card
       if (this.data && !this.inGeneCard) {
-        let delims = this.data.mergedCnv[0].delimiters;
+        let cnvObjs = this.data.matchingCnvs;
         let i = 0;
-        delims.forEach(coordPair => {
-          let start = coordPair[0];
-          let end = coordPair[1];
-          let tcn = coordPair[2];
+        cnvObjs.forEach(cnvObj => {
           annotations.push({
-            color: this.getTcnColor(tcn),
+            color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
             chr: strippedChr,
-            start: start,
-            stop: end,
+            start: cnvObj.start,
+            stop: cnvObj.end,
             name: 'CNV ' + (i + 1),
           });
           i++;
@@ -205,53 +206,16 @@ export default {
       }
       let ideo = new Ideogram(config);
       this.ideograms.push(ideo);
-
-
-      /*** gene version ***/
-        // const pseudoConfig = {
-        //   organism: 'human',
-        //   assembly: this.assemblyVersion,
-        //   container: ('#gene-pseudo-ideo'),
-        //   orientation: 'horizontal',
-        //   chrHeight: chrHeight,
-        //   chrWidth: chrWidth,
-        //   chromosome: strippedChr,
-        //   annotations: [{
-        //     color: '#194d81',
-        //     chr: strippedChr,
-        //     start: +this.regionStart,
-        //     stop: +this.regionEnd,
-        //     name: (this.geneName + " Location")
-        //   }],
-        //   annotationsLayout: 'tracks',
-        //   showAnnotTooltip: false,
-        //   showBandLabels: false
-        // };
-        // let pseudoIdeo = new Ideogram(pseudoConfig);
-        // this.ideograms.push(pseudoIdeo);
-        //
-        // const config = {
-        //   organism: 'human',
-        //   assembly: this.assemblyVersion,
-        //   container: ('#gene-ideo'),
-        //   orientation: 'horizontal',
-        //   chrHeight: chrHeight,
-        //   chrWidth: chrWidth,
-        //   chromosome: strippedChr,
-        //   annotationsLayout: 'overlay',
-        //   showAnnotTooltip: false
-        // };
-        // let ideo = new Ideogram(config);
-        // this.ideograms.push(ideo);
-
     },
-    getTcnColor: function (tcn) {
-      if (tcn > 2) {
+    getCnvColor: function (tcn, lcn) {
+      if (tcn === 2 && lcn !== 1) {
+        return this.cnvPalette.tcnGray;
+      } else if (tcn > 2) {
         return this.cnvPalette.tcnBlue;
       } else if (tcn < 2) {
         return this.cnvPalette.tcnRed;
       } else {
-        return this.cnvPalette.tcnGray;
+        console.log("WARNING: fed in non-abnormal CNV to ideogram");
       }
     },
     getIdeoId: function (isPseudo) {
@@ -262,9 +226,9 @@ export default {
     }
   },
   watch: {
-    'model.cnvsInGeneObj': function () {
+    'model.cnvsOnSelectedChrom': function () {
       if (this.model && !this.inGeneCard) {
-        this.data = this.model.cnvsInGeneObj;
+        this.data = this.model.cnvsOnSelectedChrom;
         this.drawChrLevel();
       }
     },
@@ -273,7 +237,7 @@ export default {
         this.drawChrLevel();
       } else {
         if (this.model) {
-          this.data = this.model.cnvsInGeneObj;
+          this.data = this.model.cnvsOnSelectedChrom;
           this.drawChrLevel();
         }
       }

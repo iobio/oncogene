@@ -101,8 +101,8 @@ export default function cnvD3(d3, divId, vizSettings) {
 
                 // Draw area per element
                 tcnAreas.append("path")
-                    .attr('fill', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn) })
-                    .attr('stroke', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn) })
+                    .attr('fill', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn, d.lcn, false) })
+                    .attr('stroke', (d, i) => { return inDialog ? cnvModalColors[i] : getCnvColor(d.tcn, d.lcn, true) })
                     .attr('stroke-width', '0.5px')
                     .attr("d", function(d) { return tcnArea(d.points); })
                     .on("mouseover", function (d) {
@@ -247,13 +247,15 @@ export default function cnvD3(d3, divId, vizSettings) {
         }
     }
 
-    function getCnvColor(tcn) {
-        if (tcn > 2) {
+    function getCnvColor(tcn, lcn, forStroke) {
+        if (tcn === 2 && lcn !== 1) {
+            return tcnGray;
+        } else if (tcn > 2) {
             return tcnBlue;
         } else if (tcn < 2) {
             return tcnRed;
         } else {
-            return tcnGray;
+            return forStroke? "black" : "transparent";
         }
     }
 

@@ -125,6 +125,7 @@
                       :width="width"
                       :margin="margin"
                       :inGeneCard="true"
+                      :assemblyVersion="assemblyVersion"
             ></ideo-viz>
           </div>
         </div>
@@ -173,6 +174,10 @@ export default {
     geneRegionStart: null,
     geneRegionEnd: null,
     geneModel: null,
+    assemblyVersion: {
+      type: String,
+      default: null
+    },
     width: {
       default: 0,
       type: Number

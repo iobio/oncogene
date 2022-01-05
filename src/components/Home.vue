@@ -114,6 +114,7 @@
                      :geneRegionStart="geneRegionStart"
                      :geneRegionEnd="geneRegionEnd"
                      :geneModel="geneModel"
+                     :assemblyVersion="assemblyVersion"
                      :width="screenWidth"
                      :cnvPalette="cnvPalette"
                      :d3="d3"
@@ -143,6 +144,7 @@
                 :selectedVariant="selectedVariant"
                 :regionStart="geneRegionStart"
                 :regionEnd="geneRegionEnd"
+                :assemblyVersion="assemblyVersion"
                 :maxTcn="cohortModel.maxTcnForGene"
                 :width="screenWidth"
                 :height="screenHeight"
@@ -1293,6 +1295,10 @@ export default {
 
 
       return list;
+    },
+    assemblyVersion: function () {
+      let buildObj = this.genomeBuildHelper ? this.genomeBuildHelper.getCurrentBuild() : null;
+      return buildObj ? buildObj.name : null;
     }
   }
 }

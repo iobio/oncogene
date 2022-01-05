@@ -288,7 +288,8 @@
                         :cnvPalette="cnvPalette"
                         :width="width"
                         :margin="cnvVizMargin"
-                        :inGeneCard="false">
+                        :inGeneCard="false"
+                        :assemblyVersion="assemblyVersion">
               </ideo-viz>
               <variant-viz id="loaded-variant-viz"
                            ref="variantVizRef"
@@ -475,6 +476,10 @@ export default {
     regionEnd: {
       type: Number,
       default: 0
+    },
+    assemblyVersion: {
+      type: String,
+      default: null
     },
     width: {
       type: Number,
