@@ -483,12 +483,6 @@ export class GenomeBuildHelper {
   isBuild37() {
     return this.currentBuild === this.DEFAULT_BUILD;
   }
-
-  /* Returns the length of the provided chromosome for the current build.
-   * Chr argument must be number only (i.e. 1 not chr1) */
-  getChromLength(chr) {
-    return this.currentBuild ? this.chromLengthMap[this.currentBuild.name][chr] : null;
-  }
 }
 
 
