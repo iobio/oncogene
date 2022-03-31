@@ -169,7 +169,7 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="launchSource !== MOSAIC" :style="'background-color: ' + slideBackground">
+          <v-carousel-item v-if="!isMosaic(launchSource)" :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
               <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
@@ -211,7 +211,7 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="launchSource !== MOSAIC && !somaticCallsOnly"
+          <v-carousel-item v-if="!isMosaic(launchSource) && !somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
@@ -457,7 +457,8 @@ export default {
     return {
       // constants
       GALAXY: 'galaxy',
-      MOSAIC: 'mosaic',
+      UTAH_MOSAIC: 'mosaic.chpc.utah.edu',
+      CDDRC_MOSAIC: 'cddrc.utah.edu',
       VCF: 'vcf',
       COVERAGE: 'coverage',
       RNASEQ: 'rnaSeq',
@@ -715,7 +716,8 @@ export default {
       return this.reqSteps.slice((this.reqSteps.length / 2));
     },
     nativeLaunch: function () {
-      return this.launchSource !== this.GALAXY && this.launchSource !== this.MOSAIC;
+      return this.launchSource !== this.GALAXY && this.launchSource !== this.UTAH_MOSAIC
+          && this.launchSource !== this.CDDRC_MOSAIC;
     }
   },
   watch: {
@@ -1128,9 +1130,10 @@ export default {
         self.showError = true;
       };
     },
-    checkAndUploadGalaxyConfig: function () {
+    checkAndUploadExternalConfig: function () {
       const self = this;
-      let displayGalaxyWarning = function (warningText) {
+      let formattedSource = this.launchSource === this.GALAXY ? this.GALAXY : 'Mosaic';
+      let displayWarning = function (warningText) {
         const warningType = 'error';
         self.displayAlert(warningType, warningText);
       }
@@ -1145,7 +1148,7 @@ export default {
         samples.forEach(sample => {
           // Optional fields
           if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
-            displayGalaxyWarning('There was a problem passing coverage BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+            displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
             // Still need to check if this sample has optional data type
             if (sample.coverageBam) {
@@ -1155,7 +1158,7 @@ export default {
             }
           }
           if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
-            displayGalaxyWarning('There was a problem passing RNA-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+            displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
             // Still need to check if this sample has optional data type
             if (sample.rnaSeqBam) {
@@ -1195,10 +1198,10 @@ export default {
         }
 
       } else {
-        displayGalaxyWarning('Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
       if (!self.uploadedVcfUrl || !self.uploadedTbiUrl) {
-        displayGalaxyWarning('Missing required data files from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        displayWarning('Missing required data files from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
     },
     clearUploadForm: function () {
@@ -1396,6 +1399,9 @@ export default {
         self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
         self.showError = true;
       };
+    },
+    isMosaic: function(source) {
+      return (source === this.UTAH_MOSAIC || source === this.CDDRC_MOSAIC);
     }
   },
   mounted: function () {
@@ -1415,7 +1421,7 @@ export default {
             if (this.launchSource === this.GALAXY) {
               self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
               console.log('Could not read vcf header from file passed by Galaxy');
-            } else if (this.launchSource === this.MOSAIC) {
+            } else if (this.launchSource === this.CDDRC_MOSAIC || this.launchSource === this.UTAH_MOSAIC) {
               self.displayAlert('error', 'Could not read file data from Mosaic. Please try launching again, or contact iobioproject@gmail.com for assistance');
               console.log('Could not read vcf header from file passed by Mosaic');
             } else {
@@ -1426,8 +1432,8 @@ export default {
         });
       }
     }
-    if (this.launchSource === this.GALAXY) {
-      this.checkAndUploadGalaxyConfig();
+    if (!this.nativeLaunch) {
+      this.checkAndUploadExternalConfig();
     }
   }
 }

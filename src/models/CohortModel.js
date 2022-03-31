@@ -1734,7 +1734,11 @@ class CohortModel {
         if (sampleModel.cnv) {
             let cnvObj = sampleModel.cnv.findEntryByCoord(varInfo.chr, varInfo.start, varInfo.end, false);
             let mergeObj = cnvObj.mergedCnv[0];
-            if (+mergeObj.maxTcn < 2) {
+            if (+mergeObj.maxTcn === 2 && +mergeObj.maxLcn === 0) {
+                cnvInfo.abnormal = true;
+                cnvInfo.cnvType = "minor";
+                cnvInfo.cnvStatusText = "Loss of heterozygosity (LOH)";
+            } else if (+mergeObj.maxTcn < 2) {
                 cnvInfo.abnormal = true;
                 cnvInfo.cnvType = "del";
                 cnvInfo.cnvStatusText = "Lies in deletion area";
@@ -1745,7 +1749,7 @@ class CohortModel {
             } else if (+mergeObj.maxLcn !== 1) {
                 cnvInfo.abnormal = true;
                 cnvInfo.cnvType = "minor";
-                cnvInfo.cnvStatusText = "Lies in area with abnormal minor copy number";
+                cnvInfo.cnvStatusText = "Lies in area of allelic imbalance";
             } else {
                 cnvInfo.abnormal = false;
                 cnvInfo.cnvType = "";
@@ -1753,7 +1757,7 @@ class CohortModel {
             }
             cnvInfo.tcn = mergeObj.maxTcn;
             cnvInfo.lcn = mergeObj.maxLcn;
-            cnvInfo.cnvCoordString = mergeObj.start + " - " + mergeObj.end;
+            cnvInfo.cnvCoordString = Number(mergeObj.start).toLocaleString() + " - " + Number(mergeObj.end).toLocaleString();
         } else {
             console.log('Could not find CNV model to retrieve info for variant summary');
         }

@@ -608,7 +608,7 @@ export default {
             .data([exon]);
       }
     },
-    onVariantClick: function (variant) {
+    onVariantClick: function (variant, xCoord) {
       if (this.showDepthViz) {
         if (variant) {
           this.showCoverageCircle(variant);
@@ -620,7 +620,7 @@ export default {
           this.showVariantCircle(variant, true);
         }
       }
-      this.$emit('cohort-variant-click', variant, this, this.sampleModel.id);
+      this.$emit('cohort-variant-click', variant, this, this.sampleModel.id, xCoord);
     },
     onVariantHover: function (variant) {
       if (this.showDepthViz) {

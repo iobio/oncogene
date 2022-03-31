@@ -116,7 +116,7 @@ class cnviobio {
     findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false, chrOnly = false) {
         const self = this;
 
-        var cnvObj = {
+        let cnvObj = {
             matchingCnvs: [],
             mergedCnv: []
         };
@@ -127,44 +127,25 @@ class cnviobio {
             strippedChr = strippedChr.substring(3);
         }
         // Get idx based on chr number
-        var chrIdx = strippedChr;
+        let chrIdx = strippedChr;
         if (chrIdx === 'X') {
             chrIdx = 24;
         } else if (chrIdx === 'Y') {
             chrIdx = 25;
         }
 
-        var chrStarts = self.startCoords[chrIdx - 1];
-        var chrData = self.cnvData[chrIdx - 1];
-
-
-        // if (chrOnly) {
-        //     for (let i = 0; i < chrData.length; i++) {
-        //         let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2 || (+chrData[i].lcn) !== 1) : true;
-        //         if (abnormalSatisfied) {
-        //             // Ensure we aren't out of bounds of the end of the chromosome
-        //             let chromLength = self.genomeBuildHelper.getChromLength(+strippedChr);
-        //             chrData[i].end = Math.min(chromLength, +chrData[i].end);
-        //
-        //             cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
-        //         }
-        //     }
-        // } else {
-
-        // let i = 0;
-        // if (chrOnly) {
+        let chrStarts = self.startCoords[chrIdx - 1];
+        let chrData = self.cnvData[chrIdx - 1];
+        let chrLength = self.genomeBuildHelper.getReferenceLength(+strippedChr);
+        // todo: scoped vars a bit diff here - debug & test
         for (let i = 0; i < chrStarts.length; i++) {
             let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2 || (+chrData[i].lcn) !== 1) : true;
             if (chrOnly) {
                 if (abnormalSatisfied) {
                     // Ensure we aren't out of bounds of chrom end
-                    var chromLength = self.genomeBuildHelper.getReferenceLength(+strippedChr);
-                    var end = +chrData[i].end;
-                    chrData[i].end = Math.min(chromLength, end);
-                    if (end > chromLength) {
-                        debugger;
-                    }
-                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
+                    chrData[i].end = Math.min(+chrData[i].end, chrLength);
+
+                    cnvObj.matchingCnvs.push(chrData[i]);
                 }
             } else {
                 // Don't start searching if our first section is > our coord
@@ -173,13 +154,7 @@ class cnviobio {
                 }
 
                 // Ensure we aren't out of bounds of the end of the chromosome
-                var chrLength = self.genomeBuildHelper.getReferenceLength(+strippedChr);
-                var currEnd = +chrData[i].end;
-                chrData[i].end = Math.min(chrLength, currEnd);
-                if (chrData[i].end == 55795900) {
-                    debugger;
-                }
-                // TODO: find it happening
+                chrData[i].end = Math.min(chrLength, +chrData[i].end);
 
                 if (chrData[i].start > endCoord) {
                     console.log("CNV start is greater than the end coordinate of the chromsome");
@@ -201,41 +176,6 @@ class cnviobio {
                 }
             }
         }
-        // } else {
-            // Don't start searching if our first section is > our coord
-            // if (chrStarts.length === 0 || chrStarts[0] > startCoord) {
-            //     return cnvObj;
-            // }
-            //
-            // // Search intervals for matching start
-            // //for (i = 0; i < chrStarts.length; i++) {
-            //
-            //     // Ensure we aren't out of bounds of the end of the chromosome
-            //     let chrLength = self.genomeBuildHelper.getReferenceLength(+strippedChr);
-            //     let currEnd = +chrData[i].end;
-            //     chrData[i].end = Math.min(chrLength, currEnd);
-            //
-            //     if (chrData[i].start > endCoord) {
-            //         break;
-            //     }
-            //     // If we only want abnormal CNVs, perform check before adding
-            //     let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2 || (+chrData[i].lcn) !== 1) : true;
-            //
-            //     // We're in a gene encompasses by a CNV larger than the entire gene
-            //     if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end && abnormalSatisfied) {
-            //         cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
-            //         // We've found an element that encompasses some of the 5' part of the gene
-            //     } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord && abnormalSatisfied) {
-            //         cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
-            //         // We've found an event that starts within our gene and encompasses some of the 3' part
-            //     } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord && abnormalSatisfied) {
-            //         cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
-            //         // We've found a tiny CNV within the gene
-            //     } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord && abnormalSatisfied) {
-            //         cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
-            //     }
-            //}
-        // }
         cnvObj.mergedCnv = self._mergeCnvs(cnvObj.matchingCnvs);
         return cnvObj;
     }
@@ -312,5 +252,4 @@ class cnviobio {
         return data;
     }
 }
-
 export default cnviobio

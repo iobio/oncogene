@@ -181,8 +181,8 @@
 
                 // Register listeners
                 let dispatch = this.variantChart.getDispatch();
-                dispatch.on('d3click', function(variant) {
-                    self.onVariantClick(variant);
+                dispatch.on('d3click', function(variant, xCoord) {
+                    self.onVariantClick(variant, xCoord);
                 });
                 dispatch.on('d3outsideclick', function() {
                     self.onVariantClick(null);
@@ -226,9 +226,9 @@
                 const self = this;
                 self.variantChart.updateVariantClasses(container);
             },
-            onVariantClick: function (variant) {
+            onVariantClick: function (variant, xCoord) {
                 let self = this;
-                self.$emit("variantClick", variant);
+                self.$emit("variantClick", variant, xCoord);
             },
             onVariantHover: function (variant) {
                 let self = this;

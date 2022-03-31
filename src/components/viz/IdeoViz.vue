@@ -228,6 +228,7 @@ export default {
   watch: {
     'model.cnvsOnSelectedChrom': function () {
       if (this.model && !this.inGeneCard) {
+        // todo: look for oob coordinates here for ch22
         this.data = this.model.cnvsOnSelectedChrom;
         this.drawChrLevel();
       }

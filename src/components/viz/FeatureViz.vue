@@ -172,18 +172,7 @@
             </v-icon>
             {{ cnvInfo.cnvStatusText || '-' }}
           </v-btn>
-<!--        <span class="group pa-2">-->
-<!--          <v-icon small>{{getCnvIcon(cnvInfo.cnvType)}}</v-icon>-->
-<!--          {{ cnvInfo.cnvStatusText || '-' }}-->
-<!--        </span>-->
         </v-col>
-
-<!--        <v-col sm="1" class="summary-field-value">-->
-<!--          <v-icon small>{{getCnvIcon(cnvInfo.cnvType)}}</v-icon>-->
-<!--        </v-col>-->
-<!--        <v-col sm="8" v-if="!loadingExtraAnnotations" class="summary-field-value">-->
-<!--           {{ cnvInfo.cnvStatusText || '-' }}-->
-<!--        </v-col>-->
         <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
           <div class="loader">
             <img src="../../assets/images/wheel.gif">
@@ -306,7 +295,7 @@ export default {
       if (this.chrom && this.chrom.startsWith("chr")) {
         return this.chrom;
       } else {
-        return "chr:" + this.chrom;
+        return 'chr' + this.chrom + ': ';
       }
     },
     tcn : function () {

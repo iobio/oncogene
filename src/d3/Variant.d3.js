@@ -384,7 +384,9 @@ export default function variantD3(d3, vizSettings) {
                 // Add listeners after adjusting symbol width, etc
                 g.selectAll('.variant')
                     .on("click", function (d) {
-                        dispatch.call('d3click', this, d);
+                        let xCoord = d ? x(d.start) + 2 : null;
+                        dispatch.call('d3click', this, d, xCoord);
+                        // todo: is stop prop here culprit for turning off highlight
                         currentEvent.stopPropagation();
                     })
                     .on("mouseover", function (d) {

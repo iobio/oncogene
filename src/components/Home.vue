@@ -128,7 +128,7 @@
         </v-row>
         <v-row no-gutters v-if="dataEntered || debugMode" :height="700"
                :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
-          <v-col cols="8">
+          <v-col cols="8" id="varCardArea">
             <variant-card
                 ref="variantCardRef"
                 v-for="model in sampleModelsToDisplay"
@@ -705,9 +705,10 @@ export default {
     /*
      * INTERACTIVITY
      */
-    onCohortVariantClick: function (variant, sourceComponent, sampleModelId) {
+    onCohortVariantClick: function (variant, sourceComponent, sampleModelId, xCoord) {
       const self = this;
       self.deselectVariant();
+      self.toggleVerticalLine(xCoord);
       if (variant) {
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();
@@ -1210,6 +1211,27 @@ export default {
     },
     displayUnmatchedGenesModal: function () {
       this.displayUnmatchedGenesWarning = true;
+    },
+    toggleVerticalLine: function (xCoord) {
+      let varChunk = this.d3.select("#varCardArea");
+      const chunkHeight = 200; // todo: get this from varChunk
+
+      // Remove any old lines
+      varChunk.select('#trackingLine').remove();
+
+      // Draw new line
+      if (xCoord) {
+        varChunk.append('svg')
+            .append('line')
+            .attr('x1', xCoord)
+            .attr('x2', xCoord)
+            .attr('y1', 0)
+            .attr('y2', chunkHeight)
+            .style('stroke', 'black')
+            .style('stroke-width', 10)
+            .attr('id', 'trackingLine');
+        // todo: add a short transition on this
+      }
     }
   },
   computed: {
