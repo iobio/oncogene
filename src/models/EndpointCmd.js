@@ -8,7 +8,8 @@ export default class EndpointCmd {
         this.getHumanRefNames = getHumanRefNamesFunc;
 
         // talk to correct version of gru per integration
-        if (backendUrl == null) {
+        // note: when running locally have to reroute
+        if (backendUrl == null || backendUrl.startsWith('http://steph')) {
             backendUrl = 'backend.iobio.io';
         }
         this.api = new Client(backendUrl);
