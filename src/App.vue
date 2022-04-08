@@ -111,13 +111,11 @@ export default {
   components: {
     Home,
   },
-  props: {
-    // todo: add types here
-    launchSource: null,
-    genes: []
-  },
   data: () => {
     return {
+      // constants
+      GALAXY: 'galaxy',
+
       // views
       hoverTooltip: null,
       selectedGeneName: null,
@@ -146,7 +144,26 @@ export default {
       demoMode: false,
 
       // integration
-      launchParams: null,
+      launchParams: {
+        type: Object,
+        default: null
+      },
+      launchSource: {
+        type: String,
+        default: ''
+      },
+      somaticOnly: {
+        type: Boolean,
+        default: false
+      },
+      projectId: {
+        type: Number,
+        default: 0
+      },
+      genes: {
+        type: Array,
+        default: () => { return []; }
+      },
 
       // static data
       allGenes: allGenesData
@@ -228,33 +245,33 @@ export default {
         this.$refs.homePanel.displayUnmatchedGenesModal();
       }
     },
-    setGalaxyUrlParams: function() {
-      console.log('WARNING: setGalaxyUrlParams needs to be implemented');
-    },
-    setMosaicUrlParams: function(query) {
-
-      // todo: what other params do I need here
-      // todo: if keeping gene passing will need to put in here?
-      let queryObj = {
-        'somaticOnly': query.somaticOnly,
-        'projectId': query.projectId,
-        'source': query.source
-      };
-
-      this.$router.replace({
-        name: 'mosaic-home',
-        query: queryObj,
-      }).catch(err => {
-        console.log('Problem routing to integration specified path: ' + err);
-      });
-    }
+    // setGalaxyUrlParams: function() {
+    //   console.log('WARNING: setGalaxyUrlParams needs to be implemented');
+    // },
+    // setMosaicUrlParams: function(query) {
+    //
+    //   // todo: what other params do I need here
+    //   // todo: if keeping gene passing will need to put in here?
+    //   let queryObj = {
+    //     'somaticOnly': query.somaticOnly,
+    //     'projectId': query.projectId,
+    //     'source': query.source
+    //   };
+    //
+    //   // todo: think this needs to route to home OR add params in that route entry
+    //   this.$router.replace({
+    //     name: 'mosaic-home',
+    //     query: queryObj,
+    //   }).catch(err => {
+    //     console.log('Problem routing to integration specified path: ' + err);
+    //   });
+    // }
   },
   mounted: function () {
     const self = this;
     this.$gtag.pageview("/");
 
     let leadQuery = this.$route.query;
-    // todo: get rid of this for galaxy routing in main.js
     if (process.env.VUE_APP_GALAXY_MODE) {
       leadQuery = {
         source: 'galaxy'
@@ -263,16 +280,15 @@ export default {
     this.integration = createIntegration(leadQuery, this.globalApp);
     this.launchSource = this.integration.getSource();
     this.integration.init().then(() => {
-      const query = self.integration.buildQuery();
+      //const query = self.integration.buildQuery();
       self.launchParams = this.integration.buildParams();
 
-      debugger;
-      if (self.launchSource === self.GALAXY) {
-        // todo: replace passed params and this.router.replace
-        self.setGalaxyUrlParams();
-      } else if (Object.keys(query).length > 0) {
-        self.setMosaicUrlParams(query);
-      }
+      // if (self.launchSource === self.GALAXY) {
+      //   // todo: replace passed params and this.router.replace
+      //   self.setGalaxyUrlParams();
+      // } else if (Object.keys(query).length > 0) {
+      //   self.setMosaicUrlParams(query);
+      // }
 
       self.cardWidth = window.innerWidth;
       self.globalApp.$(window).resize(function () {

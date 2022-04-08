@@ -1183,6 +1183,9 @@ export default {
           }
         });
 
+        // todo: add in check for somatic only and gene list here
+        debugger;
+
         // Toggle switches in loader
         if (coverageExists) {
           self.addDataType(self.COVERAGE);
@@ -1433,6 +1436,7 @@ export default {
       }
     }
     if (!this.nativeLaunch) {
+      // todo: left off here - this is not triggering for Mosaic launch
       this.checkAndUploadExternalConfig();
     }
   }

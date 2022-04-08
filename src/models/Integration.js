@@ -131,32 +131,22 @@ class MosaicIntegration extends Integration {
                 const projectId = self.config.params.project_id;
 
                 if (projectId) {
-                    // {
-                    //      normal: {   vcf:
-                    //                  tbi:
-                    //                  coverageBam:
-                    //                  coverageBai:
-                    //                  cnv:
-                    //                  rnaSeqBam:
-                    //                  rnaSeqBai:
-                    //                  },
-                    //      t1: { ^^^ NO vcf/tbi }
-                    // }
-                    this.getMosaicIobioUrls((urlMap) => {
-                        self.tumors = [];
-                        Object.keys(urlMap).forEach(sampleId => {
-                            if (sampleId === self.NORMAL) {
-                                self.vcf = urlMap[sampleId].vcf;
-                                self.tbi = urlMap[sampleId].tbi;
-                                self.normal = Object.assign({}, urlMap[sampleId]);
-                                delete self.normal.vcf;
-                                delete self.normal.tbi;
-                            } else {
-                                self.tumors.push(urlMap[sampleId]);
-                            }
+                    self.promiseGetMosaicIobioUrls()
+                        .then(urlMap => {
+                            self.tumors = [];
+                            Object.keys(urlMap).forEach(sampleId => {
+                                if (sampleId === self.NORMAL) {
+                                    self.vcf = urlMap[sampleId].vcf;
+                                    self.tbi = urlMap[sampleId].tbi;
+                                    self.normal = Object.assign({}, urlMap[sampleId]);
+                                    delete self.normal.vcf;
+                                    delete self.normal.tbi;
+                                } else {
+                                    self.tumors.push(urlMap[sampleId]);
+                                }
+                            });
+                            resolve();
                         });
-                        resolve();
-                    });
                 } else {
                     reject('Could not find necessary query arguments for Mosaic launch');
                 }
@@ -176,8 +166,6 @@ class MosaicIntegration extends Integration {
 
     buildQuery() {
         return {
-            //accessToken: this.config.params.access_token,
-            //genes: this.config.params.genes, todo: get CM to get rid of this in launcher
             projectId: this.config.params.project_id,
             sampleId: this.config.params.sample_id, // aka normal sample
             somaticOnly: this.config.params.somatic_only,
@@ -186,44 +174,73 @@ class MosaicIntegration extends Integration {
         };
     }
 
-    getMosaicIobioUrls(callback) {
+    promiseGetMosaicIobioUrls() {
         const self = this;
-        let api = decodeURIComponent(this.config.params.source) + "/api/v1";
+        return new Promise((resolve, reject) => {
+            const api = decodeURIComponent(self.config.params.source) + "/api/v1";
+            const project_id = self.config.params.project_id;
+            const normal_id = self.config.params.sample_id;
+
+            // todo: config is parsing these as strings rather than array - how to fix?
+            let tumor_ids = [];
+            if (self.config.params['tumor_sample_ids[0]']) {
+                tumor_ids.push(self.config.params['tumor_sample_ids[0]']);
+            }
+            if (self.config.params['tumor_sample_ids[1]']) {
+                tumor_ids.push(self.config.params['tumor_sample_ids[1]']);
+            }
+            if (self.config.params['tumor_sample_ids[2]']) {
+                tumor_ids.push(self.config.params['tumor_sample_ids[2]']);
+            }
+            if (self.config.params['tumor_sample_ids[3]']) {
+                tumor_ids.push(self.config.params['tumor_sample_ids[3]']);
+            }
+            if (self.config.params['tumor_sample_ids[4]']) {
+                tumor_ids.push(self.config.params['tumor_sample_ids[4]']);
+            }
+
+            let params = {
+                project_id,
+                normal_id,
+                tumor_ids
+            };
+            let returnMap = {};
+
+            if (localStorage.getItem('mosaic-iobio-tkn')) {
+                promiseGetNormalSampleUrls(api, params, self.globalApp.$)
+                    .then(normalMap => {
+                        Object.keys(normalMap).forEach(key => {
+                            returnMap[key] = normalMap[key];
+                        })
+                        promiseGetTumorSampleUrls(api, params, self.globalApp.$)
+                            .then(tumorMap => {
+                                Object.keys(tumorMap).forEach(key => {
+                                    returnMap[key] = tumorMap[key];
+                                })
+                                resolve(returnMap);
+                            }).catch(error => {
+                                reject("Problem getting file info for tumor samples: " + error);
+                            })
+                    }).catch(error => {
+                        reject("Problem getting file info for normal sample: " + error);
+                })
+            } else {
+                reject("No access token detected");
+                // todo: what package does this come from?
+                //window.location.href = buildOauthLink();
+            }
+        });
+    }
+}
+
+export function promiseGetNormalSampleUrls(api, params, $) {
+    const project_id = params.project_id;
+    const normal_id = params.normal_id;
+    return new Promise((resolve) => {
+        // Get file urls for normal sample
         let returnMap = {};
-
-        const project_id = this.config.params.project_id;
-        const access_token = this.config.params.access_token;
-        const normal_id = this.config.params.sample_id;
-        const token_type = this.config.params.token_type;
-
-        // TODO: CONFIG IS PARSING THESE AS STRINGS NOT ARRAY
-        // NEED TO FIX THIS IN Qs?
-        let tumor_ids = [];
-        debugger;
-        if (this.config.params['tumor_sample_ids[0]']) {
-            tumor_ids.push(this.config.params['tumor_sample_ids[0']);
-        }
-        if (this.config.params['tumor_sample_ids[1]']) {
-            tumor_ids.push(this.config.params['tumor_sample_ids[1']);
-        }
-        if (this.config.params['tumor_sample_ids[2]']) {
-            tumor_ids.push(this.config.params['tumor_sample_ids[2']);
-        }
-        if (this.config.params['tumor_sample_ids[3]']) {
-            tumor_ids.push(this.config.params['tumor_sample_ids[3']);
-        }
-        if (this.config.params['tumor_sample_ids[4]']) {
-            tumor_ids.push(this.config.params['tumor_sample_ids[4']);
-        }
-
-
-        if (access_token !== undefined) {
-            localStorage.setItem('mosaic-iobio-tkn', token_type + ' ' + access_token);
-        }
-        if (localStorage.getItem('mosaic-iobio-tkn')) {
-
-            // Get file urls for normal sample
-            getFilesForSample(project_id, normal_id, self).done(data => {
+        getFilesForSample(project_id, normal_id, api, $).done(data => {
+            if (data.data) {
                 const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
                 const tbi = data.data.filter(f => (f.type === 'tbi'))[0];
                 const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
@@ -231,75 +248,100 @@ class MosaicIntegration extends Integration {
                 // todo: how do I pull out rnaseq bams from here instead of coverage bams?
                 // todo: add in pulling facets data out
 
-                getSignedUrlForFile(project_id, vcf, self).done(vcfUrlData => {
+                getSignedUrlForFile(project_id, vcf, api, $).done(vcfUrlData => {
                     const vcfUrl = vcfUrlData.url;
-                    getSignedUrlForFile(project_id, tbi, self).done(tbiUrlData => {
+                    getSignedUrlForFile(project_id, tbi, api, $).done(tbiUrlData => {
                         const tbiUrl = tbiUrlData.url;
-                        getSignedUrlForFile(project_id, bam, self).done(bamUrlData => {
-                            const bamUrl = bamUrlData.url;
-                            getSignedUrlForFile(project_id, bai, self).done(baiUrlData => {
-                                const baiUrl = baiUrlData.url;
-                                returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl}
+                        if (bam && bai) {
+                            getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
+                                const bamUrl = bamUrlData.url;
+                                getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
+                                    const baiUrl = baiUrlData.url;
+                                    returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl}
+                                    resolve(returnMap);
+                                })
                             })
-                        })
+                        } else {
+                            console.log("No bam & bai files obtained for normal sample");
+                            returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl };
+                            resolve(returnMap);
+                        }
                     })
                 })
-            })
+            }
+        })
+    });
+}
 
-            // Get file urls for tumor sample(s)
-            let tumorNo = 1;
-            tumor_ids.forEach(tumor_id => {
-                getFilesForSample(project_id, tumor_id, self).done(data => {
-                    const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
-                    const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
-                    // todo: how do I pull out rnaseq bams from here instead of coverage bams?
-                    // todo: add in pulling facets data out
+export function promiseGetTumorSampleUrls(api, params, $) {
+    const project_id = params.project_id;
+    let tumor_ids = params.tumor_ids;
+    return new Promise((resolve) => {
+        // Get file urls for tumor sample(s)
+        let tumorNo = 1;
+        let mosaicPs = [];
+        let returnMap = {};
+        tumor_ids.forEach(tumor_id => {
+            let p = new Promise((innerResolve, innerReject) => {
+                getFilesForSample(project_id, tumor_id, api, $).done(data => {
+                    if (data.data) {
+                        const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
+                        const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
+                        // todo: how do I pull out rnaseq bams from here instead of coverage bams?
+                        // todo: add in pulling facets data out
 
-                    // Get Signed Url
-                    getSignedUrlForFile(project_id, bam, self).done(bamUrlData => {
-                        const bamUrl = bamUrlData.url;
-                        getSignedUrlForFile(project_id, bai, self).done(baiUrlData => {
-                            const baiUrl = baiUrlData.url;
-                            returnMap[('t' + tumorNo)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl}
-                        })
-                    })
+                        // Get Signed Url
+                        if (bam && bai) {
+                            getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
+                                const bamUrl = bamUrlData.url;
+                                getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
+                                    const baiUrl = baiUrlData.url;
+                                    returnMap[('t' + tumorNo)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl};
+                                    innerResolve();
+                                })
+                            })
+                        } else {
+                            console.log("No bam & bai files for tumor " + tumorNo);
+                            resolve(returnMap);
+                        }
+                    } else {
+                        innerReject("Could not get file data from Mosaic");
+                    }
                 })
-                tumorNo++;
-            })
-            callback(returnMap);
-
-        } else {
-            console.log("No access token detected");
-            // todo: what package does this come from?
-            //window.location.href = buildOauthLink();
-        }
-
-        function getFilesForSample(project_id, sample_id, self) {
-            return self.globalApp.$.ajax({
-                url: api + '/projects/' + project_id + '/samples/' + sample_id + '/files',
-                type: 'GET',
-                contentType: 'application/json',
-                headers: {
-                    'Authorization': localStorage.getItem('mosaic-iobio-tkn')
-                }
-            }).fail(function() {
-                //let link = buildOauthLink(); todo: what package does this come from?
-                let link = '';
-                self.globalApp.$('#warning-authorize')
-                    .append('Your access to hub.iobio has expired. Please click <a href='+link+'>here</a> to renew your access.')
-                    .css('display', 'block');
             });
-        }
+            mosaicPs.push(p);
+            tumorNo++;
+        })
+       Promise.all(mosaicPs).then(() => {
+           resolve(returnMap);
+       })
+    });
+}
 
-        function getSignedUrlForFile (project_id, file, self) {
-            return self.globalApp.$.ajax({
-                url: api + '/projects/' + project_id + '/files/' + file.id + '/url',
-                type: 'GET',
-                contentType: 'application/json',
-                headers: {
-                    'Authorization': localStorage.getItem('mosaic-iobio-tkn')
-                }
-            });
+export function getFilesForSample(project_id, sample_id, api, $) {
+    return $.ajax({
+        url: api + '/projects/' + project_id + '/samples/' + sample_id + '/files',
+        type: 'GET',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': localStorage.getItem('mosaic-iobio-tkn')
         }
-    }
+    }).fail(function() {
+        //let link = buildOauthLink(); todo: what package does this come from?
+        let link = '';
+        $('#warning-authorize')
+            .append('Your access to mosaic.iobio has expired. Please click <a href='+link+'>here</a> to renew your access.')
+            .css('display', 'block');
+    });
+}
+
+export function getSignedUrlForFile (project_id, file, api, $) {
+    return $.ajax({
+        url: api + '/projects/' + project_id + '/files/' + file.id + '/url',
+        type: 'GET',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': localStorage.getItem('mosaic-iobio-tkn')
+        }
+    });
 }
