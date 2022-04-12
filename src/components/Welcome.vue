@@ -457,8 +457,8 @@ export default {
     return {
       // constants
       GALAXY: 'galaxy',
-      UTAH_MOSAIC: 'mosaic.chpc.utah.edu',
-      CDDRC_MOSAIC: 'cddrc.utah.edu',
+      UTAH_MOSAIC: 'https://mosaic.chpc.utah.edu',
+      CDDRC_MOSAIC: 'https://cddrc.utah.edu',
       VCF: 'vcf',
       COVERAGE: 'coverage',
       RNASEQ: 'rnaSeq',
@@ -1200,6 +1200,15 @@ export default {
           self.addDataType(self.CNV);
         }
 
+        // NOTE: for some reason when we launch from Mosaic have to mount
+        // Have to mount vcf slide to do actual checks
+        if (formattedSource === 'Mosaic' && self.vcfFormMounted && self.$refs.vcfFormRef) {
+          self.$refs.vcfFormRef.forEach(ref => {
+            ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
+          });
+        }
+        self.mountVcfSlide(self.somaticCallsOnly);
+
       } else {
         displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
@@ -1419,6 +1428,7 @@ export default {
       if (this.uploadedVcfUrl && this.uploadedTbiUrl) {
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, (success, sampleNames, build) => {
           if (success) {
+            // todo: left off here - need to finish this before mounting vcf-form for Mosaic launch
             self.selectedBuild = build;
           } else {
             if (this.launchSource === this.GALAXY) {
@@ -1436,7 +1446,6 @@ export default {
       }
     }
     if (!this.nativeLaunch) {
-      // todo: left off here - this is not triggering for Mosaic launch
       this.checkAndUploadExternalConfig();
     }
   }

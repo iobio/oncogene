@@ -139,8 +139,6 @@ class MosaicIntegration extends Integration {
                                     self.vcf = urlMap[sampleId].vcf;
                                     self.tbi = urlMap[sampleId].tbi;
                                     self.normal = Object.assign({}, urlMap[sampleId]);
-                                    delete self.normal.vcf;
-                                    delete self.normal.tbi;
                                 } else {
                                     self.tumors.push(urlMap[sampleId]);
                                 }
@@ -217,6 +215,7 @@ class MosaicIntegration extends Integration {
                                 Object.keys(tumorMap).forEach(key => {
                                     returnMap[key] = tumorMap[key];
                                 })
+                                updateVcfUrlsForTumors(returnMap);
                                 resolve(returnMap);
                             }).catch(error => {
                                 reject("Problem getting file info for tumor samples: " + error);
@@ -233,6 +232,9 @@ class MosaicIntegration extends Integration {
     }
 }
 
+/* Returns object with one entry for a normal sample.
+ * The entry contains presigned url for vcf/tbi files and
+ * bam/bai files FOR COVERAGE ONLY FOR NOW (if they exist). */
 export function promiseGetNormalSampleUrls(api, params, $) {
     const project_id = params.project_id;
     const normal_id = params.normal_id;
@@ -273,6 +275,9 @@ export function promiseGetNormalSampleUrls(api, params, $) {
     });
 }
 
+/* Returns object with one entry per tumor ID provided in params argument.
+ * Each entry contains presigned url for bam/bai files FOR COVERAGE ONLY FOR NOW.
+ * Does NOT assign any presigned url for vc/tbi files. */
 export function promiseGetTumorSampleUrls(api, params, $) {
     const project_id = params.project_id;
     let tumor_ids = params.tumor_ids;
@@ -283,6 +288,7 @@ export function promiseGetTumorSampleUrls(api, params, $) {
         let returnMap = {};
         tumor_ids.forEach(tumor_id => {
             let p = new Promise((innerResolve, innerReject) => {
+                let localCount = tumorNo;
                 getFilesForSample(project_id, tumor_id, api, $).done(data => {
                     if (data.data) {
                         const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
@@ -296,13 +302,14 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
-                                    returnMap[('t' + tumorNo)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl};
+                                    returnMap[('t' + localCount)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl};
                                     innerResolve();
                                 })
                             })
                         } else {
-                            console.log("No bam & bai files for tumor " + tumorNo);
-                            resolve(returnMap);
+                            console.log("No bam & bai files for tumor " + localCount);
+                            returnMap[('t' + localCount)] = {'vcf': null, 'tbi': null};
+                            innerResolve();
                         }
                     } else {
                         innerReject("Could not get file data from Mosaic");
@@ -344,4 +351,19 @@ export function getSignedUrlForFile (project_id, file, api, $) {
             'Authorization': localStorage.getItem('mosaic-iobio-tkn')
         }
     });
+}
+
+export function updateVcfUrlsForTumors(returnMap) {
+    const normalObj = returnMap['normal'];
+    if (!normalObj) {
+        console.log('WARNING: no normal object to pull VCF/TBI urls from in Integration');
+    }
+
+    Object.keys(returnMap).forEach(sample => {
+        if (sample !== 'normal') {
+            let currObj = returnMap[sample];
+            currObj['vcf'] = normalObj['vcf'];
+            currObj['tbi'] = normalObj['tbi'];
+        }
+    })
 }
