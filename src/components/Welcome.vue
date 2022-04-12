@@ -297,7 +297,7 @@
                   {{ getFileText(data) }}
                 </v-card-text>
               </v-card>
-              <vcf-form v-if="data === 'vcf'"
+              <vcf-form v-if="data === 'vcf' && canMountVcf"
                         ref="vcfFormRef"
                         :cohortModel="cohortModel"
                         :dataType="getDataType(data)"
@@ -478,6 +478,7 @@ export default {
       clearGeneListFlag: true,
       showUploadEntry: false,
       configFile: [],
+      canMountVcf: true,
       vcfFormMounted: false,
       uploadedVcfUrl: null,
       uploadedTbiUrl: null,
@@ -1202,12 +1203,13 @@ export default {
 
         // NOTE: for some reason when we launch from Mosaic have to mount
         // Have to mount vcf slide to do actual checks
-        if (formattedSource === 'Mosaic' && self.vcfFormMounted && self.$refs.vcfFormRef) {
-          self.$refs.vcfFormRef.forEach(ref => {
-            ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
-          });
-        }
-        self.mountVcfSlide(self.somaticCallsOnly);
+        // todo: get rid of this or get vcfform to mount after
+        // if (formattedSource === 'Mosaic' && self.vcfFormMounted && self.$refs.vcfFormRef) {
+        //   self.$refs.vcfFormRef.forEach(ref => {
+        //     ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
+        //   });
+        // }
+        // self.mountVcfSlide(self.somaticCallsOnly);
 
       } else {
         displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
@@ -1420,6 +1422,9 @@ export default {
     const self = this;
     // this.makeItRain();
     this.listInput = this.STARTING_INPUT;
+    // If we're launching for Mosaic, need to wait to mount vcf slide until urls checked
+    this.canMountVcf = !this.isMosaic(this.launchSource);
+
     this.populateValidGenesMap();
     this.populateGeneLists();
     if (this.launchParams && this.launchParams.vcf) {
@@ -1428,8 +1433,8 @@ export default {
       if (this.uploadedVcfUrl && this.uploadedTbiUrl) {
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, (success, sampleNames, build) => {
           if (success) {
-            // todo: left off here - need to finish this before mounting vcf-form for Mosaic launch
             self.selectedBuild = build;
+            self.canMountVcf = true;
           } else {
             if (this.launchSource === this.GALAXY) {
               self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
