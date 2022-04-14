@@ -119,6 +119,7 @@
                      :cnvPalette="cnvPalette"
                      :d3="d3"
                      :$="$"
+                     :hasCnvData="cohortModel.hasCnvData"
                      @transcript-selected="onTranscriptSelected"
                      @gene-source-selected="onGeneSourceSelected"
                      @gene-region-buffer-change="onGeneRegionBufferChange"
@@ -653,11 +654,11 @@ export default {
               // Get rid of global loader
               self.displayLoader = false;
               self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
-                  .then(() => {
-                    if (Object.keys(self.unmatchedGenes).length > 0) {
-                      self.displayUnmatchedGenesWarning = true;
-                    }
-                  })
+                  // .then(() => {
+                  //   if (Object.keys(self.unmatchedGenes).length > 0) {
+                  //     self.displayUnmatchedGenesWarning = true;
+                  //   }
+                  // })
                   .catch(error => {
                     Promise.reject('Could not load data: ' + error);
                   })

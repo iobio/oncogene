@@ -120,6 +120,7 @@
             </gene-viz>
             <br/>
             <ideo-viz ref="geneIdeoVizRef"
+                      v-if="hasCnvData"
                       :selectedGene="selectedGene"
                       :cnvPalette="cnvPalette"
                       :width="width"
@@ -184,7 +185,11 @@ export default {
     },
     cnvPalette: null,
     d3: null,
-    $: null
+    $: null,
+    hasCnvData: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
