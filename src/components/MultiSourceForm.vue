@@ -17,6 +17,7 @@
         <v-list dense flat>
           <v-list-item-group v-model="listInfo">
             <v-list-item v-for="(listInfo, i) in modelInfoList"
+                         style="height: 55px"
                          :key="'listInfo-' + i">
               <v-list-item-icon style="padding-top:25px">
                 <v-icon large color="appColor">filter_{{ i + 1 }}</v-icon>
@@ -26,7 +27,9 @@
                   <v-col :md="columnWidth">
                     <v-select v-if="externalLaunchMode"
                               v-model="listInfo[key]"
-                              :items="fileList"
+                              :items="annotatedFileList"
+                              item-text="text"
+                              item-value="value"
                               item-color="secondary"
                               placeholder="Select file"
                               style="max-width: 185px"
@@ -46,7 +49,9 @@
                   <v-col v-if="hasIndexFile" :md="columnWidth" style="padding-right: 0">
                     <v-select v-if="externalLaunchMode"
                               v-model="listInfo[indexKey]"
-                              :items="indexList"
+                              :items="annotatedIndexList"
+                              item-text="text"
+                              item-value="value"
                               placeholder="Select index"
                               style="max-width: 185px"
                               dense
@@ -127,6 +132,7 @@ export default {
       type: String,
       default: null
     },
+    // Note: next three arrays order identical
     fileList: {
       type: Array,
       default: function () {
@@ -134,6 +140,12 @@ export default {
       }
     },
     indexList: {
+      type: Array,
+      default: function () {
+        return [];
+      }
+    },
+    selectedSampleList: {
       type: Array,
       default: function () {
         return [];
@@ -180,6 +192,20 @@ export default {
     verifiedKey: function () {
       return this.modelType + 'Verified';
     },
+    annotatedFileList: function () {
+      let annoList = [];
+      for (let i = 0; i < this.fileList.length; i++) {
+        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.fileList[i]),'value': this.fileList[i] });
+      }
+      return annoList;
+    },
+    annotatedIndexList: function () {
+      let annoList = [];
+      for (let i = 0; i < this.indexList.length; i++) {
+        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.indexList[i]),'value': this.indexList[i] });
+      }
+      return annoList;
+    }
   },
   methods: {
     /* Can add more data types here as need be */

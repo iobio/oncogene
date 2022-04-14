@@ -143,6 +143,8 @@ class MosaicIntegration extends Integration {
                                     self.tumors.push(urlMap[sampleId]);
                                 }
                             });
+                            // todo: a better method is for Mosaic to provide samples in order specified
+                            sortAlphaNum(self.tumors, self.globalApp._);
                             resolve();
                         });
                 } else {
@@ -176,6 +178,7 @@ class MosaicIntegration extends Integration {
 
     promiseGetMosaicIobioUrls() {
         const self = this;
+
         return new Promise((resolve, reject) => {
             const api = decodeURIComponent(self.config.params.source) + "/api/v1";
             const project_id = self.config.params.project_id;
@@ -318,7 +321,7 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
                                     // todo: add rnaseq & cnv here
-                                    returnMap[('t' + localCount)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample};
+                                    returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample};
                                     innerResolve();
                                 })
                             })
@@ -383,4 +386,23 @@ export function updateVcfUrlsForTumors(returnMap) {
             currObj['tbi'] = normalObj['tbi'];
         }
     })
+}
+
+export function sortAlphaNum(list, _) {
+    //return list.sort(new Intl.Collator('en',{numeric:true, sensitivity:'accent'}).compare)
+    const reA = /[^a-zA-Z]/g;
+    const reN = /[^0-9]/g;
+
+    let sortFxn = function(a, b) {
+        let aA = _.replace(a.selectedSample, reA, "");
+        let bA = _.replace(b.selectedSample, reA, "");
+        if (aA === bA) {
+            let aN = parseInt(_.replace(a.selectedSample, reN, ""), 10);
+            let bN = parseInt(_.replace(b.selectedSample, reN, ""), 10);
+            return aN === bN ? 0 : aN > bN ? 1 : -1;
+        } else {
+            return aA > bA ? 1 : -1;
+        }
+    }
+    return list.sort(sortFxn);
 }

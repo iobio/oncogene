@@ -283,7 +283,7 @@
               </v-chip>
               <ideo-viz ref="cnvIdeoRef"
                         v-if="selectedGene"
-                        v-show="showCnvViz"
+                        v-show="showCnvViz && sampleModel.cnvsInGeneObj && sampleModel.cnvUrlEntered"
                         :model="sampleModel"
                         :selectedGene="selectedGene"
                         :cnvPalette="cnvPalette"

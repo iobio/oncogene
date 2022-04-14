@@ -9,6 +9,7 @@ import $ from 'jquery';
 import VueGtag from "vue-gtag";
 import VueRouter from "vue-router";
 import App from './App.vue'
+import _ from 'lodash'
 
 // todo: can now just throw router into here and take out path specific tag pushes everywhere
 Vue.use(VueGtag, {
@@ -38,23 +39,11 @@ let routes = [
                 next('/mosaic_launch?' + $.param(otherQueryParams));
             }
         },
-        // props: (route) => ({
-        //     launchSource: route.query.source,
-        //     genes: route.query.genes,
-        //     somaticOnly: route.query.somaticOnly,
-        //     projectId: route.query.projectId
-        // })
     },
     {
         name: 'mosaic-home',
         path: '/mosaic_launch',
         component: App,
-        // props: (route) => ({
-        //     launchSource: route.query.source,
-        //     genes: route.query.genes,
-        //     somaticOnly: route.query.somaticOnly,
-        //     projectId: route.query.projectId
-        // })
     }
 ]
 const router = new VueRouter({
@@ -68,7 +57,7 @@ Vue.mixin({
     data: function () {
         return {
             utility: new Util($),
-            globalApp: new GlobalApp($, d3)
+            globalApp: new GlobalApp($, d3, _)
         };
     },
     created: function () {

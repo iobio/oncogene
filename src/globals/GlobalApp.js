@@ -3,7 +3,7 @@
     specific iobio deployment environment.
 */
 class GlobalApp {
-  constructor($, d3) {
+  constructor($, d3, _) {
 
     this.cacheHelper           = null;
     this.tour                  = "";
@@ -34,6 +34,7 @@ class GlobalApp {
 
     this.d3                    = d3;
     this.$                     = $;
+    this._                     = _;
 
     this.IOBIO_SERVICES        = this.isOffline              ? this.serverInstance : this.CURRENT_IOBIO;
     // this.HTTP_SERVICES         = (this.useSSL ? "https://" : "http://") + (this.isOffline ? this.serverInstance : this.CURRENT_IOBIO);

@@ -71,10 +71,10 @@
                     :cycle="cycle"
                     :opactiy="1"
         >
+          <v-overlay :value="displayDemoLoader">
+            <v-progress-circular indeterminate size="64"></v-progress-circular>
+          </v-overlay>
           <v-carousel-item v-if="nativeLaunch" :style="'background-color: ' + slideBackground">
-            <v-overlay :value="displayDemoLoader">
-              <v-progress-circular indeterminate size="64"></v-progress-circular>
-            </v-overlay>
             <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
               <v-col class="d-flex align-stretch"
                      cols="12" height="100">
@@ -211,6 +211,15 @@
               </v-card>
             </v-card>
           </v-carousel-item>
+          <v-carousel_item v-show="isMosaic(launchSource) && !isReadyToLaunch()"
+                           :style="'background-color: ' + slideBackground">
+            <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
+                    light>
+              <v-card-title class="about-title">
+                Loading Mosaic Data...
+              </v-card-title>
+            </v-card>
+          </v-carousel_item>
 <!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
           <v-carousel-item v-if="!somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
@@ -338,6 +347,7 @@
                                  :launchSource="launchSource"
                                  :fileList="getFileList(data)"
                                  :indexList="getIndexList(data)"
+                                 :selectedSampleList="selectedSampleList"
                                  :externalLaunchMode="!nativeLaunch"
                                  @update-status="updateMultiStatus"
                                  @upload-fail="onUploadFail"
@@ -497,6 +507,7 @@ export default {
         'rnaSeq': [],
         // 'atacSeq': [],
       },
+      selectedSampleList: [],
 
       uploadedSelectedSamples: [],
       launchedFromConfig: false,
@@ -928,8 +939,7 @@ export default {
       let modelInfo = this.modelInfoList.filter(m => (m.selectedSample === selectedSampleName))[0];
       for (let i = 0; i < propNames.length; i++) {
         let propName = propNames[i];
-        let propVal = propVals[i];
-        modelInfo[propName] = propVal;
+        modelInfo[propName] = propVals[i];
       }
     },
     removeModelInfo: function (modelInfoIdx) {
@@ -1159,6 +1169,7 @@ export default {
     },
     checkAndUploadExternalConfig: function () {
       const self = this;
+      self.displayDemoLoader = true;
       let formattedSource = this.launchSource === this.GALAXY ? this.GALAXY : 'Mosaic';
       let displayWarning = function (warningText) {
         const warningType = 'error';
@@ -1177,6 +1188,7 @@ export default {
           if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
             displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
           } else {
+            self.selectedSampleList.push(sample.selectedSample);
             // Still need to check if this sample has optional data type
             if (sample.coverageBam) {
               self.fileLists[self.COVERAGE].push(sample.coverageBam);
@@ -1206,7 +1218,7 @@ export default {
           // }
           // }
           if (sample.cnv) {
-            self.fileLists[self.CNV].push(sample.cnv);
+            self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
             cnvExists = true;
           }
         });
@@ -1234,8 +1246,10 @@ export default {
           self.listInput = self.launchParams.genes.join('\n');
           self.updateStepProp('geneList', 'complete', true);
         }
+        self.displayDemoLoader = false;
 
       } else {
+        self.displayDemoLoader = false;
         displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
       if (!self.uploadedVcfUrl || !self.uploadedTbiUrl) {
@@ -1444,6 +1458,7 @@ export default {
   },
   mounted: function () {
     const self = this;
+
     // this.makeItRain();
     this.listInput = this.STARTING_INPUT;
     // If we're launching for Mosaic, need to wait to mount vcf slide until urls checked
