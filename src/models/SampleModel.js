@@ -1195,6 +1195,9 @@ class SampleModel {
                 console.log('Warning: tried to get bam depth for empty feature list');
                 resolve();
             }
+            if (!self.bam) {
+                reject("ERROR: trying to get coverage depth from sample that doesn't have a bam file.");
+            }
             self.bam.getFilteredCoverageForRegion(featureList, bamType, qualityCutoff,
                 function (countMap) {
                     if (countMap) {

@@ -24,7 +24,7 @@
               <v-list-item-content style="padding-bottom: 0">
                 <v-row dense>
                   <v-col :md="columnWidth">
-                    <v-select v-if="galaxyMode"
+                    <v-select v-if="externalLaunchMode"
                               v-model="listInfo[key]"
                               :items="fileList"
                               item-color="secondary"
@@ -44,7 +44,7 @@
                     ></v-text-field>
                   </v-col>
                   <v-col v-if="hasIndexFile" :md="columnWidth" style="padding-right: 0">
-                    <v-select v-if="galaxyMode"
+                    <v-select v-if="externalLaunchMode"
                               v-model="listInfo[indexKey]"
                               :items="indexList"
                               placeholder="Select index"
@@ -68,7 +68,7 @@
                     </v-list-item-icon>
                   </v-col>
                   <v-col md="1">
-                    <v-list-item-icon v-if="galaxyMode" class="pt-2">
+                    <v-list-item-icon v-if="externalLaunchMode" class="pt-2">
                       <v-icon @click="clearRow(i)">clear</v-icon>
                     </v-list-item-icon>
                   </v-col>
@@ -138,6 +138,10 @@ export default {
       default: function () {
         return [];
       }
+    },
+    externalLaunchMode: {
+      type: Boolean,
+      default: false
     }
   },
   data: function () {
@@ -176,9 +180,6 @@ export default {
     verifiedKey: function () {
       return this.modelType + 'Verified';
     },
-    galaxyMode: function () {
-      return this.launchSource === 'galaxy';
-    }
   },
   methods: {
     /* Can add more data types here as need be */
@@ -287,6 +288,8 @@ export default {
       let allSamplesHaveUrls = true;
       let allSamplesHaveIndexUrls = true;
 
+      // todo: problem is coverageBamUrl not here
+      // todo: do have selectedSample ID here - how to link with
       self.modelInfoList.forEach((modelInfo) => {
         if (modelInfo[self.key] != null && modelInfo[self.key] !== '') {
           allSamplesHaveUrls &= true;

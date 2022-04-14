@@ -245,27 +245,6 @@ export default {
         this.$refs.homePanel.displayUnmatchedGenesModal();
       }
     },
-    // setGalaxyUrlParams: function() {
-    //   console.log('WARNING: setGalaxyUrlParams needs to be implemented');
-    // },
-    // setMosaicUrlParams: function(query) {
-    //
-    //   // todo: what other params do I need here
-    //   // todo: if keeping gene passing will need to put in here?
-    //   let queryObj = {
-    //     'somaticOnly': query.somaticOnly,
-    //     'projectId': query.projectId,
-    //     'source': query.source
-    //   };
-    //
-    //   // todo: think this needs to route to home OR add params in that route entry
-    //   this.$router.replace({
-    //     name: 'mosaic-home',
-    //     query: queryObj,
-    //   }).catch(err => {
-    //     console.log('Problem routing to integration specified path: ' + err);
-    //   });
-    // }
   },
   mounted: function () {
     const self = this;

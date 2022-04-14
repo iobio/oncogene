@@ -211,7 +211,8 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="!isMosaic(launchSource) && !somaticCallsOnly"
+<!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
+          <v-carousel-item v-if="!somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
@@ -303,15 +304,15 @@
                         :dataType="getDataType(data)"
                         :fileType="getFileType(data)"
                         :slideBackground="slideBackground"
-                        :modelInfoList="modelInfoList"
                         :allDataModels="DATA_MODELS"
                         :maxSamples="MAX_SAMPLES"
                         :uploadedUrl="uploadedVcfUrl"
                         :uploadedIndexUrl="uploadedTbiUrl"
                         :uploadedSelectedSamples="uploadedSelectedSamples"
                         :uploadedBuild="selectedBuild"
+                        :modelInfoList="modelInfoList"
                         :parentModelInfoIdx="modelInfoIdx"
-                        :launhedFromGalaxy="launchSource === GALAXY"
+                        :externalLaunchMode="!nativeLaunch"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
@@ -337,6 +338,7 @@
                                  :launchSource="launchSource"
                                  :fileList="getFileList(data)"
                                  :indexList="getIndexList(data)"
+                                 :externalLaunchMode="!nativeLaunch"
                                  @update-status="updateMultiStatus"
                                  @upload-fail="onUploadFail"
                                  @show-alert="displayAlert"
@@ -1155,6 +1157,7 @@ export default {
             if (sample.coverageBam) {
               self.fileLists[self.COVERAGE].push(sample.coverageBam);
               self.indexLists[self.COVERAGE].push(sample.coverageBai);
+              self.uploadedSelectedSamples.push(sample.selectedSample);
               coverageExists = true;
             }
           }
@@ -1184,9 +1187,6 @@ export default {
           }
         });
 
-        // todo: add in check for somatic only and gene list here
-        debugger;
-
         // Toggle switches in loader
         if (coverageExists) {
           self.addDataType(self.COVERAGE);
@@ -1201,15 +1201,15 @@ export default {
           self.addDataType(self.CNV);
         }
 
-        // NOTE: for some reason when we launch from Mosaic have to mount
-        // Have to mount vcf slide to do actual checks
-        // todo: get rid of this or get vcfform to mount after
-        // if (formattedSource === 'Mosaic' && self.vcfFormMounted && self.$refs.vcfFormRef) {
-        //   self.$refs.vcfFormRef.forEach(ref => {
-        //     ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
-        //   });
-        // }
-        // self.mountVcfSlide(self.somaticCallsOnly);
+        // todo: once Mosaic passes over the coverage/rnaseq/cnv data
+        // todo: need to populate those slides and advance
+
+        self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
+
+        if (self.launchParams.genes) {
+          self.listInput = self.launchParams.genes.join('\n');
+          self.updateStepProp('geneList', 'complete', true);
+        }
 
       } else {
         displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
@@ -1248,7 +1248,7 @@ export default {
       this.clearGeneListFlag = false;
     },
     onUploadedUrlsVerified: function () {
-      if (this.launchedFromConfig) {
+      if (this.launchedFromConfig || !this.nativeLaunch) {
         this.advanceSlide();
       }
     },
@@ -1435,6 +1435,12 @@ export default {
           if (success) {
             self.selectedBuild = build;
             self.canMountVcf = true;
+            // Sloppy but works
+            if (self.isMosaic(self.launchSource)) {
+              setTimeout(() => {
+                self.advanceSlide();
+              }, 100);
+            }
           } else {
             if (this.launchSource === this.GALAXY) {
               self.displayAlert('error', 'Could not read file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');

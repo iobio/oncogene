@@ -158,7 +158,9 @@ class MosaicIntegration extends Integration {
             vcf: this.vcf,
             tbi: this.tbi,
             normal: this.normal,
-            tumors: this.tumors
+            tumors: this.tumors,
+            somaticOnly: this.config.params.somatic_only,
+            genes: [this.config.params["genes[0]"]]       // todo: this needs to be fixed in Mosaic
         };
     }
 
@@ -179,7 +181,7 @@ class MosaicIntegration extends Integration {
             const project_id = self.config.params.project_id;
             const normal_id = self.config.params.sample_id;
 
-            // todo: config is parsing these as strings rather than array - how to fix?
+            // todo: this needs to be fixed in Mosaic
             let tumor_ids = [];
             if (self.config.params['tumor_sample_ids[0]']) {
                 tumor_ids.push(self.config.params['tumor_sample_ids[0]']);
@@ -238,7 +240,7 @@ class MosaicIntegration extends Integration {
 export function promiseGetNormalSampleUrls(api, params, $) {
     const project_id = params.project_id;
     const normal_id = params.normal_id;
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         // Get file urls for normal sample
         let returnMap = {};
         getFilesForSample(project_id, normal_id, api, $).done(data => {
@@ -250,6 +252,11 @@ export function promiseGetNormalSampleUrls(api, params, $) {
                 // todo: how do I pull out rnaseq bams from here instead of coverage bams?
                 // todo: add in pulling facets data out
 
+                if (!vcf) {
+                    reject('No vcf file obtained from Mosaic launch');
+                }
+                const selectedSample = vcf.vcf_sample_name;
+
                 getSignedUrlForFile(project_id, vcf, api, $).done(vcfUrlData => {
                     const vcfUrl = vcfUrlData.url;
                     getSignedUrlForFile(project_id, tbi, api, $).done(tbiUrlData => {
@@ -259,7 +266,7 @@ export function promiseGetNormalSampleUrls(api, params, $) {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
-                                    returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl}
+                                    returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample}
                                     resolve(returnMap);
                                 })
                             })
@@ -291,10 +298,16 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                 let localCount = tumorNo;
                 getFilesForSample(project_id, tumor_id, api, $).done(data => {
                     if (data.data) {
+                        const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
                         const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
                         const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
                         // todo: how do I pull out rnaseq bams from here instead of coverage bams?
                         // todo: add in pulling facets data out
+
+                        if (!vcf) {
+                            innerReject('No vcf file obtained from Mosaic launch');
+                        }
+                        const selectedSample = vcf.vcf_sample_name;
 
                         // Get Signed Url
                         if (bam && bai) {
@@ -302,7 +315,7 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
-                                    returnMap[('t' + localCount)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl};
+                                    returnMap[('t' + localCount)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample};
                                     innerResolve();
                                 })
                             })

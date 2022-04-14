@@ -104,10 +104,6 @@
                 type: Object,
                 default: null
             },
-            modelInfoList: {
-                type: Array,
-                default: function () { return []; }
-            },
             allDataModels: {
                 type: Array,
                 default: function () {return []; }
@@ -136,7 +132,11 @@
                 type: Number,
                 default: 0
             },
-            launchedFromGalaxy: {
+          modelInfoList: {
+            type: Array,
+            default: () => { return []; }
+          },
+            externalLaunchMode: {
                 type: Boolean,
                 default: false
             }
@@ -299,10 +299,23 @@
                 return i > 1;
             },
             uploadConfigInfo: function(uploadedUrl, uploadedIndexUrl, uploadedBuild, uploadedSelectedSamples) {
+                const self = this;
                 this.url = uploadedUrl ? uploadedUrl : this.uploadedUrl;
                 this.indexUrl = uploadedIndexUrl ? uploadedIndexUrl: this.uploadedIndexUrl;
                 this.selectedBuild = uploadedBuild ? uploadedBuild : this.uploadedBuild;
                 const selectedSamples = uploadedSelectedSamples ? uploadedSelectedSamples : this.uploadedSelectedSamples;
+
+                // Have to actually make model infos here for external configs
+                if (this.externalLaunchMode) {
+                  let infoList = [];
+                  selectedSamples.forEach(sample => {
+                    let modelInfo = self.createModelInfo(sample, self.modelInfoIdx !== 0, this.url, this.indexUrl, self.modelInfoIdx);
+                    infoList.push(modelInfo);
+                    self.modelInfoIdx++;
+                  })
+                  self.$emit('set-model-info', infoList);
+                }
+
                 if (this.url && this.indexUrl) {
                     this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
                 }
