@@ -1166,22 +1166,21 @@ class CohortModel {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
             self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
-                .then((sampleMap) => {
+                .then((returnArr) => {
                     // Always populate unique variant dictionary
+                    let sampleMap = returnArr['sampleMap'];
                     let allVariants = self.getAllUniqVars(sampleMap);
                     let subclonesExist = false;
 
                     // Pull subclone info out of return object
-                    if (sampleMap['subcloneStr']) {
+                    if (returnArr['subcloneStr']) {
                         subclonesExist = true;
-                        self.initSubclones(sampleMap['subcloneStr']);
-                        delete(sampleMap['subcloneStr']);
+                        self.initSubclones(returnArr['subcloneStr']);
 
                         // Organize subclone variants
                         if (self.onlySomaticCalls) {
                             // Pull out somatic genes from return object
-                            self.composedSomaticGenes = sampleMap['somaticGenes'];
-                            delete(sampleMap['somaticGenes']);
+                            self.composedSomaticGenes = returnArr['somaticGenes'];
 
                             self.subcloneModel.populateSubcloneVariants(allVariants);
 
@@ -1190,10 +1189,9 @@ class CohortModel {
                             // NOTE: we would need a new backend service to pull back just variant IDs filtered by AFCLU
                         }
                     }
-                    if (sampleMap['unmatchedVars']) {
+                    if (returnArr['unmatchedVars']) {
                         // Pull out unmatched variants
-                        self.unmatchedSomaticVarMap = sampleMap['unmatchedVars'];
-                        delete(sampleMap['unmatchedVars']);
+                        self.unmatchedSomaticVarMap = returnArr['unmatchedVars'];
                     }
 
                     // Have to mark each individual variant object, even if duplicates across samples

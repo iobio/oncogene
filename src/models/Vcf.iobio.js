@@ -1760,14 +1760,16 @@ export default function vcfiobio(theGlobalApp) {
 
         // Here is the result set.  An object representing the entire region with a field called
         // 'features' that contains an array of variants for this region of interest.
-        let results = [];
+        let results = {};
+        let sampleMapList = [];
         for (var i = 0; i < allVariants.length; i++) {
             var data = {
                 'name': gtSampleNames ? gtSampleNames[i] : 'somaticVariants',
                 'features': allVariants[i],
             };
-            results.push(data);
+            sampleMapList.push(data);
         }
+        results['sampleMap'] = sampleMapList;
         if (me.infoFields.SUBCLONES) {
             results['subcloneStr'] = me.infoFields.SUBCLONES;
         }

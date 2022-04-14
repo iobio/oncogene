@@ -266,12 +266,14 @@ export function promiseGetNormalSampleUrls(api, params, $) {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
+                                    // todo: add rnaSeqBam, rnaSeqBai, cnv here
                                     returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample}
                                     resolve(returnMap);
                                 })
                             })
                         } else {
                             console.log("No bam & bai files obtained for normal sample");
+                            // todo: add rnaseq, cnv here
                             returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl };
                             resolve(returnMap);
                         }
@@ -315,12 +317,14 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
+                                    // todo: add rnaseq & cnv here
                                     returnMap[('t' + localCount)] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample};
                                     innerResolve();
                                 })
                             })
                         } else {
                             console.log("No bam & bai files for tumor " + localCount);
+                            // todo: add rnaseq & cnv here
                             returnMap[('t' + localCount)] = {'vcf': null, 'tbi': null};
                             innerResolve();
                         }

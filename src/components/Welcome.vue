@@ -894,9 +894,25 @@ export default {
         this.updateStepProp('vcf', 'complete', true);
         this.modelInfoList = info;
       }
+
+      // Add non-vcf sample data if
+      if (!this.nativeLaunch) {
+        this.updateNonVcfModelInfo();
+      }
+
       // Trick vue into update
       this.modelInfoList.push('foo');
       this.modelInfoList.pop();
+    },
+    updateNonVcfModelInfo: function() {
+      const self = this;
+      let samples = [this.launchParams.normal];
+      samples = samples.concat(this.launchParams.tumors);
+      let props = ['coverageBamUrl', 'coverageBaiUrl', 'rnaSeqBamUrl', 'rnaSeqBamUri', 'cnvUrl'];
+      samples.forEach(sample => {
+        let vals = [sample.coverageBam, sample.coverageBai, sample.rnaSeqBam, sample.rnaSeqBai, sample.cnv];
+        self.updateIndividualModelInfo(sample.selectedSample, props, vals);
+      })
     },
     setVcfSampleNames: function (vcfSampleNames) {
       this.vcfSampleNames = vcfSampleNames;
@@ -907,6 +923,14 @@ export default {
       });
       // Only updating with valid info, can set to complete
       this.updateStepProp('vcf', 'complete', true);
+    },
+    updateIndividualModelInfo: function(selectedSampleName, propNames, propVals) {
+      let modelInfo = this.modelInfoList.filter(m => (m.selectedSample === selectedSampleName))[0];
+      for (let i = 0; i < propNames.length; i++) {
+        let propName = propNames[i];
+        let propVal = propVals[i];
+        modelInfo[propName] = propVal;
+      }
     },
     removeModelInfo: function (modelInfoIdx) {
       this.modelInfoList.splice(modelInfoIdx, 1);
@@ -926,7 +950,7 @@ export default {
     },
     updateMultiStatus: function (stepName, allCompleteStatus, allFinishedStatus) {
       this.updateStepProp(stepName, 'complete', allCompleteStatus === 1);
-      if (allCompleteStatus && allFinishedStatus && this.launchedFromConfig) {
+      if (allCompleteStatus && allFinishedStatus && (this.launchedFromConfig || !this.nativeLaunch)) {
         this.advanceSlide();
       }
     },

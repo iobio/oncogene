@@ -288,8 +288,6 @@ export default {
       let allSamplesHaveUrls = true;
       let allSamplesHaveIndexUrls = true;
 
-      // todo: problem is coverageBamUrl not here
-      // todo: do have selectedSample ID here - how to link with
       self.modelInfoList.forEach((modelInfo) => {
         if (modelInfo[self.key] != null && modelInfo[self.key] !== '') {
           allSamplesHaveUrls &= true;
