@@ -211,7 +211,7 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel_item v-show="isMosaic(launchSource) && !isReadyToLaunch()"
+          <v-carousel-item v-show="isMosaic(launchSource) && !isReadyToLaunch()"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
@@ -219,7 +219,7 @@
                 Loading Mosaic Data...
               </v-card-title>
             </v-card>
-          </v-carousel_item>
+          </v-carousel-item>
 <!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
           <v-carousel-item v-if="!somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
