@@ -574,18 +574,17 @@ export default function variantD3(d3, vizSettings) {
 
     chart.hideCircle = function(svgContainer, pinned) {
         var circleClazz = pinned ? '.pinned.circle' : '.hover.circle';
-        var pinnedArrowClazz = 'g.pinned.arrow';
-        var hoverArrowClazz = 'g.hover.arrow';
+        var arrowClazz = pinned ? 'g.pinned.arrow' : 'g.hover.arrow';
         svgContainer.selectAll(circleClazz).transition()
             .duration(500)
             .style("opacity", 0);
         if (pinned) {
-            svgContainer.selectAll(pinnedArrowClazz).selectAll(".arrow").transition()
+            svgContainer.selectAll(arrowClazz).selectAll(".arrow").transition()
                 .duration(500)
                 .style("opacity", 0);
         }
         if (!pinned) {
-            svgContainer.selectAll(hoverArrowClazz).selectAll(".arrow").transition()
+            svgContainer.selectAll(arrowClazz).selectAll(".arrow").transition()
                 .duration(500)
                 .style("opacity", 0);
         }

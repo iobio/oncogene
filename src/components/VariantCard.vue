@@ -612,7 +612,8 @@ export default {
     onVariantClick: function (variant, xCoord) {
       if (this.showDepthViz) {
         if (variant) {
-          this.showCoverageCircle(variant);
+          this.hideCoverageCircle(true);
+          this.showCoverageCircle(variant, true);
         }
       }
       if (this.showVariantViz) {
@@ -625,7 +626,7 @@ export default {
     },
     onVariantHover: function (variant) {
       if (this.showDepthViz) {
-        this.showCoverageCircle(variant);
+        this.showCoverageCircle(variant, false);
       }
       if (this.showVariantViz) {
         this.showVariantCircle(variant, false);
@@ -637,7 +638,7 @@ export default {
     },
     onVariantHoverEnd: function () {
       if (this.showDepthViz) {
-        this.hideCoverageCircle();
+        this.hideCoverageCircle(false);
       }
       if (this.showVariantViz) {
         this.hideVariantCircle(false);
@@ -758,12 +759,12 @@ export default {
     getTrackSVG: function (vizTrackName) {
       return this.d3.select(this.$el).select('#' + vizTrackName + ' > svg');
     },
-    hideCoverageCircle: function () {
+    hideCoverageCircle: function (lock) {
       if (this.showDepthViz && this.$refs.depthVizRef) {
-        this.$refs.depthVizRef.hideCurrentPoint();
+        this.$refs.depthVizRef.hideCurrentPoint(lock);
       }
     },
-    showCoverageCircle: function (variant) {
+    showCoverageCircle: function (variant, lock) {
       let self = this;
 
       if (self.showDepthViz && self.$refs.depthVizRef && self.sampleModel.coverage != null) {
@@ -783,7 +784,7 @@ export default {
 
         // If we have the exact depth for this variant, show it.  Otherwise, we will show
         // the calculated (binned, averaged) depth at this position.
-        self.$refs.depthVizRef.showCurrentPoint({pos: variant.start, depth: theDepth});
+        self.$refs.depthVizRef.showCurrentPoint({pos: variant.start, depth: theDepth}, lock);
       }
     },
     showCnvCircle: function (variant) {

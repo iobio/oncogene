@@ -81,20 +81,52 @@ export default function lineD3(d3, vizSettings) {
                 })
                 .attr('viewBox', "0 0 " + (parseInt(width) + margin.left + margin.right) + " " + parseInt(height));
 
-            // add a circle and label
-            svg.selectAll(".circle").data([0])
-                .enter()
-                .append('circle')
-                .attr("class", "circle")
-                .attr("r", 3)
-                .style("opacity", 0);
-            svg.selectAll(".circle-label").data([0])
-                .enter()
-                .append('text')
-                .attr("class", "circle-label")
-                .attr("x", 0)
-                .attr("y", 0)
-                .style("opacity", 0);
+            // add a circle and label - todo: old - get rid of
+            // svg.selectAll(".circle").data([0])
+            //     .enter()
+            //     .append('circle')
+            //     .attr("class", "circle")
+            //     .attr("r", 3)
+            //     .style("opacity", 0);
+            // svg.selectAll(".circle-label").data([0])
+            //     .enter()
+            //     .append('text')
+            //     .attr("class", "circle-label")
+            //     .attr("x", 0)
+            //     .attr("y", 0)
+            //     .style("opacity", 0);
+
+            // todo: get rid of - variant code
+
+            // var circleClazz = '.' + clazz + '.circle';
+            // if (svg.selectAll(circleClazz).empty()) {
+            //     svg.selectAll(circleClazz).data([0])
+            //         .join('circle')
+            //         .attr("class", clazz + " circle")
+            //         .attr("cx", 0)
+            //         .attr("cy", 0)
+            //         .attr("r", variantHeight + 2)
+            //         .style("opacity", 0);
+            // }
+
+            // add a circle and arrows for 'hover' event and 'pinned' event
+            ['hover', 'pinned'].forEach(function(clazz) {
+                var circleClazz = '.' + clazz + '.depth';
+                var labelClazz = '.' + clazz + '.depth-label';
+                svg.selectAll(circleClazz).data([0])
+                    .enter()
+                    .append('circle')
+                    .attr("class", clazz + " depth")
+                    .attr("r", 3)
+                    .style("opacity", 0);
+                svg.selectAll(labelClazz).data([0])
+                    .enter()
+                    .append('text')
+                    .attr("class", clazz + " depth-label")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .style("opacity", 0);
+            });
 
             if (kind == KIND_AREA && showGradient) {
                 var defs = svg.selectAll("defs").data([data]).enter()
@@ -418,10 +450,16 @@ export default function lineD3(d3, vizSettings) {
         return dispatch;
     };
 
-    exports.showCircle = function (start, theDepth) {
+    exports.showCircle = function (start, theDepth, pinned) {
         if (container == null) {
             return;
         }
+
+        // Get pinned class
+        const pinPrefix = pinned? 'pinned' : 'hover';
+        const depthClazz = '.' + pinPrefix + '.depth'
+        const labelClazz = '.' + pinPrefix + '.depth-label';
+
         // Find the closest position in the data
         var d = null;
         if (theData) {
@@ -451,16 +489,16 @@ export default function lineD3(d3, vizSettings) {
                 circleText += ' ' + posx + ':' + depthy + ' ' + invertedx + ':' + invertedy;
             }
 
-            var label = container.select(".circle-label");
+            var label = container.select(labelClazz);
             label.transition()
                 .duration(200)
                 .style("opacity", 1);
             label.attr("x", 0)
                 .attr("y", margin.top + 5)
-                .attr("class", "circle-label")
+                .attr("class", pinPrefix + ' depth-label')  // sjg todo - fix this
                 .text(circleText);
 
-            container.select(".circle-label")
+            container.select(labelClazz)
                 .attr("x", function () {
                     var w = this.getBBox().width;
                     var x = mousex + margin.left - (w / 2) + 3;
@@ -479,7 +517,8 @@ export default function lineD3(d3, vizSettings) {
                     return x;
                 });
 
-            var circle = container.select(".circle");
+            // todo: left off here - need to figure out what the select is doing
+            var circle = container.select('circle' + depthClazz);
             circle.transition()
                 .duration(200)
                 .style("opacity", .7);
@@ -490,17 +529,41 @@ export default function lineD3(d3, vizSettings) {
         }
     };
 
-    exports.hideCircle = function () {
+    exports.hideCircle = function (pinned) {
         if (container == null) {
             return;
         }
-        container.select(".circle").transition()
-            .duration(500)
-            .style("opacity", 0);
+        const hoverClazz = pinned ? '.pinned.depth' : '.hover.depth';
+        const labelClazz = pinned ? 'g.pinned.depth-label' : 'g.hover.depth-label';
 
-        container.select(".circle-label").transition()
-            .duration(500)
-            .style("opacity", 0);
+        if (pinned) {
+            container.selectAll(hoverClazz).selectAll(".depth").transition()
+                .duration(500)
+                .style("opacity", 0);
+
+            container.select(labelClazz).transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+        if (!pinned) {
+            container.selectAll(hoverClazz).selectAll(".depth").transition()
+                .duration(500)
+                .style("opacity", 0);
+
+            container.select(labelClazz).transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+
+        // todo: old - get rid of
+
+        // container.select(".circle").transition()
+        //     .duration(500)
+        //     .style("opacity", 0);
+        //
+        // container.select(".circle-label").transition()
+        //     .duration(500)
+        //     .style("opacity", 0);
     };
 
     /*** INTERNAL HELPER FUNCTIONS ***/

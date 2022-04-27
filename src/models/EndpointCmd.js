@@ -17,7 +17,7 @@ export default class EndpointCmd {
         if (this.MOSAIC_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
         } else if (this.DEV_MODE) {
-            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9002';
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9003';
         }
         this.api = new Client(backendUrl);
     }

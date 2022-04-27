@@ -93,7 +93,7 @@ class cnviobio {
                     adjChr = 25;
                 }
 
-                self.startCoords[adjChr - 1].push(tokens[self.headerIndices[1]]);
+                self.startCoords[adjChr - 1].push(+tokens[self.headerIndices[1]]);
                 let otherData = {
                     chr: +currChr,
                     start: +tokens[self.headerIndices[1]],
@@ -115,6 +115,10 @@ class cnviobio {
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
     findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false, chrOnly = false) {
         const self = this;
+
+        // Some weird scoping here
+        const start = startCoord;
+        const end = endCoord;
 
         let cnvObj = {
             matchingCnvs: [],
@@ -149,30 +153,30 @@ class cnviobio {
                 }
             } else {
                 // Don't start searching if our first section is > our coord
-                if (chrStarts.length === 0 || chrStarts[0] > startCoord) {
+                if (chrStarts.length === 0 || chrStarts[0] > start) {
                     return cnvObj;
                 }
 
                 // Ensure we aren't out of bounds of the end of the chromosome
+                // This will likely be the natural exit of this loop, since we have to check for multiple line overlap with gene
                 chrData[i].end = Math.min(chrLength, +chrData[i].end);
-
-                if (chrData[i].start > endCoord) {
-                    console.log("CNV start is greater than the end coordinate of the chromsome");
+                if (chrData[i].start > end) {
+                    //console.log("CNV start is greater than the end coordinate of the chromsome");
                     break;
                 }
 
                 // We're in a gene encompasses by a CNV larger than the entire gene
-                if (startCoord >= chrStarts[i] && endCoord <= chrData[i].end && abnormalSatisfied) {
-                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
+                if (start >= chrStarts[i] && end <= chrData[i].end && abnormalSatisfied) {
+                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], start, end));
                     // We've found an element that encompasses some of the 5' part of the gene
-                } else if (startCoord >= chrStarts[i] && chrData[i].end <= endCoord && chrData[i].end > startCoord && abnormalSatisfied) {
-                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
+                } else if (start >= chrStarts[i] && chrData[i].end <= end && chrData[i].end > start && abnormalSatisfied) {
+                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], start, end));
                     // We've found an event that starts within our gene and encompasses some of the 3' part
-                } else if (startCoord <= chrStarts[i] && chrStarts[i] < endCoord && chrData[i].end >= endCoord && abnormalSatisfied) {
-                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
+                } else if (start <= chrStarts[i] && chrStarts[i] < end && chrData[i].end >= end && abnormalSatisfied) {
+                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], start, end));
                     // We've found a tiny CNV within the gene
-                } else if (startCoord <= chrStarts[i] && chrData[i].end <= endCoord && abnormalSatisfied) {
-                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], startCoord, endCoord));
+                } else if (start <= chrStarts[i] && chrData[i].end <= end && abnormalSatisfied) {
+                    cnvObj.matchingCnvs.push(self._getFormattedData(chrData[i], start, end));
                 }
             }
         }

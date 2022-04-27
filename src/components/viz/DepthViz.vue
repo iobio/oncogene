@@ -1,7 +1,7 @@
 <style lang="sass">
     @import ../../assets/sass/variables
 
-    .depth-viz .circle-label
+    .depth-viz .depth-label
         fill: $arrow-color
         font-size: 15px
         font-weight: bold
@@ -35,7 +35,7 @@
         margin-top: 0px
         min-height: 30px
 
-        .circle
+        .depth
             stroke: none
             fill: $current-color
             pointer-events: none
@@ -215,11 +215,11 @@
             setDepthChart: function () {
                 this.$emit('updateDepthChart', this.depthChart);
             },
-            showCurrentPoint: function (point) {
-                this.depthChart.showCircle(point.pos, point.depth);
+            showCurrentPoint: function (point, pinned) {
+                this.depthChart.showCircle(point.pos, point.depth, pinned);
             },
-            hideCurrentPoint: function () {
-                this.depthChart.hideCircle();
+            hideCurrentPoint: function (pinned) {
+                this.depthChart.hideCircle(pinned);
             }
         },
         watch: {
