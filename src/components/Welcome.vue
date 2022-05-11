@@ -211,7 +211,7 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-show="isMosaic(launchSource) && !isReadyToLaunch()"
+          <v-carousel-item v-if="isMosaic(launchSource) && !isReadyToLaunch()"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
