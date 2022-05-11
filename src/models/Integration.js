@@ -63,8 +63,8 @@ class GalaxyIntegration extends Integration {
             self.config = launchConfig;
 
             // Required params
-            self.vcf = self.config.params.vcfs[0];
-            self.tbi = self.config.params.tbis[0];
+            self.vcfs = self.config.params.vcfs;
+            self.tbis = self.config.params.tbis;
 
             // todo: take this out of requirement! can just have vcf/tbi
             self.normal = self.config.params["0"];
@@ -99,8 +99,8 @@ class GalaxyIntegration extends Integration {
 
         return {
             backendUrl: this.backend ? this.backend : this.config.backendUrl,
-            vcf: this.vcf,
-            tbi: this.tbi,
+            vcfs: this.vcfs,
+            tbis: this.tbis,
             normal: this.normal,
             tumors: tumors
         };
@@ -136,8 +136,10 @@ class MosaicIntegration extends Integration {
                             self.tumors = [];
                             Object.keys(urlMap).forEach(sampleId => {
                                 if (sampleId === self.NORMAL) {
-                                    self.vcf = urlMap[sampleId].vcf;
-                                    self.tbi = urlMap[sampleId].tbi;
+                                    self.vcfs = urlMap[sampleId].vcfs;
+                                    self.tbis = urlMap[sampleId].tbis;
+                                    self.vcfFileNames = urlMap[sampleId].vcfFileNames;
+                                    self.tbiFileNames = urlMap[sampleId].tbiFileNames;
                                     self.normal = Object.assign({}, urlMap[sampleId]);
                                 } else {
                                     self.tumors.push(urlMap[sampleId]);
@@ -157,12 +159,14 @@ class MosaicIntegration extends Integration {
     buildParams() {
         return {
             backendUrl: this.backend ? this.backend : this.config.backendUrl,
-            vcf: this.vcf,
-            tbi: this.tbi,
+            vcfs: this.vcfs,
+            tbis: this.tbis,
+            vcfFileNames: this.vcfFileNames,
+            tbiFileNames: this.tbiFileNames,
             normal: this.normal,
             tumors: this.tumors,
             somaticOnly: this.config.params.somatic_only,
-            genes: [this.config.params["genes[0]"]]       // todo: this needs to be fixed in Mosaic
+            genes: this.config.params.genes ? [this.config.params.genes.split(',')] : []
         };
     }
 
@@ -183,24 +187,7 @@ class MosaicIntegration extends Integration {
             const api = decodeURIComponent(self.config.params.source) + "/api/v1";
             const project_id = self.config.params.project_id;
             const normal_id = self.config.params.sample_id;
-
-            // todo: this needs to be fixed in Mosaic
-            let tumor_ids = [];
-            if (self.config.params['tumor_sample_ids[0]']) {
-                tumor_ids.push(self.config.params['tumor_sample_ids[0]']);
-            }
-            if (self.config.params['tumor_sample_ids[1]']) {
-                tumor_ids.push(self.config.params['tumor_sample_ids[1]']);
-            }
-            if (self.config.params['tumor_sample_ids[2]']) {
-                tumor_ids.push(self.config.params['tumor_sample_ids[2]']);
-            }
-            if (self.config.params['tumor_sample_ids[3]']) {
-                tumor_ids.push(self.config.params['tumor_sample_ids[3]']);
-            }
-            if (self.config.params['tumor_sample_ids[4]']) {
-                tumor_ids.push(self.config.params['tumor_sample_ids[4]']);
-            }
+            let tumor_ids = self.config.params.tumor_sample_ids.split(',');
 
             let params = {
                 project_id,
@@ -248,40 +235,78 @@ export function promiseGetNormalSampleUrls(api, params, $) {
         let returnMap = {};
         getFilesForSample(project_id, normal_id, api, $).done(data => {
             if (data.data) {
-                const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
-                const tbi = data.data.filter(f => (f.type === 'tbi'))[0];
+                let vcfs = data.data.filter(f => (f.type === 'vcf'));
+                let tbis = data.data.filter(f => (f.type === 'tbi'));
                 const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
                 const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
-                // todo: how do I pull out rnaseq bams from here instead of coverage bams?
-                // todo: add in pulling facets data out
+                // todo: see note about pulling out rnaseq/facets data below
 
-                if (!vcf) {
+                if (vcfs.length === 0) {
                     reject('No vcf file obtained from Mosaic launch');
                 }
-                const selectedSample = vcf.vcf_sample_name;
+                if (vcfs.length !== tbis.length) {
+                    reject('Did not obtain equal number of vcf and tbi files from Mosaic');
+                }
 
-                getSignedUrlForFile(project_id, vcf, api, $).done(vcfUrlData => {
-                    const vcfUrl = vcfUrlData.url;
-                    getSignedUrlForFile(project_id, tbi, api, $).done(tbiUrlData => {
-                        const tbiUrl = tbiUrlData.url;
+                let urlPs = [];
+                let vcfUrls = [];
+                let tbiUrls = [];
+                let selectedSamples = [];
+                let vcfFileNames = [];
+                let tbiFileNames = [];
+
+                // get signed urls for each vcf associated with normal sample
+                for (let i = 0; i < vcfs.length; i++) {
+                    let vcf = vcfs[i];
+                    let tbi = tbis[i];
+                    let selectedSample = vcf.vcf_sample_name;
+                    let vcfName = vcf.name;
+                    let tbiName = tbi.name;
+
+                    let p = new Promise(resolve => {
+                        getSignedUrlForFile(project_id, vcf, api, $).done(vcfUrlData => {
+                            const vcfUrl = vcfUrlData.url;
+                            getSignedUrlForFile(project_id, tbi, api, $).done(tbiUrlData => {
+                                const tbiUrl = tbiUrlData.url;
+                                vcfUrls.push(vcfUrl);
+                                tbiUrls.push(tbiUrl);
+                                selectedSamples.push(selectedSample);
+                                vcfFileNames.push(vcfName);
+                                tbiFileNames.push(tbiName);
+                                resolve();
+                            })
+                        })
+                    });
+                    urlPs.push(p);
+                }
+                Promise.all(urlPs)
+                    .then(() => {
+                        // Only one bam/bai for single normal sample
                         if (bam && bai) {
                             getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
-                                    // todo: add rnaSeqBam, rnaSeqBai, cnv here
-                                    returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl, 'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample}
+                                    // todo: add rnaSeq, cnv here
+                                    returnMap['normal'] = {
+                                        'vcfs': vcfUrls,
+                                        'tbis': tbiUrls,
+                                        'coverageBam': bamUrl,
+                                        'coverageBai': baiUrl,
+                                        selectedSamples,
+                                        vcfFileNames,
+                                        tbiFileNames
+                                    }
                                     resolve(returnMap);
                                 })
                             })
                         } else {
                             console.log("No bam & bai files obtained for normal sample");
                             // todo: add rnaseq, cnv here
-                            returnMap['normal'] = { 'vcf': vcfUrl, 'tbi': tbiUrl };
+                            returnMap['normal'] = {'vcfs': vcfUrls, 'tbis': tbiUrls, selectedSamples, vcfFileNames, tbiFileNames};
                             resolve(returnMap);
                         }
                     })
-                })
             }
         })
     });
@@ -291,6 +316,11 @@ export function promiseGetNormalSampleUrls(api, params, $) {
  * Each entry contains presigned url for bam/bai files FOR COVERAGE ONLY FOR NOW.
  * Does NOT assign any presigned url for vc/tbi files. */
 export function promiseGetTumorSampleUrls(api, params, $) {
+
+    // todo: left off here - need to merge normal/tumor fxns to add in calling multiple vcf mosaic calls here
+    // todo: each vcf will have a different vcf_sample_name associated with the tumor sample, and need these
+    // todo: to populate launchParam models for welcome cmpnt
+
     const project_id = params.project_id;
     let tumor_ids = params.tumor_ids;
     return new Promise((resolve) => {
@@ -307,7 +337,9 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                         const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
                         const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
                         // todo: how do I pull out rnaseq bams from here instead of coverage bams?
+                        // update after talking w/ AW: will organize by experiment
                         // todo: add in pulling facets data out
+                        // update after talking w/ AW: will have three dropdowns for launcher - coverage exp, rnaseq exp, facets exp
 
                         if (!vcf) {
                             innerReject('No vcf file obtained from Mosaic launch');
@@ -321,7 +353,7 @@ export function promiseGetTumorSampleUrls(api, params, $) {
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
                                     // todo: add rnaseq & cnv here
-                                    returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSample};
+                                    returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSamples: [selectedSample] };
                                     innerResolve();
                                 })
                             })
@@ -382,8 +414,8 @@ export function updateVcfUrlsForTumors(returnMap) {
     Object.keys(returnMap).forEach(sample => {
         if (sample !== 'normal') {
             let currObj = returnMap[sample];
-            currObj['vcf'] = normalObj['vcf'];
-            currObj['tbi'] = normalObj['tbi'];
+            currObj['vcfs'] = normalObj['vcfs'];
+            currObj['tbis'] = normalObj['tbis'];
         }
     })
 }

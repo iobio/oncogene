@@ -211,7 +211,7 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-show="isMosaic(launchSource) && !isReadyToLaunch()"
+          <v-carousel-item v-if="isMosaic(launchSource) && !isReadyToLaunch()"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
@@ -220,7 +220,7 @@
               </v-card-title>
             </v-card>
           </v-carousel-item>
-<!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
+          <!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
           <v-carousel-item v-if="!somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
@@ -315,13 +315,15 @@
                         :slideBackground="slideBackground"
                         :allDataModels="DATA_MODELS"
                         :maxSamples="MAX_SAMPLES"
-                        :uploadedUrl="uploadedVcfUrl"
-                        :uploadedIndexUrl="uploadedTbiUrl"
-                        :uploadedSelectedSamples="uploadedSelectedSamples"
+                        :uploadedUrls="uploadedVcfUrls"
+                        :uploadedIndexUrls="uploadedTbiUrls"
+                        :uploadedSelectedSampleLists="uploadedSelectedSamples"
                         :uploadedBuild="selectedBuild"
                         :modelInfoList="modelInfoList"
                         :parentModelInfoIdx="modelInfoIdx"
                         :externalLaunchMode="!nativeLaunch"
+                        :vcfFileNames="vcfNameList"
+                        :tbiFileNames="tbiNameList"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
@@ -332,7 +334,8 @@
                         @show-alert="displayAlert"
                         @hide-alerts="hideAlerts"
                         @vcf-sample-names-updated="setVcfSampleNames"
-                        @vcf-form-mounted="vcfFormMounted=true">
+                        @vcf-form-mounted="vcfFormMounted=true"
+                        @vcf-index-selected="updateLaunchParamSamples">
               </vcf-form>
               <multi-source-form v-else-if="data !== 'summary'"
                                  ref="multiRef"
@@ -376,7 +379,9 @@
                                       :step="s.index"
                                       class="summary-label my-2">
                         {{ s.text }}
-                        <small v-if="isNotSelected(s)">{{ (s.step === 'geneList') ? 'Not Applicable' : 'Not Selected' }}</small>
+                        <small v-if="isNotSelected(s)">{{
+                            (s.step === 'geneList') ? 'Not Applicable' : 'Not Selected'
+                          }}</small>
                         <small v-if="isIncomplete(s)">Incomplete</small>
                       </v-stepper-step>
                     </v-stepper>
@@ -492,8 +497,8 @@ export default {
       configFile: [],
       canMountVcf: true,
       vcfFormMounted: false,
-      uploadedVcfUrl: null,
-      uploadedTbiUrl: null,
+      uploadedVcfUrls: null,
+      uploadedTbiUrls: null,
 
       // Used for Mosaic/Galaxy integration launch
       fileLists: {
@@ -507,9 +512,12 @@ export default {
         'rnaSeq': [],
         // 'atacSeq': [],
       },
+      // lists to make identifying drop-down urls easier in vcf/multi-sample cmpnts
       selectedSampleList: [],
+      vcfNameList: [],
+      tbiNameList: [],
 
-      uploadedSelectedSamples: [],
+      uploadedSelectedSamples: [], // this may be a single array of sample names, or an array of arrays (if launched from Mosaic w/ multiple vcfs)
       launchedFromConfig: false,
       showError: false,
       errorText: 'Some alert text',
@@ -906,8 +914,8 @@ export default {
         this.modelInfoList = info;
       }
 
-      // Add non-vcf sample data if
-      if (!this.nativeLaunch) {
+      // Add non-vcf sample data if coming from Mosaic/Galaxy
+      if (!this.nativeLaunch && info) {
         this.updateNonVcfModelInfo();
       }
 
@@ -915,13 +923,14 @@ export default {
       this.modelInfoList.push('foo');
       this.modelInfoList.pop();
     },
-    updateNonVcfModelInfo: function() {
+    updateNonVcfModelInfo: function () {
       const self = this;
       let samples = [this.launchParams.normal];
       samples = samples.concat(this.launchParams.tumors);
       let props = ['coverageBamUrl', 'coverageBaiUrl', 'rnaSeqBamUrl', 'rnaSeqBamUri', 'cnvUrl'];
       samples.forEach(sample => {
         let vals = [sample.coverageBam, sample.coverageBai, sample.rnaSeqBam, sample.rnaSeqBai, sample.cnv];
+        let selectedSample = sample.selectedSample ? sample.selectedSample : sample.selectedSamples[]
         self.updateIndividualModelInfo(sample.selectedSample, props, vals);
       })
     },
@@ -935,7 +944,7 @@ export default {
       // Only updating with valid info, can set to complete
       this.updateStepProp('vcf', 'complete', true);
     },
-    updateIndividualModelInfo: function(selectedSampleName, propNames, propVals) {
+    updateIndividualModelInfo: function (selectedSampleName, propNames, propVals) {
       let modelInfo = this.modelInfoList.filter(m => (m.selectedSample === selectedSampleName))[0];
       for (let i = 0; i < propNames.length; i++) {
         let propName = propNames[i];
@@ -944,6 +953,15 @@ export default {
     },
     removeModelInfo: function (modelInfoIdx) {
       this.modelInfoList.splice(modelInfoIdx, 1);
+    },
+    // Called when we have multiple vcfs coming in from Mosaic and one has been selected
+    // Allows for reactivity/selection of bams/cnvs
+    updateLaunchParamSamples: function(vcfIdx) {
+      let samples = [this.launchParams.normal];
+      samples.concat(this.launchParams.tumors);
+      samples.forEach(sample => {
+        sample.selectedSampleIdx = vcfIdx;
+      });
     },
     updateStepProp: function (stepName, propName, propStatus) {
       for (let i = 0; i < this.reqSteps.length; i++) {
@@ -1084,8 +1102,8 @@ export default {
           // Little extra work to fill in fields for vcf/tbi form
           // Note: assumes single vcf
           let firstSample = self.modelInfoList[0];
-          self.uploadedVcfUrl = firstSample.vcfUrl;
-          self.uploadedTbiUrl = firstSample.tbiUrl;
+          self.uploadedVcfUrls = [firstSample.vcfUrl];
+          self.uploadedTbiUrls = [firstSample.tbiUrl];
 
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
@@ -1144,7 +1162,7 @@ export default {
           self.launchedFromConfig = true;
 
           if (!(self.uploadedSelectedSamples && self.userData && fulfillsList &&
-              self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
+              self.uploadedVcfUrls && self.uploadedTbiUrls) || self.somaticCallsOnly == null) {
             self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
             self.showError = true;
           }
@@ -1154,10 +1172,14 @@ export default {
           // Have to mount vcf slide to do actual checks
           if (self.vcfFormMounted && self.$refs.vcfFormRef) {
             self.$refs.vcfFormRef.forEach(ref => {
-              ref.uploadConfigInfo(self.uploadedVcfUrl, self.uploadedTbiUrl, self.selectedBuild, self.uploadedSelectedSamples);
+              if (self.uploadedVcfUrls.length > 1) {
+                self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
+                self.showError = true;
+              } else {
+                ref.uploadConfigInfo(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], self.selectedBuild, self.uploadedSelectedSamples);
+              }
             });
           }
-          //this.$forceUpdate();
           self.mountVcfSlide(self.somaticCallsOnly);
           self.$gtag.pageview("/uploadConfig");
         }
@@ -1175,84 +1197,84 @@ export default {
         const warningType = 'error';
         self.displayAlert(warningType, warningText);
       }
-      if (self.uploadedVcfUrl && self.uploadedTbiUrl) {
-        let coverageExists = false,
-            rnaSeqExists = false,
-            // atacSeqExists = false,
-            cnvExists = false;
 
-        let samples = [self.launchParams.normal];
-        samples = samples.concat(self.launchParams.tumors);
-        samples.forEach(sample => {
-          // Optional fields
-          if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
-            displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
-          } else {
-            self.selectedSampleList.push(sample.selectedSample);
-            // Still need to check if this sample has optional data type
-            if (sample.coverageBam) {
-              self.fileLists[self.COVERAGE].push(sample.coverageBam);
-              self.indexLists[self.COVERAGE].push(sample.coverageBai);
-              self.uploadedSelectedSamples.push(sample.selectedSample);
-              coverageExists = true;
-            }
-          }
-          if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
-            displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
-          } else {
-            // Still need to check if this sample has optional data type
-            if (sample.rnaSeqBam) {
-              self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
-              self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
-              rnaSeqExists = true;
-            }
-          }
-          // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
-          //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
-          // } else {
+      let coverageExists = false,
+          rnaSeqExists = false,
+          // atacSeqExists = false,
+          cnvExists = false;
+
+      let samples = [self.launchParams.normal];
+      samples = samples.concat(self.launchParams.tumors);
+      samples.forEach(sample => {
+        // Optional fields
+        if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
+          displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        } else {
+          // todo: this is now selectedSamples for all samples
+          // todo: don't fill in selectedSamples here yet - wait until vcf selected
+          //self.selectedSampleList.push(sample.selectedSamples);
+
           // Still need to check if this sample has optional data type
-          // if (sample.atacSeqBam) {
-          //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
-          //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
-          //   atacSeqExists = true;
-          // }
-          // }
-          if (sample.cnv) {
-            self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
-            cnvExists = true;
+          if (sample.coverageBam) {
+            self.fileLists[self.COVERAGE].push(sample.coverageBam);
+            self.indexLists[self.COVERAGE].push(sample.coverageBai);
+            self.uploadedSelectedSamples.push(sample.selectedSamples);
+            coverageExists = true;
           }
-        });
-
-        // Toggle switches in loader
-        if (coverageExists) {
-          self.addDataType(self.COVERAGE);
         }
-        if (rnaSeqExists) {
-          self.addDataType(self.RNASEQ);
+        if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
+          displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        } else {
+          // Still need to check if this sample has optional data type
+          if (sample.rnaSeqBam) {
+            self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
+            self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
+            rnaSeqExists = true;
+          }
         }
-        // if (atacSeqExists) {
-        //   self.addDataType(self.ATACSEQ);
+        // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
+        //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        // } else {
+        // Still need to check if this sample has optional data type
+        // if (sample.atacSeqBam) {
+        //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
+        //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
+        //   atacSeqExists = true;
         // }
-        if (cnvExists) {
-          self.addDataType(self.CNV);
+        // }
+        if (sample.cnv) {
+          self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
+          cnvExists = true;
         }
+      });
 
-        // todo: once Mosaic passes over the coverage/rnaseq/cnv data
-        // todo: need to populate those slides and advance
-
-        self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
-
-        if (self.launchParams.genes) {
-          self.listInput = self.launchParams.genes.join('\n');
-          self.updateStepProp('geneList', 'complete', true);
-        }
-        self.displayDemoLoader = false;
-
-      } else {
-        self.displayDemoLoader = false;
-        displayWarning('Could not read file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+      // Toggle switches in loader
+      if (coverageExists) {
+        self.addDataType(self.COVERAGE);
       }
-      if (!self.uploadedVcfUrl || !self.uploadedTbiUrl) {
+      if (rnaSeqExists) {
+        self.addDataType(self.RNASEQ);
+      }
+      // if (atacSeqExists) {
+      //   self.addDataType(self.ATACSEQ);
+      // }
+      if (cnvExists) {
+        self.addDataType(self.CNV);
+      }
+
+      // todo: once Mosaic passes over the coverage/rnaseq/cnv data
+      // todo: need to populate those slides and advance
+
+      self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
+
+      if (self.launchParams.genes) {
+        self.listInput = self.launchParams.genes.join('\n');
+        self.updateStepProp('geneList', 'complete', true);
+      }
+      self.displayDemoLoader = false;
+
+      if (!self.uploadedVcfUrls || self.uploadedVcfUrls.length === 0 ||
+          !self.uploadedTbiUrls || self.uploadedTbiUrls.length === 0) {
         displayWarning('Missing required data files from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
       }
     },
@@ -1278,8 +1300,8 @@ export default {
       this.selectedCancerList = null;
       this.selectedTissueList = null;
       this.selectedBuild = null;
-      this.uploadedVcfUrl = null;
-      this.uploadedTbiUrl = null;
+      this.uploadedVcfUrls = null;
+      this.uploadedTbiUrls = null;
       this.modelInfoIdx = 0;
       this.uploadedSelectedSamples = [];
       this.launchedFromConfig = true;
@@ -1378,8 +1400,8 @@ export default {
           // Little extra work to fill in fields for vcf/tbi form
           // Note: assumes single vcf
           let firstSample = self.modelInfoList[0];
-          self.uploadedVcfUrl = firstSample.vcfUrl;
-          self.uploadedTbiUrl = firstSample.tbiUrl;
+          self.uploadedVcfUrls = [firstSample.vcfUrl];
+          self.uploadedTbiUrls = [firstSample.tbiUrl];
 
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
@@ -1422,14 +1444,14 @@ export default {
           self.launchedFromConfig = true;
 
           if (!(self.uploadedSelectedSamples && self.userData && fulfillsList &&
-              self.uploadedVcfUrl && self.uploadedTbiUrl) || self.somaticCallsOnly == null) {
+              self.uploadedVcfUrls && self.uploadedTbiUrls) || self.somaticCallsOnly == null) {
             self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
             self.showError = true;
           }
           self.clearGeneListFlag = false;
         }
 
-        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, function (success, sampleNames, hdrBuild) {
+        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
           if (success) {
             if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
               let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
@@ -1452,7 +1474,7 @@ export default {
         self.showError = true;
       };
     },
-    isMosaic: function(source) {
+    isMosaic: function (source) {
       return (source === this.UTAH_MOSAIC || source === this.CDDRC_MOSAIC);
     }
   },
@@ -1466,11 +1488,16 @@ export default {
 
     this.populateValidGenesMap();
     this.populateGeneLists();
-    if (this.launchParams && this.launchParams.vcf) {
-      this.uploadedVcfUrl = this.launchParams.vcf;
-      this.uploadedTbiUrl = this.launchParams.tbi;
-      if (this.uploadedVcfUrl && this.uploadedTbiUrl) {
-        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrl, self.uploadedTbiUrl, (success, sampleNames, build) => {
+    if (this.launchParams && this.launchParams.vcfs) {
+
+      this.uploadedVcfUrls = this.launchParams.vcfs;
+      this.uploadedTbiUrls = this.launchParams.tbis;
+      this.vcfNameList = this.launchParams.vcfFileNames;
+      this.tbiNameList = this.launchParams.tbiFileNames;
+
+      // Ideally we have a single vcf coming in
+      if (this.uploadedVcfUrls.length === 1 && this.uploadedTbiUrls.length === 1) {
+        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], (success, sampleNames, build) => {
           if (success) {
             self.selectedBuild = build;
             self.canMountVcf = true;
@@ -1493,6 +1520,14 @@ export default {
             }
           }
         });
+      } else {
+        self.canMountVcf = true;
+        // Sloppy but works
+        if (self.isMosaic(self.launchSource)) {
+          setTimeout(() => {
+            self.advanceSlide();
+          }, 100);
+        }
       }
     }
     if (!this.nativeLaunch) {
