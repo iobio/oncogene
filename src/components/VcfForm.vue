@@ -206,14 +206,14 @@ export default {
     vcfList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedUrls.length; i++) {
-        annoList.push({ 'text': ('[' + this.vcfFileNames[i] + '] ' + this.uploadedUrls[i]), 'value': this.uploadedUrls[i] });
+        annoList.push({ 'text': this.vcfFileNames[i], 'value': this.uploadedUrls[i] });
       }
       return annoList;
     },
     tbiList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedIndexUrls.length; i++) {
-        annoList.push({ 'text': ('[' + this.tbiFileNames[i] + '] ' + this.uploadedIndexUrls[i]), 'value': this.uploadedIndexUrls[i] });
+        annoList.push({ 'text': this.tbiFileNames[i], 'value': this.uploadedIndexUrls[i] });
       }
       return annoList;
     },
@@ -397,7 +397,11 @@ export default {
       }
 
       if (this.url && this.indexUrl) {
-        this.onVcfUrlEntered(this.url.value, this.indexUrl.value, selectedSamples);
+        if (this.externalLaunchMode) {
+          this.onVcfUrlEntered(this.url.value, this.indexUrl.value, selectedSamples);
+        } else {
+          this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
+        }
       }
     },
     populateRespectiveIndex: function() {

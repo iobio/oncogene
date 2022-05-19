@@ -13,6 +13,8 @@ class SubcloneModel {
         return this.clonalVarMap[nodeId];
     }
 
+    // todo: the problem here is that superseeker has now switched to 0 based raw index instead of 'C1' as first named non-normal clone
+    // todo: what will be stable version?
     /* Inserts node into the subclone node list at a position corresponding to its clone ID.
      * For example, C1 is inserted at index 1, C2 is inserted at index 2, etc (N is always at index 0) */
     insertNode(node, subclone) {
@@ -23,7 +25,7 @@ class SubcloneModel {
             if (node.id === this.NORMAL) {
                 subclone.nodes.splice(0, 0, node);
             } else {
-                let idx = +(node.id.substring(1));
+                let idx = node.id.startsWith('c') ? +(node.id.substring(1)) : +(node.id);
                 subclone.nodes.splice(idx, 0, node);
             }
             return true;
@@ -39,7 +41,7 @@ class SubcloneModel {
         if (nodeId === this.NORMAL) {
             return subclone.nodes[0];
         } else {
-            let idx = +(nodeId.substring(1));
+            let idx = nodeId.startsWith('c') ? +(nodeId.substring(1)) : +(nodeId);
             return subclone.nodes[idx];
         }
     }

@@ -105,6 +105,7 @@ export default {
         'parentId' : this.svgId,
         'colorMap': this.getColorMap(offsetIdx)
       };
+      debugger;
       this.chart(data, options);
     },
     clear() {

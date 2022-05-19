@@ -194,24 +194,11 @@ class MosaicIntegration extends Integration {
                 normal_id,
                 tumor_ids
             };
-            let returnMap = {};
 
             if (localStorage.getItem('mosaic-iobio-tkn')) {
-                promiseGetNormalSampleUrls(api, params, self.globalApp.$)
-                    .then(normalMap => {
-                        Object.keys(normalMap).forEach(key => {
-                            returnMap[key] = normalMap[key];
-                        })
-                        promiseGetTumorSampleUrls(api, params, self.globalApp.$)
-                            .then(tumorMap => {
-                                Object.keys(tumorMap).forEach(key => {
-                                    returnMap[key] = tumorMap[key];
-                                })
-                                updateVcfUrlsForTumors(returnMap);
-                                resolve(returnMap);
-                            }).catch(error => {
-                                reject("Problem getting file info for tumor samples: " + error);
-                            })
+                promiseGetSampleUrls(api, params, self.globalApp.$)
+                    .then(sampleMap => {
+                        resolve(sampleMap);
                     }).catch(error => {
                         reject("Problem getting file info for normal sample: " + error);
                 })
@@ -224,16 +211,50 @@ class MosaicIntegration extends Integration {
     }
 }
 
-/* Returns object with one entry for a normal sample.
- * The entry contains presigned url for vcf/tbi files and
- * bam/bai files FOR COVERAGE ONLY FOR NOW (if they exist). */
-export function promiseGetNormalSampleUrls(api, params, $) {
+/* Returns object with one entry for the normal sample, and
+ * one entry per tumor sample. The entry contains presigned
+ * url for vcf/tbi files and bam/bai files
+ * FOR COVERAGE ONLY FOR NOW (if they exist). */
+export function promiseGetSampleUrls(api, params, $) {
+    return new Promise((resolve, reject) => {
+
     const project_id = params.project_id;
     const normal_id = params.normal_id;
+    let tumor_ids = params.tumor_ids;
+
+    let sample_ids = [normal_id];
+    sample_ids.push(...tumor_ids);
+
+    let promises = [];
+    let returnMap = {};
+    for (let i = 0; i < sample_ids.length; i++) {
+        let sample_id = sample_ids[i];
+        let p = promiseGetSingleSampleUrls(api, project_id, sample_id, $)
+            .then(urlObj => {
+                if (i === 0) {
+                    returnMap['normal'] = urlObj;
+                } else {
+                    returnMap['t' + i] = urlObj;
+                }
+            }).catch(err => {
+                reject('Something went wrong getting sample ' + i + ': ' + err);
+            })
+        promises.push(p);
+    }
+    Promise.all(promises)
+        .then(() => {
+            resolve(returnMap);
+        })
+    })
+
+}
+
+/* Returns an object with presigned urls for the single sample
+ * corresponding to the provided sample_id argument.
+ * For now, ONLY CONTAINS COVERAGE bam file urls. */
+export function promiseGetSingleSampleUrls(api, project_id, sample_id, $) {
     return new Promise((resolve, reject) => {
-        // Get file urls for normal sample
-        let returnMap = {};
-        getFilesForSample(project_id, normal_id, api, $).done(data => {
+        getFilesForSample(project_id, sample_id, api, $).done(data => {
             if (data.data) {
                 let vcfs = data.data.filter(f => (f.type === 'vcf'));
                 let tbis = data.data.filter(f => (f.type === 'tbi'));
@@ -288,23 +309,25 @@ export function promiseGetNormalSampleUrls(api, params, $) {
                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
                                     // todo: add rnaSeq, cnv here
-                                    returnMap['normal'] = {
+                                    let urlObj = {
                                         'vcfs': vcfUrls,
                                         'tbis': tbiUrls,
                                         'coverageBam': bamUrl,
+                                        'bamName': bam.name,
                                         'coverageBai': baiUrl,
+                                        'baiName': bai.name,
                                         selectedSamples,
                                         vcfFileNames,
                                         tbiFileNames
                                     }
-                                    resolve(returnMap);
+                                    resolve(urlObj);
                                 })
                             })
                         } else {
                             console.log("No bam & bai files obtained for normal sample");
                             // todo: add rnaseq, cnv here
-                            returnMap['normal'] = {'vcfs': vcfUrls, 'tbis': tbiUrls, selectedSamples, vcfFileNames, tbiFileNames};
-                            resolve(returnMap);
+                            let urlObj = {'vcfs': vcfUrls, 'tbis': tbiUrls, selectedSamples, vcfFileNames, tbiFileNames};
+                            resolve(urlObj);
                         }
                     })
             }
@@ -315,67 +338,67 @@ export function promiseGetNormalSampleUrls(api, params, $) {
 /* Returns object with one entry per tumor ID provided in params argument.
  * Each entry contains presigned url for bam/bai files FOR COVERAGE ONLY FOR NOW.
  * Does NOT assign any presigned url for vc/tbi files. */
-export function promiseGetTumorSampleUrls(api, params, $) {
-
-    // todo: left off here - need to merge normal/tumor fxns to add in calling multiple vcf mosaic calls here
-    // todo: each vcf will have a different vcf_sample_name associated with the tumor sample, and need these
-    // todo: to populate launchParam models for welcome cmpnt
-
-    const project_id = params.project_id;
-    let tumor_ids = params.tumor_ids;
-    return new Promise((resolve) => {
-        // Get file urls for tumor sample(s)
-        let tumorNo = 1;
-        let mosaicPs = [];
-        let returnMap = {};
-        tumor_ids.forEach(tumor_id => {
-            let p = new Promise((innerResolve, innerReject) => {
-                let localCount = tumorNo;
-                getFilesForSample(project_id, tumor_id, api, $).done(data => {
-                    if (data.data) {
-                        const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
-                        const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
-                        const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
-                        // todo: how do I pull out rnaseq bams from here instead of coverage bams?
-                        // update after talking w/ AW: will organize by experiment
-                        // todo: add in pulling facets data out
-                        // update after talking w/ AW: will have three dropdowns for launcher - coverage exp, rnaseq exp, facets exp
-
-                        if (!vcf) {
-                            innerReject('No vcf file obtained from Mosaic launch');
-                        }
-                        const selectedSample = vcf.vcf_sample_name;
-
-                        // Get Signed Url
-                        if (bam && bai) {
-                            getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
-                                const bamUrl = bamUrlData.url;
-                                getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
-                                    const baiUrl = baiUrlData.url;
-                                    // todo: add rnaseq & cnv here
-                                    returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSamples: [selectedSample] };
-                                    innerResolve();
-                                })
-                            })
-                        } else {
-                            console.log("No bam & bai files for tumor " + localCount);
-                            // todo: add rnaseq & cnv here
-                            returnMap[('t' + localCount)] = {'vcf': null, 'tbi': null};
-                            innerResolve();
-                        }
-                    } else {
-                        innerReject("Could not get file data from Mosaic");
-                    }
-                })
-            });
-            mosaicPs.push(p);
-            tumorNo++;
-        })
-       Promise.all(mosaicPs).then(() => {
-           resolve(returnMap);
-       })
-    });
-}
+// export function promiseGetTumorSampleUrls(api, params, $) {
+//
+//     // todo: left off here - need to merge normal/tumor fxns to add in calling multiple vcf mosaic calls here
+//     // todo: each vcf will have a different vcf_sample_name associated with the tumor sample, and need these
+//     // todo: to populate launchParam models for welcome cmpnt
+//
+//     const project_id = params.project_id;
+//     let tumor_ids = params.tumor_ids;
+//     return new Promise((resolve) => {
+//         // Get file urls for tumor sample(s)
+//         let tumorNo = 1;
+//         let mosaicPs = [];
+//         let returnMap = {};
+//         tumor_ids.forEach(tumor_id => {
+//             let p = new Promise((innerResolve, innerReject) => {
+//                 let localCount = tumorNo;
+//                 getFilesForSample(project_id, tumor_id, api, $).done(data => {
+//                     if (data.data) {
+//                         const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
+//                         const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
+//                         const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
+//                         // todo: how do I pull out rnaseq bams from here instead of coverage bams?
+//                         // update after talking w/ AW: will organize by experiment
+//                         // todo: add in pulling facets data out
+//                         // update after talking w/ AW: will have three dropdowns for launcher - coverage exp, rnaseq exp, facets exp
+//
+//                         if (!vcf) {
+//                             innerReject('No vcf file obtained from Mosaic launch');
+//                         }
+//                         const selectedSample = vcf.vcf_sample_name;
+//
+//                         // Get Signed Url
+//                         if (bam && bai) {
+//                             getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
+//                                 const bamUrl = bamUrlData.url;
+//                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
+//                                     const baiUrl = baiUrlData.url;
+//                                     // todo: add rnaseq & cnv here
+//                                     returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSamples: [selectedSample] };
+//                                     innerResolve();
+//                                 })
+//                             })
+//                         } else {
+//                             console.log("No bam & bai files for tumor " + localCount);
+//                             // todo: add rnaseq & cnv here
+//                             returnMap[('t' + localCount)] = {'vcf': null, 'tbi': null};
+//                             innerResolve();
+//                         }
+//                     } else {
+//                         innerReject("Could not get file data from Mosaic");
+//                     }
+//                 })
+//             });
+//             mosaicPs.push(p);
+//             tumorNo++;
+//         })
+//        Promise.all(mosaicPs).then(() => {
+//            resolve(returnMap);
+//        })
+//     });
+// }
 
 export function getFilesForSample(project_id, sample_id, api, $) {
     return $.ajax({

@@ -350,6 +350,8 @@
                                  :launchSource="launchSource"
                                  :fileList="getFileList(data)"
                                  :indexList="getIndexList(data)"
+                                 :fileNameList="getFileNameList(data)"
+                                 :indexNameList="getIndexNameList(data)"
                                  :selectedSampleList="selectedSampleList"
                                  :externalLaunchMode="!nativeLaunch"
                                  @update-status="updateMultiStatus"
@@ -512,6 +514,18 @@ export default {
         'rnaSeq': [],
         // 'atacSeq': [],
       },
+      fileNameLists: {
+        'coverage': [],
+        'rnaSeq': [],
+        // 'atacSeq': [],
+        'cnv': []
+      },
+      indexNameLists: {
+        'coverage': [],
+        'rnaSeq': [],
+        // 'atacSeq': [],
+      },
+
       // lists to make identifying drop-down urls easier in vcf/multi-sample cmpnts
       selectedSampleList: [],
       vcfNameList: [],
@@ -760,7 +774,8 @@ export default {
 
       // If we've loaded the config completely, turn off advance flag
       // so if user circles back to edit, won't advance unexpectedly
-      if (this.carouselModel === 3 + this.selectedUserData.length) {
+      const baseIdx = this.geneCount > 0 ? 3 : 2;
+      if (this.carouselModel === baseIdx + this.selectedUserData.length) {
         this.launchedFromConfig = false;
       }
     },
@@ -850,6 +865,12 @@ export default {
     getIndexList: function (type) {
       return this.indexLists[type] ? this.indexLists[type] : [];
     },
+    getFileNameList: function (type) {
+      return this.fileNameLists[type] ? this.fileNameLists[type] : [];
+    },
+    getIndexNameList: function (type) {
+      return this.indexNameLists[type] ? this.indexNameLists[type] : [];
+    },
     getCardTitle: function (type) {
       if (type === 'summary') {
         return 'Input Summary';
@@ -925,13 +946,18 @@ export default {
     },
     updateNonVcfModelInfo: function () {
       const self = this;
+
+      // Clear out any state from before
+      self.selectedSampleList = [];
+
       let samples = [this.launchParams.normal];
       samples = samples.concat(this.launchParams.tumors);
       let props = ['coverageBamUrl', 'coverageBaiUrl', 'rnaSeqBamUrl', 'rnaSeqBamUri', 'cnvUrl'];
       samples.forEach(sample => {
         let vals = [sample.coverageBam, sample.coverageBai, sample.rnaSeqBam, sample.rnaSeqBai, sample.cnv];
-        let selectedSample = sample.selectedSample ? sample.selectedSample : sample.selectedSamples[]
-        self.updateIndividualModelInfo(sample.selectedSample, props, vals);
+        let selectedSample = self.nativeLaunch ? sample.selectedSample : sample.selectedSamples[sample.selectedSampleIdx];
+        self.selectedSampleList.push(selectedSample);
+        self.updateIndividualModelInfo(selectedSample, props, vals);
       })
     },
     setVcfSampleNames: function (vcfSampleNames) {
@@ -958,7 +984,7 @@ export default {
     // Allows for reactivity/selection of bams/cnvs
     updateLaunchParamSamples: function(vcfIdx) {
       let samples = [this.launchParams.normal];
-      samples.concat(this.launchParams.tumors);
+      samples = samples.concat(this.launchParams.tumors);
       samples.forEach(sample => {
         sample.selectedSampleIdx = vcfIdx;
       });
@@ -1210,15 +1236,14 @@ export default {
         if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
           displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
         } else {
-          // todo: this is now selectedSamples for all samples
-          // todo: don't fill in selectedSamples here yet - wait until vcf selected
-          //self.selectedSampleList.push(sample.selectedSamples);
 
           // Still need to check if this sample has optional data type
           if (sample.coverageBam) {
             self.fileLists[self.COVERAGE].push(sample.coverageBam);
             self.indexLists[self.COVERAGE].push(sample.coverageBai);
-            self.uploadedSelectedSamples.push(sample.selectedSamples);
+            self.fileNameLists[self.COVERAGE].push(sample.bamName);
+            self.indexNameLists[self.COVERAGE].push(sample.baiName);
+            self.uploadedSelectedSamples = self.uploadedSelectedSamples.concat(sample.selectedSamples);
             coverageExists = true;
           }
         }
@@ -1229,6 +1254,8 @@ export default {
           if (sample.rnaSeqBam) {
             self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
             self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
+            self.fileNameLists[self.RNASEQ].push(sample.bamName);
+            self.indexNameLists[self.RNASEQ].push(sample.baiName);
             rnaSeqExists = true;
           }
         }
@@ -1244,6 +1271,7 @@ export default {
         // }
         if (sample.cnv) {
           self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
+          self.fileNameLists[self.CNV].push(sample.cnvName); // todo: this will need to be added when CNV added to integration
           cnvExists = true;
         }
       });
