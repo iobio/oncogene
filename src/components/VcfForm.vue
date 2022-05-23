@@ -296,7 +296,13 @@ export default {
                 resolve();
               }
 
-              let selectedVcfIdx = self.vcfList.indexOf(self.url);
+              // Extract actual urls out of objects
+              let vcfListVals = [];
+              self.vcfList.forEach(obj => {
+                vcfListVals.push(obj.value);
+              })
+              let strippedUrl = (typeof self.url === 'string' ? self.url : self.url.value);
+              let selectedVcfIdx = vcfListVals.indexOf(strippedUrl);
               if (self.externalLaunchMode && self.multipleVcfsExist) {
                 self.$emit('vcf-index-selected', selectedVcfIdx);
               }
@@ -412,7 +418,7 @@ export default {
       }
 
       if (this.url && this.indexUrl) {
-        if (this.externalLaunchMode) {
+        if (this.externalLaunchMode && this.uploadedUrls.length > 1) {
           this.onVcfUrlEntered(this.url.value, this.indexUrl.value, selectedSamples);
         } else {
           this.onVcfUrlEntered(this.url, this.indexUrl, selectedSamples);
