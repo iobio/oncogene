@@ -1,8 +1,8 @@
 export default function stackedBarChartD3(d3, smallVersion) {
 
-  var margin = {top: 30, right: 20, bottom: 20, left: 10},
+  var margin = {top: 30, right: 20, bottom: 50, left: 10},
       width = smallVersion ? 270 : 330, //todo: test with big screen
-      height = 300;
+      height = 320;
 
   function chart(subcloneObjs, theOptions) {
     const parentId = theOptions.parentId;
@@ -22,7 +22,7 @@ export default function stackedBarChartD3(d3, smallVersion) {
     var vals = d3.rollup(subcloneObjs, ([d]) => d, d => d.timepoint, d => d.subclone).values();
 
     var colorArr = [];
-    for (let key of colors.keys()) {
+    for (let key of Object.keys(colors)) {
       if (key !== 'n') {
         colorArr.push(key);
       }
@@ -37,8 +37,8 @@ export default function stackedBarChartD3(d3, smallVersion) {
     var series = s.map(s => (s.forEach(d => d.data = d.data.get(s.key)), s));
 
     var color = d3.scaleOrdinal()
-        .domain(colors.keys())
-        .range(colors.values())
+        .domain(Object.keys(colors))
+        .range(Object.values(colors))
 
     var x = d3.scaleBand()
         .domain(subcloneObjs.map(d => d.timepoint))
@@ -70,31 +70,31 @@ export default function stackedBarChartD3(d3, smallVersion) {
             .text(d => `${d.data.subclone}@${d.data.timepoint}: ${d.data.prev}`));
 
     svg.append("g")
-        .attr("class", "x sub-axis")
-        .attr("transform", "translate(0," + (height -10)  + ")")
+        .attr("class", "subclone x-axis")
+        .attr("transform", "translate(0," + (height - margin.bottom + 2)  + ")")
         .call(xAxis)
         .append("text")
         .attr("x", 0)
         .attr("dx", "13em")
-        .attr("dx", "13em")
-        .attr("dy", "3em")
-        .style("text-anchor", "middle")
-        .style("font-family", "Raleway")
-        .style("fill", 'black')
-        .text("Timepoints");
+        .attr("dy", "6em")
+        .text("Timepoints")
+        .attr("id", "x-label")
+        .style("fill", "#717171")
+        .style("font-size", "14px");
 
+    // rotate x-axis labels
+    svg.selectAll('g').classed('x-axis', true)
+        .selectAll('text:not(#x-label)').classed("x-label", false)
+        .attr("transform", "rotate(-35)");
 
     svg.append("g")
-        .attr("class", "y sub-axis")
+        .attr("class", "subclone y-axis")
         .call(yAxis)
         .append("text")
-        .attr("transform", "rotate(-90)")
         .attr("y", 0)
         .attr("dx", "-11em")
         .attr("dy", "-3em")
-        .style("text-anchor", "middle")
-        .style("font-family", "Raleway")
-        .style("fill", 'black')
+        .attr('class', 'subclone-viz')
         .text("Prevalence");
 
     return svg.node();
