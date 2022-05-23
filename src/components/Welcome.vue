@@ -1232,18 +1232,26 @@ export default {
       let samples = [self.launchParams.normal];
       samples = samples.concat(self.launchParams.tumors);
       samples.forEach(sample => {
+
+        // Create file-specific lists used for vcf-dropdown
+        for (let i = 0; i < sample.selectedSamples.length; i++) {
+          if (self.uploadedSelectedSamples[i] == null) {
+            self.uploadedSelectedSamples[i] = [sample.selectedSamples[i]];
+          } else {
+            self.uploadedSelectedSamples[i].push(sample.selectedSamples[i]);
+          }
+        }
+
         // Optional fields
         if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
           displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
         } else {
-
           // Still need to check if this sample has optional data type
           if (sample.coverageBam) {
             self.fileLists[self.COVERAGE].push(sample.coverageBam);
             self.indexLists[self.COVERAGE].push(sample.coverageBai);
             self.fileNameLists[self.COVERAGE].push(sample.bamName);
             self.indexNameLists[self.COVERAGE].push(sample.baiName);
-            self.uploadedSelectedSamples = self.uploadedSelectedSamples.concat(sample.selectedSamples);
             coverageExists = true;
           }
         }

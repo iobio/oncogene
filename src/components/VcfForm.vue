@@ -67,7 +67,7 @@
                     <v-select
                         label="Sample"
                         v-model="listInfo.selectedSample"
-                        :items="vcfSampleNames"
+                        :items="filteredVcfSampleNames"
                         color="appColor"
                         autocomplete
                         dense
@@ -147,6 +147,10 @@ export default {
         return [];
       }
     },
+    // Lists of selected samples (one per vcf) provided from either
+    // an internal config (in which case only one list)
+    // or an external config (in which one list per vcf filtered by
+    // Mosaic sample IDs passed in url params)
     uploadedSelectedSampleLists: {
       type: Array,
       default: () => {
@@ -188,7 +192,8 @@ export default {
     return {
       url: null,
       indexUrl: null,
-      vcfSampleNames: [],
+      vcfSampleNames: [], // the vcf column IDs pulled from actual file
+      filteredVcfSampleNames: [], // the intersection of vcf column IDs & passed selectedSampleIds
       selectedSamples: [],
       sampleNicknames: [],
       displayLoader: false,
@@ -264,7 +269,9 @@ export default {
                 self.$emit('show-alert', 'warning', warningText);
               }
               // Still populate drop-down lists
+              // Note: don't have to filter vcf sample names when we provide only one list
               for (let i = 0; i < sampleNames.length; i++) {
+                self.filteredVcfSampleNames.push(sampleNames[i]);
                 self.vcfSampleNames.push(sampleNames[i]);
               }
               self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
@@ -289,25 +296,33 @@ export default {
                 resolve();
               }
 
-              // todo: left off here - need to update launchParam samples with what index vcf/tbi chosen to update selectedSample prop there before creating modelInfo
-              if (self.multipleVcfsExist) {
-                let idx = self.vcfList.indexOf(self.url);
-                self.$emit('vcf-index-selected', idx);
+              let selectedVcfIdx = self.vcfList.indexOf(self.url);
+              if (self.externalLaunchMode && self.multipleVcfsExist) {
+                self.$emit('vcf-index-selected', selectedVcfIdx);
               }
 
-              // Create modelInfo per sample
+              // Create modelInfos and add to drop down lists in loader
               let infoList = [];
               for (let i = 0; i < sampleNames.length; i++) {
-                let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
-                infoList.push(modelInfo);
-                //self.$emit('set-model-info', infoList);
+                // Only create modelInfos for samples that Mosaic has passed over in URL params
+                if (self.externalLaunchMode && self.uploadedSelectedSampleLists && self.uploadedSelectedSampleLists.length > 0) {
+                  let selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
+                  let currSampleFromFile = sampleNames[i];
+                  if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
+                    let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                    infoList.push(modelInfo);
+                    self.modelInfoIdx++;
+                    self.filteredVcfSampleNames.push(currSampleFromFile);
+                  }
+                }
+                // Always add to vcfSampleNames array though, important for getting correct column from vcf file
                 self.vcfSampleNames.push(sampleNames[i]);
-                self.modelInfoIdx++;``
               }
               self.$emit('set-model-info', infoList);
 
               // Toggle display flags
               self.urlsVerified = true;
+
               self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
               resolve();
             }
