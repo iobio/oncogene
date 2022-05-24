@@ -17,7 +17,7 @@ class Integration {
         this.globalApp = globalApp;
         this.query = query;
         configOpts = configOpts ? configOpts : {};
-        if (process.env.VUE_APP_LOCAL_BACKEND === 'true') {
+        if (configOpts.useLocalBackend) {
             console.log('Using local backend');
             this.backend = window.location.origin + '/gru';
         }
@@ -52,7 +52,9 @@ class GalaxyIntegration extends Integration {
     constructor(query, globalApp) {
         console.log('Galaxy mode detected');
         let configOpts = {
-            configLocation: (process.env.VUE_APP_CONFIG_LOCATION ? process.env.VUE_APP_CONFIG_LOCATION : '/config.json')
+            //configLocation: (process.env.VUE_APP_CONFIG_LOCATION ? process.env.VUE_APP_CONFIG_LOCATION : '/config.json')
+            configLocation: '.config.json',
+            useLocalBackend: true
         };
         super(query, configOpts, globalApp);
     }
@@ -66,15 +68,15 @@ class GalaxyIntegration extends Integration {
             self.vcfs = self.config.params.vcfs;
             self.tbis = self.config.params.tbis;
 
-            // todo: take this out of requirement! can just have vcf/tbi
-            self.normal = self.config.params["0"];
-            self.t1 = self.config.params["1"];
             if (self.vcf == null || self.tbi == null
                 || self.normal == null || self.t1 == null) {
                 console.log('ERROR: did not obtain required parameters from Galaxy configuration');
+                // todo: bubble up this error to user
             }
 
-            // Optional timepoints
+            // Optional data (bams/cnvs in numeric entries)
+            self.normal = self.config.params["0"];
+            self.t1 = self.config.params["1"];
             self.t2 = self.config.params["2"];
             self.t3 = self.config.params["3"];
             self.t4 = self.config.params["4"];
@@ -108,9 +110,7 @@ class GalaxyIntegration extends Integration {
 
     buildQuery() {
         return {
-            source: this.config.params.source,
-            //project_id: this.config.params.project_id,
-            // todo: whatever else info from galaxy that would be helpful
+            source: this.config.params.source
         };
     }
 }
