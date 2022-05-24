@@ -220,7 +220,6 @@
               </v-card-title>
             </v-card>
           </v-carousel-item>
-          <!--          todo: when Mosaic passes gene list correctly, hide this gene card-->
           <v-carousel-item v-if="!somaticCallsOnly"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
@@ -539,9 +538,10 @@ export default {
       warningText: 'Some warning text',
       validGenesMap: {},
       cancerListNames: [],
-      tissueListNames: [],
+      tissueListNames: [],  // note: not currently using but leaving in for future
       selectedCancerList: null,
       selectedTissueList: null,
+      mosaicGeneList: [],
       modelInfoIdx: 0,
       displayDemoLoader: false,
 
@@ -893,6 +893,13 @@ export default {
       for (var listName in geneListsByCancerType) {
         this.cancerListNames.push(listName);
       }
+      // If we have a Mosaic-passed list, put at top
+      if (this.isMosaic(this.launchSource) && this.launchParams.geneListName) {
+        this.cancerListNames.splice(0, 0, this.launchParams.geneListName);
+        this.mosaicGeneList = this.launchParams.genes;
+      }
+
+      // Note: not currently using tissue lists, but leaving in
       for (var tissueListName in geneListsByTissueType) {
         this.tissueListNames.push(tissueListName);
       }
@@ -908,10 +915,17 @@ export default {
         this.listInput = '';
       }
       let selectedList = this.selectedCancerList;
-      let geneList = geneListsByCancerType[selectedList];
-      if (listType === 'tissue') {
-        selectedList = this.selectedTissueList;
-        geneList = geneListsByTissueType[selectedList];
+      let geneList = [];
+
+      // Special case for Mosaic passed list
+      if (selectedList.startsWith('Mosaic provided')) {
+        geneList = this.mosaicGeneList;
+      } else {
+        geneList = geneListsByCancerType[selectedList];
+        if (listType === 'tissue') {
+          selectedList = this.selectedTissueList;
+          geneList = geneListsByTissueType[selectedList];
+        }
       }
 
       if (geneList) {
@@ -1305,7 +1319,10 @@ export default {
 
       if (self.launchParams.genes) {
         self.listInput = self.launchParams.genes.join('\n');
+        self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
+        self.clearGeneListFlag = false;
         self.updateStepProp('geneList', 'complete', true);
+        self.advanceSlide();
       }
       self.displayDemoLoader = false;
 

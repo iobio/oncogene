@@ -128,30 +128,60 @@ class MosaicIntegration extends Integration {
             self.config = launchConfig;
 
             return new Promise((resolve, reject) => {
-                const projectId = self.config.params.project_id;
+                let promises = [];
 
+                const projectId = self.config.params.project_id;
                 if (projectId) {
-                    self.promiseGetMosaicIobioUrls()
-                        .then(urlMap => {
-                            self.tumors = [];
-                            Object.keys(urlMap).forEach(sampleId => {
-                                if (sampleId === self.NORMAL) {
-                                    self.vcfs = urlMap[sampleId].vcfs;
-                                    self.tbis = urlMap[sampleId].tbis;
-                                    self.vcfFileNames = urlMap[sampleId].vcfFileNames;
-                                    self.tbiFileNames = urlMap[sampleId].tbiFileNames;
-                                    self.normal = Object.assign({}, urlMap[sampleId]);
-                                } else {
-                                    self.tumors.push(urlMap[sampleId]);
-                                }
-                            });
-                            // todo: a better method is for Mosaic to provide samples in order specified
-                            sortAlphaNum(self.tumors, self.globalApp._);
-                            resolve();
+                    let p = new Promise((fileResolve, fileReject) => {
+                        self.promiseGetMosaicIobioUrls(self.config.params)
+                            .then(urlMap => {
+                                self.tumors = [];
+                                Object.keys(urlMap).forEach(sampleId => {
+                                    if (sampleId === self.NORMAL) {
+                                        self.vcfs = urlMap[sampleId].vcfs;
+                                        self.tbis = urlMap[sampleId].tbis;
+                                        self.vcfFileNames = urlMap[sampleId].vcfFileNames;
+                                        self.tbiFileNames = urlMap[sampleId].tbiFileNames;
+                                        self.normal = Object.assign({}, urlMap[sampleId]);
+                                    } else {
+                                        self.tumors.push(urlMap[sampleId]);
+                                    }
+                                });
+                                // todo: a better method is for Mosaic to provide samples in order specified
+                                // todo: move this fxn into global
+                                sortAlphaNum(self.tumors, self.globalApp._);
+                                fileResolve();
+                            }).catch(err => {
+                            fileReject("There was a problem getting Mosaic data: " + err);
                         });
+                    })
+                    promises.push(p);
                 } else {
                     reject('Could not find necessary query arguments for Mosaic launch');
                 }
+
+                const geneSetId = self.config.params.gene_set_id;
+                if (geneSetId) {
+                    let p = new Promise(geneResolve => {
+                        self.promiseGetGenesBySetId(self.config.params)
+                            .then(geneSetObj => {
+                                self.geneList = geneSetObj.geneList;
+                                self.geneListName = 'Mosaic provided ['+ geneSetObj.geneListName + ' set]';
+                                geneResolve();
+                            }).catch(err => {
+                            console.log("Could not fetch genes from Mosaic by gene id: " + err);
+                            // Don't want to reject here because user can still enter genes if this messes up
+                        });
+                        promises.push(p);
+                    });
+                } else if (self.config.params.genes) {
+                    self.geneList = self.config.params.genes.split(',');
+                    self.geneListName = 'Mosaic provided [user-entered]';
+                }
+                Promise.all(promises)
+                    .then(() => {
+                        resolve();
+                    });
             });
         });
     }
@@ -166,7 +196,8 @@ class MosaicIntegration extends Integration {
             normal: this.normal,
             tumors: this.tumors,
             somaticOnly: this.config.params.somatic_only,
-            genes: this.config.params.genes ? [this.config.params.genes.split(',')] : []
+            genes: this.geneList,
+            geneListName: this.geneListName
         };
     }
 
@@ -180,27 +211,54 @@ class MosaicIntegration extends Integration {
         };
     }
 
-    promiseGetMosaicIobioUrls() {
+    promiseGetMosaicIobioUrls(params) {
         const self = this;
 
         return new Promise((resolve, reject) => {
-            const api = decodeURIComponent(self.config.params.source) + "/api/v1";
-            const project_id = self.config.params.project_id;
-            const normal_id = self.config.params.sample_id;
-            let tumor_ids = self.config.params.tumor_sample_ids.split(',');
+            const api = decodeURIComponent(params.source) + "/api/v1";
+            const project_id = params.project_id;
+            const normal_id = params.sample_id;
+            let tumor_ids = params.tumor_sample_ids.split(',');
 
-            let params = {
+            let passParams = {
                 project_id,
                 normal_id,
                 tumor_ids
             };
 
             if (localStorage.getItem('mosaic-iobio-tkn')) {
-                promiseGetSampleUrls(api, params, self.globalApp.$)
+                promiseGetSampleUrls(api, passParams, self.globalApp.$)
                     .then(sampleMap => {
                         resolve(sampleMap);
                     }).catch(error => {
-                        reject("Problem getting file info for normal sample: " + error);
+                        reject("Problem getting file info for sample: " + error);
+                })
+            } else {
+                reject("No access token detected");
+                // todo: what package does this come from?
+                //window.location.href = buildOauthLink();
+            }
+        });
+    }
+
+    promiseGetGenesBySetId(params) {
+        const self = this;
+
+        return new Promise((resolve, reject) => {
+            const api = decodeURIComponent(params.source) + "/api/v1";
+            const project_id = params.project_id;
+            const gene_set_id = params.gene_set_id;
+
+            if (localStorage.getItem('mosaic-iobio-tkn')) {
+                getGeneListById(project_id, gene_set_id, api, self.globalApp.$)
+                    .then(geneListObj => {
+                        if (geneListObj) {
+                            resolve({'geneList': geneListObj.genes, 'geneListName': geneListObj.name});
+                        } else {
+                            reject("Something went wrong performing gene set call to Mosaic");
+                        }
+                    }).catch(error => {
+                    reject("Problem getting gene list from Mosaic: " + error);
                 })
             } else {
                 reject("No access token detected");
@@ -335,71 +393,6 @@ export function promiseGetSingleSampleUrls(api, project_id, sample_id, $) {
     });
 }
 
-/* Returns object with one entry per tumor ID provided in params argument.
- * Each entry contains presigned url for bam/bai files FOR COVERAGE ONLY FOR NOW.
- * Does NOT assign any presigned url for vc/tbi files. */
-// export function promiseGetTumorSampleUrls(api, params, $) {
-//
-//     // todo: left off here - need to merge normal/tumor fxns to add in calling multiple vcf mosaic calls here
-//     // todo: each vcf will have a different vcf_sample_name associated with the tumor sample, and need these
-//     // todo: to populate launchParam models for welcome cmpnt
-//
-//     const project_id = params.project_id;
-//     let tumor_ids = params.tumor_ids;
-//     return new Promise((resolve) => {
-//         // Get file urls for tumor sample(s)
-//         let tumorNo = 1;
-//         let mosaicPs = [];
-//         let returnMap = {};
-//         tumor_ids.forEach(tumor_id => {
-//             let p = new Promise((innerResolve, innerReject) => {
-//                 let localCount = tumorNo;
-//                 getFilesForSample(project_id, tumor_id, api, $).done(data => {
-//                     if (data.data) {
-//                         const vcf = data.data.filter(f => (f.type === 'vcf'))[0];
-//                         const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
-//                         const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
-//                         // todo: how do I pull out rnaseq bams from here instead of coverage bams?
-//                         // update after talking w/ AW: will organize by experiment
-//                         // todo: add in pulling facets data out
-//                         // update after talking w/ AW: will have three dropdowns for launcher - coverage exp, rnaseq exp, facets exp
-//
-//                         if (!vcf) {
-//                             innerReject('No vcf file obtained from Mosaic launch');
-//                         }
-//                         const selectedSample = vcf.vcf_sample_name;
-//
-//                         // Get Signed Url
-//                         if (bam && bai) {
-//                             getSignedUrlForFile(project_id, bam, api, $).done(bamUrlData => {
-//                                 const bamUrl = bamUrlData.url;
-//                                 getSignedUrlForFile(project_id, bai, api, $).done(baiUrlData => {
-//                                     const baiUrl = baiUrlData.url;
-//                                     // todo: add rnaseq & cnv here
-//                                     returnMap[selectedSample] = {'coverageBam': bamUrl, 'coverageBai': baiUrl, selectedSamples: [selectedSample] };
-//                                     innerResolve();
-//                                 })
-//                             })
-//                         } else {
-//                             console.log("No bam & bai files for tumor " + localCount);
-//                             // todo: add rnaseq & cnv here
-//                             returnMap[('t' + localCount)] = {'vcf': null, 'tbi': null};
-//                             innerResolve();
-//                         }
-//                     } else {
-//                         innerReject("Could not get file data from Mosaic");
-//                     }
-//                 })
-//             });
-//             mosaicPs.push(p);
-//             tumorNo++;
-//         })
-//        Promise.all(mosaicPs).then(() => {
-//            resolve(returnMap);
-//        })
-//     });
-// }
-
 export function getFilesForSample(project_id, sample_id, api, $) {
     return $.ajax({
         url: api + '/projects/' + project_id + '/samples/' + sample_id + '/files',
@@ -428,19 +421,15 @@ export function getSignedUrlForFile (project_id, file, api, $) {
     });
 }
 
-export function updateVcfUrlsForTumors(returnMap) {
-    const normalObj = returnMap['normal'];
-    if (!normalObj) {
-        console.log('WARNING: no normal object to pull VCF/TBI urls from in Integration');
-    }
-
-    Object.keys(returnMap).forEach(sample => {
-        if (sample !== 'normal') {
-            let currObj = returnMap[sample];
-            currObj['vcfs'] = normalObj['vcfs'];
-            currObj['tbis'] = normalObj['tbis'];
+export function getGeneListById (project_id, gene_set_id, api, $) {
+    return $.ajax({
+        url: api + '/projects/' + project_id + '/genes/sets/' + gene_set_id,
+        type: 'GET',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': localStorage.getItem('mosaic-iobio-tkn')
         }
-    })
+    });
 }
 
 export function sortAlphaNum(list, _) {
