@@ -321,6 +321,7 @@
                         :modelInfoList="modelInfoList"
                         :parentModelInfoIdx="modelInfoIdx"
                         :externalLaunchMode="!nativeLaunch"
+                        :externalLaunchSource="launchSource"
                         :vcfFileNames="vcfNameList"
                         :tbiFileNames="tbiNameList"
                         @clear-model-info="setModelInfo"
@@ -1248,11 +1249,13 @@ export default {
       samples.forEach(sample => {
 
         // Create file-specific lists used for vcf-dropdown
-        for (let i = 0; i < sample.selectedSamples.length; i++) {
-          if (self.uploadedSelectedSamples[i] == null) {
-            self.uploadedSelectedSamples[i] = [sample.selectedSamples[i]];
-          } else {
-            self.uploadedSelectedSamples[i].push(sample.selectedSamples[i]);
+        if (self.isMosaic(self.launchSource)) {
+          for (let i = 0; i < sample.selectedSamples.length; i++) {
+            if (self.uploadedSelectedSamples[i] == null) {
+              self.uploadedSelectedSamples[i] = [sample.selectedSamples[i]];
+            } else {
+              self.uploadedSelectedSamples[i].push(sample.selectedSamples[i]);
+            }
           }
         }
 
@@ -1323,6 +1326,8 @@ export default {
         self.clearGeneListFlag = false;
         self.updateStepProp('geneList', 'complete', true);
         self.advanceSlide();
+      } else {
+        self.updateStepProp('geneList', 'active', false);
       }
       self.displayDemoLoader = false;
 

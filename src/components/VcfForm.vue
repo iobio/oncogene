@@ -175,6 +175,10 @@ export default {
       type: Boolean,
       default: false
     },
+    externalLaunchSource: {
+      type: String,
+      default: ''
+    },
     vcfFileNames: {
       type: Array,
       default: () => {
@@ -211,14 +215,22 @@ export default {
     vcfList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedUrls.length; i++) {
-        annoList.push({ 'text': this.vcfFileNames[i], 'value': this.uploadedUrls[i] });
+        if (this.externalLaunchSource === 'galaxy') {
+          annoList.push(this.uploadedUrls[i]);
+        } else {
+          annoList.push({ 'text': this.vcfFileNames[i], 'value': this.uploadedUrls[i] });
+        }
       }
       return annoList;
     },
     tbiList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedIndexUrls.length; i++) {
-        annoList.push({ 'text': this.tbiFileNames[i], 'value': this.uploadedIndexUrls[i] });
+        if (this.externalLaunchSource === 'galaxy') {
+          annoList.push(this.uploadedIndexUrls[i]);
+        } else {
+          annoList.push({ 'text': this.tbiFileNames[i], 'value': this.uploadedIndexUrls[i] });
+        }
       }
       return annoList;
     },
@@ -320,6 +332,11 @@ export default {
                     self.modelInfoIdx++;
                     self.filteredVcfSampleNames.push(currSampleFromFile);
                   }
+                } else if (self.externalLaunchSource === 'galaxy') {
+                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                  infoList.push(modelInfo);
+                  self.modelInfoIdx++;
+                  self.filteredVcfSampleNames.push(sampleNames[i]);
                 }
                 // Always add to vcfSampleNames array though, important for getting correct column from vcf file
                 self.vcfSampleNames.push(sampleNames[i]);
