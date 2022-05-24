@@ -1,0 +1,24 @@
+{
+	"vcfs": [
+		"https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/vcfs/pt4.filtered.exonic.vcf.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182746Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=6b26eec5c1477c72ba89cbf56050947718b306f959f50bc315841f073f212007"
+	],
+	"tbis": [
+		"https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/vcfs/pt4.filtered.exonic.vcf.gz.tbi?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182747Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=ddf9f5df854b3e7ffc37b1dfac7a737da548ad60b210375a93124cb7f6a88936"
+	],
+	"0": {
+		"coverageBam": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X25.bam?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182747Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=b9eafc0653cf89b9094b1b499e281728b0fca5d25c7a6bb4cafd2136a0db36d5",
+		"coverageBai": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X25.bam.bai?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182748Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=f65ad500fd722f5718d7c89ee5b670c50d92f4e2f76618327a95a3e5783785dd"
+	},
+	"1": {
+		"coverageBam": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X28.bam?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182749Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=10358c186aaa2854be49ba893c0ef7d981e751ff31e4f0b5eea59df894d5c4f4",
+		"coverageBai": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X28.bam.bai?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182749Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=25b4a3bbf2df8a350828a9e88aed8edba74c9847cc8c4318ecff1e3cf018b502",
+		"rnaSeqBam": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/scrna-bams/15923X1.bam?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182750Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=b556211615a9ce42cd8a3cfc85e9edd71d2bb67d5ca09a2b52871e7ab5fb6b51",
+		"rnaSeqBai": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/scrna-bams/15923X1.bam.bai?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182750Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=f0d0ef9f9c6b5b951ca079b0895f42c675210c10027cd5d99b7d6baf9a9e7b3c"
+	},
+	"2": {
+		"coverageBam": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X40.bam?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182751Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=d939f6dcee8a1ddacfc5da78710fa3ce6461c29076b3378550aae09f016cb161",
+		"coverageBai": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/bams/12158X40.bam.bai?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182751Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=f42672045cd1babdf00b60928c995eca99515c5eda817e70d91e925beb4e0ddf",
+		"rnaSeqBam": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/scrna-bams/15923X2.bam?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182752Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=4922293b7645b4a4e1e97e9f693d0d01c2aa9597201670c6c23f060b42cef22c",
+		"rnaSeqBai": "https://s3.us-east-1.amazonaws.com/secure.s3.iobio.io/deininger-cmml/scrna-bams/15923X2.bam.bai?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA3XYRKOVTLCTD2RHS%2F20220524%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20220524T182753Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=b5ded3aba95d7b281000639c06900477162bfc85b879e7b543f6ad367b497c4c"
+	}
+}

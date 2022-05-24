@@ -53,7 +53,7 @@ class GalaxyIntegration extends Integration {
         console.log('Galaxy mode detected');
         let configOpts = {
             //configLocation: (process.env.VUE_APP_CONFIG_LOCATION ? process.env.VUE_APP_CONFIG_LOCATION : '/config.json')
-            configLocation: '.config.json',
+            configLocation: '/config.json',
             useLocalBackend: true
         };
         super(query, configOpts, globalApp);
