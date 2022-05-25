@@ -431,7 +431,6 @@ import MultiSourceForm from './MultiSourceForm.vue'
 import geneListsByCancerType from '../data/genes_by_cancer_type_ncgv6.json'
 import geneListsByTissueType from '../data/genes_by_tissue_type_ncgv6.json'
 import validGenes from '../data/genes.json'
-import demoFile from '../data/demo.json'
 
 export default {
   name: "Welcome",
@@ -475,6 +474,9 @@ export default {
   },
   data: function () {
     return {
+      // dynamic file imports
+      demoFile: null,
+
       // constants
       GALAXY: 'galaxy',
       UTAH_MOSAIC: 'https://mosaic.chpc.utah.edu',
@@ -1433,7 +1435,7 @@ export default {
       const self = this;
       self.displayDemoLoader = true;
 
-      const exportFile = JSON.stringify(demoFile);
+      const exportFile = JSON.stringify(self.demoFile);
       self.configFile = new Blob([exportFile], {type: 'text/plain'});
 
       let reader = new FileReader();
@@ -1544,6 +1546,17 @@ export default {
   },
   mounted: function () {
     const self = this;
+
+    // Only import demo file if not external launch
+    // NOTE: todo this will go away soon
+    if (self.nativeLaunch) {
+      import('../data/demo.json')
+          .then(demoFile => {
+            self.demoFile = demoFile;
+          }).catch(err => {
+            console.log('Could not import demo file: ' + err);
+          });
+    }
 
     // this.makeItRain();
     this.listInput = this.STARTING_INPUT;
