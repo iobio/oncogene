@@ -546,7 +546,7 @@ export default {
       mosaicGeneList: [],
       modelInfoIdx: 0,
       displayDemoLoader: false,
-      galaxySampleCount: Math.max,
+      galaxySampleCount: 6,
 
       // static data
       DATA_DESCRIPTORS: [
@@ -1329,10 +1329,11 @@ export default {
         self.listInput = self.launchParams.genes.join('\n');
         self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
         self.clearGeneListFlag = false;
+        self.updateStepProp('geneList', 'active', true);
         self.updateStepProp('geneList', 'complete', true);
         self.advanceSlide();
-      } else {
-        self.updateStepProp('geneList', 'active', false);
+      } else if (self.launchParams.somaticOnly) {
+        self.updateStepProp('geneList', 'complete', true);
       }
       self.displayDemoLoader = false;
 
