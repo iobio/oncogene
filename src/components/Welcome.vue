@@ -324,6 +324,7 @@
                         :externalLaunchSource="launchSource"
                         :vcfFileNames="vcfNameList"
                         :tbiFileNames="tbiNameList"
+                        :galaxySampleCount="galaxySampleCount"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
@@ -545,6 +546,7 @@ export default {
       mosaicGeneList: [],
       modelInfoIdx: 0,
       displayDemoLoader: false,
+      galaxySampleCount: Math.max,
 
       // static data
       DATA_DESCRIPTORS: [
@@ -970,9 +972,11 @@ export default {
       let props = ['coverageBamUrl', 'coverageBaiUrl', 'rnaSeqBamUrl', 'rnaSeqBamUri', 'cnvUrl'];
       samples.forEach(sample => {
         let vals = [sample.coverageBam, sample.coverageBai, sample.rnaSeqBam, sample.rnaSeqBai, sample.cnv];
-        let selectedSample = self.nativeLaunch ? sample.selectedSample : sample.selectedSamples[sample.selectedSampleIdx];
-        self.selectedSampleList.push(selectedSample);
-        self.updateIndividualModelInfo(selectedSample, props, vals);
+        if (self.launchSource !== self.GALAXY) {
+          let selectedSample = self.nativeLaunch ? sample.selectedSample : sample.selectedSamples[sample.selectedSampleIdx];
+          self.selectedSampleList.push(selectedSample);
+          self.updateIndividualModelInfo(selectedSample, props, vals);
+        }
       })
     },
     setVcfSampleNames: function (vcfSampleNames) {
@@ -1246,6 +1250,7 @@ export default {
 
       let samples = [self.launchParams.normal];
       samples = samples.concat(self.launchParams.tumors);
+      self.galaxySampleCount = samples.length;
       samples.forEach(sample => {
 
         // Create file-specific lists used for vcf-dropdown

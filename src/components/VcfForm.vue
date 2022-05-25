@@ -191,6 +191,10 @@ export default {
         return [];
       }
     },
+    galaxySampleCount: {
+      type: Number,
+      default: 0
+    }
   },
   data: function () {
     return {
@@ -205,7 +209,9 @@ export default {
       urlsVerified: false,
       listInfo: -1,
       modelInfoIdx: 0,
-      genomeBuilds: ['GRCh37', 'GRCh38']
+      galaxySampleCap: 0,
+      genomeBuilds: ['GRCh37', 'GRCh38'],
+      GALAXY: 'galaxy'
     }
   },
   computed: {
@@ -215,7 +221,7 @@ export default {
     vcfList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedUrls.length; i++) {
-        if (this.externalLaunchSource === 'galaxy') {
+        if (this.externalLaunchSource === this.GALAXY) {
           annoList.push(this.uploadedUrls[i]);
         } else {
           annoList.push({ 'text': this.vcfFileNames[i], 'value': this.uploadedUrls[i] });
@@ -226,7 +232,7 @@ export default {
     tbiList: function () {
       let annoList = [];
       for (let i = 0; i < this.uploadedIndexUrls.length; i++) {
-        if (this.externalLaunchSource === 'galaxy') {
+        if (this.externalLaunchSource === this.GALAXY) {
           annoList.push(this.uploadedIndexUrls[i]);
         } else {
           annoList.push({ 'text': this.tbiFileNames[i], 'value': this.uploadedIndexUrls[i] });
@@ -260,6 +266,7 @@ export default {
      */
     onVcfUrlEntered: function (vcfUrl, tbiUrl, uploadedSelectedSamples) {
       const self = this;
+      self.galaxySampleCap = self.galaxySampleCount;
 
       if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
         self.$emit('clear-model-info', null);
@@ -332,10 +339,12 @@ export default {
                     self.modelInfoIdx++;
                     self.filteredVcfSampleNames.push(currSampleFromFile);
                   }
-                } else if (self.externalLaunchSource === 'galaxy') {
-                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
-                  infoList.push(modelInfo);
-                  self.modelInfoIdx++;
+                } else if (self.externalLaunchSource === self.GALAXY) {
+                  if (i < self.galaxySampleCap) {
+                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                    infoList.push(modelInfo);
+                    self.modelInfoIdx++;
+                  }
                   self.filteredVcfSampleNames.push(sampleNames[i]);
                 }
                 // Always add to vcfSampleNames array though, important for getting correct column from vcf file
@@ -345,6 +354,9 @@ export default {
 
               // Toggle display flags
               self.urlsVerified = true;
+
+              // Ensure if user adds sample after galaxy, it's allowed
+              self.galaxySampleCap = Math.max;
 
               self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
               resolve();

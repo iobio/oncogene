@@ -166,6 +166,10 @@ export default {
     externalLaunchMode: {
       type: Boolean,
       default: false
+    },
+    externalLaunchSource: {
+      type: String,
+      default: ''
     }
   },
   data: function () {
@@ -174,6 +178,7 @@ export default {
       displayBuild: false,
       allUrlsVerified: false,
       listInfo: null,
+      GALAXY: 'galaxy'
     }
   },
   computed: {
@@ -207,14 +212,22 @@ export default {
     annotatedFileList: function () {
       let annoList = [];
       for (let i = 0; i < this.fileList.length; i++) {
-        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.fileNameList[i]),'value': this.fileList[i] });
+        if (this.launchSource === this.GALAXY) {
+          annoList.push(this.fileList[i]);
+        } else {
+          annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.fileNameList[i]),'value': this.fileList[i] });
+        }
       }
       return annoList;
     },
     annotatedIndexList: function () {
       let annoList = [];
       for (let i = 0; i < this.indexList.length; i++) {
-        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.indexNameList[i]),'value': this.indexList[i] });
+        if (this.launchSource === this.GALAXY) {
+          annoList.push(this.indexList[i]);
+        } else {
+          annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.indexNameList[i]),'value': this.indexList[i] });
+        }
       }
       return annoList;
     }
