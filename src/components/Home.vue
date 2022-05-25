@@ -709,7 +709,11 @@ export default {
     onCohortVariantClick: function (variant, sourceComponent, sampleModelId, xCoord) {
       const self = this;
       self.deselectVariant();
-      self.toggleVerticalLine(xCoord);
+
+      // todo: commenting out for now - need to fix with cnv updates
+      //self.toggleVerticalLine(xCoord);
+      console.log(xCoord);
+
       if (variant) {
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();

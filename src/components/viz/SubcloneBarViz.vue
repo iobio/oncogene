@@ -1,15 +1,13 @@
 <!-- Displays proportions of subclones per timepoint -->
 
 <style>
-.sub-axis text {
-  font: 13px Raleway;
-}
 
-.sub-axis path,
-.sub-axis line {
+.subclone path,
+.subclone line {
   fill: none;
-  stroke: #000;
+  stroke: #7f7f7f;
   shape-rendering: crispEdges;
+
 }
 </style>
 <style lang="sass">
@@ -28,6 +26,13 @@
   input
     text-align: center
     height: 30px
+
+.subclone
+  text
+    font-size: 13px
+    font-family: Quicksand
+    text-anchor: end
+    fill: #717171
 
 </style>
 
@@ -89,10 +94,10 @@ export default {
       self.fillChart(data, 1);
       self.showLoader = false;
     },
-    fillChart(clonalCounts, offsetIdx) {
+    fillChart(clonalCounts) {
       let options = {
         'parentId': this.svgId,
-        'colorMap': this.getColorMap(offsetIdx)
+        'colorMap': this.colors
       };
       this.chart(clonalCounts, options);
     },
@@ -105,18 +110,6 @@ export default {
     changeViz(offsetIdx) {
       let treeInfo = this.subcloneModel.getBarVizTree(offsetIdx);
       this.fillChart(treeInfo, offsetIdx);
-    },
-    getColorMap: function(offsetIdx) {
-      let colorMap = new Map();
-      let i = 0;
-      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length;
-      for (var clone in this.colors) {
-        if (i < maxClones) {
-          colorMap.set(clone, this.colors[clone]);
-          i++;
-        }
-      }
-      return colorMap;
     },
     displaySubcloneDialog: function(subcloneId) {
       this.$emit('display-subclone-dialog', subcloneId);

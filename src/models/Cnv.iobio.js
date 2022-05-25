@@ -157,7 +157,7 @@ class cnviobio {
                 chrData[i].end = Math.min(chrLength, +chrData[i].end);
 
                 if (chrData[i].start > endCoord) {
-                    console.log("CNV start is greater than the end coordinate of the chromsome");
+                    //console.log("CNV start is greater than the end coordinate of the chromsome");
                     break;
                 }
 

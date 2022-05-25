@@ -470,7 +470,7 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
-        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples);
+        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples, this.getNormalModel().selectedSample);
         this.hasSubcloneAnno = true;
     }
 

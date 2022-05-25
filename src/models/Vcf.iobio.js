@@ -1076,7 +1076,7 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
-        } else if (record.indexOf("subclone") > 0) {
+        } else if (record.indexOf("subclone") === 2) {
             if (!me.infoFields.SUBCLONES) {
                 me.infoFields.SUBCLONES = [];
             }

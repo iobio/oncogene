@@ -29,6 +29,12 @@
     text-align: center
     height: 30px
 
+.subclone_node
+  font-family: Quicksand
+  font-size: 16px
+  font-weight: 500
+  text-anchor: middle
+
 </style>
 
 <template>
@@ -82,7 +88,6 @@ export default {
   computed: {},
   methods: {
     drawTree(tree, offsetIdx) {
-
       const self = this;
       self.showLoader = true;
 
@@ -100,10 +105,11 @@ export default {
       self.populateTree(tree, offsetIdx);
       self.showLoader = false;
     },
-    populateTree(data, offsetIdx) {
+    populateTree(data) {
       let options = {
         'parentId' : this.svgId,
-        'colorMap': this.getColorMap(offsetIdx)
+        //'colorMap': this.getColorMap(offsetIdx)
+        'colorMap': this.colors
       };
       this.chart(data, options);
     },
@@ -119,18 +125,6 @@ export default {
     changeViz(offsetIdx) {
       let treeInfo = this.subcloneModel.getTreeViz(offsetIdx);
       this.populateTree(treeInfo, offsetIdx);
-    },
-    getColorMap: function(offsetIdx) {
-      let colorMap = new Map();
-      let i = 0;
-      let maxClones = this.subcloneModel.possibleTrees[offsetIdx - 1].nodes.length;
-      for (var clone in this.colors) {
-        if (i < maxClones) {
-          colorMap.set(clone, this.colors[clone]);
-          i++;
-        }
-      }
-      return colorMap;
     },
     highlightNode: function(subcloneId) {
       this.chart.highlightNode(subcloneId);
