@@ -52,7 +52,7 @@ class GalaxyIntegration extends Integration {
     constructor(query, globalApp) {
         console.log('Galaxy mode detected');
         let configOpts = {
-            //useLocalBackend: true
+            useLocalBackend: true
         };
         super(query, configOpts, globalApp);
     }
