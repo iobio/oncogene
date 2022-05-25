@@ -1,11 +1,12 @@
 class SubcloneModel {
-    constructor(subcloneArr, selectedSamples) {
+    constructor(subcloneArr, selectedSamples, normalSelectedSample) {
         this.subcloneHeaderStrs = subcloneArr;
         this.selectedSamples = selectedSamples; // Array of selected samples/timepoints - used this for ordering in histogram
         this.possibleTrees = [];
         this.barVizTrees = {};  // An object with pagination_id: [{ subclone: 'C1', timepoint: 'B1', prev: 0.5 }]
         this.treeVizObjs = {};
         this.clonalVarMap = {};
+        this.normalSelectedSample = normalSelectedSample;
         this.NORMAL = 'n';
     }
 
@@ -237,7 +238,7 @@ class SubcloneModel {
                     if (parent !== 'n') {
                         let parentNode = self.getNode(parent, staticSubclone);
                         Object.keys(node.freqs).forEach(timept => {
-                            if (timept !== 'B0') {
+                            if (timept !== self.normalSelectedSample) {
                                 node.freqs[timept] += parentNode.freqs[timept];
                             }
                         })
@@ -263,8 +264,7 @@ class SubcloneModel {
 
                 if (nodeId !== 'n') {
                     Object.keys(node.freqs).forEach(timepoint => {
-                        // todo: this needs to be fixed to be agnostic to sample names
-                        if (timepoint !== 'B0' && self.selectedSamples.indexOf(timepoint) > -1) {
+                        if (timepoint !== self.normalSelectedSample && self.selectedSamples.indexOf(timepoint) > -1) {
                             let freq = node.freqs[timepoint];
                             subnodeList.push({'subclone': nodeId, 'timepoint': timepoint, 'prev': freq})
                         }

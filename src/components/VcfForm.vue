@@ -251,8 +251,9 @@ export default {
     onUrlChange: function () {
       if (this.url && this.indexUrl && this.selectedBuild) {
         // If we autofill, don't have to parse object itself
+        let url = this.url.value ? this.url.value : this.url;
         let index = this.indexUrl.value ? this.indexUrl.value : this.indexUrl;
-        this.onVcfUrlEntered(this.url.value, index);
+        this.onVcfUrlEntered(url, index);
       } else if (this.url === '' || this.indexUrl === '') {
         this.$emit('clear-model-info', null);
       }
@@ -316,14 +317,17 @@ export default {
               }
 
               // Extract actual urls out of objects
-              let vcfListVals = [];
-              self.vcfList.forEach(obj => {
-                vcfListVals.push(obj.value);
-              })
-              let strippedUrl = (typeof self.url === 'string' ? self.url : self.url.value);
-              let selectedVcfIdx = vcfListVals.indexOf(strippedUrl);
-              if (self.externalLaunchMode && self.multipleVcfsExist) {
-                self.$emit('vcf-index-selected', selectedVcfIdx);
+              let selectedVcfIdx = 0;
+              if (self.externalLaunchMode) {
+                let vcfListVals = [];
+                self.vcfList.forEach(obj => {
+                  vcfListVals.push(obj.value);
+                })
+                let strippedUrl = (typeof self.url === 'string' ? self.url : self.url.value);
+                selectedVcfIdx = vcfListVals.indexOf(strippedUrl);
+                if (self.externalLaunchMode && self.multipleVcfsExist) {
+                  self.$emit('vcf-index-selected', selectedVcfIdx);
+                }
               }
 
               // Create modelInfos and add to drop down lists in loader
@@ -345,6 +349,11 @@ export default {
                     infoList.push(modelInfo);
                     self.modelInfoIdx++;
                   }
+                  self.filteredVcfSampleNames.push(sampleNames[i]);
+                } else {
+                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                  infoList.push(modelInfo);
+                  self.modelInfoIdx++;
                   self.filteredVcfSampleNames.push(sampleNames[i]);
                 }
                 // Always add to vcfSampleNames array though, important for getting correct column from vcf file
