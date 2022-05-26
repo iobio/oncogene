@@ -27,7 +27,7 @@ class Integration {
         return this.query ? this.query.source : null;
     }
     getBackend() {
-        return this.globalApp.GALAXY_TEST_MODE ? 'https://backend.iobio.io/gru' : this.backend;
+        return (this.globalApp.GALAXY_TEST_MODE ? 'https://backend.iobio.io' : this.backend) + '/';
     }
 }
 

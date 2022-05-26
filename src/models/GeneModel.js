@@ -1,10 +1,11 @@
 class GeneModel {
     constructor(globalApp, limitGenes, integration) {
+        const GALAXY = 'galaxy';
 
         this.globalApp = globalApp;
         this.limitGenes = limitGenes;
-        this.geneInfoServer = (integration.getSource() === 'GALAXY' ? (integration.getBackend() + '/') :  this.globalApp.HTTP_SERVICES) + "geneinfo/";
-        this.geneToPhenoServer = (integration.getSource() === 'GALAXY' ? (integration.getBackend() + '/') :  this.globalApp.HTTP_SERVICES) + "gene2pheno/";
+        this.geneInfoServer = (integration.getSource() === GALAXY ? integration.getBackend() :  this.globalApp.HTTP_SERVICES) + "geneinfo/";
+        this.geneToPhenoServer = (integration.getSource() === GALAXY ? integration.getBackend() :  this.globalApp.HTTP_SERVICES) + "gene2pheno/";
         this.phenolyzerServer = "https://services.backend.iobio.io/phenolyzer/";
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
@@ -347,6 +348,9 @@ class GeneModel {
     }
 
     getCanonicalTranscript(theGeneObject) {
+        // todo: left off here - isCanonical prop is part of transcripts - where is that coming from
+        // and can we use it instead of all of this?
+
         let me = this;
         var geneObject = theGeneObject != null ? theGeneObject : window.gene;
         var canonical;
