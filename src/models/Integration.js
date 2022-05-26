@@ -26,6 +26,9 @@ class Integration {
     getSource() {
         return this.query ? this.query.source : null;
     }
+    getBackend() {
+        return this.backend;
+    }
 }
 
 // Stand-alone launch or Galaxy (TBD)
@@ -66,43 +69,52 @@ class GalaxyIntegration extends Integration {
             self.vcfs = self.config.params.vcfs;
             self.tbis = self.config.params.tbis;
 
-            if (self.vcf == null || self.tbi == null
-                || self.normal == null || self.t1 == null) {
+            if (self.vcf == null || self.tbi == null) {
                 console.log('ERROR: did not obtain required parameters from Galaxy configuration');
                 // todo: bubble up this error to user
             }
 
-            // Optional data (bams/cnvs in numeric entries)
+            // Galaxy passes optional data in json entries 0-5
+            // If optional data types (bams/cnvs) not provided in config file,
+            // we still need to make entries for those
             self.normal = self.config.params["0"];
+            if (self.normal == null) {
+                self.normal = { 'vcfs': self.vcfs, 'tbis': self.tbis };
+            }
             self.t1 = self.config.params["1"];
+            if (self.t1 == null) {
+                self.t1 = {'vcfs': self.vcfs, 'tbis': self.tbis};
+            }
+
+            // Check for other optional tumor samples
             self.t2 = self.config.params["2"];
             self.t3 = self.config.params["3"];
             self.t4 = self.config.params["4"];
             self.t5 = self.config.params["5"];
+
+            self.tumors = [self.t1];
+            if (self.t2) {
+                self.tumors.push(self.t2);
+            }
+            if (self.t3) {
+                self.tumors.push(self.t3);
+            }
+            if (self.t4) {
+                self.tumors.push(self.t4);
+            }
+            if (self.t5) {
+                self.tumors.push(self.t5);
+            }
         });
     }
 
     buildParams() {
-        let tumors = [this.t1];
-        if (this.t2) {
-            tumors.push(this.t2);
-        }
-        if (this.t3) {
-            tumors.push(this.t3);
-        }
-        if (this.t4) {
-            tumors.push(this.t4);
-        }
-        if (this.t5) {
-            tumors.push(this.t5);
-        }
-
         return {
             backendUrl: this.backend ? this.backend : this.config.backendUrl,
             vcfs: this.vcfs,
             tbis: this.tbis,
             normal: this.normal,
-            tumors: tumors
+            tumors: this.tumors
         };
     }
 

@@ -1,10 +1,10 @@
 class GeneModel {
-    constructor(globalApp, limitGenes) {
+    constructor(globalApp, limitGenes, integration) {
 
         this.globalApp = globalApp;
         this.limitGenes = limitGenes;
-        this.geneInfoServer = this.globalApp.HTTP_SERVICES + "geneinfo/";
-        this.geneToPhenoServer = this.globalApp.HTTP_SERVICES + "gene2pheno/";
+        this.geneInfoServer = (integration.getSource() === 'GALAXY' ? (integration.getBackend() + '/') :  this.globalApp.HTTP_SERVICES) + "geneinfo/";
+        this.geneToPhenoServer = (integration.getSource() === 'GALAXY' ? (integration.getBackend() + '/') :  this.globalApp.HTTP_SERVICES) + "gene2pheno/";
         this.phenolyzerServer = "https://services.backend.iobio.io/phenolyzer/";
 
         this.NCBI_GENE_SEARCH_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&usehistory=y&retmode=json";
