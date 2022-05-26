@@ -1,5 +1,6 @@
 export class GenomeBuildHelper {
   constructor(globalApp, chromLengthMap, integration) {
+    this.GALAXY = 'galaxy';
     this.globalApp = globalApp;
     this.$ = globalApp.$;
     this.currentSpecies = null;
@@ -22,7 +23,7 @@ export class GenomeBuildHelper {
     this.RESOURCE_ENSEMBL_URL         = "ENSEMBL URL";
     this.RESOURCE_COSMIC_VCF_S3_CODING= "CODING COSMIC VCF S3";
     this.RESOURCE_COSMIC_VCF_S3_NON   = "NONCODING COSMIC VCF S3";
-    this.genomeBuildServer            = (integration.getSource() === 'GALAXY' ? (integration.getBackend() + '/') : this.globalApp.HTTP_SERVICES) + "genomebuild/";
+    this.genomeBuildServer            = (integration.getSource() === this.GALAXY ? integration.getBackend() : this.globalApp.HTTP_SERVICES) + "genomebuild/";
 
     this.chromLengthMap = chromLengthMap;
   }
