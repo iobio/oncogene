@@ -267,7 +267,7 @@ export default {
      */
     onVcfUrlEntered: function (vcfUrl, tbiUrl, uploadedSelectedSamples) {
       const self = this;
-      self.galaxySampleCap = self.galaxySampleCount;
+      self.galaxySampleCap = Math.max(self.galaxySampleCap, self.galaxySampleCount);
 
       if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
         self.$emit('clear-model-info', null);
@@ -330,6 +330,10 @@ export default {
                 }
               }
 
+              // Set urls for removing/adding sample functionality
+              self.url = vcfUrl;
+              self.indexUrl = tbiUrl;
+
               // Create modelInfos and add to drop down lists in loader
               let infoList = [];
               for (let i = 0; i < sampleNames.length; i++) {
@@ -338,20 +342,20 @@ export default {
                   let selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
                   let currSampleFromFile = sampleNames[i];
                   if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
-                    let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                    let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
                     infoList.push(modelInfo);
                     self.modelInfoIdx++;
                     self.filteredVcfSampleNames.push(currSampleFromFile);
                   }
                 } else if (self.externalLaunchSource === self.GALAXY) {
                   if (i < self.galaxySampleCap) {
-                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
                     infoList.push(modelInfo);
                     self.modelInfoIdx++;
                   }
                   self.filteredVcfSampleNames.push(sampleNames[i]);
                 } else {
-                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, vcfUrl, tbiUrl, self.modelInfoIdx);
+                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
                   infoList.push(modelInfo);
                   self.modelInfoIdx++;
                   self.filteredVcfSampleNames.push(sampleNames[i]);
@@ -387,7 +391,7 @@ export default {
         return '';
       }
     },
-    createModelInfo: function (selectedSample, isTumor, vcfUrl, tbiUrl, modelInfoIdx) {
+    createModelInfo: function (selectedSample, isTumor, modelInfoIdx) {
       let modelInfo = {};
 
       modelInfo.id = 's' + modelInfoIdx;
@@ -395,8 +399,8 @@ export default {
       modelInfo.selectedSample = selectedSample;
       modelInfo.selectedSampleIdx = -1;
       modelInfo.isTumor = isTumor;
-      modelInfo.vcfUrl = vcfUrl;
-      modelInfo.tbiUrl = tbiUrl;
+      modelInfo.vcfUrl = this.url;
+      modelInfo.tbiUrl = this.indexUrl;
       modelInfo.coverageBamUrl = null;
       modelInfo.coverageBaiUrl = null;
       modelInfo.coverageVerified = false;
@@ -412,7 +416,7 @@ export default {
       return modelInfo;
     },
     addTrack: function () {
-      let newInfo = this.createModelInfo(null, true, null, null, this.modelInfoIdx);
+      let newInfo = this.createModelInfo(null, true, this.modelInfoIdx);
       this.modelInfoList.push(newInfo);
       this.modelInfoIdx++;
     },
@@ -446,7 +450,7 @@ export default {
       if (this.externalLaunchMode) {
         let infoList = [];
         selectedSamples.forEach(sample => {
-          let modelInfo = self.createModelInfo(sample, self.modelInfoIdx !== 0, this.url, this.indexUrl, self.modelInfoIdx);
+          let modelInfo = self.createModelInfo(sample, self.modelInfoIdx !== 0, self.modelInfoIdx);
           infoList.push(modelInfo);
           self.modelInfoIdx++;
         })

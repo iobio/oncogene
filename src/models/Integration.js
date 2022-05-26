@@ -69,7 +69,8 @@ class GalaxyIntegration extends Integration {
             self.vcfs = self.config.params.vcfs;
             self.tbis = self.config.params.tbis;
 
-            if (self.vcf == null || self.tbi == null) {
+            if (self.vcfs == null || self.vcfs.length === 0
+                || self.tbis == null || self.tbis.length === 0) {
                 console.log('ERROR: did not obtain required parameters from Galaxy configuration');
                 // todo: bubble up this error to user
             }
