@@ -8,7 +8,7 @@ export function createIntegration(query, globalApp) {
     } else if (query.source && query.project_id && query.sample_id) {
         return new MosaicIntegration(query, globalApp);
     } else {
-        return new StandardIntegration(query, globalApp);
+        return new StandardIntegration(query, {}, globalApp);
     }
 }
 
@@ -27,7 +27,7 @@ class Integration {
         return this.query ? this.query.source : null;
     }
     getBackend() {
-        return this.backend;
+        return this.globalApp.GALAXY_TEST_MODE ? 'https://backend.iobio.io/gru' : this.backend;
     }
 }
 

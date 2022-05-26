@@ -4,6 +4,7 @@
 */
 class GlobalApp {
   constructor($, d3, _) {
+    this.GALAXY_TEST_MODE      = true; // TODO: flip off before commit
 
     this.cacheHelper           = null;
     this.tour                  = "";
