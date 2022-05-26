@@ -159,7 +159,7 @@ class MosaicIntegration extends Integration {
                 }
 
                 const geneSetId = self.config.params.gene_set_id;
-                if (geneSetId) {
+                if (geneSetId && !self.config.params.somatic_only) {
                     let p = new Promise(geneResolve => {
                         self.promiseGetGenesBySetId(self.config.params)
                             .then(geneSetObj => {
@@ -172,7 +172,7 @@ class MosaicIntegration extends Integration {
                         });
                         promises.push(p);
                     });
-                } else if (self.config.params.genes) {
+                } else if (self.config.params.genes && !self.config.params.somatic_only) {
                     self.geneList = self.config.params.genes.split(',');
                     self.geneListName = 'Mosaic provided [user-entered]';
                 }

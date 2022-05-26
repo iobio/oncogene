@@ -1744,6 +1744,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
                                     'subcloneId': annot.nodeId
                                 };
+
                                 if (somaticOnlyMode) {
                                     allVariants[i].push(variant);
                                     somaticGenes[annot.vep.symbol] = true;
