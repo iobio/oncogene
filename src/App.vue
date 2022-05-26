@@ -278,7 +278,7 @@ export default {
       }
       // self.setAppMode();
 
-      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp, chromLengthMap);
+      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp, chromLengthMap, self.integration);
       self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
           .then(function () {
             return self.promiseInitCache();
@@ -289,7 +289,7 @@ export default {
             glyph.translator = translator;
             let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
-            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);
+            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage, self.integration);
             self.geneModel.geneSource = "gencode";
             self.geneModel.genomeBuildHelper = self.genomeBuildHelper;
             self.geneModel.setAllKnownGenes(self.allGenes);

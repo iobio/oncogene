@@ -1,7 +1,6 @@
 import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
-
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
         this.DEV_MODE = false;
         this.MOSAIC_MODE = false;
@@ -11,7 +10,7 @@ export default class EndpointCmd {
         this.getHumanRefNames = getHumanRefNamesFunc;
 
         // talk to correct version of gru per integration
-        if (backendUrl == null) {
+        if (backendUrl == null || globalApp.GALAXY_TEST_MODE) {
             backendUrl = 'https://backend.iobio.io';
         }
         if (this.MOSAIC_MODE) {

@@ -4,6 +4,7 @@
 */
 class GlobalApp {
   constructor($, d3, _) {
+    this.GALAXY_TEST_MODE      = false;
 
     this.cacheHelper           = null;
     this.tour                  = "";
@@ -37,8 +38,7 @@ class GlobalApp {
     this._                     = _;
 
     this.IOBIO_SERVICES        = this.isOffline              ? this.serverInstance : this.CURRENT_IOBIO;
-    // this.HTTP_SERVICES         = (this.useSSL ? "https://" : "http://") + (this.isOffline ? this.serverInstance : this.CURRENT_IOBIO);
-    this.HTTP_SERVICES  = (this.useSSL ? "https://" : "http://") + "backend.iobio.io" + "/";
+    this.HTTP_SERVICES         = (this.useSSL ? "https://" : "http://") + "backend.iobio.io" + "/";
     this.emailServer           = (this.useSSL ? "wss://" : "ws://") +   this.IOBIO_SERVICES + "email/";
 
 
