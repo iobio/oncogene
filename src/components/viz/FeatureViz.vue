@@ -151,6 +151,9 @@
                 <span>
                     {{ cosmicText || '-' }}
                 </span>
+                <v-btn style="padding-bottom: 3px" x-small icon color="blue" v-if="cosmicLink" target="_blank" :href="cosmicLink">
+                  <v-icon>open_in_new</v-icon>
+                </v-btn>
         </v-col>
         <v-col sm="6" md="5" lg="4" v-if="loadingExtraAnnotations">
           <div class="loader">
@@ -250,6 +253,10 @@ export default {
       type: String
     },
     cosmicText: {
+      default: "",
+      type: String
+    },
+    cosmicLink: {
       default: "",
       type: String
     },

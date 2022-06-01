@@ -272,6 +272,7 @@
                              :clinVarText="clinVarText"
                              :clinVarColor="clinVarColor"
                              :cosmicText="cosmicText"
+                             :cosmicLink="cosmicLink"
                              :revelText="revelText"
                              :somaticText="somaticText"
                              :variantSelected="variantSelected"
@@ -550,6 +551,13 @@ export default {
         return this.variantInfo.inCosmic ? 'Present' : 'Not present';
       }
       return "";
+    },
+    cosmicLink: function () {
+      // if it's in dictionary and has value besides true, it's the cosmic ID we need for link
+      if (this.variantInfo != null && this.variantInfo.inCosmic) {
+        return this.variantInfo.cosmicUrl;
+      }
+      return null;
     },
     revelText: function () {
       if (this.variantInfo != null) {

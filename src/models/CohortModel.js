@@ -1889,7 +1889,7 @@ class CohortModel {
                 featureList.forEach(feat => {
                     if (cosmicHash[feat.id]) {
                         feat.inCosmic = true;
-                        feat.cosmicLegacyId = cosmicHash[feat.id];
+                        feat.cosmicId = cosmicHash[feat.id];
                     }
                 })
                 resolve();

@@ -113,9 +113,10 @@ class GlobalApp {
     /* Updated 05Sept2019 to v90 */
     getCosmicUrl(build) {
         // These have VEP impact assigned
+        // todo: host these privately on Mosaic
         let cosmicUrls = {
-            'GRCh37': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic_norm_v92_grch37.vcf.gz",
-            'GRCh38': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic_norm_v92_grch38.vcf.gz"
+            'GRCh37': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic.coding.norm.v96.GRCh37.vcf.gz",
+            'GRCh38': "https://iobio.s3.amazonaws.com/samples/vcf/cosmic.coding.norm.v96.GRCh38.vcf.gz"
         };
         return cosmicUrls[build];
     }
