@@ -223,13 +223,14 @@
                             :width="width">
           </subclone-bar-viz>
         </v-row>
-        <v-row no-gutters justify="center">
-          <v-pagination v-model="subcloneIdx"
-                        :length="subcloneModel.possibleTrees.length"
-                        @next="transitionViz"
-                        @input="transitionViz"
-                        @previous="transitionViz"></v-pagination>
-        </v-row>
+<!--        NOTE: Leaving out for demo-->
+<!--        <v-row no-gutters justify="center">-->
+<!--          <v-pagination v-model="subcloneIdx"-->
+<!--                        :length="subcloneModel.possibleTrees.length"-->
+<!--                        @next="transitionViz"-->
+<!--                        @input="transitionViz"-->
+<!--                        @previous="transitionViz"></v-pagination>-->
+<!--        </v-row>-->
       </v-container>
     </v-container>
   </v-card>
