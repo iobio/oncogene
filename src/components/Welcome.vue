@@ -972,13 +972,17 @@ export default {
       let samples = [this.launchParams.normal];
       samples = samples.concat(this.launchParams.tumors);
       let props = ['coverageBamUrl', 'coverageBaiUrl', 'rnaSeqBamUrl', 'rnaSeqBamUri', 'cnvUrl'];
+      let sampleIdx = 0;
       samples.forEach(sample => {
         let vals = [sample.coverageBam, sample.coverageBai, sample.rnaSeqBam, sample.rnaSeqBai, sample.cnv];
-        if (self.launchSource !== self.GALAXY) {
+        if (self.launchSource === self.GALAXY) {
+          self.updateIndividualModelInfo(sampleIdx, props, vals);
+        } else {
           let selectedSample = self.nativeLaunch ? sample.selectedSample : sample.selectedSamples[sample.selectedSampleIdx];
           self.selectedSampleList.push(selectedSample);
           self.updateIndividualModelInfo(selectedSample, props, vals);
         }
+        sampleIdx++;
       })
     },
     setVcfSampleNames: function (vcfSampleNames) {
@@ -991,8 +995,18 @@ export default {
       // Only updating with valid info, can set to complete
       this.updateStepProp('vcf', 'complete', true);
     },
-    updateIndividualModelInfo: function (selectedSampleName, propNames, propVals) {
-      let modelInfo = this.modelInfoList.filter(m => (m.selectedSample === selectedSampleName))[0];
+    /* Updates all properties corresponding to propNames for a single model info object.
+     * selectedSample argument may be a string corresponding to the selectedSample name
+     * like for Mosaic, or may be an index for which modelInfo in the array for
+     * Galaxy situations, when we don't have selectedSample names passed and just
+     * want to update in order of what was passed. */
+    updateIndividualModelInfo: function (selectedSample, propNames, propVals) {
+      let modelInfo = null;
+      if ((typeof selectedSample) === "string") {
+        modelInfo = this.modelInfoList.filter(m => (m.selectedSample === selectedSample))[0];
+      } else if ((typeof selectedSample) === "number") {
+        modelInfo = this.modelInfoList[selectedSample];
+      }
       for (let i = 0; i < propNames.length; i++) {
         let propName = propNames[i];
         modelInfo[propName] = propVals[i];
