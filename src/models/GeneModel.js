@@ -348,9 +348,6 @@ class GeneModel {
     }
 
     getCanonicalTranscript(theGeneObject) {
-        // todo: left off here - isCanonical prop is part of transcripts - where is that coming from
-        // and can we use it instead of all of this?
-
         let me = this;
         var geneObject = theGeneObject != null ? theGeneObject : window.gene;
         var canonical;
@@ -359,11 +356,11 @@ class GeneModel {
             return null;
         }
         var order = 0;
-        geneObject.transcripts.forEach(function (transcript) {
+        geneObject.transcripts.forEach(function(transcript) {
             transcript.isCanonical = false;
             var cdsLength = 0;
             if (transcript.features != null) {
-                transcript.features.forEach(function (feature) {
+                transcript.features.forEach(function(feature) {
                     if (feature.feature_type == 'CDS') {
                         cdsLength += Math.abs(parseInt(feature.end) - parseInt(feature.start));
                     }
@@ -375,19 +372,19 @@ class GeneModel {
             transcript.order = order++;
 
         });
-        var sortedTranscripts = geneObject.transcripts.slice().sort(function (a, b) {
+        var sortedTranscripts = geneObject.transcripts.slice().sort(function(a, b) {
             var aType = +2;
             var bType = +2;
             if (a.hasOwnProperty("transcript_type") && a.transcript_type == 'protein_coding') {
                 aType = +0;
-            } else if (a.hasOwnProperty("gene_type") && a.gene_type == "gene") {
+            } else if (a.hasOwnProperty("gene_type") && a.gene_type == "gene")  {
                 aType = +0;
             } else {
                 aType = +1;
             }
             if (b.hasOwnProperty("transcript_type") && b.transcript_type == 'protein_coding') {
                 bType = +0;
-            } else if (b.hasOwnProperty("gene_type") && b.gene_type == "gene") {
+            } else if (b.hasOwnProperty("gene_type") && b.gene_type == "gene")  {
                 bType = +0;
             } else {
                 bType = +1;
@@ -397,10 +394,10 @@ class GeneModel {
             var aLevel = +2;
             var bLevel = +2;
             if (me.geneSource.toLowerCase() == 'refseq') {
-                if (a.transcript_id.indexOf("NM_") == 0) {
+                if (a.transcript_id.indexOf("NM_") == 0 ) {
                     aLevel = +0;
                 }
-                if (b.transcript_id.indexOf("NM_") == 0) {
+                if (b.transcript_id.indexOf("NM_") == 0 ) {
                     bLevel = +0;
                 }
             } else {
@@ -413,11 +410,11 @@ class GeneModel {
 
             var aSource = +2;
             var bSource = +2;
-            if (me.geneSource.toLowerCase() == 'refseq') {
-                if (a.annotation_source == 'BestRefSeq') {
+            if (me.geneSource.toLowerCase() =='refseq') {
+                if (a.annotation_source == 'BestRefSeq' ) {
                     aSource = +0;
                 }
-                if (b.annotation_source == 'BestRefSeq') {
+                if (b.annotation_source == 'BestRefSeq' ) {
                     bSource = +0;
                 }
             }
@@ -444,7 +441,7 @@ class GeneModel {
                         } else {
                             return 1;
                         }
-                    } else if (aSource < bSource) {
+                    } else if ( aSource < bSource ) {
                         return -1;
                     } else {
                         return 1;
@@ -464,6 +461,121 @@ class GeneModel {
         canonical.isCanonical = true;
         return canonical;
     }
+
+    // getCanonicalTranscriptOld(theGeneObject) {
+    //     let me = this;
+    //     var geneObject = theGeneObject != null ? theGeneObject : window.gene;
+    //     var canonical;
+    //
+    //     if (geneObject.transcripts == null || geneObject.transcripts.length == 0) {
+    //         return null;
+    //     }
+    //     var order = 0;
+    //     geneObject.transcripts.forEach(function (transcript) {
+    //         transcript.isCanonical = false;
+    //         var cdsLength = 0;
+    //         if (transcript.features != null) {
+    //             transcript.features.forEach(function (feature) {
+    //                 if (feature.feature_type == 'CDS') {
+    //                     cdsLength += Math.abs(parseInt(feature.end) - parseInt(feature.start));
+    //                 }
+    //             })
+    //             transcript.cdsLength = cdsLength;
+    //         } else {
+    //             transcript.cdsLength = +0;
+    //         }
+    //         transcript.order = order++;
+    //
+    //     });
+    //     var sortedTranscripts = geneObject.transcripts.slice().sort(function (a, b) {
+    //         var aType = +2;
+    //         var bType = +2;
+    //         if (a.hasOwnProperty("transcript_type") && a.transcript_type == 'protein_coding') {
+    //             aType = +0;
+    //         } else if (a.hasOwnProperty("gene_type") && a.gene_type == "gene") {
+    //             aType = +0;
+    //         } else {
+    //             aType = +1;
+    //         }
+    //         if (b.hasOwnProperty("transcript_type") && b.transcript_type == 'protein_coding') {
+    //             bType = +0;
+    //         } else if (b.hasOwnProperty("gene_type") && b.gene_type == "gene") {
+    //             bType = +0;
+    //         } else {
+    //             bType = +1;
+    //         }
+    //
+    //
+    //         var aLevel = +2;
+    //         var bLevel = +2;
+    //         if (me.geneSource.toLowerCase() == 'refseq') {
+    //             if (a.transcript_id.indexOf("NM_") == 0) {
+    //                 aLevel = +0;
+    //             }
+    //             if (b.transcript_id.indexOf("NM_") == 0) {
+    //                 bLevel = +0;
+    //             }
+    //         } else {
+    //             // Don't consider level for gencode as this seems to point to shorter transcripts many
+    //             // of the times.
+    //             //aLevel = +a.level;
+    //             //bLevel = +b.level;
+    //         }
+    //
+    //
+    //         var aSource = +2;
+    //         var bSource = +2;
+    //         if (me.geneSource.toLowerCase() == 'refseq') {
+    //             if (a.annotation_source == 'BestRefSeq') {
+    //                 aSource = +0;
+    //             }
+    //             if (b.annotation_source == 'BestRefSeq') {
+    //                 bSource = +0;
+    //             }
+    //         }
+    //
+    //         a.sort = aType + ' ' + aLevel + ' ' + aSource + ' ' + a.cdsLength + ' ' + a.order;
+    //         b.sort = bType + ' ' + bLevel + ' ' + bSource + ' ' + b.cdsLength + ' ' + b.order;
+    //
+    //         if (aType == bType) {
+    //             if (aLevel == bLevel) {
+    //                 if (aSource == bSource) {
+    //                     if (+a.cdsLength == +b.cdsLength) {
+    //                         // If all other sort criteria is the same,
+    //                         // we will grab the first transcript listed
+    //                         // for the gene.
+    //                         if (a.order == b.order) {
+    //                             return 0;
+    //                         } else if (a.order < b.order) {
+    //                             return -1;
+    //                         } else {
+    //                             return 1;
+    //                         }
+    //                     } else if (+a.cdsLength > +b.cdsLength) {
+    //                         return -1;
+    //                     } else {
+    //                         return 1;
+    //                     }
+    //                 } else if (aSource < bSource) {
+    //                     return -1;
+    //                 } else {
+    //                     return 1;
+    //                 }
+    //             } else if (aLevel < bLevel) {
+    //                 return -1;
+    //             } else {
+    //                 return 1;
+    //             }
+    //         } else if (aType < bType) {
+    //             return -1;
+    //         } else {
+    //             return 1;
+    //         }
+    //     });
+    //     canonical = sortedTranscripts[0];
+    //     canonical.isCanonical = true;
+    //     return canonical;
+    // }
 
 
     getCanonicalTranscriptOld(theGeneObject) {

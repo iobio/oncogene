@@ -26,9 +26,6 @@
                               @change="onGeneSelected"
                               @click="showGeneSnackbar = false"
                               :items="geneList"
-                              :allow-overflow="false"
-                              :eager="true"
-                              :readonly="false"
                               item-text="gene_name"
                               item-value="gene_name"
                               label="Enter gene..."
@@ -625,8 +622,7 @@ export default {
             // Need to check to see if we actually have somatic vars/genes returned
             if (totalSomaticVarCount === 0 && !self.expandedUserList) {
               // Automatically expand user list to include more genes (UCSC500)
-              //let ucscList = geneListsByCancerType['General (UCSF500)'];
-              let ucscList = geneListsByCancerType['test'];
+              let ucscList = geneListsByCancerType['General (UCSF500)'];
               self.geneModel.promiseCopyPasteGenes('', ucscList, {replace: true, warnOnDup: false})
               .then(() => {
                 self.expandedUserList = true;

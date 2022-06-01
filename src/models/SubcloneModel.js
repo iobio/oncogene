@@ -215,7 +215,8 @@ class SubcloneModel {
         const self = this;
         variants.forEach(variant => {
             let subcloneId = variant.subcloneId;
-            let gene = variant.geneSymbol;
+            debugger;
+            let gene = variant.geneSymbol === '' ? 'Unmapped Variants' : variant.geneSymbol;
 
             if (self.clonalVarMap[subcloneId] && self.clonalVarMap[subcloneId][gene]) {
                 self.clonalVarMap[subcloneId][gene].push(variant);
@@ -225,7 +226,9 @@ class SubcloneModel {
                 self.clonalVarMap[subcloneId] = {};
                 self.clonalVarMap[subcloneId][gene] = [variant];
             }
-        })
+        });
+
+
     }
 
     /* Use for fish plot in future but todo: needs to be reversed - sum children into parent, not parent into children */
