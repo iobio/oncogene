@@ -215,7 +215,6 @@ class SubcloneModel {
         const self = this;
         variants.forEach(variant => {
             let subcloneId = variant.subcloneId;
-            debugger;
             let gene = variant.geneSymbol === '' ? 'Unmapped Variants' : variant.geneSymbol;
 
             if (self.clonalVarMap[subcloneId] && self.clonalVarMap[subcloneId][gene]) {
