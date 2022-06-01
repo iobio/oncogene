@@ -76,7 +76,7 @@ export default function stackedBarChartD3(d3, smallVersion) {
         .append("text")
         .attr("x", 0)
         .attr("dx", "13em")
-        .attr("dy", "6em")
+        .attr("dy", "5em")
         .text("Timepoints")
         .attr("id", "x-label")
         .style("fill", "#717171")
@@ -92,10 +92,13 @@ export default function stackedBarChartD3(d3, smallVersion) {
         .call(yAxis)
         .append("text")
         .attr("y", 0)
-        .attr("dx", "-11em")
-        .attr("dy", "-3em")
+        .attr("dx", "-8em")
+        .attr("dy", "-2.5em")
         .attr('class', 'subclone-viz')
-        .text("Prevalence");
+        .text("Prevalence")
+        .style("font-size", "14px")
+        .style("fill", "#717171")
+        .attr("transform", "rotate(-90)");
 
     return svg.node();
   }
