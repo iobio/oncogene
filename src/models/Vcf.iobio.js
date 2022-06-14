@@ -2102,7 +2102,6 @@ export default function vcfiobio(theGlobalApp) {
         };
 
         var annotTokens = rec.info.split(";");
-
         annotTokens.forEach(function (annotToken) {
             if (annotToken.indexOf("BGAF_1KG=") === 0) {
                 annot.af1000G = annotToken.substring(9, annotToken.length);
@@ -2112,6 +2111,7 @@ export default function vcfiobio(theGlobalApp) {
                 annot.rs = annotToken.substring(3, annotToken.length);
             } else if (annotToken.indexOf("AF=") === 0) {
                 // For now, just grab first af
+                // todo: talk to Yi about this issue
                 //af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), altIdx);
                 annot.af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), 0);
             } else if (annotToken.indexOf("TYPE=") === 0) {
