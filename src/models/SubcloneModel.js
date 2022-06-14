@@ -1,16 +1,30 @@
 class SubcloneModel {
-    constructor(subcloneArr, selectedSamples) {
+    constructor(subcloneArr, selectedSamples, normalSelectedSample) {
         this.subcloneHeaderStrs = subcloneArr;
         this.selectedSamples = selectedSamples; // Array of selected samples/timepoints - used this for ordering in histogram
         this.possibleTrees = [];
         this.barVizTrees = {};  // An object with pagination_id: [{ subclone: 'C1', timepoint: 'B1', prev: 0.5 }]
         this.treeVizObjs = {};
         this.clonalVarMap = {};
+        this.normalSelectedSample = normalSelectedSample;
         this.NORMAL = 'n';
     }
 
     getVariants(nodeId) {
         return this.clonalVarMap[nodeId];
+    }
+
+    getMaxNodeTree() {
+        let maxNodeLength = 0;
+        let maxTree = this.possibleTrees[0];
+        for (let i = 0; i < this.possibleTrees.length; i++) {
+            let currNodeLength = Object.keys(this.possibleTrees[i].nodes).length;
+            if (currNodeLength > maxNodeLength) {
+                maxTree = this.possibleTrees[i];
+                maxNodeLength = currNodeLength;
+            }
+        }
+        return maxTree;
     }
 
     /* Inserts node into the subclone node list at a position corresponding to its clone ID.
@@ -20,12 +34,7 @@ class SubcloneModel {
             console.log('Could not insert node, nodes list DNE in subclone object or no node ID in node object');
             return false;
         } else {
-            if (node.id === this.NORMAL) {
-                subclone.nodes.splice(0, 0, node);
-            } else {
-                let idx = +(node.id.substring(1));
-                subclone.nodes.splice(idx, 0, node);
-            }
+            subclone.nodes[node.id] = node;
             return true;
         }
     }
@@ -36,12 +45,7 @@ class SubcloneModel {
         if (!subclone || !subclone.nodes) {
             return null;
         }
-        if (nodeId === this.NORMAL) {
-            return subclone.nodes[0];
-        } else {
-            let idx = +(nodeId.substring(1));
-            return subclone.nodes[idx];
-        }
+        return subclone.nodes[nodeId];
     }
 
     /* Extracts nodes and edges for a single subclone tree from ##SUBCLONE seeker lines in vcf header */
@@ -144,7 +148,7 @@ class SubcloneModel {
         }
         // Return object - a subclone tree
         let subclone = {
-            'nodes': [],       // list of nodes objects in tree
+            'nodes': {},       // map of nodeId : nodeObject
             'edges': {}        // nodeId : listOf child nodeIds
         }
         // Extract nodes and edges
@@ -211,7 +215,7 @@ class SubcloneModel {
         const self = this;
         variants.forEach(variant => {
             let subcloneId = variant.subcloneId;
-            let gene = variant.geneSymbol;
+            let gene = variant.geneSymbol === '' ? 'Unmapped Variants' : variant.geneSymbol;
 
             if (self.clonalVarMap[subcloneId] && self.clonalVarMap[subcloneId][gene]) {
                 self.clonalVarMap[subcloneId][gene].push(variant);
@@ -221,20 +225,22 @@ class SubcloneModel {
                 self.clonalVarMap[subcloneId] = {};
                 self.clonalVarMap[subcloneId][gene] = [variant];
             }
-        })
+        });
+
+
     }
 
     /* Use for fish plot in future but todo: needs to be reversed - sum children into parent, not parent into children */
     sumCps(subclone, staticSubclone) {
         const self = this;
-        let nodes = subclone.nodes;
+        let nodes = Object.values(subclone.nodes);
         nodes.forEach(node => {
             if (node.id !== 'n') {
                 node.edges.forEach(parent => {
                     if (parent !== 'n') {
                         let parentNode = self.getNode(parent, staticSubclone);
                         Object.keys(node.freqs).forEach(timept => {
-                            if (timept !== 'B0') {
+                            if (timept !== self.normalSelectedSample) {
                                 node.freqs[timept] += parentNode.freqs[timept];
                             }
                         })
@@ -254,16 +260,15 @@ class SubcloneModel {
             let subclone = self.possibleTrees[paginationIdx - 1];
 
             let nodes = subclone.nodes;
-            for (let i = 0; i < nodes.length; i++) {
-                let node = nodes[i];
-                let id = node.id;
+            for (let nodeId in nodes) {
+                let node = nodes[nodeId];
                 let subnodeList = [];
 
-                if (id !== 'n') {
+                if (nodeId !== 'n') {
                     Object.keys(node.freqs).forEach(timepoint => {
-                        if (timepoint !== 'B0' && self.selectedSamples.indexOf(timepoint) > -1) {
+                        if (timepoint !== self.normalSelectedSample && self.selectedSamples.indexOf(timepoint) > -1) {
                             let freq = node.freqs[timepoint];
-                            subnodeList.push({'subclone': id, 'timepoint': timepoint, 'prev': freq})
+                            subnodeList.push({'subclone': nodeId, 'timepoint': timepoint, 'prev': freq})
                         }
                     })
                     // Sort nodes to appear in user selected order
@@ -290,7 +295,7 @@ class SubcloneModel {
         } else {
             let subclone = self.possibleTrees[paginationIdx - 1];
             let nodes = subclone.nodes;
-            let firstNode = nodes[0];
+            let firstNode = nodes[self.NORMAL];
 
             let retObj = {
                 "name": firstNode.id,

@@ -35,14 +35,19 @@ let routes = [
                 if (otherQueryParams['']) {
                     delete otherQueryParams[''];
                 }
-
-                next('/mosaic_launch?' + $.param(otherQueryParams));
+                next('/external_launch?' + $.param(otherQueryParams));
+            } else if (to.query.source === 'galaxy') {
+                // Note: this is hardcoded for now but could be passed
+                const GALAXY_CONFIG_LOCATION = 'config.json';
+                const otherQueryParams = Object.assign({}, to.query);
+                otherQueryParams['config'] = GALAXY_CONFIG_LOCATION;
+                next('/external_launch?' + $.param(otherQueryParams));
             }
         },
     },
     {
-        name: 'mosaic-home',
-        path: '/mosaic_launch',
+        name: 'galaxy-home',
+        path: '/external_launch',
         component: App,
     }
 ]

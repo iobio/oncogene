@@ -210,16 +210,16 @@
                              v-if="subcloneModel.possibleTrees.length > 0"
                              :subcloneModel="subcloneModel"
                              :d3="d3"
-                             :colors="colors"
+                             :colors="colorMap"
                              @display-subclone-dialog="displaySubcloneDialog">
           </subclone-tree-viz>
           <subclone-bar-viz id="subclone-bar-viz" class="subclone-viz"
-                            style="padding-top: 30px; padding-bottom: 30px"
+                            style="padding-top: 30px; padding-bottom: 5px"
                             v-if="subcloneModel.possibleTrees.length > 0"
                             ref="subcloneBarVizRef"
                             :subcloneModel="subcloneModel"
                             :d3="d3"
-                            :colors="colors"
+                            :colors="colorMap"
                             :width="width">
           </subclone-bar-viz>
         </v-row>
@@ -255,32 +255,51 @@ export default {
   data() {
     return {
       subcloneIdx: 1,
-      colors: {
-        "n": "white",
-        "C1": "#F8B195",
-        "C2": "#F67280",
-        "C3": "#6C5B7B",
-        "C4": "#C06C84",
-        "C5": "#43719F",
-        "C6": "#355C7D",
-        "C7": "#F59D3D",
-        "C8": "#9B6A97",
-        "C9": "#398949",
-        "C10": "#5B8DB8",
-        "C11": "#FFC686",
-        "C12": "#BE89AC",
-        "C13": "#61AA57",
-        "C14": "#7AAAD0",
-        "C15": "#9D7760",
-        "C16": "#D5A5C4",
-        "C17": "#7DC470",
-        "C18": "#9BC7E4",
-        "C19": "#BBB1AC",
-        "C20": "#BADDF1",
-        "C21": "#F1CF63",
-        "C22": "#EFC9E6",
-        "C23": "#B4E0A7"
+      colors: [
+        "#F8B195",
+        "#F67280",
+        "#6C5B7B",
+        "#C06C84",
+        "#43719F",
+        "#355C7D",
+        "#F59D3D",
+        "#9B6A97",
+        "#398949",
+        "#5B8DB8",
+        "#FFC686",
+        "#BE89AC",
+        "#61AA57",
+        "#7AAAD0",
+        "#9D7760",
+        "#D5A5C4",
+        "#7DC470",
+        "#9BC7E4",
+        "#BBB1AC",
+        "#BADDF1",
+        "#F1CF63",
+        "#EFC9E6",
+        "#B4E0A7"
+      ]
+    }
+  },
+  computed: {
+    colorMap: function () {
+      const self = this;
+
+      let colorMap = {};
+      let i = 0;
+      let maxTree = this.subcloneModel.getMaxNodeTree();
+
+      for (let nodeId in maxTree.nodes) {
+        let node = maxTree.nodes[nodeId];
+        if (node.id === 'n') {
+          colorMap[node.id] = 'white';
+        } else {
+          colorMap[node.id] = self.colors[i];
+          i++;
+        }
       }
+      return colorMap;
     }
   },
   methods: {

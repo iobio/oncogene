@@ -100,7 +100,7 @@ import GeneModel from './models/GeneModel.js'
 import GenericAnnotation from './models/GenericAnnotation.js'
 import GenomeBuildHelper from './models/GenomeBuildHelper.js'
 import Translator from './models/Translator.js'
-import { createIntegration } from './models/Integration.js'
+import {createIntegration} from './models/Integration.js'
 
 // static data
 import allGenesData from './data/genes.json'
@@ -162,7 +162,9 @@ export default {
       },
       genes: {
         type: Array,
-        default: () => { return []; }
+        default: () => {
+          return [];
+        }
       },
 
       // static data
@@ -251,23 +253,10 @@ export default {
     this.$gtag.pageview("/");
 
     let leadQuery = this.$route.query;
-    if (process.env.VUE_APP_GALAXY_MODE) {
-      leadQuery = {
-        source: 'galaxy'
-      }
-    }
     this.integration = createIntegration(leadQuery, this.globalApp);
     this.launchSource = this.integration.getSource();
     this.integration.init().then(() => {
-      //const query = self.integration.buildQuery();
       self.launchParams = this.integration.buildParams();
-
-      // if (self.launchSource === self.GALAXY) {
-      //   // todo: replace passed params and this.router.replace
-      //   self.setGalaxyUrlParams();
-      // } else if (Object.keys(query).length > 0) {
-      //   self.setMosaicUrlParams(query);
-      // }
 
       self.cardWidth = window.innerWidth;
       self.globalApp.$(window).resize(function () {
@@ -289,7 +278,7 @@ export default {
       }
       // self.setAppMode();
 
-      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp, chromLengthMap);
+      self.genomeBuildHelper = new GenomeBuildHelper(self.globalApp, chromLengthMap, self.integration);
       self.genomeBuildHelper.promiseInit({DEFAULT_BUILD: 'GRCh37'})
           .then(function () {
             return self.promiseInitCache();
@@ -300,7 +289,7 @@ export default {
             glyph.translator = translator;
             let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
-            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage);
+            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage, self.integration);
             self.geneModel.geneSource = "gencode";
             self.geneModel.genomeBuildHelper = self.genomeBuildHelper;
             self.geneModel.setAllKnownGenes(self.allGenes);

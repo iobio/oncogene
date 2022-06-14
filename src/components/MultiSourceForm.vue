@@ -132,7 +132,7 @@ export default {
       type: String,
       default: null
     },
-    // Note: next three arrays order identical
+    // Note: next five arrays order identical
     fileList: {
       type: Array,
       default: function () {
@@ -140,6 +140,18 @@ export default {
       }
     },
     indexList: {
+      type: Array,
+      default: function () {
+        return [];
+      }
+    },
+    fileNameList: {
+      type: Array,
+      default: function () {
+        return [];
+      }
+    },
+    indexNameList: {
       type: Array,
       default: function () {
         return [];
@@ -154,6 +166,10 @@ export default {
     externalLaunchMode: {
       type: Boolean,
       default: false
+    },
+    externalLaunchSource: {
+      type: String,
+      default: ''
     }
   },
   data: function () {
@@ -162,6 +178,7 @@ export default {
       displayBuild: false,
       allUrlsVerified: false,
       listInfo: null,
+      GALAXY: 'galaxy'
     }
   },
   computed: {
@@ -195,14 +212,22 @@ export default {
     annotatedFileList: function () {
       let annoList = [];
       for (let i = 0; i < this.fileList.length; i++) {
-        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.fileList[i]),'value': this.fileList[i] });
+        if (this.launchSource === this.GALAXY) {
+          annoList.push(this.fileList[i]);
+        } else {
+          annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.fileNameList[i]),'value': this.fileList[i] });
+        }
       }
       return annoList;
     },
     annotatedIndexList: function () {
       let annoList = [];
       for (let i = 0; i < this.indexList.length; i++) {
-        annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.indexList[i]),'value': this.indexList[i] });
+        if (this.launchSource === this.GALAXY) {
+          annoList.push(this.indexList[i]);
+        } else {
+          annoList.push({ 'text': ('[' + this.selectedSampleList[i] + '] ' + this.indexNameList[i]),'value': this.indexList[i] });
+        }
       }
       return annoList;
     }

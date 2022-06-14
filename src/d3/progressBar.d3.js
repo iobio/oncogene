@@ -8,10 +8,16 @@ export default function progressBar(d3, id) {
         roundedCorners = 10,
         backgroundFill = 'white',
         blueFill = '#7f1010', // Fill color
-        barId = id;
+        barId = id,
+        safeBarId = id;
 
     function bar() {
-        var svg = d3.select('#progress_' + barId)
+        // Make sure we safe select any IDs with a period (aka year_1.5)
+        let dotIdx = barId.indexOf('.');
+        if (dotIdx > -1) {
+            safeBarId = barId.slice(0, dotIdx) + '\\' + barId.slice(dotIdx);
+        }
+        var svg = d3.select('#progress_' + safeBarId)
             .append('svg')
             .attr('height', height)
             .attr('width', '100%')
@@ -40,7 +46,7 @@ export default function progressBar(d3, id) {
             .attr('fill', blueFill);
 
         // Ghost fill this to get rid of initial funky outline
-        var bar = d3.select('#progress_' + barId).select('svg').select('.progress-rect');
+        var bar = d3.select('#progress_' + safeBarId).select('svg').select('.progress-rect');
         bar.transition()
             .duration(700)
             .attr('fill', blueFill)
@@ -53,7 +59,7 @@ export default function progressBar(d3, id) {
 
     /*** OUTWARD FACING FUNCTIONS ***/
     bar.moveProgressBar = function (frequency) {
-        var svg = d3.select('#progress_' + barId).select('svg');
+        var svg = d3.select('#progress_' + safeBarId).select('svg');
         var progBar = svg.select('.progress-rect');
 
         // Fill bar if we have a frequency coming in

@@ -83,24 +83,31 @@ export default {
       this.drawGene();
       this.drawIdeogram(strippedChr);
     },
-    formatGeneVars: function(variantObj) {
+    formatGeneVars: function (variantObj) {
       let items = [];
       Object.keys(variantObj).forEach(geneName => {
+        let variants = variantObj[geneName];
+        variants.forEach(variant => {
+          if (!variant.chrom.startsWith('chr')) {
+            variant.chrom = 'chr' + variant.chrom;
+          }
+        })
         items.push({
           gene: geneName,
           variants: variantObj[geneName],
           active: false
         });
       })
+
       items.sort((a, b) => {
         return a.gene.toUpperCase() < b.gene.toUpperCase() ? -1 : 1;
       })
       return items;
     },
-    formatVarInfo(variant) {
-      return 'chr' + variant.chrom + ': ' + variant.start + ' - ' + variant.end + ' ' + variant.ref + ' -> ' + variant.alt;
+    formatVarInfo: function (variant) {
+      return variant.chrom + ': ' + variant.start + ' - ' + variant.end + ' ' + variant.ref + ' -> ' + variant.alt;
     },
-    formatGeneHeader(gene, numVars) {
+    formatGeneHeader: function (gene, numVars) {
       return gene + ' (' + numVars + ')';
     }
   },

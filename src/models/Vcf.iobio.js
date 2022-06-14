@@ -633,8 +633,9 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    /* Returns dictionary with IDs as keys and values from INFO column according to infoValueField if provided. Else true as value. */
-    exports.promiseGetVariantIds = function (regions, infoValueField) {
+    /* Returns dictionary with variant_IDs as keys and values. If inInfo is true, pulls INFO column according to infoValueField if provided.
+     * Otherwise, returns ID column field if fieldName === ID. Otherwise, just returns true for map value. */
+    exports.promiseGetVariantIds = function (regions, fieldName, inInfo = false) {
         const me = this;
 
         return new Promise(function (resolve, reject) {
@@ -657,29 +658,33 @@ export default function vcfiobio(theGlobalApp) {
                             let fields = record.split('\t');
                             let refName = fields[0];
                             let pos = fields[1];
+                            let id = fields[2];
                             let ref = fields[3];
                             let alt = fields[4];
                             let info = fields[7];
 
                             //let strand = '';
                             let infoVal = '';
-                            if (info && info !== '') {
+                            if (info && info !== '' && inInfo) {
                                 let infoFields = info.split(';');
                                 infoFields.forEach((field) => {
                                     // if (field.startsWith('STRAND')) {
                                     //     strand = field.split('=')[1];
                                     // }
-                                    if (infoValueField && field.startsWith(infoValueField.toUpperCase())) {
+                                    if (fieldName && field.startsWith(fieldName.toUpperCase())) {
                                         infoVal = field.split('=')[1];
                                     }
                                 })
+                            // Updated to work with v96 of cosmic vcf files
+                            } else if (fieldName === 'COSMIC_ID') {
+                                infoVal = id;
                             }
                             //strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
                             let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
 
                             // Parse ids and return as array
-                            let id = 'var_' + pos + '_' + chr + '_' + ref + '_' + alt;
-                            idLookup[id] = infoVal === '' ? true : infoVal;
+                            let mapId = 'var_' + pos + '_' + chr + '_' + ref + '_' + alt;
+                            idLookup[mapId] = infoVal === '' ? true : infoVal;
                         }
                     });
                     resolve(idLookup);
@@ -1076,7 +1081,7 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
-        } else if (record.indexOf("subclone") > 0) {
+        } else if (record.indexOf("subclone") === 2) {
             if (!me.infoFields.SUBCLONES) {
                 me.infoFields.SUBCLONES = [];
             }
@@ -1741,9 +1746,10 @@ export default function vcfiobio(theGlobalApp) {
                                     'isInherited': null,              // Null = undetermined, True = inherited, False = somatic
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
-                                    'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
+                                    'cosmicId': null,           // Used for cosmic links in variant detail tooltip
                                     'subcloneId': annot.nodeId
                                 };
+
                                 if (somaticOnlyMode) {
                                     allVariants[i].push(variant);
                                     somaticGenes[annot.vep.symbol] = true;
@@ -1994,7 +2000,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'isInherited': null,              // Null = undetermined, True = inherited, False = somatic
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
-                                    'cosmicLegacyId': null,           // Used for cosmic links in variant detail tooltip
+                                    'cosmicId': null,           // Used for cosmic links in variant detail tooltip
                                     'sampleModelId': sampleModelId,   // Used for feature matrix tracking
                                     'readPtCov': 0,                  // Marker values used for bar chart viz
                                     'rnaSeqPtCov': -1,
@@ -2096,7 +2102,6 @@ export default function vcfiobio(theGlobalApp) {
         };
 
         var annotTokens = rec.info.split(";");
-
         annotTokens.forEach(function (annotToken) {
             if (annotToken.indexOf("BGAF_1KG=") === 0) {
                 annot.af1000G = annotToken.substring(9, annotToken.length);
@@ -2106,6 +2111,7 @@ export default function vcfiobio(theGlobalApp) {
                 annot.rs = annotToken.substring(3, annotToken.length);
             } else if (annotToken.indexOf("AF=") === 0) {
                 // For now, just grab first af
+                // todo: talk to Yi about this issue
                 //af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), altIdx);
                 annot.af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), 0);
             } else if (annotToken.indexOf("TYPE=") === 0) {

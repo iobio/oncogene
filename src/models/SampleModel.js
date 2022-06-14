@@ -1634,12 +1634,13 @@ class SampleModel {
 
             for (let i = 0; i < regions.length; i += batchCount) {
                 let regionBatch = regions.slice(i, Math.min((i + batchCount), regions.length));
-                let varIdP = self.vcf.promiseGetVariantIds(regionBatch, 'LEGACY_ID')
+                let varIdP = self.vcf.promiseGetVariantIds(regionBatch, 'COSMIC_ID')
                     .then(function (data) {
                         if (data) {
                             if (Object.keys(data).length === 0) {
                                 let regionStr = '';
                                 regionBatch.forEach(region => {
+                                    // Regions are hard coded to come in without chr prefix - add back if needed
                                     regionStr += (region.name + ':' + region.start + '-' + region.end + ', ');
                                 })
                                 console.log('Warning: no cosmic variants found for the batch: ' + regionStr);

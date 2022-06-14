@@ -918,8 +918,8 @@ class Util {
 
     info.filtersPassed = variant.filtersPassed ? variant.filtersPassed.join(",") : "";
 
-    if (variant.cosmicLegacyId) {
-      info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicLegacyId;
+    if (variant.cosmicId) {
+      info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicId;
     }
 
     return info;

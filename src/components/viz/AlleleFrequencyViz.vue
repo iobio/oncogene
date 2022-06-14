@@ -48,9 +48,9 @@
                 const self = this;
                 self.bars = [];
                 self.selectedSamples.forEach((ss) => {
-                    let currBar = progressBar(self.d3, ss);
-                    currBar();
-                    self.bars.push(currBar);
+                  let currBar = progressBar(self.d3, ss);
+                  currBar();
+                  self.bars.push(currBar);
                 });
             },
             fillProgressBars() {
