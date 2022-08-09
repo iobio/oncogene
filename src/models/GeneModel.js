@@ -1658,9 +1658,10 @@ class GeneModel {
 
             // Once each variant is assigned to its gene object, we can score them
             genesWithVars.forEach(geneObj => {
-                let scoreP = self.promiseScoreGene(geneObj);
+                let scoreP = self.promiseAnnotateGene(geneObj);
                 promises.push(scoreP);
             });
+
             Promise.all(promises)
                 .then(() => {
                     self.promiseRankGenes()
@@ -1684,7 +1685,10 @@ class GeneModel {
     }
 
     // todo: incorporate CiVIC into this, incorporate M Bailey TCGA stuff into this
-    /* Assigns points to the provided gene according to the variants contained within that gene.
+    /* Filters variants part of gene list according to argument filters.
+     * If filtering criteria is passed, ranks gene according to below criteria.
+     *
+     * Assigns points to the provided gene according to the variants contained within that gene.
      * Points are assigned in the following manner:
      * +4 for each variant with HIGH VEP impact
      * +3 for each variant with MODERATE VEP impact
@@ -1696,7 +1700,8 @@ class GeneModel {
      * +1 for each CNV with TCN != 2, even without a variant contained within
      * +1 if variant is in COSMIC database
      */
-    promiseScoreGene(geneObj) {
+    promiseAnnotateGene(geneObj, filters) {
+
         const VEP_HIGH = 'HIGH';
         const VEP_MODER = 'MODERATE';
         const VEP_LOW = 'LOW';
@@ -1706,6 +1711,8 @@ class GeneModel {
             if (geneObj) {
                 // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
+                    // todo: insert filtering layer here
+
                     let impact = Object.keys(feat.highestImpactVep);
                     if (impact.length > 0) {
                         impact = impact[0];
@@ -1743,6 +1750,7 @@ class GeneModel {
                     }
                     // In variant CNV scoring
                     if (feat.inCnv) {
+                        // todo: change this ranking criteria so that it's plus CNV factor rather than just 0/1
                         score += 2;
                         geneObj.hasCnv = true;
                     }

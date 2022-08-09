@@ -2,7 +2,7 @@ import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
-        this.DEV_MODE = false;
+        this.DEV_MODE = true;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
@@ -63,6 +63,21 @@ export default class EndpointCmd {
                     somaticFilterPhrase,
                     genomeBuildName
                 });
+    }
+
+    /* Uses bcftools CSQ instead of VEP for functional consequence prediction */
+    annotateSomaticVariantsV2(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
+        const selectedSamplesStr = selectedSamples.join();
+        const geneRegionsStr = geneRegions.join();
+        const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
+        return this.api.streamCommand('annotateSomaticVariantsV2',
+            {
+                vcfUrl: vcfSource.vcfUrl,
+                selectedSamplesStr,
+                geneRegionsStr,
+                somaticFilterPhrase,
+                genomeBuildName
+            });
     }
 
     promiseGetCnvData(cnvUrl) {

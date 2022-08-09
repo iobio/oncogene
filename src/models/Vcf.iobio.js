@@ -706,8 +706,11 @@ export default function vcfiobio(theGlobalApp) {
                 if (!vcfURL) {
                     reject('No vcf url to pull somatic variants from');
                 }
+
                 if (sourceType === SOURCE_TYPE_URL) {
                     let cmd = self.getEndpoint().annotateSomaticVariants({
+                    // todo: put this back to V2 when have better service and can ssh into backend to test
+                    // let cmd = self.getEndpoint().annotateSomaticVariantsV2({
                         'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl,
                     }, selectedSamples, regions, somaticFilterPhrase);

@@ -243,6 +243,7 @@
                 return count;
             },
             getCnvCount: function(geneObj) {
+              // todo CNV: think this will need to change for filtering by sample/cnv rank
                 let count = 0;
                 if (geneObj) {
                   count = geneObj.somaticCnvList.length;
@@ -251,6 +252,9 @@
             },
             onVariantSelected: function(feature) {
                 this.$emit('variant-selected', feature, this, 'rankedList');
+            },
+            onCnvSelected: function(cnv) {
+                // todo cnv: implement highlighting fxnality
             },
             isSelectedGene: function(geneObj) {
                 if (!geneObj) return false;

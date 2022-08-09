@@ -114,18 +114,17 @@ class cnviobio {
     // If abnormalOnly is true, returns only CNVs where TCN != 2 OR LCN != 1
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
     findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false, chrOnly = false) {
-        const self = this;
-
+        const self = this
         // Some weird scoping here
         const start = startCoord;
         const end = endCoord;
 
         let cnvObj = {
-            matchingCnvs: [],
-            mergedCnv: []
+            matchingCnvs: [],   // List containing one CNV object per CNV
+            mergedCnv: []       // A list containing single joint CNV object for all CNVs in argument list
         };
 
-        // Synonimize chromosome nomenclature
+        // Synonymize chromosome nomenclature
         let strippedChr = chr;
         if (strippedChr.indexOf('c') > -1) {
             strippedChr = strippedChr.substring(3);
@@ -143,12 +142,14 @@ class cnviobio {
         let chrLength = self.genomeBuildHelper.getReferenceLength(+strippedChr);
         // todo: scoped vars a bit diff here - debug & test
         for (let i = 0; i < chrStarts.length; i++) {
+            // todo: here I can insert ranking with rank ^ as tcn ^
             let abnormalSatisfied = abnormalOnly ? ((+chrData[i].tcn) !== 2 || (+chrData[i].lcn) !== 1) : true;
             if (chrOnly) {
                 if (abnormalSatisfied) {
                     // Ensure we aren't out of bounds of chrom end
                     chrData[i].end = Math.min(+chrData[i].end, chrLength);
 
+                    // todo: instead of just pushing to array we want to insert into ordered list
                     cnvObj.matchingCnvs.push(chrData[i]);
                 }
             } else {
@@ -186,6 +187,7 @@ class cnviobio {
 
     // Returns a list of CNVs with only one joined entry. The TCN and LCN fields will be set to the MAX value within array.
     // and start and end will be the smallest and largest coordinates to encompass all points, respectively.
+    // Used for visualization within d3 track
     _mergeCnvs(cnvList) {
         let retList = [];
 
