@@ -2,7 +2,7 @@ import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
-        this.DEV_MODE = false;
+        this.DEV_MODE = true;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
@@ -16,7 +16,7 @@ export default class EndpointCmd {
         if (this.MOSAIC_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
         } else if (this.DEV_MODE) {
-            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9002';
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9003';
         }
         this.api = new Client(backendUrl);
     }
@@ -55,7 +55,7 @@ export default class EndpointCmd {
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        return this.api.streamCommand('annotateSomaticVariants',
+        return this.api.streamCommand('annotateSomaticVariantsV2',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr,
