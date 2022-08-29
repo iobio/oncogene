@@ -1706,9 +1706,11 @@ class GeneModel {
             if (geneObj) {
                 // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
-                    let impact = Object.keys(feat.highestImpactBcsq);
+                    let impact = "";
                     if (this.globalApp.useVEP) {
                         impact = Object.keys(feat.highestImpactVep);
+                    } else {
+                        impact = Object.keys(feat.highestImpactBcsq);
                     }
                     if (impact.length > 0) {
                         impact = impact[0];

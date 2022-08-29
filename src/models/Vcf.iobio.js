@@ -1666,26 +1666,42 @@ export default function vcfiobio(theGlobalApp) {
                     var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF, bcsqVarMap, bcsqImpactMap);
 
                     // Amend VEP AF annotation for multi/no gene matches
+                    // Add to list of unknown variants
                     if (useVEP) {
-                        let majSymArr = annot.vep.symbol;
-                        if (majSymArr.length === 1) {
-                            annot.vep.symbol = majSymArr[0];
-                        } else if (somaticOnlyMode) {
-                            if (majSymArr.length === 0 && !me._isIntergenic(annot.vep.vepConsequence)) {
+                        let majSym = annot.vep.symbol;
+                        if (somaticOnlyMode) {
+                            if (majSym === "" && !me._isIntergenic(annot.vep.vepConsequence)) {
                                 if (unmatchedVars['Unknown']) {
                                     unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
                                 } else {
                                     unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
                                 }
-                            } else if (majSymArr.length > 1) {
-                                let combinedSymStr = majSymArr.join(' / ');
+                            } else if (majSym === "") {
+                                let combinedSymStr = Object.keys(annot.vep.symbols).join(' / ');
                                 if (unmatchedVars[combinedSymStr]) {
                                     unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
                                 } else {
                                     unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
                                 }
                             }
-                            annot.vep.symbol = '';
+                        }
+                    } else {
+                        let majSym = annot.bcsq.symbol;
+                        if (somaticOnlyMode) {
+                            if (majSym === "" && annot.bcsq.type !== 'intron') {
+                                if (unmatchedVars['Unknown']) {
+                                    unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
+                            } else if (majSym === "") {
+                                let combinedSymStr = Object.keys(annot.bcsq.symbols).join(' / ');
+                                if (unmatchedVars[combinedSymStr]) {
+                                    unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
+                            }
                         }
                     }
 
@@ -1815,7 +1831,9 @@ export default function vcfiobio(theGlobalApp) {
         });
 
         // Update BCSQ references
-        me._updateBcsqRefs(bcsqVarRefList, bcsqVarMap);
+        if (!globalApp.useVEP) {
+            me._updateBcsqRefs(bcsqVarRefList, bcsqVarMap);
+        }
 
         // Here is the result set.  An object representing the entire region with a field called
         // 'features' that contains an array of variants for this region of interest.
@@ -2799,7 +2817,6 @@ export default function vcfiobio(theGlobalApp) {
 
                         me._appendTranscript(consequencesObject, theConsequences, theTranscriptId);
                         annot.vep.allVep[theImpact] = consequencesObject;
-                        annot.bcsq.allBcsq[theImpact] = consequencesObject;
                         if (annot.vep.symbols[theSymbol]) {
                             annot.vep.symbols[theSymbol] = annot.vep.symbols[theSymbol] + 1;
                         } else {
