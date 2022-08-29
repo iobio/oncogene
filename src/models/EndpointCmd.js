@@ -55,7 +55,9 @@ export default class EndpointCmd {
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        return this.api.streamCommand('annotateSomaticVariantsV2',
+
+        if (this.globalApp.useVEP) {
+            return this.api.streamCommand('annotateSomaticVariants',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr,
@@ -63,6 +65,16 @@ export default class EndpointCmd {
                     somaticFilterPhrase,
                     genomeBuildName
                 });
+        } else {
+            return this.api.streamCommand('annotateSomaticVariantsV2',
+                    {
+                        vcfUrl: vcfSource.vcfUrl,
+                        selectedSamplesStr,
+                        geneRegionsStr,
+                        somaticFilterPhrase,
+                        genomeBuildName
+                    });
+            }
     }
 
     promiseGetCnvData(cnvUrl) {

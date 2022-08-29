@@ -1165,7 +1165,7 @@ class CohortModel {
             if (!self.onlySomaticCalls) {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
                 .then((returnArr) => {
                     // Always populate unique variant dictionary
                     let sampleMap = returnArr['sampleMap'];
@@ -1363,6 +1363,8 @@ class CohortModel {
      * that fall within that region. Populates model level map of cosmic variant IDs.
      * If gene has already been pulled back, will not re-fetch. */
     promiseGetCosmicVariantIds(regions, geneNames) {
+        // todo: this is the blocker on loading - needs to be optimized
+
         let self = this;
         if (regions.length !== geneNames.length) {
             console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');

@@ -655,6 +655,8 @@ class Util {
       vepHighestImpactValue: "",
       vepHighestImpactRecs: [],
       vepConsequence: "",
+      bcsqImpact: "",
+      bcsqHighestImpact: "",
       HGVSc: "",
       HGVSp: "",
       HGVScAbbrev: "",

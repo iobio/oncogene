@@ -1586,14 +1586,14 @@ class GeneModel {
                                         unmatchedVars[feat.geneSymbol] = [];
                                     }
                                     unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
-                                    console.log('Could not match VEP gene symbol to ClinGen for gene ' + feat.geneSymbol);
+                                    console.log('Could not match predictor(VEP/BCSQ) gene symbol to ClinGen for gene ' + feat.geneSymbol);
                                 }
                             }).catch(err => {
                                 if (!unmatchedVars[feat.geneSymbol]) {
                                     unmatchedVars[feat.geneSymbol] = [];
                                 }
                                 unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
-                                console.log('ERROR: Could not match VEP gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
+                                console.log('ERROR: Could not match predictor(VEP/BCSQ) gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
                             });
                         genePromises.push(p);
                     }
@@ -1697,36 +1697,40 @@ class GeneModel {
      * +1 if variant is in COSMIC database
      */
     promiseScoreGene(geneObj) {
-        const VEP_HIGH = 'HIGH';
-        const VEP_MODER = 'MODERATE';
-        const VEP_LOW = 'LOW';
+        const HIGH = 'HIGH';
+        const MODER = 'MODERATE';
+        const LOW = 'LOW';
         let score = 0;
 
         return new Promise((resolve) => {
             if (geneObj) {
                 // Account for variants in gene
                 geneObj.somaticVariantList.forEach(feat => {
-                    let impact = Object.keys(feat.highestImpactVep);
+                    let impact = Object.keys(feat.highestImpactBcsq);
+                    if (this.globalApp.useVEP) {
+                        impact = Object.keys(feat.highestImpactVep);
+                    }
                     if (impact.length > 0) {
                         impact = impact[0];
                     }
+
                     // Note: variants cannot be annotated w/ COSMIC - todo: why?
                     // for entire list, so don't need to add that into equation for now
-                    if (impact === VEP_HIGH) {
+                    if (impact === HIGH) {
                         score += 4;
                         geneObj.highCount += 1;
                         if (feat.inCosmic) {
                             score += 1;
                             geneObj.cosmicHighCount += 1;
                         }
-                    } else if (impact === VEP_MODER) {
+                    } else if (impact === MODER) {
                         score += 3;
                         geneObj.moderCount += 1;
                         if (feat.inCosmic) {
                             score += 1;
                             geneObj.cosmicModerCount += 1;
                         }
-                    } else if (impact === VEP_LOW) {
+                    } else if (impact === LOW) {
                         score += 1;
                         geneObj.lowCount += 1;
                         if (feat.inCosmic) {

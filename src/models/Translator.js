@@ -4,6 +4,11 @@ export default class Translator {
     this.globalApp = globalApp;
     this.glyph = glyph;
 
+    this.HIGH = 'HIGH',
+    this.MODERATE = 'MODERATE',
+    this.MODIFIER = 'MODIFIER',
+    this.LOW = 'LOW';
+
 
     this.clinvarMap     = {
               'pathogenic'            : {value: 1,   badge: true, examineBadge: true, clazz: 'clinvar_path', symbolFunction: this.glyph.showClinVarSymbol},
@@ -50,6 +55,49 @@ export default class Translator {
                         MODIFIER: {value: 3, badge: false, clazz: 'impact_MODIFIER', symbolFunction: this.showHighestImpactSymbol, bind: this},
                         LOW:      {value: 4, badge: false, clazz: 'impact_LOW',      symbolFunction: this.showHighestImpactSymbol, bind: this}
                      };
+
+    this.bcsqImpactMap = {
+        transcript_ablation: { impact: this.HIGH },
+        splice_acceptor_variant: { impact: this.HIGH },
+        splice_donor_variant: { impact: this.HIGH },
+        stop_gained: { impact: this.HIGH },
+        frameshift_variant: { impact: this.HIGH },
+        stop_lost: { impact: this.HIGH },
+        start_lost: { impact: this.HIGH },
+        transcript_amplification: { impact: this.HIGH },
+        inframe_insertion : { impact: this.MODERATE },
+        inframe_deletion : { impact: this.MODERATE },
+        missense_variant : { impact: this.MODERATE },
+        protein_altering_variant : { impact: this.MODERATE },
+        splice_region_variant : { impact: this.LOW },
+        splice_donor_5th_base_variant : { impact: this.LOW },
+        splice_donor_region_variant : { impact: this.LOW },
+        splice_polypyrimidine_tract_variant : { impact: this.LOW },
+        incomplete_terminal_codon_variant : { impact: this.LOW },
+        start_retained_variant : { impact: this.LOW },
+        stop_retained_variant : { impact: this.LOW },
+        synonymous_variant : { impact: this.LOW },
+        coding_sequence_variant : { impact: this.MODIFIER },
+        mature_miRNA_variant : { impact: this.MODIFIER },
+        five_prime_UTR_variant : { impact: this.MODIFIER },
+        three_prime_UTR_variant : { impact: this.MODIFIER },
+        non_coding_transcript_exon_variant : { impact: this.MODIFIER },
+        intron_variant : { impact: this.MODIFIER },
+        NMD_transcript_variant : { impact: this.MODIFIER },
+        non_coding_transcript_variant : { impact: this.MODIFIER },
+        upstream_gene_variant : { impact: this.MODIFIER },
+        downstream_gene_variant : { impact: this.MODIFIER },
+        TFBS_ablation : { impact: this.MODIFIER },
+        TFBS_amplification : { impact: this.MODIFIER },
+        TF_binding_site_variant : { impact: this.MODIFIER },
+        regulatory_region_ablation : { impact: this.MODERATE },
+        regulatory_region_amplification : { impact: this.MODIFIER },
+        feature_elongation : { impact: this.MODIFIER },
+        regulatory_region_variant : { impact: this.MODIFIER },
+        feature_truncation : { impact: this.MODIFIER },
+        intergenic_variant : { impact: this.MODIFIER }
+    };
+
     this.siftMap = {
                       deleterious:                 {value: 1, badge: true, clazz: 'sift_deleterious', symbolFunction: this.glyph.showSiftSymbol},
                       deleterious_low_confidence:  {value: 2, badge: true, clazz: 'sift_deleterious_low_confidence', symbolFunction: this.glyph.showSiftSymbol},

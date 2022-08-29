@@ -483,12 +483,14 @@ export default {
     },
     impactText: function () {
       if (this.variant != null) {
+        // todo: add global.useVEP check here
         return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
       }
       return "-";
     },
     impactColor: function () {
       if (this.variant != null) {
+        // todo: add global.useVEP check here
         var impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
         return "impact_" + impactLevel;
       }
