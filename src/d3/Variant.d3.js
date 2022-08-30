@@ -74,6 +74,7 @@ export default function variantD3(d3, vizSettings) {
         }
         var dividerY = dividerLevel ? height - ((dividerLevel + 1) * (variantHeight + verticalPadding)) : null;
 
+        var transcriptId = chartInfo.transcriptId;
 
         // Determine inner height (w/o margins)
         var innerHeight = height - margin.top - margin.bottom;
@@ -242,7 +243,7 @@ export default function variantD3(d3, vizSettings) {
                         });
                     }).join('rect')
                     .attr('class', function (d) {
-                        return clazz(d);
+                        return clazz(d, transcriptId);
                     })
                     .attr('id', function (d) {
                         return d.id;
@@ -276,7 +277,7 @@ export default function variantD3(d3, vizSettings) {
                             .type(getSymbol(d))();
                     })
                     .attr('class', function (d) {
-                        return clazz(d);
+                        return clazz(d, transcriptId);
                     })
                     .attr('id', function (d) {
                         return d.id;
@@ -600,8 +601,8 @@ export default function variantD3(d3, vizSettings) {
         var allVariants = svgContainer.selectAll(".variant");
 
         // REPLACE classes here (except filter status - this is guaranteed by classifyByImpact)
-        allVariants.attr('class', function (d) {
-            return clazz(d);
+        allVariants.attr('class', function (d, transcriptId) {
+            return clazz(d, transcriptId);
         });
     };
 

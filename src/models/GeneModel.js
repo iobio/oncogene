@@ -1709,11 +1709,11 @@ class GeneModel {
                     let impact = "";
                     if (this.globalApp.useVEP) {
                         impact = Object.keys(feat.highestImpactVep);
+                        if (impact.length > 0) {
+                            impact = impact[0];
+                        }
                     } else {
                         impact = feat.highestImpactBcsq;
-                    }
-                    if (impact.length > 0) {
-                        impact = impact[0];
                     }
 
                     // Note: variants cannot be annotated w/ COSMIC - todo: why?

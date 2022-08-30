@@ -35,6 +35,7 @@ class CohortModel {
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
         this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
+        this.selectedTranscriptId = null;       // Used by sampleModels when assigning impact
 
         this.mode = 'time';                     // Indicates time-series mode
         this.maxAlleleCount = null;

@@ -918,7 +918,8 @@ class Util {
         info.dbSnpLink =  '<a href="' + info.dbSnpUrl + '" target="_dbsnp"' + '>' + info.rsId  + '</a>';
       }
     } else {
-      info.bcsqConsequence = variant.bcsq[selectedTranscriptId] ? variant.bcsq[selectedTranscriptId].csqType : variant.bcsq['non-coding'].csqType;
+      let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
+      info.bcsqConsequence = variant.bcsq[trimmedTranscript] ? variant.bcsq[trimmedTranscript].csqType : variant.bcsq['non-coding'].csqType;
 
       let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence]
       info.bcsqImpact = translatedImpact ? translatedImpact.impact : '';

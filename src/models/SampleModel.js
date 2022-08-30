@@ -829,6 +829,14 @@ class SampleModel {
         return this.defaultSampleName;
     }
 
+    getTranscriptId() {
+        let cohortModel = this.getCohortModel();
+        if (cohortModel) {
+            return cohortModel.selectedTranscriptId;
+        }
+        return "";
+    }
+
     markEntryDataChanged(changedStatus) {
         let self = this;
         self.entryDataChanged = changedStatus;
@@ -3022,14 +3030,16 @@ class SampleModel {
 
         var transVarBcsq = '';
         if (annotationScheme === 'bcsq') {
-            transVarBcsq = d.bcsq[selectedTranscriptId] ? d.bcsq[selectedTranscriptId] : d.bcsq['non-coding'];
+            // todo: canonical transcript is coming in wrong
+            let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
+            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : d.bcsq['non-coding'];
         }
 
         let effectList = {};
         if (annotationScheme === 'vep') {
             effectList = d.vepConsequence;
         } else {
-            let type = transVarBcsq['csqType'];
+            let type = transVarBcsq ? transVarBcsq['csqType'] : 'N/A for Transcript';
             effectList[type] = type;
         }
         for (var key in effectList) {
@@ -3063,7 +3073,7 @@ class SampleModel {
             if (annotationScheme === 'vep') {
                 colorImpactList = d[self.globalApp.impactFieldToColor];
             } else {
-                let impact = transVarBcsq.impact ? transVarBcsq.impact.impact : "";
+                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact.impact : "N/A for Transcript";
                 colorImpactList[impact] = impact;
             }
             for (key in colorImpactList) {

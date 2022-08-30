@@ -140,7 +140,7 @@
                 :classifyVariantSymbolFunc="model.classifyByImpact"
                 :hoverTooltip="hoverTooltip"
                 :selectedGene="selectedGene"
-                :selectedTranscript="analyzedTranscript"
+                :selectedTranscript="selectedTranscript"
                 :selectedVariant="selectedVariant"
                 :regionStart="geneRegionStart"
                 :regionEnd="geneRegionEnd"
@@ -646,6 +646,7 @@ export default {
               self.rankedGeneList = geneModel.rankedGeneList;
               self.selectedGene = topRankedGene;
               self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+              self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
               self.geneRegionStart = self.selectedGene.start;
               self.geneRegionEnd = self.selectedGene.end;
 
@@ -920,6 +921,7 @@ export default {
                   let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
                   if (latestTranscript == null) {
                     self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                    self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
                     geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
                   } else {
                     self.selectedTranscript = latestTranscript;
