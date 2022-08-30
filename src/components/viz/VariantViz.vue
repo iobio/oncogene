@@ -142,6 +142,10 @@
                 type: Boolean,
                 default: false
             },
+            selectedTranscriptId: {
+                type: String,
+                default: ""
+            },
             d3: null
         },
         data() {
@@ -172,7 +176,7 @@
                     showBrush: this.showBrush,
                     showTransition: this.showTransition,
                     clazz: function(variant) {
-                        return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack, self.somaticOnlyMode);
+                        return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack, self.somaticOnlyMode, self.selectedTranscriptId);
                     }
                 };
 

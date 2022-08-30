@@ -1710,7 +1710,7 @@ class GeneModel {
                     if (this.globalApp.useVEP) {
                         impact = Object.keys(feat.highestImpactVep);
                     } else {
-                        impact = Object.keys(feat.highestImpactBcsq);
+                        impact = feat.highestImpactBcsq;
                     }
                     if (impact.length > 0) {
                         impact = impact[0];

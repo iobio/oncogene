@@ -429,6 +429,10 @@ export default {
       type: Boolean,
       default: false
     },
+    useVEP: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
@@ -487,7 +491,6 @@ export default {
     },
     impactText: function () {
       if (this.variant != null) {
-        // todo: add global.useVEP check here
         if (this.useVEP) {
           return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
         } else {

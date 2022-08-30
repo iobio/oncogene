@@ -1721,6 +1721,7 @@ class SampleModel {
                 filtData = results[0];
             }
 
+            // todo: no gene prop here
             let theGeneObject = me.getGeneModel().geneObjects[filtData.gene];
             if (theGeneObject) {
 
@@ -2035,35 +2036,42 @@ class SampleModel {
     }
 
 
+    // Assigns variant afFieldHighest field
     _determineHighestAf(variant) {
         var me = this;
         // Find the highest value (the least rare AF) betweem exac and 1000g to evaluate
         // as 'lowest' af for all variants in gene
         var afHighest = null;
-        if (me.globalApp.$.isNumeric(variant.afExAC) && me.globalApp.$.isNumeric(variant.af1000G)) {
-            // Ignore exac n/a.  If exac is higher than 1000g, evaluate exac
-            if (variant.afExAC > -100 && variant.afExAC >= variant.af1000G) {
+
+        if (me.globalApp.useVEP) {
+            if (me.globalApp.$.isNumeric(variant.afExAC) && me.globalApp.$.isNumeric(variant.af1000G)) {
+                // Ignore exac n/a.  If exac is higher than 1000g, evaluate exac
+                if (variant.afExAC > -100 && variant.afExAC >= variant.af1000G) {
+                    variant.afFieldHighest = 'afExAC';
+                } else {
+                    variant.afFieldHighest = 'af1000G';
+                }
+            } else if (me.globalApp.$.isNumeric(variant.afExAC)) {
                 variant.afFieldHighest = 'afExAC';
-            } else {
+
+            } else if (me.globalApp.$.isNumeric(variant.af1000G)) {
                 variant.afFieldHighest = 'af1000G';
             }
-        } else if (me.globalApp.$.isNumeric(variant.afExAC)) {
-            variant.afFieldHighest = 'afExAC';
+            afHighest = me.getHighestAf(variant);
 
-        } else if (me.globalApp.$.isNumeric(variant.af1000G)) {
-            variant.afFieldHighest = 'af1000G';
-        }
-        afHighest = me.getHighestAf(variant);
-
-        if (me.globalApp.vepAF) {
-            if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
-                if (variant.vepAf.gnomAD.AF >= afHighest) {
+            if (me.globalApp.vepAF) {
+                if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
+                    if (variant.vepAf.gnomAD.AF >= afHighest) {
+                        variant.afFieldHighest = 'afgnomAD';
+                    }
+                } else if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF)) {
                     variant.afFieldHighest = 'afgnomAD';
                 }
-            } else if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF)) {
-                variant.afFieldHighest = 'afgnomAD';
             }
         }
+
+        //
+
         variant.afHighest = me.getHighestAf(variant);
     }
 
@@ -3000,7 +3008,7 @@ class SampleModel {
     }
 
 
-    classifyByImpact(d, annotationScheme, inTumorTrack, inKnownTrack, somaticOnlyMode) {
+    classifyByImpact(d, annotationScheme, inTumorTrack, inKnownTrack, somaticOnlyMode, selectedTranscriptId) {
         let self = this;
 
         var impacts = "";
@@ -3012,7 +3020,18 @@ class SampleModel {
         // var regulatory = "";
         // TODO: cleanup unused
 
-        var effectList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.effect : d.vepConsequence);
+        var transVarBcsq = '';
+        if (annotationScheme === 'bcsq') {
+            transVarBcsq = d.bcsq[selectedTranscriptId] ? d.bcsq[selectedTranscriptId] : d.bcsq['non-coding'];
+        }
+
+        let effectList = {};
+        if (annotationScheme === 'vep') {
+            effectList = d.vepConsequence;
+        } else {
+            let type = transVarBcsq['csqType'];
+            effectList[type] = type;
+        }
         for (var key in effectList) {
             if (annotationScheme.toLowerCase() === 'vep' && key.indexOf("&") > 0) {
                 var tokens = key.split("&");
@@ -3024,15 +3043,29 @@ class SampleModel {
                 effects += " " + key;
             }
         }
-        var impactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToFilter]);
+
+        let impactList = {};
+        if (annotationScheme === 'vep') {
+            impactList = d[self.globalApp.impactFieldToFilter];
+        } else {
+            let impact = d.highestImpactBcsq;
+            impactList[impact] = impact;
+        }
         for (key in impactList) {
             impacts += " " + key;
         }
 
+
         if (d.isInherited != null && d.isInherited === false && inTumorTrack && !inKnownTrack && !somaticOnlyMode) {
             colorimpacts += " " + "impact_SOMATIC";
         } else {
-            var colorImpactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToColor]);
+            let colorImpactList = {};
+            if (annotationScheme === 'vep') {
+                colorImpactList = d[self.globalApp.impactFieldToColor];
+            } else {
+                let impact = transVarBcsq.impact ? transVarBcsq.impact.impact : "";
+                colorImpactList[impact] = impact;
+            }
             for (key in colorImpactList) {
                 colorimpacts += " " + 'impact_' + key;
             }

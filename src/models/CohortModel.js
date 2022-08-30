@@ -861,31 +861,30 @@ class CohortModel {
                     geneP.then(() => {
                         self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
                             .then(groupObj => {
-                                self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-                                    .then(() => {
-                                        let cosmicPs = [];
-                                        groupObj.fullGeneObjs.forEach(geneObj => {
-                                            cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-                                        });
-                                        Promise.all(cosmicPs)
-                                            .then(() => {
-                                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
-                                                    .then((rankObj) => {
-                                                        resolve(rankObj);
-                                                    }).catch(err => {
-                                                    reject('Fatal error scoring and ranking somatic genes: ' + err);
-                                                })
-                                            });
+                                //self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
+                                //.then(() => {
+                                // let cosmicPs = [];
+                                // groupObj.fullGeneObjs.forEach(geneObj => {
+                                //     cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
+                                // });
+                                //Promise.all(cosmicPs)
+                                    //.then(() => {
+                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                    .then((rankObj) => {
+                                        resolve(rankObj);
                                     }).catch(err => {
+                                        reject('Fatal error scoring and ranking somatic genes: ' + err);
+                                    })
+                                    //});
+                                }).catch(err => {
                                     reject('Problem getting cosmic variants for global somatic regions: ' + err);
                                 })
-                            }).catch(error => {
+                        }).catch(error => {
                             console.log('Something went wrong grouping and assigning somatic variants ' + error);
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
-                    }).catch(err => {
+                }).catch(err => {
                         console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
-                    })
                 });
         });
     }
@@ -1356,6 +1355,34 @@ class CohortModel {
                 .catch((error) => {
                     reject('Problem loading known variant counts: ' + error);
                 })
+        })
+    }
+
+    promiseGetCosmicStatus(variant) {
+        const self = this;
+        let regions = [variant.chrom + ':' + variant.start + '-' + variant.end];
+        let varId = 'var_' + variant.start + '_' + variant.chrom + '_' + variant.ref + '_' + variant.alt;
+
+        return new Promise(function (resolve, reject) {
+            if (self.cosmicVariantIdHash[varId]) {
+                resolve(true);
+            } else {
+                self.getModel('cosmic-variants').inProgress.loadingVariants = true;
+                self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
+                    .then(function (resultMap) {
+                        self.getModel('cosmic-variants').inProgress.loadingVariants = false;
+                        // Add variants to existing hash
+                        if (resultMap['cosmic-variants-ids'][varId]) {
+                            self.cosmicVariantIdHash[varId] = resultMap['cosmic-variants-ids'][varId];
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch((error) => {
+                        reject('Problem loading cosmic variants: ' + error);
+                    })
+            }
         })
     }
 

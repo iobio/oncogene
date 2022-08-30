@@ -186,7 +186,7 @@
             },
             getImpactColor: function(feat) {
                 if (this.useVEP && feat != null && feat.highestImpactVep != null) {
-                    let impactLevel = feat.highestImpactVep.toUpperCase();
+                    let impactLevel = Object.keys(feat.highestImpactVep)[0].toUpperCase();
                     return "impact_" + impactLevel;
                 } else if (!this.useVEP && feat != null && feat.highestImpactBcsq != null) {
                     let impactLevel = feat.highestImpactBcsq.toUpperCase();
@@ -196,7 +196,7 @@
             },
             getVarText: function(feat) {
                 let type = this.getReadableType(feat.type);
-                let impact = this.useVEP ? feat.highestImpactVep.toLowerCase() : feat.highestImpactBcsq.toLowerCase();
+                let impact = this.useVEP ? Object.keys(feat.highestImpactVep)[0].toLowerCase() : feat.highestImpactBcsq.toLowerCase();
                 let aaChange = feat.ref + '->' + feat.alt;
                 return type + ' ' + impact + ' ' + aaChange;
             },

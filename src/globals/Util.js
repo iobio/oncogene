@@ -918,7 +918,7 @@ class Util {
         info.dbSnpLink =  '<a href="' + info.dbSnpUrl + '" target="_dbsnp"' + '>' + info.rsId  + '</a>';
       }
     } else {
-      info.bcsqConsequence = variant.bcsq[selectedTranscriptId] ? variant.bcsq[selectedTranscriptId] : '';
+      info.bcsqConsequence = variant.bcsq[selectedTranscriptId] ? variant.bcsq[selectedTranscriptId].csqType : variant.bcsq['non-coding'].csqType;
 
       let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence]
       info.bcsqImpact = translatedImpact ? translatedImpact.impact : '';
@@ -928,9 +928,9 @@ class Util {
 
     info.filtersPassed = variant.filtersPassed ? variant.filtersPassed.join(",") : "";
 
-    if (variant.cosmicId) {
-      info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicId;
-    }
+    // if (variant.cosmicId) {
+    //   info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicId;
+    // }
 
     return info;
   }

@@ -310,6 +310,7 @@
                            :isTumorTrack="sampleModel.isTumor"
                            :isKnownOrCosmicTrack="isKnownOrCosmicTrack"
                            :somaticOnlyMode="somaticOnlyMode"
+                           :selectedTranscriptId="selectedTranscriptId"
                            :d3="d3"
                            @variantClick="onVariantClick"
                            @variantHover="onVariantHover"
@@ -975,6 +976,12 @@ export default {
   },
   filters: {},
   computed: {
+    selectedTranscriptId: function() {
+      if (this.selectedTranscript) {
+        return this.selectedTranscript.transcript_id;
+      }
+      return "";
+    },
     showVariantViz: function () {
       return !((!this.sampleModel.isTumor) && this.somaticOnlyMode);
     },

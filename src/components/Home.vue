@@ -136,6 +136,7 @@
                 :globalAppProp="globalApp"
                 :sampleModel="model"
                 :canonicalSampleIds="canonicalSampleIds"
+                :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
                 :classifyVariantSymbolFunc="model.classifyByImpact"
                 :hoverTooltip="hoverTooltip"
                 :selectedGene="selectedGene"
@@ -713,6 +714,13 @@ export default {
       console.log(xCoord);
 
       if (variant) {
+        self.cohortModel.promiseGetCosmicStatus(variant)
+            .then(inCosmic => {
+              variant.inCosmic = inCosmic;
+            }).catch(err => {
+              console.log("Problem getting cosmic status for variant: " + err);
+        });
+
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();
         self.selectedVariant = variant;
