@@ -68,6 +68,7 @@
                     :selectedGeneName="selectedGeneName"
                     :totalSomaticVarCount="totalSomaticVarCount"
                     :noVarsFound="noVarsFound"
+                    :useVEP="globalApp.useVEP"
                     @variant-hover="onCohortVariantHover"
                     @variant-hover-exit="onCohortVariantHoverEnd"
                     @variant-selected="onCohortVariantClick"
@@ -180,6 +181,7 @@
                 :hasCoverageData="cohortModel.hasCoverageData"
                 :hasRnaSeq="cohortModel.hasRnaSeqData"
                 :hasAtacSeq="cohortModel.hasAtacSeqData"
+                :useVEP="globalApp.useVEP"
                 @fetch-reads="fetchSeqReads"
                 @clear-and-fetch-reads="clearFetchSeqReads"
                 @summary-mounted="onSummaryMounted"
@@ -1109,7 +1111,7 @@ export default {
 
       let theVariant = variant ? variant : this.selectedVariant;
       if (theVariant) {
-        let variantInfo = this.globalApp.utility.formatDisplay(theVariant, this.cohortModel.translator, this.isEduMode);
+        let variantInfo = this.globalApp.utility.formatDisplay(theVariant, this.cohortModel.translator, false, this.selectedTranscript.transcript_id);
         // Format the coordinate for the variant
         const chrom = this.globalApp.utility.stripRefName(theVariant.chrom);
         const start = theVariant.start - this.pileupInfo.SPAN;
@@ -1250,7 +1252,7 @@ export default {
     },
     selectedVariantInfo: function () {
       if (this.selectedVariant) {
-        return this.globalApp.utility.formatDisplay(this.selectedVariant, this.cohortModel.translator)
+        return this.globalApp.utility.formatDisplay(this.selectedVariant, this.cohortModel.translator, false, this.selectedTranscript.transcript_id);
       } else {
         return null;
       }

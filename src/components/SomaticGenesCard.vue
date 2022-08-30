@@ -165,6 +165,10 @@
             noVarsFound: {
                 type: Boolean,
                 default: false
+            },
+            useVEP: {
+                type: Boolean,
+                default: false
             }
         },
         data() {
@@ -181,15 +185,18 @@
                 return geneObj.gene_name;
             },
             getImpactColor: function(feat) {
-                if (feat != null && feat.highestImpactVep != null) {
-                    var impactLevel = Object.keys(feat.highestImpactVep)[0].toUpperCase();
+                if (this.useVEP && feat != null && feat.highestImpactVep != null) {
+                    let impactLevel = feat.highestImpactVep.toUpperCase();
+                    return "impact_" + impactLevel;
+                } else if (!this.useVEP && feat != null && feat.highestImpactBcsq != null) {
+                    let impactLevel = feat.highestImpactBcsq.toUpperCase();
                     return "impact_" + impactLevel;
                 }
                 return "";
             },
             getVarText: function(feat) {
                 let type = this.getReadableType(feat.type);
-                let impact = Object.keys(feat.highestImpactVep)[0].toLowerCase();
+                let impact = this.useVEP ? feat.highestImpactVep.toLowerCase() : feat.highestImpactBcsq.toLowerCase();
                 let aaChange = feat.ref + '->' + feat.alt;
                 return type + ' ' + impact + ' ' + aaChange;
             },

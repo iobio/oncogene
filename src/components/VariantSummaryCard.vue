@@ -478,21 +478,33 @@ export default {
     },
     effect: function () {
       if (this.variantInfo != null)
-        return this.variantInfo.vepConsequence;
+        if (this.useVEP) {
+          return this.variantInfo.vepConsequence;
+        } else {
+          return this.variantInfo.bcsqConsequence;
+        }
       return "-";
     },
     impactText: function () {
       if (this.variant != null) {
         // todo: add global.useVEP check here
-        return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
+        if (this.useVEP) {
+          return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
+        } else {
+          return this.variant.highestImpactBcsq.toLowerCase();
+        }
       }
       return "-";
     },
     impactColor: function () {
       if (this.variant != null) {
-        // todo: add global.useVEP check here
-        var impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
-        return "impact_" + impactLevel;
+        if (this.useVEP) {
+          let impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
+          return "impact_" + impactLevel;
+        } else {
+          let impactLevel = this.variant.highestImpactBcsq.toUpperCase();
+          return "impact_" + impactLevel;
+        }
       }
       return "";
     },

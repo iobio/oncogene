@@ -631,7 +631,7 @@ class Util {
     return coord;
   }
 
-  formatDisplay(variant, translator, isEduMode) {
+  formatDisplay(variant, translator, isEduMode, selectedTranscriptId) {
     var me = this;
     var info = {
       coord: "",
@@ -657,6 +657,7 @@ class Util {
       vepConsequence: "",
       bcsqImpact: "",
       bcsqHighestImpact: "",
+      bcsqConsequence: "",
       HGVSc: "",
       HGVSp: "",
       HGVScAbbrev: "",
@@ -765,158 +766,165 @@ class Util {
       info.afgnomAD =  +variant.afgnomAD >= 0 ? me.globalApp.utility.round(+variant.afgnomAD * 100, 2) + "%" : "";
     }
 
-
-    for (key in variant.vepImpact) {
-      if (info.vepImpact.length > 0) {
-          info.vepImpact += ", ";
-      }
-      if (isEduMode) {
-        info.vepImpact = me.impactEduMode[key];
-      } else {
-        info.vepImpact += key.toLowerCase();
-      }
-    }
-
-
     // If the highest impact occurs in a non-canonical transcript, show the impact followed by
     // the consequence and corresponding transcripts
-    var vepHighestImpacts = me.globalApp.utility.getNonCanonicalHighestImpactsVep(variant, translator.impactMap);
-    info.vepHighestImpactRecs = [];
-    for (var impactKey in vepHighestImpacts) {
+    if (me.globalApp.useVEP) {
+      for (key in variant.vepImpact) {
+        if (info.vepImpact.length > 0) {
+          info.vepImpact += ", ";
+        }
+        if (isEduMode) {
+          info.vepImpact = me.impactEduMode[key];
+        } else {
+          info.vepImpact += key.toLowerCase();
+        }
+      }
 
-      let impactRec = {impact: impactKey, effects: []};
+      var vepHighestImpacts = me.globalApp.utility.getNonCanonicalHighestImpactsVep(variant, translator.impactMap);
+      info.vepHighestImpactRecs = [];
+      for (var impactKey in vepHighestImpacts) {
 
-      var nonCanonicalEffects = vepHighestImpacts[impactKey];
-      if (info.vepHighestImpact.length > 0) {
+        let impactRec = {impact: impactKey, effects: []};
+
+        var nonCanonicalEffects = vepHighestImpacts[impactKey];
+        if (info.vepHighestImpact.length > 0) {
           info.vepHighestImpact += ", ";
           info.vepHighestImpactSimple += ", ";
           info.vepHighestImpactInfo += ", ";
-      }
-
-      info.vepHighestImpact       += impactKey.toLowerCase();
-      info.vepHighestImpactSimple += impactKey.toLowerCase();
-      info.vepHighestImpactInfo   += impactKey.toLowerCase();
-      if (info.vepHighestImpactValue == null || info.vepHighestImpactValue.length == 0) {
-        info.vepHighestImpactValue  = impactKey.toUpperCase();
-      }
-
-      nonCanonicalEffects.forEach(function(nonCanonicalEffect) {
-        info.vepHighestImpact += "<span>  (";
-        let effectRec = {};
-        for (var effectKey in nonCanonicalEffect) {
-          effectRec = {key: effectKey, display: effectKey.split("_").join(" ").split("\&").join(" & ").split(" variant").join(""), transcripts: nonCanonicalEffect[effectKey].transcripts};
-
-          var transcriptString = nonCanonicalEffect[effectKey].url;
-          info.vepHighestImpact     += " " + effectKey.split("\&").join(" & ") + ' in ' + transcriptString;
-          info.vepHighestImpactInfo += " " + effectKey.split("\&").join(" & ") + " in " + nonCanonicalEffect[effectKey].display;
-
-          impactRec.effects.push(effectRec);
         }
-        info.vepHighestImpact += ")</span> ";
-      });
-      info.vepHighestImpactSimple += " in non-canonical transcripts";
 
-      info.vepHighestImpactRecs.push(impactRec);
+        info.vepHighestImpact       += impactKey.toLowerCase();
+        info.vepHighestImpactSimple += impactKey.toLowerCase();
+        info.vepHighestImpactInfo   += impactKey.toLowerCase();
+        if (info.vepHighestImpactValue == null || info.vepHighestImpactValue.length == 0) {
+          info.vepHighestImpactValue  = impactKey.toUpperCase();
+        }
 
-    }
+        nonCanonicalEffects.forEach(function(nonCanonicalEffect) {
+          info.vepHighestImpact += "<span>  (";
+          let effectRec = {};
+          for (var effectKey in nonCanonicalEffect) {
+            effectRec = {key: effectKey, display: effectKey.split("_").join(" ").split("\&").join(" & ").split(" variant").join(""), transcripts: nonCanonicalEffect[effectKey].transcripts};
 
-    for (key in variant.vepConsequence) {
-      if (info.vepConsequence.length > 0) {
+            var transcriptString = nonCanonicalEffect[effectKey].url;
+            info.vepHighestImpact     += " " + effectKey.split("\&").join(" & ") + ' in ' + transcriptString;
+            info.vepHighestImpactInfo += " " + effectKey.split("\&").join(" & ") + " in " + nonCanonicalEffect[effectKey].display;
+
+            impactRec.effects.push(effectRec);
+          }
+          info.vepHighestImpact += ")</span> ";
+        });
+        info.vepHighestImpactSimple += " in non-canonical transcripts";
+
+        info.vepHighestImpactRecs.push(impactRec);
+
+      }
+
+      for (key in variant.vepConsequence) {
+        if (info.vepConsequence.length > 0) {
           info.vepConsequence += ", ";
+        }
+        if (isEduMode) {
+          info.vepConsequence = key.split("_").join(" ").toLowerCase();
+        } else {
+          info.vepConsequence += key.split("_").join(" ").toLowerCase();
+        }
       }
-      if (isEduMode) {
-        info.vepConsequence = key.split("_").join(" ").toLowerCase();
-      } else {
-        info.vepConsequence += key.split("_").join(" ").toLowerCase();
-      }
-    }
-    if (variant.fbCalled == 'Y' || variant.extraAnnot) {
-      for (key in variant.vepHGVSc) {
-        if (key.length > 0) {
-          if (info.HGVSc.length > 0) {
+      if (variant.fbCalled == 'Y' || variant.extraAnnot) {
+        for (key in variant.vepHGVSc) {
+          if (key.length > 0) {
+            if (info.HGVSc.length > 0) {
               info.HGVSc += ", ";
+            }
+            info.HGVSc += key;
           }
-          info.HGVSc += key;
         }
-      }
-      for (key in variant.vepHGVSp) {
-        if (key.length > 0) {
-          if (info.HGVSp.length > 0) {
+        for (key in variant.vepHGVSp) {
+          if (key.length > 0) {
+            if (info.HGVSp.length > 0) {
               info.HGVSp += ", ";
+            }
+            info.HGVSp += key;
           }
-          info.HGVSp += key;
         }
-      }
-      info.HGVSpAbbrev = me.formatHgvsP(variant, variant.vepHGVSp);
-      info.HGVScAbbrev = me.formatHgvsC(variant, variant.vepHGVSc);
-    } else {
-      info.HGVScLoading = true;
-      info.HGVSpLoading = true;
-    }
-
-
-    for (key in variant.vepSIFT) {
-      if (info.sift.length > 0) {
-          info.sift += ", ";
-      }
-      info.sift += key.split("_").join(" ");
-    }
-    for (key in variant.vepPolyPhen) {
-      if (info.polyphen.length > 0) {
-          info.polyphen += ", ";
-      }
-      if (isEduMode) {
-        info.polyphen = key.split("_").join(" ");
+        info.HGVSpAbbrev = me.formatHgvsP(variant, variant.vepHGVSp);
+        info.HGVScAbbrev = me.formatHgvsC(variant, variant.vepHGVSc);
       } else {
-        info.polyphen += key.split("_").join(" ");
+        info.HGVScLoading = true;
+        info.HGVSpLoading = true;
       }
-    }
-    for (key in variant.vepREVEL) {
-      if (info.revel.length > 0) {
-          info.revel += ", ";
+
+
+      for (key in variant.vepSIFT) {
+        if (info.sift.length > 0) {
+          info.sift += ", ";
+        }
+        info.sift += key.split("_").join(" ");
       }
-      info.revel += key;
-    }
-
-    for (key in variant.regulatory) {
-      // Bypass motif-based features
-      if (key.indexOf("mot_") == 0) {
-        continue;
-      }
-      if (info.regulatory.length > 0) {
-          info.regulatory += ", ";
-      }
-      var value = variant.regulatory[key];
-      info.regulatory += value;
-    }
-
-
-    if (variant.vepRegs) {
-      for (i = 0; i < variant.vepRegs.length; i++) {
-        var vr = variant.vepRegs[i];
-        if (vr.motifName != null && vr.motifName != '') {
-
-          if (info.regulatoryMotifLinks.length > 0) {
-              info.regulatoryMotifLinks += ", ";
-          }
-
-          var tokens = vr.motifName.split(":");
-          var baseMotifName;
-          if (tokens.length == 2) {
-            baseMotifName = tokens[1];
-          }
-
-          var regUrl = "http://jaspar.genereg.net/cgi-bin/jaspar_db.pl?ID=" + baseMotifName + "&rm=present&collection=CORE"
-          info.regulatoryMotifLinks += '<a href="' + regUrl + '" target="_motif">' + vr.motifName + '</a>';
+      for (key in variant.vepPolyPhen) {
+        if (info.polyphen.length > 0) {
+          info.polyphen += ", ";
+        }
+        if (isEduMode) {
+          info.polyphen = key.split("_").join(" ");
+        } else {
+          info.polyphen += key.split("_").join(" ");
         }
       }
+      for (key in variant.vepREVEL) {
+        if (info.revel.length > 0) {
+          info.revel += ", ";
+        }
+        info.revel += key;
+      }
+
+      for (key in variant.regulatory) {
+        // Bypass motif-based features
+        if (key.indexOf("mot_") == 0) {
+          continue;
+        }
+        if (info.regulatory.length > 0) {
+          info.regulatory += ", ";
+        }
+        var value = variant.regulatory[key];
+        info.regulatory += value;
+      }
+
+
+      if (variant.vepRegs) {
+        for (i = 0; i < variant.vepRegs.length; i++) {
+          var vr = variant.vepRegs[i];
+          if (vr.motifName != null && vr.motifName != '') {
+
+            if (info.regulatoryMotifLinks.length > 0) {
+              info.regulatoryMotifLinks += ", ";
+            }
+
+            var tokens = vr.motifName.split(":");
+            var baseMotifName;
+            if (tokens.length == 2) {
+              baseMotifName = tokens[1];
+            }
+
+            var regUrl = "http://jaspar.genereg.net/cgi-bin/jaspar_db.pl?ID=" + baseMotifName + "&rm=present&collection=CORE"
+            info.regulatoryMotifLinks += '<a href="' + regUrl + '" target="_motif">' + vr.motifName + '</a>';
+          }
+        }
+      }
+
+      info.rsId = me.globalApp.utility.getRsId(variant);
+      if (info.rsId && info.rsId != '') {
+        info.dbSnpUrl   = "http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=" + info.rsId ;
+        info.dbSnpLink =  '<a href="' + info.dbSnpUrl + '" target="_dbsnp"' + '>' + info.rsId  + '</a>';
+      }
+    } else {
+      info.bcsqConsequence = variant.bcsq[selectedTranscriptId] ? variant.bcsq[selectedTranscriptId] : '';
+
+      let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence]
+      info.bcsqImpact = translatedImpact ? translatedImpact.impact : '';
+      info.bcsqHighestImpact = variant.highestImpactBcsq;
     }
 
-    info.rsId = me.globalApp.utility.getRsId(variant);
-    if (info.rsId && info.rsId != '') {
-      info.dbSnpUrl   = "http://www.ncbi.nlm.nih.gov/projects/SNP/snp_ref.cgi?rs=" + info.rsId ;
-      info.dbSnpLink =  '<a href="' + info.dbSnpUrl + '" target="_dbsnp"' + '>' + info.rsId  + '</a>';
-    }
 
     info.filtersPassed = variant.filtersPassed ? variant.filtersPassed.join(",") : "";
 

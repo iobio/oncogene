@@ -74,7 +74,7 @@ export default class EndpointCmd {
                         somaticFilterPhrase,
                         genomeBuildName
                     });
-            }
+        }
     }
 
     promiseGetCnvData(cnvUrl) {
@@ -102,29 +102,55 @@ export default class EndpointCmd {
         })
     }
 
-    annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
-        const refNames = this.getHumanRefNames(refName).split(" ");
+    annotateVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
+        const selectedSamplesStr = selectedSamples.join();
+        const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        const refFastaFile = this.genomeBuildHelper.getFastaPath(refName);
 
-        return this.api.streamCommand('annotateVariants', {
-            vcfUrl: vcfSource.vcfUrl,
-            tbiUrl: vcfSource.tbiUrl,
-            refNames,
-            regions,
-            vcfSampleNames: vcfSampleNames.split(','),
-            refFastaFile,
-            genomeBuildName,
-            isRefSeq,
-            hgvsNotation,
-            getRsId,
-            vepAF,
-            sfariMode,
-            vepREVELFile: this.globalApp.vepREVELFile,
-            gnomadUrl: gnomadUrl ? gnomadUrl : '',
-            gnomadRegionStr: gnomadRegionStr ? gnomadRegionStr : '',
-        });
+        if (this.globalApp.useVEP) {
+            return this.api.streamCommand('annotateSomaticVariants',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
+                });
+        } else {
+            return this.api.streamCommand('annotateSomaticVariantsV2',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
+                });
+        }
     }
+
+    // annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
+    //     const refNames = this.getHumanRefNames(refName).split(" ");
+    //     const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
+    //     const refFastaFile = this.genomeBuildHelper.getFastaPath(refName);
+    //
+    //     return this.api.streamCommand('annotateVariantsV2', {
+    //         vcfUrl: vcfSource.vcfUrl,
+    //         tbiUrl: vcfSource.tbiUrl,
+    //         refNames,
+    //         regions,
+    //         vcfSampleNames: vcfSampleNames.split(','),
+    //         refFastaFile,
+    //         genomeBuildName,
+    //         isRefSeq,
+    //         hgvsNotation,
+    //         getRsId,
+    //         vepAF,
+    //         sfariMode,
+    //         vepREVELFile: this.globalApp.vepREVELFile,
+    //         gnomadUrl: gnomadUrl ? gnomadUrl : '',
+    //         gnomadRegionStr: gnomadRegionStr ? gnomadRegionStr : '',
+    //     });
+    // }
 
     normalizeVariants(vcfUrl, tbiUrl, refName, regions) {
         let refFastaFile = this.genomeBuildHelper.getFastaPath(refName);

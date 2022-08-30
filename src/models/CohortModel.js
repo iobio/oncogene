@@ -914,7 +914,7 @@ class CohortModel {
 
     /* Returns a hash of samples: parsed vcf results. Iterates through list of features per sample,
      * and appends each unique feature to a hash of varId : varObj. Updates feature objects (varObj)
-     * added to has to reflect which samples in cohort contains the variant.
+     * added to hash to reflect which samples in cohort contains the variant.
     */
     populateSomaticVarMap(somaticVarMap) {
         const self = this;
@@ -1449,7 +1449,7 @@ class CohortModel {
         let self = this;
 
         return new Promise(function (resolve, reject) {
-            const isMultiSample = true;
+            const isMultiSample = true; // We require a multi-sample vcf for now
             self.promiseAnnotateVariants(theGene, theTranscript, isMultiSample, false, options)
                 .then(function (resultMap) {
                     resolve(resultMap);
@@ -1647,6 +1647,7 @@ class CohortModel {
                 sampleModel.loadedVariants = null;
                 sampleModel.inProgress.loadingVariants = true;
 
+                // todo: left off here - why is vcfData empty?
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
@@ -1821,21 +1822,25 @@ class CohortModel {
 
     promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
         const self = this;
-        const keepHomRefs = !!options.keepHomRefs;
 
         return new Promise(function (resolve, reject) {
             let annotatePromises = [];
             let theResultMap = {};
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, keepHomRefs)
+            // todo: if we're in somatic only mode, we can skip this call
+            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
                 .then((resultMap) => {
-                    resultMap.forEach(resultObj => {
-                        let sampleModel = self.getModelBySelectedSample(resultObj.name);
-                        sampleModel.processVariants([resultObj]);
-                        theResultMap[sampleModel.id] = resultObj;
-                    });
-                    self.annotationComplete = false;
+                    if (resultMap && resultMap.sampleMap) {
+                        resultMap.sampleMap.forEach(resultObj => {
+                            let sampleModel = self.getModelBySelectedSample(resultObj.name);
+                            sampleModel.processVariants([resultObj]);
+                            theResultMap[sampleModel.id] = resultObj;
+                        });
+                        self.annotationComplete = false;
+                    } else {
+                        reject('No sampleMap returned when getting all variants');
+                    }
                 }).catch((error) => {
                     reject('Problem annotating variants: ' + error);
                 });
