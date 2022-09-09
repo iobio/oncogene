@@ -526,21 +526,21 @@ export function getGeneListById(project_id, gene_set_id, api, $) {
     });
 }
 
-export function sortAlphaNum(list, _) {
-    //return list.sort(new Intl.Collator('en',{numeric:true, sensitivity:'accent'}).compare)
-    const reA = /[^a-zA-Z]/g;
-    const reN = /[^0-9]/g;
+export function sortAlphaNum(list) {
+    // const reA = /[^a-zA-Z]/g;
+    // const reN = /[^0-9]/g;
 
     let sortFxn = function (a, b) {
-        let aA = _.replace(a.selectedSample, reA, "");
-        let bA = _.replace(b.selectedSample, reA, "");
-        if (aA === bA) {
-            let aN = parseInt(_.replace(a.selectedSample, reN, ""), 10);
-            let bN = parseInt(_.replace(b.selectedSample, reN, ""), 10);
-            return aN === bN ? 0 : aN > bN ? 1 : -1;
-        } else {
-            return aA > bA ? 1 : -1;
+        let aSS = a.selectedSample ? a.selectedSample : a.selectedSamples[0];
+        let bSS = b.selectedSample ? b.selectedSample : b.selectedSamples[0];
+        if (aSS.toString().startsWith('year_')) {
+            aSS = aSS.toString().substring(5);
         }
+        if (bSS.toString().startsWith('year_')) {
+            bSS = bSS.toString().substring(5);
+        }
+
+        return aSS.localeCompare(bSS, undefined, {numeric: true});
     }
     return list.sort(sortFxn);
 }
