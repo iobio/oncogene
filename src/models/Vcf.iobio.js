@@ -2316,19 +2316,24 @@ export default function vcfiobio(theGlobalApp) {
     BCSQ=missense|CLASP1|ENST00000545861|-|1174P>1174L|122106101G>A+122106102G>A
     BCSQ=@122106101
 
-    NOTE: docs are missing a field after Ensembl transcript ID
+    NOTE: docs are missing a field after Ensembl transcript ID for GRCh37 version
 
-    Actual return val examples for non-intronic variation:
+    Actual return val examples for non-intronic variation for GRCh37:
     synonymous|CDCA7L|ENST00000435717|protein_coding|-|61A|21942699T>G
     missense|CDCA7L|ENST00000356195|protein_coding|-|377N>377H|21942699T>G
 
-    Actual return val example for intronic variation:
+    Actual return val example for intronic variation for GRCh37:
     intron|FAR2C|''|protein_coding
     unprocessed_pseudogene
 
-    posit that fields are:
+    posit that fields for GRCh37 are:
     consequenceType|geneName|ensemblTranscriptId|transcriptType|strand|aaPos|correspondingVars
     (note: curious that transcriptType seems to be fixed for protein_coding for intronic variants though, without reporting a transcript)
+
+    Actual return val examples for non-intronic variation for GRCh38:
+    5_prime_utr|NBL1|ENST00000451758|protein_coding
+    G|structural_interaction_variant|HIGH|BTK|ENSG00000010671|interaction|4YHF:B_481-B_527:ENST00000308731|protein_coding|15/19|c.1442G>C||||||
+    synonymous|C1orf216|ENST00000270815|protein_coding|-|197R|35715733G>T
 
 
     What this function does:

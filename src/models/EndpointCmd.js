@@ -1,13 +1,14 @@
 import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
-    constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
+    constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl, chromNameMap) {
         this.DEV_MODE = true;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
         this.genomeBuildHelper = genomeBuildHelper;
         this.getHumanRefNames = getHumanRefNamesFunc;
+        this.chromNameMap = chromNameMap;
 
         // talk to correct version of gru per integration
         if (backendUrl == null || globalApp.GALAXY_TEST_MODE) {
@@ -52,12 +53,21 @@ export default class EndpointCmd {
      * The somaticCriteria object contains filters for defining 'somaticness'/
      */
     annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
+        let transformForBcftools = function (nameObj) {
+            let transformedString = "";
+            Object.keys(nameObj).forEach(key => {
+                transformedString += (key + ' ' + nameObj[key] + '\n');
+            })
+            return transformedString;
+        };
+
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
+        const chromNameMap = transformForBcftools(this.chromNameMap);
 
         if (this.globalApp.useVEP) {
-            return this.api.streamCommand('annotateSomaticVariants',
+            return this.api.streamCommand('annotateSomaticVariantsVep',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr,
@@ -66,14 +76,15 @@ export default class EndpointCmd {
                     genomeBuildName
                 });
         } else {
-            return this.api.streamCommand('annotateSomaticVariantsV2',
-                    {
-                        vcfUrl: vcfSource.vcfUrl,
-                        selectedSamplesStr,
-                        geneRegionsStr,
-                        somaticFilterPhrase,
-                        genomeBuildName
-                    });
+            return this.api.streamCommand('annotateSomaticVariantsBcsq',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName,
+                    chromNameMap
+                });
         }
     }
 

@@ -61,7 +61,7 @@ class CohortModel {
         this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
         this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
         this.hasSubcloneAnno = false;
-        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from VEP annotations b/c somaticOnlyMode does not take in gene list
+        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from predictor engine annotations b/c somaticOnlyMode does not take in gene list
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -294,6 +294,30 @@ class CohortModel {
                 ]
             };
         }
+    }
+    createModelInfo(selectedSample, isTumor, modelInfoIdx) {
+        let modelInfo = {};
+
+        modelInfo.id = 's' + modelInfoIdx;
+        modelInfo.order = modelInfoIdx;
+        modelInfo.selectedSample = selectedSample;
+        modelInfo.selectedSampleIdx = -1;
+        modelInfo.isTumor = isTumor;
+        modelInfo.vcfUrl = this.url;
+        modelInfo.tbiUrl = this.indexUrl;
+        modelInfo.coverageBamUrl = null;
+        modelInfo.coverageBaiUrl = null;
+        modelInfo.coverageVerified = false;
+        modelInfo.rnaSeqBamUrl = null;
+        modelInfo.rnaSeqBaiUrl = null;
+        modelInfo.rnaSeqVerified = false;
+        modelInfo.atacSeqBamUrl = null;
+        modelInfo.atacSeqBaiUrl = null;
+        modelInfo.atacSeqVefified = false;
+        modelInfo.cnvUrl = null;
+        modelInfo.cnvVerified = false;
+
+        return modelInfo;
     }
 
     // Returns list of variant objects corresponding to the provided variant ID

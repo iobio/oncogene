@@ -9,6 +9,7 @@
              :firstLoadComplete="firstLoadComplete"
              :launchSource="launchSource"
              :launchParams="launchParams"
+             :demoParams="demoParams"
              @toggle-carousel="toggleCarousel"
              @display-about="openAbout"
              @hide-welcome="demoHide"
@@ -438,6 +439,10 @@ export default {
     },
     launchSource: {
       type: String,
+      default: null
+    },
+    demoParams: {
+      type: Object,
       default: null
     }
   },

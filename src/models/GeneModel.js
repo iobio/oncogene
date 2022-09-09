@@ -219,7 +219,7 @@ class GeneModel {
         var message = "";
         if (Object.keys(unknownGeneNames).length > 0) {
             message = "Bypassing unknown genes: " + Object.keys(unknownGeneNames).join(", ") + ".";
-            alert('Warning: ' + message);
+            //alert('Warning: ' + message);
         }
         if (Object.keys(duplicateGeneNames).length > 0 && options.warnOnDup) {
             message = '';
@@ -227,7 +227,7 @@ class GeneModel {
                 message += "   ";
             }
             message += "Bypassing duplicate gene name(s): " + Object.keys(duplicateGeneNames).join(", ") + ".";
-            alert('Warning: ' + message);
+            //alert('Warning: ' + message);
         }
         if (me.limitGenes) {
             if (me.globalApp.maxGeneCount && me.geneNames.length > me.globalApp.maxGeneCount) {
