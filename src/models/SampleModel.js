@@ -3023,23 +3023,19 @@ class SampleModel {
         var colorimpacts = "";
         var effects = "";
         var filterStatus = "";
-        // var sift = "";
-        // var polyphen = "";
-        // var regulatory = "";
-        // TODO: cleanup unused
 
         var transVarBcsq = '';
         if (annotationScheme === 'bcsq') {
-            // todo: canonical transcript is coming in wrong
             let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
-            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : d.bcsq['non-coding'];
+            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : d.bcsq[d.bcsq.highestImpactTranscriptId];
         }
 
         let effectList = {};
         if (annotationScheme === 'vep') {
             effectList = d.vepConsequence;
         } else {
-            let type = transVarBcsq ? transVarBcsq['csqType'] : 'N/A for Transcript';
+            // If we can't get the current transcript info (because it doesn't exist) color by highest impact from other transcript
+            let type = transVarBcsq ? transVarBcsq['csqType'] : d.highestImpactBcsq;
             effectList[type] = type;
         }
         for (var key in effectList) {
@@ -3065,7 +3061,6 @@ class SampleModel {
             impacts += " " + key;
         }
 
-
         if (d.isInherited != null && d.isInherited === false && inTumorTrack && !inKnownTrack && !somaticOnlyMode) {
             colorimpacts += " " + "impact_SOMATIC";
         } else {
@@ -3073,7 +3068,7 @@ class SampleModel {
             if (annotationScheme === 'vep') {
                 colorImpactList = d[self.globalApp.impactFieldToColor];
             } else {
-                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact.impact : "N/A for Transcript";
+                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact.impact : d.highestImpactBcsq;
                 colorImpactList[impact] = impact;
             }
             for (key in colorImpactList) {
@@ -3088,17 +3083,6 @@ class SampleModel {
         if (d.passesFilters) {
             filterStatus = "filtered";
         }
-
-        // Taking out as of 08/19
-        // for (var key in d.sift) {
-        //     sift += " " + key;
-        // }
-        // for (var key in d.polyphen) {
-        //     polyphen += " " + key;
-        // }
-        // for (var key in d.regulatory) {
-        //     regulatory += " " + key;
-        // }
 
         return 'variant ' + d.type.toLowerCase() + ' ' + d.zygosity.toLowerCase() + ' ' + (d.inheritance ? d.inheritance.toLowerCase() : "") + ' ' + d.clinvar + ' ' + impacts + ' ' + effects + ' ' + d.consensus + ' ' + colorimpacts + ' ' + filterStatus;
     }

@@ -1496,7 +1496,6 @@ export default {
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
           if (success) {
             self.selectedBuild = hdrBuild;
-            // todo: test
             for (let i = 0; i < sampleNames.length; i++) {
               let sampleName = sampleNames[i];
               let matchingModelInfo = self.modelInfoList.filter(function(modelInfo) {

@@ -356,6 +356,8 @@ export default {
                   self.filteredVcfSampleNames.push(sampleNames[i]);
                 } else {
                   let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+                  modelInfo.vcfUrl = vcfUrl;
+                  modelInfo.tbiUrl = tbiUrl;
                   infoList.push(modelInfo);
                   self.modelInfoIdx++;
                   self.filteredVcfSampleNames.push(sampleNames[i]);

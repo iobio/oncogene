@@ -250,6 +250,7 @@
                     <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
                     <v-col md=9 xl="4" class="summary-field-value">
                 <span v-if="variantSelected">
+<!--                  todo: left off here - this needs to be transcript_id for selected variant, not selected transcript + put in warning and hover over to change view-->
                     {{ selectedTranscript.transcript_id }}
                 </span>
                     </v-col>

@@ -17,7 +17,7 @@ export default class EndpointCmd {
         if (this.MOSAIC_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
         } else if (this.DEV_MODE) {
-            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9003';
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9002';
         }
         this.api = new Client(backendUrl);
     }
@@ -53,18 +53,9 @@ export default class EndpointCmd {
      * The somaticCriteria object contains filters for defining 'somaticness'/
      */
     annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
-        let transformForBcftools = function (nameObj) {
-            let transformedString = "";
-            Object.keys(nameObj).forEach(key => {
-                transformedString += (key + ' ' + nameObj[key] + '\n');
-            })
-            return transformedString;
-        };
-
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        const chromNameMap = transformForBcftools(this.chromNameMap);
 
         if (this.globalApp.useVEP) {
             return this.api.streamCommand('annotateSomaticVariantsVep',
@@ -82,8 +73,7 @@ export default class EndpointCmd {
                     selectedSamplesStr,
                     geneRegionsStr,
                     somaticFilterPhrase,
-                    genomeBuildName,
-                    chromNameMap
+                    genomeBuildName
                 });
         }
     }

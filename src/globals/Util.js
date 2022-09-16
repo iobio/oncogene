@@ -919,9 +919,11 @@ class Util {
       }
     } else {
       let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
-      info.bcsqConsequence = variant.bcsq[trimmedTranscript] ? variant.bcsq[trimmedTranscript].csqType : variant.bcsq['non-coding'].csqType;
+      info.bcsqConsequence = variant.bcsq[trimmedTranscript] ? variant.bcsq[trimmedTranscript].csqType : variant.bcsq[variant.bcsq.highestImpactTranscriptId].csqType;
 
-      let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence]
+      // todo: need to check here if the consequence has an & in it, and get highest impact (like in vcf.iobio)
+      // two more other refs need to deal with (maybe can roll this into a fxn instead of just looking at map
+      let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence];
       info.bcsqImpact = translatedImpact ? translatedImpact.impact : '';
       info.bcsqHighestImpact = variant.highestImpactBcsq;
     }
