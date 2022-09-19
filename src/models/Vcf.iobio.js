@@ -1690,7 +1690,7 @@ export default function vcfiobio(theGlobalApp) {
                             highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
                             highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
                         } else {
-                            highestImpactBcsq = annot.bcsq.impact;
+                            highestImpactBcsq = annot.bcsq.highestImpactString;
                         }
 
                         for (var i = 0; i < allVariants.length; i++) {
@@ -1956,7 +1956,8 @@ export default function vcfiobio(theGlobalApp) {
                             highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
                             highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
                         } else {
-                            highestImpactBcsq = me._getHighestImpact(annot.bcsq.types, me._cullTranscripts, selectedTranscriptID);
+                            //highestImpactBcsq = me._getHighestImpact(annot.bcsq.types, me._cullTranscripts, selectedTranscriptID);
+                            highestImpactBcsq = annot.bcsq.highestImpactString;
                         }
 
                         for (var i = 0; i < allVariants.length; i++) {
@@ -2256,12 +2257,6 @@ export default function vcfiobio(theGlobalApp) {
         will return { csq: transcription_ablation, impact: HIGH }.
      */
     exports._getMajorityCsqTypeImpact = function(annot, bcsqImpactMap) {
-        let scoreMap = {
-            HIGH: 4,
-            MODERATE: 3,
-            LOW: 2,
-            MODIFIER: 1
-        };
         let maxCount = 0;
         let maxType = "";
         let highestImpact = "";
@@ -2273,8 +2268,10 @@ export default function vcfiobio(theGlobalApp) {
                 if (currCount > maxCount) {
                     maxCount = annot.bcsq.types[symbol];
                     maxType = symbol;
-                    // todo: maxType may have & in it - get highest impact corresponding type
-                    highestImpact = bcsqImpactMap[maxType] ? bcsqImpactMap[maxType].impact : "";
+                    highestImpact = this._getHighestImpactSeries(maxType, bcsqImpactMap);
+                    if (!highestImpact) {
+                        console.log("Warning: could not find impact corresponding to given type for BCSQ");
+                    }
                     tieExists = false;
                 } else if (currCount === maxCount) {
                     tieExists = true;
@@ -2295,12 +2292,14 @@ export default function vcfiobio(theGlobalApp) {
             highestImpact = '';
             for (let i = 0; i < types.length; i++) {
                 let currType = types[i];
-                // todo: have to check for & in currType and get highestImpact correpsonding type
-                let impact = bcsqImpactMap[currType] ? bcsqImpactMap[currType].impact : "";
-                let score = scoreMap[impact];
+                let currImpact = this._getHighestImpactSeries(currType, bcsqImpactMap);
+                if (!currImpact) {
+                    console.log("Warning: could not find impact corresponding to given type " + currType + " for BCSQ");
+                }
+                let score = this._getImpactScore[currImpact];
                 if (score > highestScore) {
                     highestImpactIdx = i;
-                    highestImpact = impact;
+                    highestImpact = currImpact;
                 }
             }
             maxType = types[highestImpactIdx];
@@ -2387,22 +2386,8 @@ export default function vcfiobio(theGlobalApp) {
         let transcriptTokens = trimmedToken.split(',');
         let hasRef = false;
         let highestImpactScore = 0;
+        let highestImpactString = '';
         let highestImpactTranscriptId = 'non-coding';
-
-        // Returns index of higher impact
-        let getImpactScore = function(impact) {
-            if (impact === HIGH) {
-                return 4;
-            } else if (impact === MODERATE) {
-                return 3;
-            } else if (impact === LOW) {
-                return 2;
-            } else if (impact === MODIFIER) {
-                return 1;
-            } else {
-                return 0;
-            }
-        };
 
         transcriptTokens.forEach(token => {
             // Check to see if we have a pointer & reroute if necessary
@@ -2423,34 +2408,20 @@ export default function vcfiobio(theGlobalApp) {
                         } else {
                             annot.bcsq.types[theType] = 1;
                         }
-                        tokenObj.impact = bcsqImpactMap[theType];
 
-                        // Special case sometimes with two types
+                        tokenObj.impact = bcsqImpactMap[theType] ? bcsqImpactMap[theType].impact : '';
                         if (!tokenObj.impact && theType.includes('&')) {
-                            let types = theType.split('&');
-                            let highestImpact = {};
-                            let highestImpactScore = 0;
-                            for (let i = 0; i < types.length; i++) {
-                                let type = types[i];
-                                let impact = bcsqImpactMap[type];
-                                let currScore = getImpactScore(impact);
-                                if (currScore > highestImpactScore) {
-                                    highestImpactScore = currScore;
-                                    highestImpact = {};
-                                    highestImpact[type] = type;
-                                }
-                            }
-                            tokenObj.impact = highestImpact;
+                            tokenObj.impact = this._getHighestImpactSeries(theType, bcsqImpactMap);
                         }
-
                         if (!tokenObj.impact) {
                             console.log("Could not obtain impact from provided bcsq type: " + theType);
                         }
 
-                        let currImpactScore = getImpactScore(tokenObj.impact.impact);
+                        let currImpactScore = this._getImpactScore(tokenObj.impact);
                         if (currImpactScore > highestImpactScore) {
                             highestImpactTranscriptId = fields[ENSEMBL_ID_IDX];
                             highestImpactScore = currImpactScore;
+                            highestImpactString = tokenObj.impact;
                         }
                     } else if (fieldName === GENE_SYMBOL) {
                         let theSymbol = fields[i];
@@ -2466,11 +2437,45 @@ export default function vcfiobio(theGlobalApp) {
                 let transcriptId = tokenObj[TRANSCRIPT_ID] === "" ? "non-coding" : tokenObj[TRANSCRIPT_ID];
                 annot.bcsq[transcriptId] = tokenObj;
                 annot.bcsq.highestImpactTranscriptId = highestImpactTranscriptId;
+                annot.bcsq.highestImpactString = highestImpactString;
                 // Add to lookup for updating @ references
                 bcsqVarMap[start] = annot.bcsq;
             }
         });
         return hasRef;
+    }
+
+    // Returns index of higher impact
+    exports._getImpactScore = function(impact) {
+        if (impact === HIGH) {
+            return 4;
+        } else if (impact === MODERATE) {
+            return 3;
+        } else if (impact === LOW) {
+            return 2;
+        } else if (impact === MODIFIER) {
+            return 1;
+        } else {
+            return 0;
+        }
+    };
+
+    // Returns highest impact string from a type that has multiple entries delineated by ampersands
+    // If highest impact cannot be found, returns empty string
+    exports._getHighestImpactSeries = function(theType, bcsqImpactMap) {
+        let types = theType.split('&');
+        let highestImpact = '';
+        let highestImpactScore = 0;
+        for (let i = 0; i < types.length; i++) {
+            let type = types[i];
+            let impact = bcsqImpactMap[type] ? bcsqImpactMap[type].impact : '';
+            let currScore = this._getImpactScore(impact);
+            if (currScore > highestImpactScore) {
+                highestImpactScore = currScore;
+                highestImpact = impact;
+            }
+        }
+        return highestImpact;
     }
 
     // Iterates through variant list and updates any bcsq fields that have @ references

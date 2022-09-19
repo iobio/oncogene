@@ -1713,10 +1713,11 @@ class GeneModel {
                             impact = impact[0];
                         }
                     } else {
+                        // Note: this pulls the highest impact from all transcripts
                         impact = feat.highestImpactBcsq;
                     }
 
-                    // Note: variants cannot be annotated w/ COSMIC - todo: why?
+                    // Note: variants cannot be annotated w/ COSMIC
                     // for entire list, so don't need to add that into equation for now
                     if (impact === HIGH) {
                         score += 4;

@@ -17,7 +17,7 @@ export default class EndpointCmd {
         if (this.MOSAIC_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
         } else if (this.DEV_MODE) {
-            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9002';
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9003';
         }
         this.api = new Client(backendUrl);
     }
@@ -128,30 +128,6 @@ export default class EndpointCmd {
                 });
         }
     }
-
-    // annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
-    //     const refNames = this.getHumanRefNames(refName).split(" ");
-    //     const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-    //     const refFastaFile = this.genomeBuildHelper.getFastaPath(refName);
-    //
-    //     return this.api.streamCommand('annotateVariantsV2', {
-    //         vcfUrl: vcfSource.vcfUrl,
-    //         tbiUrl: vcfSource.tbiUrl,
-    //         refNames,
-    //         regions,
-    //         vcfSampleNames: vcfSampleNames.split(','),
-    //         refFastaFile,
-    //         genomeBuildName,
-    //         isRefSeq,
-    //         hgvsNotation,
-    //         getRsId,
-    //         vepAF,
-    //         sfariMode,
-    //         vepREVELFile: this.globalApp.vepREVELFile,
-    //         gnomadUrl: gnomadUrl ? gnomadUrl : '',
-    //         gnomadRegionStr: gnomadRegionStr ? gnomadRegionStr : '',
-    //     });
-    // }
 
     normalizeVariants(vcfUrl, tbiUrl, refName, regions) {
         let refFastaFile = this.genomeBuildHelper.getFastaPath(refName);

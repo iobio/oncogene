@@ -631,6 +631,20 @@ class Util {
     return coord;
   }
 
+  getImpactScore(impact) {
+    if (impact === 'HIGH') {
+      return 4;
+    } else if (impact === 'MODERATE') {
+      return 3;
+    } else if (impact === 'LOW') {
+      return 2;
+    } else if (impact === 'MODIFIER') {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
   formatDisplay(variant, translator, isEduMode, selectedTranscriptId) {
     var me = this;
     var info = {
@@ -919,16 +933,13 @@ class Util {
       }
     } else {
       let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
-      info.bcsqConsequence = variant.bcsq[trimmedTranscript] ? variant.bcsq[trimmedTranscript].csqType : variant.bcsq[variant.bcsq.highestImpactTranscriptId].csqType;
-
-      // todo: need to check here if the consequence has an & in it, and get highest impact (like in vcf.iobio)
-      // two more other refs need to deal with (maybe can roll this into a fxn instead of just looking at map
-      let translatedImpact = translator.bcsqImpactMap[info.bcsqConsequence];
-      info.bcsqImpact = translatedImpact ? translatedImpact.impact : '';
+      let transcriptAnno = variant.bcsq[trimmedTranscript];
+      if (transcriptAnno) {
+        info.bcsqConsequence = transcriptAnno.csqType;
+        info.bcsqImpact = transcriptAnno.impact;
+      }
       info.bcsqHighestImpact = variant.highestImpactBcsq;
     }
-
-
     info.filtersPassed = variant.filtersPassed ? variant.filtersPassed.join(",") : "";
 
     // if (variant.cosmicId) {

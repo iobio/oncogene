@@ -3027,7 +3027,7 @@ class SampleModel {
         var transVarBcsq = '';
         if (annotationScheme === 'bcsq') {
             let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
-            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : d.bcsq[d.bcsq.highestImpactTranscriptId];
+            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : {};
         }
 
         let effectList = {};
@@ -3035,7 +3035,7 @@ class SampleModel {
             effectList = d.vepConsequence;
         } else {
             // If we can't get the current transcript info (because it doesn't exist) color by highest impact from other transcript
-            let type = transVarBcsq ? transVarBcsq['csqType'] : d.highestImpactBcsq;
+            let type = transVarBcsq ? transVarBcsq['csqType'] : '';
             effectList[type] = type;
         }
         for (var key in effectList) {
@@ -3054,8 +3054,10 @@ class SampleModel {
         if (annotationScheme === 'vep') {
             impactList = d[self.globalApp.impactFieldToFilter];
         } else {
-            let impact = d.highestImpactBcsq;
-            impactList[impact] = impact;
+            let impact = transVarBcsq.impact;
+            if (impact) {
+                impactList[impact] = impact;
+            }
         }
         for (key in impactList) {
             impacts += " " + key;
@@ -3068,7 +3070,7 @@ class SampleModel {
             if (annotationScheme === 'vep') {
                 colorImpactList = d[self.globalApp.impactFieldToColor];
             } else {
-                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact.impact : d.highestImpactBcsq;
+                let impact = transVarBcsq ? transVarBcsq.impact : '';
                 colorImpactList[impact] = impact;
             }
             for (key in colorImpactList) {

@@ -250,7 +250,6 @@
                     <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
                     <v-col md=9 xl="4" class="summary-field-value">
                 <span v-if="variantSelected">
-<!--                  todo: left off here - this needs to be transcript_id for selected variant, not selected transcript + put in warning and hover over to change view-->
                     {{ selectedTranscript.transcript_id }}
                 </span>
                     </v-col>
@@ -486,16 +485,16 @@ export default {
         if (this.useVEP) {
           return this.variantInfo.vepConsequence;
         } else {
-          return this.variantInfo.bcsqConsequence;
+          return this.variantInfo.bcsqConsequence ? this.variantInfo.bcsqConsequence : 'none for transcript';
         }
       return "-";
     },
     impactText: function () {
-      if (this.variant != null) {
+      if (this.variant != null && this.variantInfo != null) {
         if (this.useVEP) {
           return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
         } else {
-          return this.variant.highestImpactBcsq.toLowerCase();
+          return this.variantInfo.bcsqImpact? this.variantInfo.bcsqImpact : 'none for transcript';
         }
       }
       return "-";
@@ -506,7 +505,7 @@ export default {
           let impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
           return "impact_" + impactLevel;
         } else {
-          let impactLevel = this.variant.highestImpactBcsq.toUpperCase();
+          let impactLevel = this.variantInfo.bcsqImpact ? this.variantInfo.bcsqImpact.toUpperCase() : '';
           return "impact_" + impactLevel;
         }
       }
@@ -549,7 +548,7 @@ export default {
     clinVarText: function () {
       if (this.variantInfo != null) {
         if (this.variantInfo.clinvarSig === '' || this.variantInfo.clinvarSig === 'not provided') {
-          return 'Not present';
+          return 'not present';
         } else {
           return this.variantInfo.clinvarSig;
         }
@@ -566,7 +565,7 @@ export default {
     },
     cosmicText: function () {
       if (this.variantInfo != null) {
-        return this.variantInfo.inCosmic ? 'Present' : 'Not present';
+        return this.variantInfo.inCosmic ? 'present' : 'not present';
       }
       return "";
     },
@@ -585,7 +584,7 @@ export default {
     },
     somaticText: function () {
       if (this.variantInfo != null) {
-        return this.variantInfo.isInherited === true ? 'Inherited' : (this.variantInfo.isInherited === false ? 'Somatic' : 'Undet.');
+        return this.variantInfo.isInherited === true ? 'Inherited' : (this.variantInfo.isInherited === false ? 'somatic' : 'undet.');
       }
       return "";
     },
