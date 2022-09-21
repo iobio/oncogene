@@ -494,7 +494,7 @@ export default {
         if (this.useVEP) {
           return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
         } else {
-          return this.variantInfo.bcsqImpact? this.variantInfo.bcsqImpact : 'none for transcript';
+          return this.variantInfo.bcsqImpact? this.variantInfo.bcsqImpact.toLowerCase() : 'none for transcript';
         }
       }
       return "-";

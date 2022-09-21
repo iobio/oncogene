@@ -214,6 +214,10 @@ export default {
         return d.feature_type.toLowerCase();
       }
     },
+    divId: {
+      type: String,
+      default: null
+    },
     showLabel: {
       type: Boolean,
       default: false
@@ -276,7 +280,7 @@ export default {
         transcriptClass: self.transcriptClass,
         color: '#194d81',
         displayOnly: self.displayOnly,
-        divId: "gene-viz"
+        divId: self.divId
       };
       self.geneChart = geneD3(self.d3, options);
 
@@ -290,8 +294,7 @@ export default {
           // Only being hit once
           self.$emit('region-zoom-reset');
         }
-      })
-          .on("d3selected", function (d) {
+      }).on("d3selected", function (d) {
             self.$emit('transcript-selected', d);
           })
           .on("d3featuretooltip", function (featureObject, feature, lock) {
@@ -304,7 +307,8 @@ export default {
         let options = {
           regionStart: self.regionStart,
           regionEnd: self.regionEnd,
-          width: self.fixedWidth > 0 ? self.fixedWidth : self.$el.clientWidth
+          width: self.fixedWidth > 0 ? self.fixedWidth : self.$el.clientWidth,
+          divId: self.divId
         };
         this.geneChart.updateSize(options);
 

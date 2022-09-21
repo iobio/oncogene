@@ -1270,17 +1270,19 @@ class GeneModel {
     // *if* there are fewer than CAP variants total for all samples
     // AND there is only one transcript for those variants
     // Otherwise returns canonical transcript
-    getTopTranscript(geneName) {
-
-        // todo: left off here - do we have a master list of variants in cohort model for all samples to iterate through?
-
-        // todo: check to see how many transcripts we have annotations for
-        // if we have only one, select it and return
-
-
-        // if we have >1 pull canonical transcript just use canonical
-
-    }
+    // getTopTranscript(geneName, tumorModels, normalModel) {
+    //
+    //     // suffice linter
+    //     console.log(geneName + tumorModels + normalModel);
+    //     // todo: left off here - do we have a master list of variants in cohort model for all samples to iterate through?
+    //
+    //     // todo: check to see how many transcripts we have annotations for
+    //     // if we have only one, select it and return
+    //
+    //
+    //     // if we have >1 pull canonical transcript just use canonical
+    //
+    // }
 
     getLatestGeneTranscript(geneName) {
         return this.geneToLatestTranscript[geneName];

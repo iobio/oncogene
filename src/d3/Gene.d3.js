@@ -260,6 +260,8 @@ export default function geneD3(d3, options) {
                 }
             };
 
+            // todo: if gene model, keep on click as is
+            // todo: if transcriptmodel (check divId, then make entire thing clickable)
             transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
                 return d['features'].filter(function (d) {
                     return filterFeature(d);
