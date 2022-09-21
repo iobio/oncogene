@@ -33,7 +33,7 @@
     "vue-material": "^1.0.0-beta-14",
     "vue-router": "^3.5.1",
     "vuedraggable": "^2.24.0",
-    "vuetify": "^2.3.14"
+    "vuetify": "^2.6.10"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.4.6",
