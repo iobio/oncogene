@@ -925,8 +925,6 @@ export default {
                   // set it to the canonical transcript
                   let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
                   if (latestTranscript == null) {
-                    //self.selectedTranscript = geneModel.getTopTranscript(self.selectedGene, self.cohortModel.getOrderedTumorModels(), self.cohortModel.getOrderedNormalModel());
-                    // todo: comment back in after testing
                     self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
                     self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
                     geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);

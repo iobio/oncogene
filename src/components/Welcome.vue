@@ -1495,6 +1495,7 @@ export default {
         // read vcf and update vcfSampleNames prop to coordinate order
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
           if (success) {
+            console.log("Debugging demo loading: made it past onVcfUrlEntered");
             self.selectedBuild = hdrBuild;
             for (let i = 0; i < sampleNames.length; i++) {
               let sampleName = sampleNames[i];

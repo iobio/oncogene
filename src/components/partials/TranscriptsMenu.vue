@@ -1,6 +1,10 @@
 <style lang="sass">
 @import "../../assets/sass/_variables.sass"
 
+#transcriptMenuId
+  font-family: Raleway
+  font-size: 12px
+
 #edit-transcript-button
   color: $app-color
   margin: 0px 8px 0px 0px
@@ -44,7 +48,7 @@
     .input-group
       label
         font-size: 14px
-        line-height: 25px
+        //line-height: 25px
 
     .input-group__input
       min-height: 0px
@@ -66,13 +70,14 @@
 <template>
   <div class="d-inline-flex" id="transcript-menu">
     <v-menu offset-y
-            :close-on-content-click="false"
-            nudge-width="500"
-            bottom
             left
+            bottom
+            nudge-width="500"
+            max-height="700"
             v-model="showTranscriptsMenu"
             origin="center center"
             transition="scale-transition"
+            :close-on-content-click="false"
     >
       <template v-slot:activator="{ on, attrs }">
         <v-btn id="edit-transcript-button"
@@ -101,7 +106,7 @@
             </v-select>
           </v-col>
         </v-row>
-        <div :id="transcriptMenuId" class="gene-viz-wrapper px-2">
+        <div :id="transcriptMenuId" class="px-2">
           <gene-viz id="select-transcript-viz"
                     :data="selectedGene.transcripts"
                     :margin=margin
@@ -114,6 +119,7 @@
                     :showXAxis=false
                     :d3="d3"
                     :divId="transcriptMenuId"
+                    :inDialog="true"
                     @transcript-selected="onTranscriptSelected">
           </gene-viz>
         </div>
@@ -144,7 +150,7 @@ export default {
   data() {
     return {
       margin: {top: 5, right: 5, bottom: 5, left: 200},
-      trackHeight: 20,
+      trackHeight: 30,
       cdsHeight: 15,
       showTranscriptsMenu: false,
       newTranscript: null,

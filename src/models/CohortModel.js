@@ -32,7 +32,7 @@ class CohortModel {
         this.sampleMap = {};                    // Relates IDs to model objects
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
-        this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
+        this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for subclone viz)
         this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
         this.selectedTranscriptId = null;       // Used by sampleModels when assigning impact

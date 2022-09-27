@@ -112,6 +112,7 @@
 
 .transcript .selection-box {
   fill: transparent;
+  font-size: 14px !important
 }
 
 .brush .extent {
@@ -242,6 +243,10 @@ export default {
       type: Boolean,
       default: false
     },
+    inDialog: {
+      type: Boolean,
+      default: false
+    },
     $: {
       type: Function,
       default: null
@@ -268,8 +273,6 @@ export default {
         regionStart: self.regionStart,
         regionEnd: self.regionEnd,
         width: self.fixedWidth > 0 ? self.fixedWidth : self.width,
-        widthPercent: '100%',
-        heightPercent: '100%',
         margin: self.margin,
         showXAxis: true,
         drawBrush: self.isZoomTrack,
@@ -280,7 +283,8 @@ export default {
         transcriptClass: self.transcriptClass,
         color: '#194d81',
         displayOnly: self.displayOnly,
-        divId: self.divId
+        divId: self.divId,
+        inDialog: self.inDialog,
       };
       self.geneChart = geneD3(self.d3, options);
 

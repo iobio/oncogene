@@ -3070,8 +3070,10 @@ class SampleModel {
             if (annotationScheme === 'vep') {
                 colorImpactList = d[self.globalApp.impactFieldToColor];
             } else {
-                let impact = transVarBcsq ? transVarBcsq.impact : '';
-                colorImpactList[impact] = impact;
+                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact : '';
+                if (impact !== '') {
+                    colorImpactList[impact] = impact;
+                }
             }
             for (key in colorImpactList) {
                 colorimpacts += " " + 'impact_' + key;
