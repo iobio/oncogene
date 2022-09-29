@@ -64,12 +64,12 @@
 .t-menu
   .transcript
     .name
-      font-size: 16px
+      font-size: 15px
       line-height: normal
       font-family: 'Open Sans', sans-serif
     .type
       font-family: 'Open Sans', sans-serif
-
+      font-size: 12px
 </style>
 
 
@@ -78,18 +78,19 @@
     <v-menu offset-y
             left
             bottom
-            nudge-width="500"
             max-height="700"
-            v-model="showTranscriptsMenu"
+            :min-width="trackWidth"
             origin="center center"
             transition="scale-transition"
             content-class="t-menu"
+            :value="showTranscriptsMenu"
             :close-on-content-click="false"
     >
       <template v-slot:activator="{ on, attrs }">
         <v-btn id="edit-transcript-button"
                v-bind="attrs"
                v-on="on"
+               @click="increaseKey"
                text>
           {{ transcriptText }}
           <v-icon>expand_more</v-icon>
@@ -115,12 +116,13 @@
         </v-row>
         <div :id="transcriptMenuId" class="px-2">
           <gene-viz id="select-transcript-viz"
+                    :key="refreshKey"
                     :data="selectedGene.transcripts"
-                    :margin=margin
-                    :trackHeight=trackHeight
-                    :cdsHeight=cdsHeight
+                    :margin="margin"
+                    :trackHeight="trackHeight"
+                    :cdsHeight="cdsHeight"
                     :showLabel="true"
-                    :fixedWidth=700
+                    :fixedWidth="trackWidth"
                     :regionStart="selectedGene.start"
                     :regionEnd="selectedGene.end"
                     :showXAxis="false"
@@ -157,13 +159,15 @@ export default {
   data() {
     return {
       margin: {top: 5, right: 5, bottom: 5, left: 5},
-      trackHeight: 30,
-      cdsHeight: 15,
+      trackHeight: 25,
+      trackWidth: 750,
+      cdsHeight: 25,
       showTranscriptsMenu: false,
       newTranscript: null,
       geneSource: null,
       isCanonical: true,
-      transcriptMenuId: 'transcript-gene-viz'
+      transcriptMenuId: 'transcript-gene-viz',
+      refreshKey: 1
     }
   },
   computed: {
@@ -187,14 +191,18 @@ export default {
       this.showTranscriptsMenu = false;
     },
     onTranscriptVizClose: function () {
-      var self = this;
-      self.showTranscriptsMenu = false;
+      this.showTranscriptsMenu = false;
     },
     onGeneSourceSelected: function () {
-      let self = this;
-      self.$emit('gene-source-selected', self.geneSource);
+      this.$emit('gene-source-selected', self.geneSource);
     },
-
+    increaseKey: function() {
+      const self = this;
+      self.refreshKey++;
+      setTimeout(function() {
+        self.showTranscriptsMenu = true;
+      }, 100);
+    }
   },
 
 

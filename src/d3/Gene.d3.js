@@ -13,10 +13,11 @@ export default function geneD3(d3, options) {
 
     // dimensions
     var margin = options.margin ? options.margin : {top: 5, right: 5, bottom: 5, left: 5},
-        geneD3_width = 750,
+        geneD3_width = options.width,
         geneD3_height = 10;
 
     var innerOffset = options.inDialog ? 150 : 0;
+    var innerPadding = options.inDialog ? 20 : 0;
 
     // scales
     var x = d3.scaleLinear(),
@@ -36,8 +37,8 @@ export default function geneD3(d3, options) {
     var displayOnly = options.displayOnly ? options.displayOnly : false;
 
     var geneD3_utrHeight = undefined,
-        geneD3_cdsHeight = options.inDialog ? 10 : 15,
-        geneD3_arrowHeight = 10,
+        geneD3_cdsHeight = options.inDialog ? 11 : 15,
+        geneD3_arrowHeight = 12,
         geneD3_regionStart = options.regionStart,
         geneD3_regionEnd = options.regionEnd,
         geneD3_widthPercent = !options.inDialog ? '100%' : null,
@@ -85,7 +86,7 @@ export default function geneD3(d3, options) {
                     })
                 ]);
             }
-            x.range([innerOffset + 5, geneD3_width - margin.left - margin.right - innerOffset]);
+            x.range([innerOffset, geneD3_width - margin.left - margin.right - innerOffset - innerPadding]);
 
             // Update the y-scale.
             y.domain([0, data.length]);
@@ -105,7 +106,7 @@ export default function geneD3(d3, options) {
             let g = null;
             if (inDialog) {
                 g = svg.join("svg")
-                    .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
+                    .attr('viewBox', "0 0 " + parseInt(geneD3_width) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
                     .attr("preserveAspectRatio", "none")
                     .join("g");
             } else {
@@ -128,7 +129,8 @@ export default function geneD3(d3, options) {
             let transcript = g.selectAll('.transcript')
                 .data(data, function (d) {
                     return d.transcript_id;
-                }).join('g')
+                })
+                .join('g')
                 .attr('class', transcriptClass)
                 .attr("id", function (d) {
                     return 'transcript_' + d.transcript_id.split(".").join("_");
@@ -176,31 +178,31 @@ export default function geneD3(d3, options) {
                 .style("pointer-events", "none");
 
             transcript.selectAll(".name,.type").remove();
-            if (geneD3_showLabel) {
-                let tscript = transcript.selectAll('.name').data(function (d) {
-                    return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
-                });
-                tscript.enter()
-                    .append('text')
-                    .attr('class', 'name')
-                    .attr('x', function () {
-                        return margin.left > 5 ? 5 - margin.left : 0
-                    })
-                    .attr('dy', geneD3_trackHeight / 2 + margin.top)
-                    .attr('text-anchor', 'top')
-                    .attr('alignment-baseline', 'left')
-                    .text(function (d) {
-                        return d[1];
+            if (inDialog) {
+                if (geneD3_showLabel) {
+                    let tscript = transcript.selectAll('.name').data(function (d) {
+                        return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
                     });
+                    tscript.enter()
+                        .append('text')
+                        .attr('class', 'name')
+                        .attr('x', function () {
+                            return margin.left;
+                        })
+                        .attr('dy', geneD3_trackHeight / 2 + margin.top)
+                        .attr('text-anchor', 'top')
+                        .attr('alignment-baseline', 'left')
+                        .text(function (d) {
+                            return d[1];
+                        })
+                        .style('font-size', '14px');
 
-                if (inDialog) {
                     transcript.selectAll('.type').data(function (d) {
                         return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
-                      }).join('text')
+                    }).join('text')
                         .attr('class', 'type')
                         .attr('x', function () {
-                            let offset = inDialog ? 0 : 30;
-                            return (geneD3_width - margin.left - margin.right - 5) + offset;
+                            return (geneD3_width - margin.left - margin.right) - (innerOffset + 10);
                         })
                         .attr('y', geneD3_trackHeight / 2 + margin.top)
                         .attr('text-anchor', 'top')
@@ -210,287 +212,284 @@ export default function geneD3(d3, options) {
                             var type = (d[1] === 'protein_coding' || d[1] === 'mRNA' ? '' : d[1]);
                             return type + ' ' + d[2] + ' ' + d[3];
                         })
+                        .style('font-size', '12px');
                 } else {
                     transcript.selectAll('.type').data(function (d) {
                         return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
                     })
                 }
+        }
+        transcript.selectAll(".arrow").remove();
+        transcript.selectAll('.arrow').data(centerSpan)
+            .join('path')
+            .style('stroke', color)
+            .style('fill', 'transparent')
+            .attr('d', centerArrow);
 
+        var filterFeature = function (feature) {
+            if (feature.transcript_type === 'protein_coding'
+                || feature.transcript_type === 'mRNA'
+                || feature.transcript_type === 'transcript'
+                || feature.transcript_type === 'primary_transcript') {
+                return feature.feature_type.toLowerCase() === 'utr' || feature.feature_type.toLowerCase() === 'cds';
+            } else {
+                return feature.feature_type.toLowerCase() === 'exon';
             }
-            transcript.selectAll(".arrow").remove();
-            transcript.selectAll('.arrow').data(centerSpan)
-                .join('path')
-                .style('stroke', color)
-                .style('fill', 'transparent')
-                .attr('d', centerArrow);
+        };
 
-            var filterFeature = function (feature) {
-                if (feature.transcript_type === 'protein_coding'
-                    || feature.transcript_type === 'mRNA'
-                    || feature.transcript_type === 'transcript'
-                    || feature.transcript_type === 'primary_transcript') {
-                    return feature.feature_type.toLowerCase() === 'utr' || feature.feature_type.toLowerCase() === 'cds';
-                } else {
-                    return feature.feature_type.toLowerCase() === 'exon';
-                }
-            };
+        transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
+            return d['features'].filter(function (d) {
+                return filterFeature(d);
+            }, function (d) {
+                return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
+            });
+        }).join('rect')
+            .style('fill', color)
+            .style('stroke', color)
+            .attr('rx', borderRadius)
+            .attr('ry', borderRadius)
+            .attr('x', function (d) {
+                return Math.round(x(d.start))
+            })
+            .attr('width', function (d) {
+                return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
+            })
+            .attr('y', function (d) {
+                if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
+                else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
+            })
+            .attr('height', function (d) {
+                if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
+                else return geneD3_cdsHeight;
+            })
+            .attr("pointer-events", "all")
+            .style("cursor", "pointer")
+            .on("mouseover", function (d) {
+                // show the tooltip
+                dispatch.call('d3exontooltip', this, d)
 
-            transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
-                return d['features'].filter(function (d) {
-                    return filterFeature(d);
-                }, function (d) {
-                    return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
-                });
-            }).join('rect')
-                .style('fill', color)
-                .style('stroke', color)
-                .attr('rx', borderRadius)
-                .attr('ry', borderRadius)
-                .attr('x', function (d) {
-                    return Math.round(x(d.start))
-                })
-                .attr('width', function (d) {
-                    return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
-                })
-                .attr('y', function (d) {
-                    if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
-                    else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
-                })
-                .attr('height', function (d) {
-                    if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
-                    else return geneD3_cdsHeight;
-                })
-                .attr("pointer-events", "all")
-                .style("cursor", "pointer")
-                .on("mouseover", function (d) {
-                    // show the tooltip
-                    dispatch.call('d3exontooltip', this, d)
+                // select the transcript
+                svg.selectAll('.transcript.selected').classed("selected", false);
+                // todo: debug this - selected outline not working
+                d3.select(this.parentNode).classed("selected", true);
+            })
+            .on("mouseout", function () {
+                // hide the tooltip
+                // var featureObject = d3.select(this);
+                dispatch.call('d3exontooltip', this)
 
+                // de-select the transcript
+                d3.select(this.parentNode).classed("selected", false);
+            })
+            .on("click", function (d) {
+                if (!displayOnly) {
                     // select the transcript
-                    svg.selectAll('.transcript.selected').classed("selected", false);
-                    // todo: debug this - selected outline not working
-                    d3.select(this.parentNode).classed("selected", true);
-                })
-                .on("mouseout", function () {
-                    // hide the tooltip
-                    // var featureObject = d3.select(this);
-                    dispatch.call('d3exontooltip', this)
+                    svg.selectAll('.transcript.current').classed("current", false);
+                    d3.select(this.parentNode).classed("current", true);
+                    selectedTranscript = d3.select(this.parentNode)['_groups'][0][0].__data__;
+                    dispatch.call('d3selected', this, selectedTranscript);
 
-                    // de-select the transcript
-                    d3.select(this.parentNode).classed("selected", false);
-                })
-                .on("click", function (d) {
-                    if (!displayOnly) {
-                        // select the transcript
-                        svg.selectAll('.transcript.current').classed("current", false);
-                        d3.select(this.parentNode).classed("current", true);
-                        selectedTranscript = d3.select(this.parentNode)['_groups'][0][0].__data__;
-                        dispatch.call('d3selected', this, selectedTranscript);
-
-                        // show the tooltip
-                        var featureObject = d3.select(this);
-                        dispatch.call('d3featuretooltip', this, featureObject, d, true);
-                    }
-                });
-
-
-            // Add any feature glyphs
-            // transcript.selectAll(".feature_glyph").remove();
-            // transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
-            //     return d['features'].filter(function (d) {
-            //         return filterFeature(d);
-            //     }, function (d) {
-            //         return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
-            //     });
-            // }).each(function (d, i) {
-            //         var me = this;
-            //         var featureX = d3.round(x(d.start));
-            //         featureGlyph.call(me, d, i, featureX);
-            //     });
-
-            // transcript.selectAll(".feature_glyph")
-            //     .on("mouseover", function (d) {
-            //         // show the tooltip
-            //         var featureObject = d3.select(this);
-            //         dispatch.d3featureglyphtooltip(featureObject, d, false);
-            //     })
-            //     .on("mouseout", function (d) {
-            //         if (container.select('.tooltip.locked').empty()) {
-            //             dispatch.d3featureglyphtooltip();
-            //         }
-            //     })
-            //     .on("click", function (d) {
-            //         // show the tooltip
-            //         var featureObject = d3.select(this);
-            //         dispatch.d3featureglyphtooltip(featureObject, d, true);
-            //     })
-
-
-            // Update class
-            transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
-                return d['features'].filter(function (d) {
-                    return filterFeature(d);
-                }, function (d) {
-                    return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
-                });
-            }).attr('class', function (d, i) {
-                return featureClass(d, i);
+                    // show the tooltip
+                    var featureObject = d3.select(this);
+                    dispatch.call('d3featuretooltip', this, featureObject, d, true);
+                }
             });
 
-            // Bump everything except labels over
-            // if (inDialog) {
-            //     svg.selectAll('.transcript').selectAll('line')
-            //         .attr('transform', 'translate(' + innerOffset + ',0)')
-            // }
 
-            // update
-            transcript.transition()
-                .duration(2000)
-                .attr('transform', function (d, i) {
-                    return "translate(0," + (y(i + 1)) + ")"
-                });
+        // Add any feature glyphs
+        // transcript.selectAll(".feature_glyph").remove();
+        // transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
+        //     return d['features'].filter(function (d) {
+        //         return filterFeature(d);
+        //     }, function (d) {
+        //         return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
+        //     });
+        // }).each(function (d, i) {
+        //         var me = this;
+        //         var featureX = d3.round(x(d.start));
+        //         featureGlyph.call(me, d, i, featureX);
+        //     });
+
+        // transcript.selectAll(".feature_glyph")
+        //     .on("mouseover", function (d) {
+        //         // show the tooltip
+        //         var featureObject = d3.select(this);
+        //         dispatch.d3featureglyphtooltip(featureObject, d, false);
+        //     })
+        //     .on("mouseout", function (d) {
+        //         if (container.select('.tooltip.locked').empty()) {
+        //             dispatch.d3featureglyphtooltip();
+        //         }
+        //     })
+        //     .on("click", function (d) {
+        //         // show the tooltip
+        //         var featureObject = d3.select(this);
+        //         dispatch.d3featureglyphtooltip(featureObject, d, true);
+        //     })
 
 
-            transcript.selectAll('.reference').transition()
-                .duration(700)
-                .attr('x1', function (d) {
-                    return x(d[0])
-                })
-                .attr('x2', function (d) {
-                    return x(d[1])
-                });
-
-            transcript.selectAll('.arrow').transition()
-                .duration(700)
-                .attr('d', centerArrow);
-
-            // No idea why update here after the fact
-            // transcript.selectAll('.name')
-            //     .attr('x', function () {
-            //         return margin.left > 5 ? 5 - margin.left : 0;
-            //     })
-            //     .attr('y', function () {
-            //         let offset = inDialog ? 5 : 0;
-            //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
-            //     })
-            //     .style('font', () => { return inDialog ? '10px Open Sans' : '16px Open Sans' })
-            //     .style('fill', '#424242')
-            //     .style('fill-opacity', 1);
-            //
-            // transcript.selectAll('.type')
-            //     .attr('x', function () {
-            //         return margin.left > 5 ? 5 - margin.left : 0;
-            //     })
-            //     .attr('y', function () {
-            //         let offset = inDialog ? 50 : 0;
-            //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
-            //     })
-            //     .text(function (d) {
-            //         return d[3];
-            //     })
-            //     .style('font', '11px Quicksand')
-            //     .style('fill', '#7f1010')
-            //     .style('fill-opacity', 1);
-
-            transcript.selectAll('.utr,.cds,.exon').sort(function (a, b) {
-                return parseInt(a.start) - parseInt(b.start)
-            })
-                .transition()
-                .duration(700)
-                .attr('x', function (d) {
-                    return Math.round(x(d.start))
-                })
-                .attr('width', function (d) {
-                    return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
-                })
-                .attr('y', function (d) {
-                    if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
-                    else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
-                })
-                .attr('height', function (d) {
-                    if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
-                    else return geneD3_cdsHeight;
-                });
-
-            // Update the x-axis.
-            svg.select(".x.axis").transition()
-                .duration(200)
-                .call(xAxis);
-
-            // Draw brush if desired
-            // toggleBrush(geneD3_showBrush, container);
+        // Update class
+        transcript.selectAll('.transcript rect.utr, .transcript rect.cds, .transcript rect.exon').data(function (d) {
+            return d['features'].filter(function (d) {
+                return filterFeature(d);
+            }, function (d) {
+                return d.feature_type + "-" + d.seq_id + "-" + d.start + "-" + d.end;
+            });
+        }).attr('class', function (d, i) {
+            return featureClass(d, i);
         });
 
-    }
-
-    /*** OUTWARD FACING FUNCTIONS ***/
-    chart.getDispatch = function () {
-        return dispatch;
-    };
-
-    chart.updateSize = function (options) {
-        geneD3_regionStart = options.regionStart ? options.regionStart : geneD3_regionStart;
-        geneD3_regionEnd = options.regionEnd ? options.regionEnd : geneD3_regionEnd;
-        geneD3_width = options.width ? options.width : geneD3_width;
-    };
-
-    // chart.setZoomBrush = function(brush) {
-    //     geneD3_showBrush = brush;
-    // };
-
-    chart.getWidth = function () {
-        return geneD3_width;
-    };
-
-    // moves selection to front of svg
-    // function moveToFront(selection) {
-    //     return selection.each(function () {
-    //         this.parentNode.appendChild(this);
-    //     });
-    // }
-
-    /*** HELPER FUNCTIONS ***/
-    // updates the hash with the center of the biggest span between features
-    function centerSpan(d) {
-        var span = 0;
-        var center = 0;
-        var sorted = d.features
-            .filter(function (f) {
-                var ft = f.feature_type.toLowerCase();
-                return ft == 'utr' || ft == 'cds'
-            })
-            .sort(function (a, b) {
-                return parseInt(a.start) - parseInt(b.start)
+        // transition
+        transcript.transition()
+            .duration(700)
+            .attr('transform', function (d, i) {
+                return "translate(0," + (y(i + 1)) + ")"
             });
 
-        for (var i = 0; i < sorted.length - 1; i++) {
-            var currSpan = parseInt(sorted[i + 1].start) - parseInt(sorted[i].end);
-            if (span < currSpan) {
-                span = currSpan;
-                center = parseInt(sorted[i].end) + span / 2;
-            }
+
+        transcript.selectAll('.reference').transition()
+            .duration(700)
+            .attr('x1', function (d) {
+                return x(d[0])
+            })
+            .attr('x2', function (d) {
+                return x(d[1])
+            });
+
+        transcript.selectAll('.arrow').transition()
+            .duration(700)
+            .attr('d', centerArrow);
+
+        // No idea why update here after the fact
+        // transcript.selectAll('.name')
+        //     .attr('x', function () {
+        //         return margin.left > 5 ? 5 - margin.left : 0;
+        //     })
+        //     .attr('y', function () {
+        //         let offset = inDialog ? 5 : 0;
+        //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
+        //     })
+        //     .style('font', () => { return inDialog ? '10px Open Sans' : '16px Open Sans' })
+        //     .style('fill', '#424242')
+        //     .style('fill-opacity', 1);
+        //
+        // transcript.selectAll('.type')
+        //     .attr('x', function () {
+        //         return margin.left > 5 ? 5 - margin.left : 0;
+        //     })
+        //     .attr('y', function () {
+        //         let offset = inDialog ? 50 : 0;
+        //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
+        //     })
+        //     .text(function (d) {
+        //         return d[3];
+        //     })
+        //     .style('font', '11px Quicksand')
+        //     .style('fill', '#7f1010')
+        //     .style('fill-opacity', 1);
+
+        transcript.selectAll('.utr,.cds,.exon').sort(function (a, b) {
+            return parseInt(a.start) - parseInt(b.start)
+        })
+            .transition()
+            .duration(700)
+            .attr('x', function (d) {
+                return Math.round(x(d.start))
+            })
+            .attr('width', function (d) {
+                return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
+            })
+            .attr('y', function (d) {
+                if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
+                else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
+            })
+            .attr('height', function (d) {
+                if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
+                else return geneD3_cdsHeight;
+            });
+
+        // Update the x-axis.
+        svg.select(".x.axis").transition()
+            .duration(200)
+            .call(xAxis);
+
+        // Draw brush if desired
+        // toggleBrush(geneD3_showBrush, container);
+    }
+
+)
+    ;
+
+}
+
+/*** OUTWARD FACING FUNCTIONS ***/
+chart.getDispatch = function () {
+    return dispatch;
+};
+
+chart.updateSize = function (options) {
+    geneD3_regionStart = options.regionStart ? options.regionStart : geneD3_regionStart;
+    geneD3_regionEnd = options.regionEnd ? options.regionEnd : geneD3_regionEnd;
+    geneD3_width = options.width ? options.width : geneD3_width;
+};
+
+// chart.setZoomBrush = function(brush) {
+//     geneD3_showBrush = brush;
+// };
+
+chart.getWidth = function () {
+    return geneD3_width;
+};
+
+// moves selection to front of svg
+// function moveToFront(selection) {
+//     return selection.each(function () {
+//         this.parentNode.appendChild(this);
+//     });
+// }
+
+/*** HELPER FUNCTIONS ***/
+// updates the hash with the center of the biggest span between features
+function centerSpan(d) {
+    var span = 0;
+    var center = 0;
+    var sorted = d.features
+        .filter(function (f) {
+            var ft = f.feature_type.toLowerCase();
+            return ft == 'utr' || ft == 'cds'
+        })
+        .sort(function (a, b) {
+            return parseInt(a.start) - parseInt(b.start)
+        });
+
+    for (var i = 0; i < sorted.length - 1; i++) {
+        var currSpan = parseInt(sorted[i + 1].start) - parseInt(sorted[i].end);
+        if (span < currSpan) {
+            span = currSpan;
+            center = parseInt(sorted[i].end) + span / 2;
         }
-        d.center = center;
-        return [d];
     }
+    d.center = center;
+    return [d];
+}
 
-    // generates the arrow path
-    function centerArrow(d) {
-        var arrowHead = parseInt(d.strand + '5');
-        var pathStr = "M ";
-        pathStr += x(d.center) + ' ' + (geneD3_trackHeight - geneD3_arrowHeight) / 2;
-        pathStr += ' L ' + parseInt(x(d.center) + arrowHead) + ' ' + geneD3_trackHeight / 2;
-        pathStr += ' L ' + x(d.center) + ' ' + parseInt(geneD3_trackHeight + geneD3_arrowHeight) / 2;
-        return pathStr;
-    }
+// generates the arrow path
+function centerArrow(d) {
+    var arrowHead = parseInt(d.strand + '5');
+    var pathStr = "M ";
+    pathStr += x(d.center) + ' ' + (geneD3_trackHeight - geneD3_arrowHeight) / 2;
+    pathStr += ' L ' + parseInt(x(d.center) + arrowHead) + ' ' + geneD3_trackHeight / 2;
+    pathStr += ' L ' + x(d.center) + ' ' + parseInt(geneD3_trackHeight + geneD3_arrowHeight) / 2;
+    return pathStr;
+}
 
-    function tickFormatter(d) {
-        if ((d / 1000000) >= 1)
-            d = d / 1000000 + "M";
-        else if ((d / 1000) >= 1)
-            d = d / 1000 + "K";
-        return d;
-    }
+function tickFormatter(d) {
+    if ((d / 1000000) >= 1)
+        d = d / 1000000 + "M";
+    else if ((d / 1000) >= 1)
+        d = d / 1000 + "K";
+    return d;
+}
 
-    return chart;
+return chart;
 }

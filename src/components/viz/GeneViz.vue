@@ -268,7 +268,6 @@ export default {
   },
   mounted: function () {
     this.drawGene();
-    this.updateGene(); // Don't want to show zoom brush on mount
   },
   methods: {
     drawGene: function () {
@@ -309,6 +308,7 @@ export default {
           .on("d3featuretooltip", function (featureObject, feature, lock) {
             self.$emit("feature-selected", featureObject, feature, lock);
           });
+      self.updateGene();
     },
     updateGene: function () {
       const self = this;
