@@ -198,8 +198,8 @@ export default {
     },
     transcriptClass: {
       type: Function,
-      default: function (d) {
-        if (d.isCanonical) {
+      default: function (d, selectedTranscriptId) {
+        if (d.transcript_id === selectedTranscriptId) {
           return 'transcript current';
         } else {
           return 'transcript';
@@ -243,6 +243,10 @@ export default {
     inDialog: {
       type: Boolean,
       default: false
+    },
+    selectedTranscriptId: {
+      type: String,
+      default: null
     },
     $: {
       type: Function,
@@ -288,6 +292,7 @@ export default {
         color: '#194d81',
         displayOnly: self.displayOnly,
         divId: self.divId,
+        selectedTranscriptId: self.selectedTranscriptId,
         inDialog: self.inDialog,
       };
       self.geneChart = geneD3(self.d3, options);

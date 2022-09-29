@@ -477,7 +477,7 @@ class GeneModel {
         canonical.isCanonical = true;
         if (canonical) {
             canonical.isCanonical = true;
-            canonical.canonical_reason = ''
+            canonical.canonical_reason = '';
             if (canonical.is_mane_select && canonical.is_mane_select === 'true') {
                 canonical.canonical_reason = 'MANE SELECT'
             }

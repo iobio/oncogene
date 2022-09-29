@@ -12,10 +12,10 @@
 
 #select-transcript-viz
   .selected
-    outline: solid 1px $current-color
+    outline: solid 1px red
 
-    .selection-box
-      cursor: pointer
+  .selection-box
+    cursor: pointer
 
   .current
     font-weight: bold
@@ -38,7 +38,7 @@
 
     .input-group--select
       .input-group__selections__comma
-        font-size: 14px
+        font-size: 18px
         padding: 0
 
     .input-group
@@ -72,6 +72,11 @@
       font-family: 'Open Sans', sans-serif
       font-size: 14px
       color: #888888
+
+.v-menu__content
+  overflow-y: hidden
+
+
 </style>
 
 
@@ -85,6 +90,7 @@
             origin="center center"
             transition="scale-transition"
             content-class="t-menu"
+            class="menu-class"
             :value="showTranscriptsMenu"
             :close-on-content-click="false"
     >
@@ -102,9 +108,12 @@
         <v-card-title class="tscript-headline">
           <span>Transcript Info</span>
         </v-card-title>
-        <v-row id="gene-source-box" class="px-2">
+        <v-row id="gene-source-box" class="px-5">
           <v-col sm="6">
-            <div>Selected: {{ selectedTranscript.transcript_id }}</div>
+            <div class="pt-1" style="font-size: 18px">
+              <span>Selected: </span>
+              <span style="font-weight: 500">{{ selectedTranscript.transcript_id }}</span>
+            </div>
           </v-col>
           <v-col sm="3" offset-sm="3" class="py-1">
             <v-select class="selection-box"
@@ -116,7 +125,7 @@
             </v-select>
           </v-col>
         </v-row>
-        <div :id="transcriptMenuId" class="px-2">
+        <div :id="transcriptMenuId" class="px-2" :style="'overflow-y: scroll; height: 400px'">
           <gene-viz id="select-transcript-viz"
                     :key="refreshKey"
                     :data="selectedGene.transcripts"
@@ -130,6 +139,7 @@
                     :showXAxis="false"
                     :d3="d3"
                     :divId="transcriptMenuId"
+                    :selectedTranscriptId = selectedTranscript.transcript_id
                     :inDialog="true"
                     @transcript-selected="onTranscriptSelected">
           </gene-viz>
@@ -162,7 +172,7 @@ export default {
     return {
       margin: {top: 5, right: 5, bottom: 5, left: 5},
       trackHeight: 25,
-      trackWidth: 750,
+      trackWidth: 850,
       cdsHeight: 25,
       showTranscriptsMenu: false,
       newTranscript: null,
