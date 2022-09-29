@@ -1,18 +1,23 @@
 <style lang="sass">
 @import "../../assets/sass/_variables.sass"
 
+#transcript-gene-viz
+  .transcript
+    .name
+      font-size: 18px !important
+      line-height: normal
+      font-family: 'Open Sans', sans-serif
+    .type
+      font-family: 'Open Sans', sans-serif
+
 #transcriptMenuId
   font-family: Raleway
   font-size: 12px
 
 #edit-transcript-button
   color: $app-color
-  margin: 0px 8px 0px 0px
-  padding: 0px
-
-  .btn__content
-    color: $app-complementary
-    padding: 0px
+  margin: 0 8px 0 0
+  padding: 0
 
 #select-transcript-viz
   .selected
@@ -38,7 +43,7 @@
     color: $text-color
 
   #gene-source-box
-    font-family: Raleway
+    font-family: Raleway, serif
 
     .input-group--select
       .input-group__selections__comma
@@ -48,7 +53,7 @@
     .input-group
       label
         font-size: 14px
-        //line-height: 25px
+        line-height: 25px
 
     .input-group__input
       min-height: 0px
@@ -60,7 +65,7 @@
     overflow-y: scroll
 
 .tscript-headline
-  font-family: Quicksand
+  font-family: Quicksand, sans-serif
   font-size: 18px
   background-color: #194d81
   color: white
@@ -112,11 +117,11 @@
                     :margin=margin
                     :trackHeight=trackHeight
                     :cdsHeight=cdsHeight
-                    :showLabel=true
-                    :fixedWidth=600
+                    :showLabel="true"
+                    :fixedWidth=700
                     :regionStart="selectedGene.start"
                     :regionEnd="selectedGene.end"
-                    :showXAxis=false
+                    :showXAxis="false"
                     :d3="d3"
                     :divId="transcriptMenuId"
                     :inDialog="true"

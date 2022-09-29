@@ -58,7 +58,7 @@
       </v-btn>
     </v-app-bar>
     <v-main style="background-color: #7f1010">
-      <Home v-if="filterModel"
+      <Home v-if="filterModel && demoParamsReady"
             ref="homePanel"
             :d3="globalApp.d3"
             :$="globalApp.$"
@@ -144,6 +144,7 @@ export default {
       displayUnmatchedGenesBtn: false,
       unmatchedGenesList: [],
       demoMode: false,
+      demoParamsReady: false,
 
       // integration
       launchParams: {
@@ -262,9 +263,9 @@ export default {
     this.integration.init().then(() => {
       self.launchParams = this.integration.buildParams();
       self.integration.promiseGetDemoUrls()
-          // todo: test timing of this
           .then(demoParams => {
             self.demoParams = demoParams;
+            self.demoParamsReady = true;
           }).catch(err => {
         console.log("Could not load demo params: " + err);
       });

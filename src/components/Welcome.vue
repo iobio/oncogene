@@ -1475,6 +1475,8 @@ export default {
       return new Promise((resolve, reject) => {
         // Create model infos
         self.modelInfoList = [];
+
+        console.log("Debugging demoParams: " + JSON.stringify(self.demoParams));
         let normalModelInfo = this.createModelInfoFromParam(self.demoParams.normal, false, 0);
         self.modelInfoList.push(normalModelInfo);
         let tumors = self.demoParams.tumors;
@@ -1495,7 +1497,6 @@ export default {
         // read vcf and update vcfSampleNames prop to coordinate order
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
           if (success) {
-            console.log("Debugging demo loading: made it past onVcfUrlEntered");
             self.selectedBuild = hdrBuild;
             for (let i = 0; i < sampleNames.length; i++) {
               let sampleName = sampleNames[i];

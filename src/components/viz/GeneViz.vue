@@ -112,7 +112,6 @@
 
 .transcript .selection-box {
   fill: transparent;
-  font-size: 14px !important
 }
 
 .brush .extent {
@@ -274,7 +273,7 @@ export default {
         regionEnd: self.regionEnd,
         width: self.fixedWidth > 0 ? self.fixedWidth : self.width,
         margin: self.margin,
-        showXAxis: true,
+        showXAxis: self.showXAxis,
         drawBrush: self.isZoomTrack,
         showBrush: false,
         trackHeight: self.trackHeight,

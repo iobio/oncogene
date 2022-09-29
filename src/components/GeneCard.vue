@@ -101,7 +101,7 @@
             <gene-viz id="gene-viz"
                       ref="transcriptGeneVizRef"
                       :data="[selectedTranscript]"
-                      :height="40"
+                      :height="80"
                       :width="width"
                       :margin="margin"
                       :trackHeight="trackHeight"
@@ -195,13 +195,13 @@ export default {
     return {
       margin: {
         top: 20,
-        right: 0,
+        right: 5,
         bottom: 18,
         left: 0
       },
       startOrig: '',
       endOrig: '',
-      trackHeight: 18,
+      trackHeight: 22,
       cdsHeight: 12,
       geneSource: null,
       geneSources: ['gencode', 'refseq'],
