@@ -4,7 +4,6 @@ export default function geneD3(d3, options) {
 
     // defaults
     var divId = options.divId ? options.divId : "gene-viz";
-    var geneD3_showLabel = options.showLabel ? options.showLabel : false;
     var geneD3_showXAxis = options.showXAxis ? options.showXAxis : false;
     var container = null;
     var selectedTranscript = null;
@@ -286,53 +285,25 @@ export default function geneD3(d3, options) {
                     .duration(700)
                     .attr('d', centerArrow);
 
-                // No idea why update here after the fact
-                // transcript.selectAll('.name')
-                //     .attr('x', function () {
-                //         return margin.left > 5 ? 5 - margin.left : 0;
-                //     })
-                //     .attr('y', function () {
-                //         let offset = inDialog ? 5 : 0;
-                //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
-                //     })
-                //     .style('font', () => { return inDialog ? '10px Open Sans' : '16px Open Sans' })
-                //     .style('fill', '#424242')
-                //     .style('fill-opacity', 1);
-                //
-                // transcript.selectAll('.type')
-                //     .attr('x', function () {
-                //         return margin.left > 5 ? 5 - margin.left : 0;
-                //     })
-                //     .attr('y', function () {
-                //         let offset = inDialog ? 50 : 0;
-                //         return margin.left > 5 ? geneD3_trackHeight - (geneD3_trackHeight / 2) + 2 + offset : -10 + offset;
-                //     })
-                //     .text(function (d) {
-                //         return d[3];
-                //     })
-                //     .style('font', '11px Quicksand')
-                //     .style('fill', '#7f1010')
-                //     .style('fill-opacity', 1);
-
                 transcript.selectAll('.utr,.cds,.exon').sort(function (a, b) {
                     return parseInt(a.start) - parseInt(b.start)
                 })
-                    .transition()
-                    .duration(700)
-                    .attr('x', function (d) {
-                        return Math.round(x(d.start))
-                    })
-                    .attr('width', function (d) {
-                        return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
-                    })
-                    .attr('y', function (d) {
-                        if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
-                        else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
-                    })
-                    .attr('height', function (d) {
-                        if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
-                        else return geneD3_cdsHeight;
-                    });
+                .transition()
+                .duration(700)
+                .attr('x', function (d) {
+                    return Math.round(x(d.start))
+                })
+                .attr('width', function (d) {
+                    return Math.max(minFtWidth, Math.round(x(d.end) - x(d.start)))
+                })
+                .attr('y', function (d) {
+                    if (d.feature_type.toLowerCase() === 'utr') return (geneD3_trackHeight - geneD3_utrHeight) / 2;
+                    else return (geneD3_trackHeight - geneD3_cdsHeight) / 2;
+                })
+                .attr('height', function (d) {
+                    if (d.feature_type.toLowerCase() === 'utr') return geneD3_utrHeight;
+                    else return geneD3_cdsHeight;
+                });
 
                 // Update the x-axis.
                 svg.select(".x.axis").transition()
@@ -348,46 +319,45 @@ export default function geneD3(d3, options) {
     chart.addLabels = function() {
         let transcripts = d3.select("#" + divId).selectAll('.transcript');
         transcripts.selectAll(".name,.type").remove();
-        if (geneD3_showLabel) {
-            let tscript_name = transcripts.selectAll('.name').data(function (d) {
-                return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
-            });
-            tscript_name.enter()
-                .append('text')
-                .attr('class', 'name')
-                .attr('x', 0)
-                .attr('y', 0)
-                .attr('dy', geneD3_trackHeight / 2 + margin.top)
-                .attr('text-anchor', 'start')
-                .attr('alignment-baseline', 'left')
-                .text(function (d) {
-                    return d[1];
-                })
-                .style('opacity', 0);
 
-            let tscript_type = transcripts.selectAll('.type').data(function(d){
-                return [[d.start, (d.transcript_type ? d.transcript_type : ''),
-                    (d.canonical_reason ? ' ' + d.canonical_reason : ''), (d.xref != null  ? "(" + d.xref + ")": ''),  d.sort]]
-            });
-            tscript_type.enter()
-                .append('text')
-                .attr('class', 'type')
-                .attr('x', function() { return (geneD3_width - innerOffset - margin.left - margin.right - 10)})
-                .attr('y', geneD3_trackHeight / 2 + margin.top)
-                .attr('text-anchor', 'top')
-                .attr('alignment-baseline', 'left')
-                .style("pointer-events", "none")
-                .text(function(d) {
-                    var type =  (d[1] === 'protein_coding' || d[1] === 'mRNA' ? '' : d[1]);
-                    return type + ' ' + d[2] + ' ' + d[3];
-                })
-                .style('opacity', 0);
+        let tscript_name = transcripts.selectAll('.name').data(function (d) {
+            return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
+        });
+        tscript_name.enter()
+            .append('text')
+            .attr('class', 'name')
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('dy', geneD3_trackHeight / 2 + margin.top)
+            .attr('text-anchor', 'start')
+            .attr('alignment-baseline', 'left')
+            .text(function (d) {
+                return d[1];
+            })
+            .style('opacity', 0);
 
-            transcripts.selectAll('.name,.type')
-                .transition()
-                .duration(500)
-                .style('opacity', 1.0);
-        }
+        let tscript_type = transcripts.selectAll('.type').data(function(d){
+            return [[d.start, (d.transcript_type ? d.transcript_type : ''),
+                (d.canonical_reason ? ' ' + d.canonical_reason : ''), (d.xref != null  ? "(" + d.xref + ")": ''),  d.sort]]
+        });
+        tscript_type.enter()
+            .append('text')
+            .attr('class', 'type')
+            .attr('x', function() { return (geneD3_width - innerOffset - margin.left - margin.right - 10)})
+            .attr('y', geneD3_trackHeight / 2 + margin.top)
+            .attr('text-anchor', 'top')
+            .attr('alignment-baseline', 'left')
+            .style("pointer-events", "none")
+            .text(function(d) {
+                var type =  (d[1] === 'protein_coding' || d[1] === 'mRNA' ? '' : d[1]);
+                return type + ' ' + d[2] + ' ' + d[3];
+            })
+            .style('opacity', 0);
+
+        transcripts.selectAll('.name,.type')
+            .transition()
+            .duration(500)
+            .style('opacity', 1.0);
     }
 
     /*** OUTWARD FACING FUNCTIONS ***/
@@ -424,7 +394,7 @@ export default function geneD3(d3, options) {
         var sorted = d.features
             .filter(function (f) {
                 var ft = f.feature_type.toLowerCase();
-                return ft == 'utr' || ft == 'cds'
+                return ft === 'utr' || ft === 'cds'
             })
             .sort(function (a, b) {
                 return parseInt(a.start) - parseInt(b.start)
