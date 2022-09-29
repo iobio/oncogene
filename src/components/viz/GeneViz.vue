@@ -327,6 +327,11 @@ export default {
           this.geneChart(selection);
         }
       }
+      if (self.inDialog) {
+        setTimeout(function() {
+          self.geneChart.addLabels();
+        }, 700);
+      }
     },
     toggleBrush: function (showBrush, container) {
       const self = this;

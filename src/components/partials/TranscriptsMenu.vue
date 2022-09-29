@@ -67,9 +67,11 @@
       font-size: 15px
       line-height: normal
       font-family: 'Open Sans', sans-serif
+      color: #888888
     .type
       font-family: 'Open Sans', sans-serif
-      font-size: 12px
+      font-size: 14px
+      color: #888888
 </style>
 
 
@@ -199,9 +201,7 @@ export default {
     increaseKey: function() {
       const self = this;
       self.refreshKey++;
-      setTimeout(function() {
-        self.showTranscriptsMenu = true;
-      }, 100);
+      self.showTranscriptsMenu = true;
     }
   },
 
