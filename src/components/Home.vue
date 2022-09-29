@@ -919,6 +919,7 @@ export default {
                   // If we have selected a flagged variant, we want to use the flagged
                   // variant's transcript
                   self.selectedTranscript = theTranscript;
+                  self.cohortModel.selectedTranscriptId = theTranscript.transcript_id;
                 } else {
                   // Determine the transcript that should be selected for this gene
                   // If the transcript wasn't previously selected for this gene,
@@ -1069,6 +1070,7 @@ export default {
       const self = this;
       self.selectedTranscript = transcript;
       self.geneModel.setLatestGeneTranscript(self.selectedGene.gene_name, self.selectedTranscript);
+      self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
       self.onGeneSelected(self.selectedGene.gene_name, true);
     },
     onGeneSourceSelected: function (theGeneSource) {

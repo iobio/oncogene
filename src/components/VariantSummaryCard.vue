@@ -243,20 +243,21 @@
               <v-row wrap>
                 <v-container class="summary-viz">
                   <v-row dense>
-                    <v-col md="3" xl="2" class="summary-field-label">Gene:</v-col>
-                    <v-col md="9" xl="4" class="summary-field-value">
+                    <v-col md="3" class="summary-field-label">Gene:</v-col>
+                    <v-col md="9" class="summary-field-value">
                       <span>{{ geneName }}</span>
                     </v-col>
-                    <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
-                    <v-col md=9 xl="4" class="summary-field-value">
-                <span v-if="variantSelected">
-                    {{ selectedTranscript.transcript_id }}
-                </span>
+                    <v-col md="3" class="summary-field-label">Transcript:</v-col>
+                    <v-col md=9 class="summary-field-value">
+                      <span v-if="variantSelected">
+                          {{ selectedTranscript.transcript_id }}
+                      </span>
+                      <v-chip v-if="variantSelected && !selectedTranscript.isCanonical" x-small class="ml-1" color="#eed202">Non-Canonical</v-chip>
                     </v-col>
                   </v-row>
                   <v-row dense>
-                    <v-col md="3" xl="2" class="summary-field-label">Position:</v-col>
-                    <v-col md="9" xl="10" class="summary-field-value">
+                    <v-col md="3" class="summary-field-label">Position:</v-col>
+                    <v-col md="9" class="summary-field-value">
                       <span>{{ selectedVariantLocation }}</span>
                     </v-col>
                   </v-row>
@@ -494,7 +495,7 @@ export default {
         if (this.useVEP) {
           return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
         } else {
-          return this.variantInfo.bcsqImpact? this.variantInfo.bcsqImpact.toLowerCase() : 'none for transcript';
+          return this.variantInfo.bcsqImpact ? this.variantInfo.bcsqImpact.toLowerCase() : 'none for transcript';
         }
       }
       return "-";
@@ -506,6 +507,7 @@ export default {
           return "impact_" + impactLevel;
         } else {
           let impactLevel = this.variantInfo.bcsqImpact ? this.variantInfo.bcsqImpact.toUpperCase() : '';
+          impactLevel = impactLevel !== "" ? impactLevel : 'none';
           return "impact_" + impactLevel;
         }
       }
@@ -729,7 +731,11 @@ export default {
     },
     setCnvInfo: function (sampleModelId, variant) {
       if (sampleModelId) {
-        this.cnvInfo = this.cohortModel.getCnvInfo(sampleModelId, { chr: variant.chrom, start: variant.start, end: variant.end });
+        this.cnvInfo = this.cohortModel.getCnvInfo(sampleModelId, {
+          chr: variant.chrom,
+          start: variant.start,
+          end: variant.end
+        });
       } else {
         this.cnvInfo = null;
       }

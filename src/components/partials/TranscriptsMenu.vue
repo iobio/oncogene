@@ -102,6 +102,11 @@
                text>
           {{ transcriptText }}
           <v-icon>expand_more</v-icon>
+          <v-icon v-if="!selectedTranscript.isCanonical"
+                  small
+                  color="#eed202">
+            warning
+          </v-icon>
         </v-btn>
       </template>
       <v-card id="select-transcripts-box">
@@ -113,6 +118,13 @@
             <div class="pt-1" style="font-size: 18px">
               <span>Selected: </span>
               <span style="font-weight: 500">{{ selectedTranscript.transcript_id }}</span>
+              <v-icon v-if="!selectedTranscript.isCanonical"
+                      small
+                      color="#eed202"
+                      class="px-2">
+                warning
+              </v-icon>
+              <v-chip v-if="!selectedTranscript.isCanonical" x-small>Non-Canonical</v-chip>
             </div>
           </v-col>
           <v-col sm="3" offset-sm="3" class="py-1">
@@ -120,6 +132,7 @@
                       v-bind:items="geneSources"
                       v-model="geneSource"
                       label="Gene source"
+                      color="#10487f"
                       item-value="text"
                       @input="onGeneSourceSelected">
             </v-select>
@@ -212,7 +225,7 @@ export default {
       const self = this;
       self.refreshKey++;
       self.showTranscriptsMenu = true;
-    }
+    },
   },
 
 
