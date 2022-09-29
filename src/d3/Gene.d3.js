@@ -16,6 +16,8 @@ export default function geneD3(d3, options) {
         geneD3_width = 750,
         geneD3_height = 10;
 
+    var innerOffset = options.inDialog ? 150 : 0;
+
     // scales
     var x = d3.scaleLinear(),
         y = d3.scaleLinear();
@@ -42,7 +44,9 @@ export default function geneD3(d3, options) {
         geneD3_heightPercent = !options.inDialog ? '100%' : null;
 
     //  options
-    var featureClass = function (d) { return d.feature_type.toLowerCase() };
+    var featureClass = function (d) {
+        return d.feature_type.toLowerCase()
+    };
     var featureGlyphHeight = +0;
 
     // do work
@@ -52,10 +56,10 @@ export default function geneD3(d3, options) {
         geneD3_utrHeight = geneD3_utrHeight || geneD3_cdsHeight / 2;
         geneD3_arrowHeight = geneD3_arrowHeight || geneD3_trackHeight / 2;
 
-        selection.each(function(data) {
+        selection.each(function (data) {
 
             // calculate height
-            var padding = (data.length > 1 ? geneD3_trackHeight / 2 : 0) + 10;
+            var padding = (data.length > 1 ? geneD3_trackHeight / 2 : 0);
             geneD3_height = data.length * (geneD3_trackHeight + padding);
 
             // determine inner height (w/o margins)
@@ -80,9 +84,8 @@ export default function geneD3(d3, options) {
                         })
                     })
                 ]);
-
             }
-            x.range([0, geneD3_width - margin.left - margin.right]);
+            x.range([innerOffset + 5, geneD3_width - margin.left - margin.right - innerOffset]);
 
             // Update the y-scale.
             y.domain([0, data.length]);
@@ -95,39 +98,34 @@ export default function geneD3(d3, options) {
             });
 
             // Select the svg element, if it exists.
-            var svg = container.selectAll("svg").data([0]);
-            var g = svg.join("svg")
-                .attr("width", geneD3_widthPercent ? geneD3_widthPercent : geneD3_width)
-                .attr("height", geneD3_heightPercent ? geneD3_heightPercent : geneD3_height + margin.bottom)
-                .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
-                .attr("preserveAspectRatio", "none")
-                .append('g')
-                .attr("transform", "translate(" + margin.left + "," + parseInt(margin.top + featureGlyphHeight) + ")");
-
+            let svg = container.selectAll("svg").data([0]);
 
             // The chart dimensions could change after instantiation, so update viewbox dimensions
             // every time we draw the chart.
-            if (geneD3_widthPercent && geneD3_heightPercent) {
-                d3.select(this).selectAll("svg")
-                    .filter(function () {
-                        return this.parentNode === container.node();
-                    })
+            let g = null;
+            if (inDialog) {
+                g = svg.join("svg")
                     .attr('viewBox', "0 0 " + parseInt(geneD3_width + margin.left + margin.right) + " " + parseInt(geneD3_height + margin.top + margin.bottom + featureGlyphHeight))
-                    .attr("preserveAspectRatio", "none");
+                    .attr("preserveAspectRatio", "none")
+                    .join("g");
+            } else {
+                g = svg.join("svg")
+                    .attr("width", geneD3_widthPercent)
+                    .attr("height", geneD3_heightPercent)
+                    .join('g')
+                    .attr("transform", "translate(" + margin.left + "," + parseInt(margin.top + featureGlyphHeight) + ")");
             }
-
 
             g.selectAll(".x.axis").remove();
             if (geneD3_showXAxis) {
                 g.append('g')
                     .attr("class", "x axis")
-                    .attr("transform", "translate(0, " + parseInt(geneD3_cdsHeight*2 - 5) + ")")
+                    .attr("transform", "translate(0, " + parseInt(geneD3_cdsHeight * 2) + ")")
                     .call(xAxis);
             }
 
-
             // Start gene model
-            var transcript = g.selectAll('.transcript')
+            let transcript = g.selectAll('.transcript')
                 .data(data, function (d) {
                     return d.transcript_id;
                 }).join('g')
@@ -135,10 +133,9 @@ export default function geneD3(d3, options) {
                 .attr("id", function (d) {
                     return 'transcript_' + d.transcript_id.split(".").join("_");
                 })
-                .attr('transform', function (d, i) {
-                    return "translate(0," + (y(i + 1)) + ")"
+                .attr('transform', function () {
+                    return "translate(0," + (y(1)) + ")"
                 });
-            //transcript.exit();
 
             // todo: need to make sure class w/ cursor + functionality is working here
             transcript.selectAll(".selection-box").remove();
@@ -183,14 +180,15 @@ export default function geneD3(d3, options) {
                 let tscript = transcript.selectAll('.name').data(function (d) {
                     return [[d.start, d.transcript_id, d.isCanonical, d.gene_name]]
                 });
-                tscript.join('text')
+                tscript.enter()
+                    .append('text')
                     .attr('class', 'name')
-                    .attr('x', function() {
+                    .attr('x', function () {
                         return margin.left > 5 ? 5 - margin.left : 0
                     })
-                    .attr('y', geneD3_trackHeight / 2 + margin.top)
+                    .attr('dy', geneD3_trackHeight / 2 + margin.top)
                     .attr('text-anchor', 'top')
-                    //.attr('alignment-baseline', 'left')
+                    .attr('alignment-baseline', 'left')
                     .text(function (d) {
                         return d[1];
                     });
@@ -198,8 +196,7 @@ export default function geneD3(d3, options) {
                 if (inDialog) {
                     transcript.selectAll('.type').data(function (d) {
                         return [[d.start, d.transcript_type, (d.isCanonical ? ' CANONICAL' : ''), (d.xref != null ? "(" + d.xref + ")" : ''), d.sort]]
-                    })
-                        .join('text')
+                      }).join('text')
                         .attr('class', 'type')
                         .attr('x', function () {
                             let offset = inDialog ? 0 : 30;
@@ -340,10 +337,15 @@ export default function geneD3(d3, options) {
                 return featureClass(d, i);
             });
 
+            // Bump everything except labels over
+            // if (inDialog) {
+            //     svg.selectAll('.transcript').selectAll('line')
+            //         .attr('transform', 'translate(' + innerOffset + ',0)')
+            // }
 
             // update
             transcript.transition()
-                .duration(700)
+                .duration(2000)
                 .attr('transform', function (d, i) {
                     return "translate(0," + (y(i + 1)) + ")"
                 });
@@ -426,7 +428,7 @@ export default function geneD3(d3, options) {
         return dispatch;
     };
 
-    chart.updateSize = function(options) {
+    chart.updateSize = function (options) {
         geneD3_regionStart = options.regionStart ? options.regionStart : geneD3_regionStart;
         geneD3_regionEnd = options.regionEnd ? options.regionEnd : geneD3_regionEnd;
         geneD3_width = options.width ? options.width : geneD3_width;
@@ -436,7 +438,7 @@ export default function geneD3(d3, options) {
     //     geneD3_showBrush = brush;
     // };
 
-    chart.getWidth = function() {
+    chart.getWidth = function () {
         return geneD3_width;
     };
 

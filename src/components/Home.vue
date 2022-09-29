@@ -1340,7 +1340,7 @@ export default {
       let buildObj = this.genomeBuildHelper ? this.genomeBuildHelper.getCurrentBuild() : null;
       return buildObj ? buildObj.name : null;
     }
-  }
+  },
 }
 </script>
 

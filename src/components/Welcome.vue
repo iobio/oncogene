@@ -1476,7 +1476,6 @@ export default {
         // Create model infos
         self.modelInfoList = [];
 
-        console.log("Debugging demoParams: " + JSON.stringify(self.demoParams));
         let normalModelInfo = this.createModelInfoFromParam(self.demoParams.normal, false, 0);
         self.modelInfoList.push(normalModelInfo);
         let tumors = self.demoParams.tumors;

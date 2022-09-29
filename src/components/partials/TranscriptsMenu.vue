@@ -1,17 +1,8 @@
 <style lang="sass">
 @import "../../assets/sass/_variables.sass"
 
-#transcript-gene-viz
-  .transcript
-    .name
-      font-size: 18px !important
-      line-height: normal
-      font-family: 'Open Sans', sans-serif
-    .type
-      font-family: 'Open Sans', sans-serif
-
 #transcriptMenuId
-  font-family: Raleway
+  font-family: Raleway, sans-serif
   font-size: 12px
 
 #edit-transcript-button
@@ -70,7 +61,17 @@
   background-color: #194d81
   color: white
 
+.t-menu
+  .transcript
+    .name
+      font-size: 16px
+      line-height: normal
+      font-family: 'Open Sans', sans-serif
+    .type
+      font-family: 'Open Sans', sans-serif
+
 </style>
+
 
 <template>
   <div class="d-inline-flex" id="transcript-menu">
@@ -82,6 +83,7 @@
             v-model="showTranscriptsMenu"
             origin="center center"
             transition="scale-transition"
+            content-class="t-menu"
             :close-on-content-click="false"
     >
       <template v-slot:activator="{ on, attrs }">
@@ -154,7 +156,7 @@ export default {
   },
   data() {
     return {
-      margin: {top: 5, right: 5, bottom: 5, left: 200},
+      margin: {top: 5, right: 5, bottom: 5, left: 5},
       trackHeight: 30,
       cdsHeight: 15,
       showTranscriptsMenu: false,

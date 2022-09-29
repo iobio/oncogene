@@ -1,7 +1,7 @@
 <style lang="sass">
 @import ../assets/sass/variables
 #gene-card
-  font-family: Quicksand
+  font-family: Quicksand, sans-serif
 
   .header
     font-size: 22px
@@ -96,12 +96,12 @@
     </v-row>
     <v-row no-gutters class="pt-0">
       <v-col cols="12" sm="8">
-        <div id="gene-track">
-          <div :id="geneVizName" v-if="showGene">
+        <div id="gene-track" style="height:100px">
+          <div :id="geneVizName" v-if="showGene" style="height:100px">
             <gene-viz id="gene-viz"
                       ref="transcriptGeneVizRef"
                       :data="[selectedTranscript]"
-                      :height="80"
+                      :height="100"
                       :width="width"
                       :margin="margin"
                       :trackHeight="trackHeight"

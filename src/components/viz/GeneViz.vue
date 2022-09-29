@@ -41,13 +41,11 @@
 
 #transcript-menu-item.ibo-gene .transcript.current .reference {
   stroke: rgb(0, 0, 0);
-  stroke-width: 1.5px;
 }
 
-#transcript-menu-item.ibo-gene .transcript.selected .reference {
-
-  stroke-width: 2px;
-}
+/*#transcript-menu-item.ibo-gene .transcript.selected .reference {*/
+/*  stroke-width: 2px;*/
+/*}*/
 
 .ibo-gene .reference {
   stroke: rgb(150, 150, 150);
@@ -120,14 +118,14 @@
   shape-rendering: crispEdges;
 }
 
-.resize {
-  display: inline !important;
-  fill: #7A7A7A;
-  fill-opacity: 1;
-  stroke: #7A7A7A;
-  stroke-width: 3px;
+/*.resize {*/
+/*  display: inline !important;*/
+/*  fill: #7A7A7A;*/
+/*  fill-opacity: 1;*/
+/*  stroke: #7A7A7A;*/
+/*  stroke-width: 3px;*/
 
-}
+/*}*/
 
 </style>
 
@@ -150,7 +148,7 @@
 </style>
 
 <template>
-  <div></div>
+  <div :style="vizHeight"></div>
 </template>
 
 <script>
@@ -258,6 +256,14 @@ export default {
   data() {
     return {
       geneChart: {}
+    }
+  },
+  computed: {
+    vizHeight: function() {
+      if (!this.inDialog) {
+        return 'height: ' + this.height + 'px';
+      }
+      return '';
     }
   },
   mounted: function () {
