@@ -58,7 +58,7 @@
       </v-btn>
     </v-app-bar>
     <v-main style="background-color: #7f1010">
-      <Home v-if="filterModel"
+      <Home v-if="filterModel && demoParamsReady"
             ref="homePanel"
             :d3="globalApp.d3"
             :$="globalApp.$"
@@ -71,6 +71,7 @@
             :geneList="allGenes"
             :launchParams="launchParams"
             :launchSource="launchSource"
+            :demoParams="demoParams"
             @gene-changed="onGeneChanged"
             @set-global-display="setGlobalDisplay"
             @set-filter-display="setFilterDisplay"
@@ -105,6 +106,7 @@ import {createIntegration} from './models/Integration.js'
 // static data
 import allGenesData from './data/genes.json'
 import chromLengthMap from './data/chrom_lengths.json'
+import chromNameMap from './data/chrom_map.json'
 
 export default {
   name: 'App',
@@ -142,9 +144,14 @@ export default {
       displayUnmatchedGenesBtn: false,
       unmatchedGenesList: [],
       demoMode: false,
+      demoParamsReady: false,
 
       // integration
       launchParams: {
+        type: Object,
+        default: null
+      },
+      demoParams: {
         type: Object,
         default: null
       },
@@ -248,15 +255,25 @@ export default {
       }
     },
   },
-  mounted: function () {
+  beforeMount: function() {
     const self = this;
-    this.$gtag.pageview("/");
-
     let leadQuery = this.$route.query;
     this.integration = createIntegration(leadQuery, this.globalApp);
     this.launchSource = this.integration.getSource();
     this.integration.init().then(() => {
       self.launchParams = this.integration.buildParams();
+      self.integration.promiseGetDemoUrls()
+          .then(demoParams => {
+            self.demoParams = demoParams;
+            self.demoParamsReady = true;
+          }).catch(err => {
+        console.log("Could not load demo params: " + err);
+      });
+    });
+  },
+  mounted: function () {
+    const self = this;
+    this.$gtag.pageview("/");
 
       self.cardWidth = window.innerWidth;
       self.globalApp.$(window).resize(function () {
@@ -301,7 +318,8 @@ export default {
             let endpoint = new EndpointCmd(self.globalApp,
                 self.genomeBuildHelper,
                 self.globalApp.utility.getHumanRefNames,
-                backendUrl);
+                backendUrl,
+                chromNameMap);
 
             self.cohortModel = new CohortModel(
                 self.globalApp,
@@ -350,7 +368,6 @@ export default {
             console.log("Probably not connected to the internet... ");
             console.log(error);
           })
-    })
   },
 }
 </script>

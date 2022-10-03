@@ -110,7 +110,7 @@
                         </v-col>
                         <v-col md="5" class="mx-2">
                           <v-btn x-large block color="#3a77ab" class="carousel-btn"
-                                 @click="loadDemo">Try Demo Analysis
+                                 @click="loadDemoFromMosaic">Try Demo Analysis
                           </v-btn>
                         </v-col>
                       </v-row>
@@ -468,6 +468,10 @@ export default {
       default: null
     },
     launchParams: {
+      type: Object,
+      default: null
+    },
+    demoParams: {
       type: Object,
       default: null
     }
@@ -1427,23 +1431,89 @@ export default {
       this.cohortModel.setBuild(this.selectedBuild);
       this.cohortModel.setCallType(this.somaticCallsOnly);
 
-      let omittedSampleFlags = [];
-      for (let i = 0; i < this.vcfSampleNames.length; i++) {
-        omittedSampleFlags.push(1);
-      }
-      this.modelInfoList.forEach(modelInfo => {
-        let idx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
-        omittedSampleFlags[idx] = 0;
-      });
-      this.modelInfoList.forEach(modelInfo => {
-        let bound = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
-        let numSkipBefore = 0;
-        for (let i = 0; i < bound; i++) {
-          numSkipBefore += omittedSampleFlags[i];
+      if (!demoMode) {
+        let omittedSampleFlags = [];
+        for (let i = 0; i < this.vcfSampleNames.length; i++) {
+          omittedSampleFlags.push(1);
         }
-        modelInfo.selectedSampleIdx = bound - numSkipBefore;
-      });
+        this.modelInfoList.forEach(modelInfo => {
+          let idx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+          omittedSampleFlags[idx] = 0;
+        });
+        this.modelInfoList.forEach(modelInfo => {
+          let bound = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+          let numSkipBefore = 0;
+          for (let i = 0; i < bound; i++) {
+            numSkipBefore += omittedSampleFlags[i];
+          }
+          modelInfo.selectedSampleIdx = bound - numSkipBefore;
+        });
+      }
       this.$emit('launched', this.modelInfoList, this.listInput, demoMode);
+    },
+    createModelInfoFromParam: function(param, isTumor, modelInfoIdx) {
+      let modelInfo = this.cohortModel.createModelInfo(param.selectedSamples[0], isTumor, modelInfoIdx);
+      modelInfo.vcfUrl = param.vcfs[0];
+      modelInfo.tbiUrl = param.tbis[0];
+      modelInfo.coverageBamUrl = param.coverageBam;
+      modelInfo.coverageBaiUrl = param.coverageBai;
+      return modelInfo;
+    },
+    loadDemoFromMosaic: function() {
+      const self = this;
+      self.promiseLoadDemoFromMosaic()
+          .then(() => {
+            self.launch(true);
+          }).catch(err => {
+            console.log("Problem launching demo data from Mosaic: " + err);
+      });
+    },
+    promiseLoadDemoFromMosaic: function() {
+      const self = this;
+      self.displayDemoLoader = true;
+
+      return new Promise((resolve, reject) => {
+        // Create model infos
+        self.modelInfoList = [];
+
+        let normalModelInfo = this.createModelInfoFromParam(self.demoParams.normal, false, 0);
+        self.modelInfoList.push(normalModelInfo);
+        let tumors = self.demoParams.tumors;
+        let modelInfoIdx = 1;
+        tumors.forEach(tumor => {
+          let tumorModelInfo = this.createModelInfoFromParam(tumor, true, modelInfoIdx);
+          self.modelInfoList.push(tumorModelInfo);
+          modelInfoIdx++;
+        });
+
+        // Set other necessary flags
+        self.somaticCallsOnly = self.demoParams.somaticOnly;
+        self.selectedUserData = ['vcf', 'coverage', 'summary'];
+        self.listInput = self.demoParams.genes;
+        self.uploadedVcfUrls = self.demoParams.vcfs;
+        self.uploadedTbiUrls = self.demoParams.tbis;
+
+        // read vcf and update vcfSampleNames prop to coordinate order
+        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
+          if (success) {
+            self.selectedBuild = hdrBuild;
+            for (let i = 0; i < sampleNames.length; i++) {
+              let sampleName = sampleNames[i];
+              let matchingModelInfo = self.modelInfoList.filter(function(modelInfo) {
+                return modelInfo.selectedSample === sampleName;
+              });
+              matchingModelInfo.selectedSampleIdx = i;
+            }
+
+            self.$gtag.pageview("/demo");
+            resolve();
+          } else {
+            let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
+            self.displayAlert('error', alertText);
+            reject();
+          }
+        })
+      });
     },
     loadDemo: function () {
       const self = this;
@@ -1563,14 +1633,15 @@ export default {
 
     // Only import demo file if not external launch
     // NOTE: todo this will go away soon
-    if (self.nativeLaunch) {
-      import('../data/demo.json')
-          .then(demoFile => {
-            self.demoFile = demoFile;
-          }).catch(err => {
-            console.log('Could not import demo file: ' + err);
-          });
-    }
+    // todo demo: old get rid of
+    // if (self.nativeLaunch) {
+    //   import('../data/demo.json')
+    //       .then(demoFile => {
+    //         self.demoFile = demoFile;
+    //       }).catch(err => {
+    //         console.log('Could not import demo file: ' + err);
+    //       });
+    //}
 
     // this.makeItRain();
     this.listInput = this.STARTING_INPUT;

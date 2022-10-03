@@ -1000,7 +1000,7 @@ export default {
               return feature.feature_type === 'CDS' || feature.feature_type === 'UTR';
             })
             .forEach(function (feature) {
-              if (feature.danger[self.sampleModel.getId()]) {
+              if (feature.danger && feature.danger[self.sampleModel.getId()]) {
                 regions.push(feature)
               }
             });

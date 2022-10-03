@@ -59,7 +59,8 @@ class GlobalApp {
     this.maxGeneCount         = 100;
 
     // Should vep retrieve allele frequencies (for gnomad, 1000G, ESP)
-    this.vepAF                = true ;
+    this.vepAF                = true;
+    this.useVEP               = false; // True if we want to use the old slow version of annotateSomaticVariants
 
     this.vepREVELFile         = './vep-cache/revel_all_chromosomes_for_vep.tsv.gz';
 

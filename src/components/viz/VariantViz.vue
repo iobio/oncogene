@@ -142,6 +142,12 @@
                 type: Boolean,
                 default: false
             },
+            selectedTranscript: {
+                type: Object,
+                default: function () {
+                  return {};
+                }
+            },
             d3: null
         },
         data() {
@@ -171,8 +177,8 @@
                     verticalPadding: 4,
                     showBrush: this.showBrush,
                     showTransition: this.showTransition,
-                    clazz: function(variant) {
-                        return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack, self.somaticOnlyMode);
+                    clazz: function(variant, transcriptId) {
+                        return self.classifySymbolFunc(variant, self.annotationScheme, self.isTumorTrack, self.isKnownOrCosmicTrack, self.somaticOnlyMode, transcriptId);
                     }
                 };
 
@@ -204,14 +210,14 @@
                             return d.level;
                         });
                     }
-
                     const chartData = {
                         selection: selection,
                         regionStart: self.regionStart,
                         regionEnd: self.regionEnd,
                         verticalLayers: self.data.maxLevel,
                         lowestWidth: self.data.featureWidth + 1,
-                        width: self.width
+                        width: self.width,
+                        transcriptId: self.model.getTranscriptId()
                     };
                     self.variantChart(chartData);
                     let trackDisplayed = true;
@@ -224,7 +230,8 @@
             },
             updateVariantClasses: function(container) {
                 const self = this;
-                self.variantChart.updateVariantClasses(container);
+                let transcriptId = self.model.getTranscriptId();
+                self.variantChart.updateVariantClasses(container, transcriptId);
             },
             onVariantClick: function (variant, xCoord) {
                 let self = this;

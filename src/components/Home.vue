@@ -9,6 +9,7 @@
              :firstLoadComplete="firstLoadComplete"
              :launchSource="launchSource"
              :launchParams="launchParams"
+             :demoParams="demoParams"
              @toggle-carousel="toggleCarousel"
              @display-about="openAbout"
              @hide-welcome="demoHide"
@@ -68,6 +69,7 @@
                     :selectedGeneName="selectedGeneName"
                     :totalSomaticVarCount="totalSomaticVarCount"
                     :noVarsFound="noVarsFound"
+                    :useVEP="globalApp.useVEP"
                     @variant-hover="onCohortVariantHover"
                     @variant-hover-exit="onCohortVariantHoverEnd"
                     @variant-selected="onCohortVariantClick"
@@ -135,10 +137,11 @@
                 :globalAppProp="globalApp"
                 :sampleModel="model"
                 :canonicalSampleIds="canonicalSampleIds"
+                :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
                 :classifyVariantSymbolFunc="model.classifyByImpact"
                 :hoverTooltip="hoverTooltip"
                 :selectedGene="selectedGene"
-                :selectedTranscript="analyzedTranscript"
+                :selectedTranscript="selectedTranscript"
                 :selectedVariant="selectedVariant"
                 :regionStart="geneRegionStart"
                 :regionEnd="geneRegionEnd"
@@ -180,6 +183,7 @@
                 :hasCoverageData="cohortModel.hasCoverageData"
                 :hasRnaSeq="cohortModel.hasRnaSeqData"
                 :hasAtacSeq="cohortModel.hasAtacSeqData"
+                :useVEP="globalApp.useVEP"
                 @fetch-reads="fetchSeqReads"
                 @clear-and-fetch-reads="clearFetchSeqReads"
                 @summary-mounted="onSummaryMounted"
@@ -436,6 +440,10 @@ export default {
     launchSource: {
       type: String,
       default: null
+    },
+    demoParams: {
+      type: Object,
+      default: null
     }
   },
   data: () => {
@@ -643,6 +651,7 @@ export default {
               self.rankedGeneList = geneModel.rankedGeneList;
               self.selectedGene = topRankedGene;
               self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+              self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
               self.geneRegionStart = self.selectedGene.start;
               self.geneRegionEnd = self.selectedGene.end;
 
@@ -711,6 +720,13 @@ export default {
       console.log(xCoord);
 
       if (variant) {
+        self.cohortModel.promiseGetCosmicStatus(variant)
+            .then(inCosmic => {
+              variant.inCosmic = inCosmic;
+            }).catch(err => {
+              console.log("Problem getting cosmic status for variant: " + err);
+        });
+
         self.lastClickCard = sampleModelId;
         // self.calcFeatureMatrixWidthPercent();
         self.selectedVariant = variant;
@@ -903,6 +919,7 @@ export default {
                   // If we have selected a flagged variant, we want to use the flagged
                   // variant's transcript
                   self.selectedTranscript = theTranscript;
+                  self.cohortModel.selectedTranscriptId = theTranscript.transcript_id;
                 } else {
                   // Determine the transcript that should be selected for this gene
                   // If the transcript wasn't previously selected for this gene,
@@ -910,6 +927,7 @@ export default {
                   let latestTranscript = geneModel.getLatestGeneTranscript(geneName);
                   if (latestTranscript == null) {
                     self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
+                    self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
                     geneModel.setLatestGeneTranscript(geneName, self.selectedTranscript);
                   } else {
                     self.selectedTranscript = latestTranscript;
@@ -1052,6 +1070,7 @@ export default {
       const self = this;
       self.selectedTranscript = transcript;
       self.geneModel.setLatestGeneTranscript(self.selectedGene.gene_name, self.selectedTranscript);
+      self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
       self.onGeneSelected(self.selectedGene.gene_name, true);
     },
     onGeneSourceSelected: function (theGeneSource) {
@@ -1109,7 +1128,7 @@ export default {
 
       let theVariant = variant ? variant : this.selectedVariant;
       if (theVariant) {
-        let variantInfo = this.globalApp.utility.formatDisplay(theVariant, this.cohortModel.translator, this.isEduMode);
+        let variantInfo = this.globalApp.utility.formatDisplay(theVariant, this.cohortModel.translator, false, this.selectedTranscript.transcript_id);
         // Format the coordinate for the variant
         const chrom = this.globalApp.utility.stripRefName(theVariant.chrom);
         const start = theVariant.start - this.pileupInfo.SPAN;
@@ -1250,7 +1269,7 @@ export default {
     },
     selectedVariantInfo: function () {
       if (this.selectedVariant) {
-        return this.globalApp.utility.formatDisplay(this.selectedVariant, this.cohortModel.translator)
+        return this.globalApp.utility.formatDisplay(this.selectedVariant, this.cohortModel.translator, false, this.selectedTranscript.transcript_id);
       } else {
         return null;
       }
@@ -1323,7 +1342,7 @@ export default {
       let buildObj = this.genomeBuildHelper ? this.genomeBuildHelper.getCurrentBuild() : null;
       return buildObj ? buildObj.name : null;
     }
-  }
+  },
 }
 </script>
 

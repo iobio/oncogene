@@ -41,13 +41,11 @@
 
 #transcript-menu-item.ibo-gene .transcript.current .reference {
   stroke: rgb(0, 0, 0);
-  stroke-width: 1.5px;
 }
 
-#transcript-menu-item.ibo-gene .transcript.selected .reference {
-
-  stroke-width: 2px;
-}
+/*#transcript-menu-item.ibo-gene .transcript.selected .reference {*/
+/*  stroke-width: 2px;*/
+/*}*/
 
 .ibo-gene .reference {
   stroke: rgb(150, 150, 150);
@@ -120,14 +118,14 @@
   shape-rendering: crispEdges;
 }
 
-.resize {
-  display: inline !important;
-  fill: #7A7A7A;
-  fill-opacity: 1;
-  stroke: #7A7A7A;
-  stroke-width: 3px;
+/*.resize {*/
+/*  display: inline !important;*/
+/*  fill: #7A7A7A;*/
+/*  fill-opacity: 1;*/
+/*  stroke: #7A7A7A;*/
+/*  stroke-width: 3px;*/
 
-}
+/*}*/
 
 </style>
 
@@ -150,7 +148,7 @@
 </style>
 
 <template>
-  <div></div>
+  <div :style="vizHeight"></div>
 </template>
 
 <script>
@@ -200,8 +198,8 @@ export default {
     },
     transcriptClass: {
       type: Function,
-      default: function (d) {
-        if (d.isCanonical) {
+      default: function (d, selectedTranscriptId) {
+        if (d.transcript_id === selectedTranscriptId) {
           return 'transcript current';
         } else {
           return 'transcript';
@@ -213,6 +211,10 @@ export default {
       default: function (d) {
         return d.feature_type.toLowerCase();
       }
+    },
+    divId: {
+      type: String,
+      default: null
     },
     showLabel: {
       type: Boolean,
@@ -238,6 +240,14 @@ export default {
       type: Boolean,
       default: false
     },
+    inDialog: {
+      type: Boolean,
+      default: false
+    },
+    selectedTranscriptId: {
+      type: String,
+      default: null
+    },
     $: {
       type: Function,
       default: null
@@ -252,9 +262,16 @@ export default {
       geneChart: {}
     }
   },
+  computed: {
+    vizHeight: function() {
+      if (!this.inDialog) {
+        return 'height: ' + this.height + 'px';
+      }
+      return '';
+    }
+  },
   mounted: function () {
     this.drawGene();
-    this.updateGene(); // Don't want to show zoom brush on mount
   },
   methods: {
     drawGene: function () {
@@ -264,10 +281,8 @@ export default {
         regionStart: self.regionStart,
         regionEnd: self.regionEnd,
         width: self.fixedWidth > 0 ? self.fixedWidth : self.width,
-        widthPercent: '100%',
-        heightPercent: '100%',
         margin: self.margin,
-        showXAxis: true,
+        showXAxis: self.showXAxis,
         drawBrush: self.isZoomTrack,
         showBrush: false,
         trackHeight: self.trackHeight,
@@ -276,7 +291,9 @@ export default {
         transcriptClass: self.transcriptClass,
         color: '#194d81',
         displayOnly: self.displayOnly,
-        divId: "gene-viz"
+        divId: self.divId,
+        selectedTranscriptId: self.selectedTranscriptId,
+        inDialog: self.inDialog,
       };
       self.geneChart = geneD3(self.d3, options);
 
@@ -290,13 +307,13 @@ export default {
           // Only being hit once
           self.$emit('region-zoom-reset');
         }
-      })
-          .on("d3selected", function (d) {
+      }).on("d3selected", function (d) {
             self.$emit('transcript-selected', d);
           })
           .on("d3featuretooltip", function (featureObject, feature, lock) {
             self.$emit("feature-selected", featureObject, feature, lock);
           });
+      self.updateGene();
     },
     updateGene: function () {
       const self = this;
@@ -304,7 +321,8 @@ export default {
         let options = {
           regionStart: self.regionStart,
           regionEnd: self.regionEnd,
-          width: self.fixedWidth > 0 ? self.fixedWidth : self.$el.clientWidth
+          width: self.fixedWidth > 0 ? self.fixedWidth : self.$el.clientWidth,
+          divId: self.divId
         };
         this.geneChart.updateSize(options);
 
@@ -313,6 +331,11 @@ export default {
           // this.geneChart.showZoomBrush(showZoomBrush);
           this.geneChart(selection);
         }
+      }
+      if (self.inDialog) {
+        setTimeout(function() {
+          self.geneChart.addLabels();
+        }, 700);
       }
     },
     toggleBrush: function (showBrush, container) {

@@ -1,7 +1,7 @@
 <style lang="sass">
 @import ../assets/sass/variables
 #gene-card
-  font-family: Quicksand
+  font-family: Quicksand, sans-serif
 
   .header
     font-size: 22px
@@ -96,12 +96,12 @@
     </v-row>
     <v-row no-gutters class="pt-0">
       <v-col cols="12" sm="8">
-        <div id="gene-track">
-          <div :id="geneVizName" v-if="showGene">
+        <div id="gene-track" style="height:100px">
+          <div :id="geneVizName" v-if="showGene" style="height:100px">
             <gene-viz id="gene-viz"
                       ref="transcriptGeneVizRef"
                       :data="[selectedTranscript]"
-                      :height="40"
+                      :height="100"
                       :width="width"
                       :margin="margin"
                       :trackHeight="trackHeight"
@@ -134,7 +134,7 @@
       <v-col cols="12" sm="4">
         <div class="gene-summary">
           {{
-            ncbiSummary ? (ncbiSummary.summary === '' ? '(No NCBI summary available for this gene)' : ncbiSummary.summary) : 'Unable to display gene summary'
+            ncbiSummary ? (ncbiSummary.summary === '' ? '(No NCBI summary available for this gene)' : ncbiSummary.summary) : 'Loading gene summary...'
           }}
         </div>
       </v-col>
@@ -195,13 +195,13 @@ export default {
     return {
       margin: {
         top: 20,
-        right: 0,
+        right: 5,
         bottom: 18,
         left: 0
       },
       startOrig: '',
       endOrig: '',
-      trackHeight: 18,
+      trackHeight: 22,
       cdsHeight: 12,
       geneSource: null,
       geneSources: ['gencode', 'refseq'],

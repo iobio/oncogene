@@ -243,20 +243,21 @@
               <v-row wrap>
                 <v-container class="summary-viz">
                   <v-row dense>
-                    <v-col md="3" xl="2" class="summary-field-label">Gene:</v-col>
-                    <v-col md="9" xl="4" class="summary-field-value">
+                    <v-col md="3" class="summary-field-label">Gene:</v-col>
+                    <v-col md="9" class="summary-field-value">
                       <span>{{ geneName }}</span>
                     </v-col>
-                    <v-col md="3" xl="2" class="summary-field-label">Transcript:</v-col>
-                    <v-col md=9 xl="4" class="summary-field-value">
-                <span v-if="variantSelected">
-                    {{ selectedTranscript.transcript_id }}
-                </span>
+                    <v-col md="3" class="summary-field-label">Transcript:</v-col>
+                    <v-col md=9 class="summary-field-value">
+                      <span v-if="variantSelected">
+                          {{ selectedTranscript.transcript_id }}
+                      </span>
+                      <v-chip v-if="variantSelected && !selectedTranscript.isCanonical" x-small class="ml-1" color="#eed202">Non-Canonical</v-chip>
                     </v-col>
                   </v-row>
                   <v-row dense>
-                    <v-col md="3" xl="2" class="summary-field-label">Position:</v-col>
-                    <v-col md="9" xl="10" class="summary-field-value">
+                    <v-col md="3" class="summary-field-label">Position:</v-col>
+                    <v-col md="9" class="summary-field-value">
                       <span>{{ selectedVariantLocation }}</span>
                     </v-col>
                   </v-row>
@@ -429,6 +430,10 @@ export default {
       type: Boolean,
       default: false
     },
+    useVEP: {
+      type: Boolean,
+      default: false
+    }
   },
   data() {
     return {
@@ -478,19 +483,33 @@ export default {
     },
     effect: function () {
       if (this.variantInfo != null)
-        return this.variantInfo.vepConsequence;
+        if (this.useVEP) {
+          return this.variantInfo.vepConsequence;
+        } else {
+          return this.variantInfo.bcsqConsequence ? this.variantInfo.bcsqConsequence : 'none for transcript';
+        }
       return "-";
     },
     impactText: function () {
-      if (this.variant != null) {
-        return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
+      if (this.variant != null && this.variantInfo != null) {
+        if (this.useVEP) {
+          return Object.keys(this.variant.highestImpactVep)[0].toLowerCase();
+        } else {
+          return this.variantInfo.bcsqImpact ? this.variantInfo.bcsqImpact.toLowerCase() : 'none for transcript';
+        }
       }
       return "-";
     },
     impactColor: function () {
       if (this.variant != null) {
-        var impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
-        return "impact_" + impactLevel;
+        if (this.useVEP) {
+          let impactLevel = Object.keys(this.variant.highestImpactVep)[0].toUpperCase();
+          return "impact_" + impactLevel;
+        } else {
+          let impactLevel = this.variantInfo.bcsqImpact ? this.variantInfo.bcsqImpact.toUpperCase() : '';
+          impactLevel = impactLevel !== "" ? impactLevel : 'none';
+          return "impact_" + impactLevel;
+        }
       }
       return "";
     },
@@ -531,7 +550,7 @@ export default {
     clinVarText: function () {
       if (this.variantInfo != null) {
         if (this.variantInfo.clinvarSig === '' || this.variantInfo.clinvarSig === 'not provided') {
-          return 'Not present';
+          return 'not present';
         } else {
           return this.variantInfo.clinvarSig;
         }
@@ -548,7 +567,7 @@ export default {
     },
     cosmicText: function () {
       if (this.variantInfo != null) {
-        return this.variantInfo.inCosmic ? 'Present' : 'Not present';
+        return this.variantInfo.inCosmic ? 'present' : 'not present';
       }
       return "";
     },
@@ -567,7 +586,7 @@ export default {
     },
     somaticText: function () {
       if (this.variantInfo != null) {
-        return this.variantInfo.isInherited === true ? 'Inherited' : (this.variantInfo.isInherited === false ? 'Somatic' : 'Undet.');
+        return this.variantInfo.isInherited === true ? 'Inherited' : (this.variantInfo.isInherited === false ? 'somatic' : 'undet.');
       }
       return "";
     },
@@ -712,7 +731,11 @@ export default {
     },
     setCnvInfo: function (sampleModelId, variant) {
       if (sampleModelId) {
-        this.cnvInfo = this.cohortModel.getCnvInfo(sampleModelId, { chr: variant.chrom, start: variant.start, end: variant.end });
+        this.cnvInfo = this.cohortModel.getCnvInfo(sampleModelId, {
+          chr: variant.chrom,
+          start: variant.start,
+          end: variant.end
+        });
       } else {
         this.cnvInfo = null;
       }

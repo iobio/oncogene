@@ -1,13 +1,14 @@
 import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
-    constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl) {
-        this.DEV_MODE = true;
+    constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl, chromNameMap) {
+        this.DEV_MODE = false;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
         this.genomeBuildHelper = genomeBuildHelper;
         this.getHumanRefNames = getHumanRefNamesFunc;
+        this.chromNameMap = chromNameMap;
 
         // talk to correct version of gru per integration
         if (backendUrl == null || globalApp.GALAXY_TEST_MODE) {
@@ -55,7 +56,9 @@ export default class EndpointCmd {
         const selectedSamplesStr = selectedSamples.join();
         const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        return this.api.streamCommand('annotateSomaticVariants',
+
+        if (this.globalApp.useVEP) {
+            return this.api.streamCommand('annotateSomaticVariantsVep',
                 {
                     vcfUrl: vcfSource.vcfUrl,
                     selectedSamplesStr,
@@ -63,21 +66,16 @@ export default class EndpointCmd {
                     somaticFilterPhrase,
                     genomeBuildName
                 });
-    }
-
-    /* Uses bcftools CSQ instead of VEP for functional consequence prediction */
-    annotateSomaticVariantsV2(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
-        const selectedSamplesStr = selectedSamples.join();
-        const geneRegionsStr = geneRegions.join();
-        const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        return this.api.streamCommand('annotateSomaticVariantsV2',
-            {
-                vcfUrl: vcfSource.vcfUrl,
-                selectedSamplesStr,
-                geneRegionsStr,
-                somaticFilterPhrase,
-                genomeBuildName
-            });
+        } else {
+            return this.api.streamCommand('annotateSomaticVariantsBcsq',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
+                });
+        }
     }
 
     promiseGetCnvData(cnvUrl) {
@@ -105,28 +103,30 @@ export default class EndpointCmd {
         })
     }
 
-    annotateVariants(vcfSource, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey, sfariMode = false, gnomadUrl, gnomadRegionStr) {
-        const refNames = this.getHumanRefNames(refName).split(" ");
+    annotateVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
+        const selectedSamplesStr = selectedSamples.join();
+        const geneRegionsStr = geneRegions.join();
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
-        const refFastaFile = this.genomeBuildHelper.getFastaPath(refName);
 
-        return this.api.streamCommand('annotateVariants', {
-            vcfUrl: vcfSource.vcfUrl,
-            tbiUrl: vcfSource.tbiUrl,
-            refNames,
-            regions,
-            vcfSampleNames: vcfSampleNames.split(','),
-            refFastaFile,
-            genomeBuildName,
-            isRefSeq,
-            hgvsNotation,
-            getRsId,
-            vepAF,
-            sfariMode,
-            vepREVELFile: this.globalApp.vepREVELFile,
-            gnomadUrl: gnomadUrl ? gnomadUrl : '',
-            gnomadRegionStr: gnomadRegionStr ? gnomadRegionStr : '',
-        });
+        if (this.globalApp.useVEP) {
+            return this.api.streamCommand('annotateSomaticVariants',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
+                });
+        } else {
+            return this.api.streamCommand('annotateSomaticVariantsV2',
+                {
+                    vcfUrl: vcfSource.vcfUrl,
+                    selectedSamplesStr,
+                    geneRegionsStr,
+                    somaticFilterPhrase,
+                    genomeBuildName
+                });
+        }
     }
 
     normalizeVariants(vcfUrl, tbiUrl, refName, regions) {

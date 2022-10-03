@@ -368,43 +368,43 @@ class SampleModel {
         return theFbData;
     }
 
-    promiseGetKnownVariantHistoData(geneObject, transcript, binLength, annotationMode) {
-        var me = this;
-        return new Promise(function (resolve, reject) {
-            var refName = me._stripRefName(geneObject.chr);
-            me.vcf.promiseGetVariantsHistoData(me.id, refName, geneObject, binLength == null ? transcript : null, binLength)
-                .then(function (results) {
-                    if (binLength == null) {
-                        var exonBins = me.binKnownVariantsByExons(geneObject, transcript, binLength, results, annotationMode);
-                        resolve(exonBins);
-                    } else {
-                        resolve(results);
-                    }
-                })
-                .catch(function (error) {
-                    reject(error);
-                })
-        })
-    }
+    // promiseGetKnownVariantHistoData(geneObject, transcript, binLength, annotationMode) {
+    //     var me = this;
+    //     return new Promise(function (resolve, reject) {
+    //         var refName = me._stripRefName(geneObject.chr);
+    //         me.vcf.promiseGetVariantsHistoData(me.id, refName, geneObject, binLength == null ? transcript : null, binLength)
+    //             .then(function (results) {
+    //                 if (binLength == null) {
+    //                     var exonBins = me.binKnownVariantsByExons(geneObject, transcript, binLength, results, annotationMode);
+    //                     resolve(exonBins);
+    //                 } else {
+    //                     resolve(results);
+    //                 }
+    //             })
+    //             .catch(function (error) {
+    //                 reject(error);
+    //             })
+    //     })
+    // }
 
-    promiseGetCosmicVariantHistoData(geneObject, transcript, binLength, annotationMode) {
-        const me = this;
-        return new Promise(function (resolve, reject) {
-            let refName = me._stripRefName(geneObject.chr);
-            me.vcf.promiseGetVariantsHistoData(me.id, refName, geneObject, binLength == null ? transcript : null, binLength)
-                .then(function (results) {
-                    if (binLength == null) {
-                        let exonBins = me.binKnownVariantsByExons(geneObject, transcript, binLength, results, annotationMode);
-                        resolve(exonBins);
-                    } else {
-                        resolve(results);
-                    }
-                })
-                .catch(function (error) {
-                    reject(error);
-                })
-        })
-    }
+    // promiseGetCosmicVariantHistoData(geneObject, transcript, binLength, annotationMode) {
+    //     const me = this;
+    //     return new Promise(function (resolve, reject) {
+    //         let refName = me._stripRefName(geneObject.chr);
+    //         me.vcf.promiseGetVariantsHistoData(me.id, refName, geneObject, binLength == null ? transcript : null, binLength)
+    //             .then(function (results) {
+    //                 if (binLength == null) {
+    //                     let exonBins = me.binKnownVariantsByExons(geneObject, transcript, binLength, results, annotationMode);
+    //                     resolve(exonBins);
+    //                 } else {
+    //                     resolve(results);
+    //                 }
+    //             })
+    //             .catch(function (error) {
+    //                 reject(error);
+    //             })
+    //     })
+    // }
 
     binKnownVariantsByExons(geneObject, transcript, binLength, results, annotationMode) {
         var exonBins = [];
@@ -827,6 +827,14 @@ class SampleModel {
 
     getDefaultSampleName() {
         return this.defaultSampleName;
+    }
+
+    getTranscriptId() {
+        let cohortModel = this.getCohortModel();
+        if (cohortModel) {
+            return cohortModel.selectedTranscriptId;
+        }
+        return "";
     }
 
     markEntryDataChanged(changedStatus) {
@@ -1365,263 +1373,263 @@ class SampleModel {
         });
     }
 
-    promiseGetVariantExtraAnnotations(theGene, theTranscript, variant, format, getHeader = false) {
-        const me = this;
-        return new Promise(function (resolve, reject) {
-            // Create a gene object with start and end reduced to the variants coordinates.
-            let fakeGeneObject = me.globalApp.$().extend({}, theGene);
-            fakeGeneObject.start = variant.start;
-            fakeGeneObject.end = variant.end;
+    // promiseGetVariantExtraAnnotations(theGene, theTranscript, variant, format, getHeader = false) {
+    //     const me = this;
+    //     return new Promise(function (resolve, reject) {
+    //         // Create a gene object with start and end reduced to the variants coordinates.
+    //         let fakeGeneObject = me.globalApp.$().extend({}, theGene);
+    //         fakeGeneObject.start = variant.start;
+    //         fakeGeneObject.end = variant.end;
+    //
+    //         if ((variant.fbCalled === 'Y' || variant.extraAnnot) && format !== "vcf") {
+    //             // We already have the hgvs and rsid for this variant, so there is
+    //             // no need to call the services again.  Just return the
+    //             // variant.  However, if we are returning raw vcf records, the
+    //             // services need to be called so that the info field is formatted
+    //             // with all of the annotations.
+    //             if (format && (format === 'csv' || format === 'json')) {
+    //                 // Exporting data requires additional data to be returned to link
+    //                 // the extra annotations back to the original bookmarked entries.
+    //                 resolve([variant, variant, ""]);
+    //             } else {
+    //                 resolve(variant);
+    //             }
+    //         } else {
+    //             me._promiseVcfRefName(theGene.chr).then(function () {
+    //                 me.vcf.promiseGetVariants(
+    //                     me.getVcfRefName(theGene.chr),
+    //                     fakeGeneObject,
+    //                     theTranscript,
+    //                     null,   // regions
+    //                     false,  // is multi-sample
+    //                     me._getSamplesToRetrieve(),  // sample names
+    //                     me.getAnnotationScheme().toLowerCase(), // annot scheme
+    //                     me.getTranslator().clinvarMap,  // clinvar map
+    //                     me.getGeneModel().geneSource === 'refseq',
+    //                     true,  // hgvs notation
+    //                     true,  // rsid
+    //                     true, // vep af
+    //                     me.globalApp.useServerCache, // serverside cache
+    //                     me.id,
+    //                     me.rnaSeqUrlEntered,
+    //                     me.atacSeqUrlEntered
+    //                 ).then(function (data) {
+    //
+    //                     var rawVcfRecords = data[0];
+    //                     var vcfRecords = rawVcfRecords.filter(function (record) {
+    //                         if (record.indexOf("#") === 0) {
+    //                             if (getHeader) {
+    //                                 return true;
+    //                             } else {
+    //                                 return false;
+    //                             }
+    //                         } else if (record !== "") {
+    //                             var fields = record.split("\t");
+    //                             var chrom = fields[0];
+    //                             var start = fields[1];
+    //                             var ref = fields[3];
+    //                             var alt = fields[4];
+    //                             var found = false;
+    //                             alt.split(",").forEach(function (theAlt) {
+    //                                 if (!found &&
+    //                                     me.getVcfRefName(theGene.chr) === chrom &&
+    //                                     start === variant.start &&
+    //                                     theAlt === variant.alt &&
+    //                                     ref === variant.ref) {
+    //                                     found = true;
+    //                                 }
+    //                             });
+    //                             return found;
+    //                         }
+    //                     });
+    //                     let theVcfData = data[1];
+    //                     if (theVcfData != null && theVcfData.features != null && theVcfData.features.length > 0) {
+    //                         // Now update the hgvs notation on the variant
+    //                         var matchingVariants = theVcfData.features.filter(function (aVariant) {
+    //                             var matches =
+    //                                 (variant.start === aVariant.start &&
+    //                                     variant.alt === aVariant.alt &&
+    //                                     variant.ref === aVariant.ref);
+    //                             return matches;
+    //                         });
+    //                         if (matchingVariants.length > 0) {
+    //                             var v = matchingVariants[0];
+    //                             if (format && (format === 'csv' || format === 'json')) {
+    //                                 resolve([v, variant, vcfRecords]);
+    //                             } else if (format && format === 'vcf') {
+    //                                 if (vcfRecords) {
+    //                                     resolve([v, variant, vcfRecords]);
+    //                                 } else {
+    //                                     reject('Cannot find vcf record for variant ' + theGene.gene_name + " " + variant.start + " " + variant.ref + "->" + variant.alt);
+    //                                 }
+    //                             } else {
+    //                                 me.promiseGetVcfData(theGene, theTranscript)
+    //                                     .then(function (data) {
+    //                                         var cachedVcfData = data.vcfData;
+    //                                         var msg = '';
+    //                                         if (cachedVcfData) {
+    //                                             var theVariants = cachedVcfData.features.filter(function (d) {
+    //                                                 if (d.start === v.start &&
+    //                                                     d.alt === v.alt &&
+    //                                                     d.ref === v.ref) {
+    //                                                     return true;
+    //                                                 } else {
+    //                                                     return false;
+    //                                                 }
+    //                                             });
+    //                                             if (theVariants && theVariants.length > 0) {
+    //                                                 let theVariant = theVariants[0];
+    //
+    //                                                 // set the hgvs and rsid on the existing variant
+    //                                                 theVariant.extraAnnot = true;
+    //                                                 const vepAnnots = [
+    //                                                     'vepConsequence',
+    //                                                     'vepImpact',
+    //                                                     'vepExon',
+    //                                                     'vepHGVSc',
+    //                                                     'vepHGVSp',
+    //                                                     'vepAminoAcids',
+    //                                                     'vepVariationIds',
+    //                                                     'vepSIFT',
+    //                                                     'vepPolyPhen',
+    //                                                     'vepRegs',
+    //                                                     'regulatory',
+    //                                                     'vepAf',
+    //                                                     'highestImpactVep',
+    //                                                     'highestSIFT',
+    //                                                     'highestPolyphen'
+    //                                                 ];
+    //                                                 vepAnnots.forEach(function (vepAnnot) {
+    //                                                     theVariant[vepAnnot] = v[vepAnnot];
+    //                                                 });
+    //
+    //                                                 // re-cache the data
+    //                                                 me._promiseCacheData(cachedVcfData, CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
+    //                                                     .then(function () {
+    //                                                         // return the annotated variant
+    //                                                         resolve(theVariant);
+    //                                                     }, function (error) {
+    //                                                         msg = "Problem caching data in SampleModel.promiseGetVariantExtraAnnotations(): " + error;
+    //                                                         console.log(msg);
+    //                                                         reject(msg);
+    //                                                     });
+    //                                             } else {
+    //                                                 msg = "Cannot find corresponding variant to update HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
+    //                                                 console.log(msg);
+    //                                                 reject(msg);
+    //                                             }
+    //                                         } else {
+    //                                             msg = "Unable to update gene vcfData cache with updated HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
+    //                                             console.log(msg);
+    //                                             reject(msg);
+    //                                         }
+    //                                     })
+    //                             }
+    //                         } else {
+    //                             reject('Cannot find vcf record for variant ' + theGene.gene_name + " " + variant.start + " " + variant.ref + "->" + variant.alt);
+    //                         }
+    //                     } else {
+    //                         const msg = "Empty results returned from SampleModel.promiseGetVariantExtraAnnotations() for variant " + variant.chrom + " " + variant.start + " " + variant.ref + "->" + variant.alt;
+    //                         console.log(msg);
+    //                         if (format === 'csv' || format === 'json' || format === 'vcf') {
+    //                             resolve([variant, variant, []]);
+    //                         }
+    //                         reject(msg);
+    //                     }
+    //                 });
+    //             });
+    //         }
+    //     });
+    // }
 
-            if ((variant.fbCalled === 'Y' || variant.extraAnnot) && format !== "vcf") {
-                // We already have the hgvs and rsid for this variant, so there is
-                // no need to call the services again.  Just return the
-                // variant.  However, if we are returning raw vcf records, the
-                // services need to be called so that the info field is formatted
-                // with all of the annotations.
-                if (format && (format === 'csv' || format === 'json')) {
-                    // Exporting data requires additional data to be returned to link
-                    // the extra annotations back to the original bookmarked entries.
-                    resolve([variant, variant, ""]);
-                } else {
-                    resolve(variant);
-                }
-            } else {
-                me._promiseVcfRefName(theGene.chr).then(function () {
-                    me.vcf.promiseGetVariants(
-                        me.getVcfRefName(theGene.chr),
-                        fakeGeneObject,
-                        theTranscript,
-                        null,   // regions
-                        false,  // is multi-sample
-                        me._getSamplesToRetrieve(),  // sample names
-                        me.getAnnotationScheme().toLowerCase(), // annot scheme
-                        me.getTranslator().clinvarMap,  // clinvar map
-                        me.getGeneModel().geneSource === 'refseq',
-                        true,  // hgvs notation
-                        true,  // rsid
-                        true, // vep af
-                        me.globalApp.useServerCache, // serverside cache
-                        me.id,
-                        me.rnaSeqUrlEntered,
-                        me.atacSeqUrlEntered
-                    ).then(function (data) {
-
-                        var rawVcfRecords = data[0];
-                        var vcfRecords = rawVcfRecords.filter(function (record) {
-                            if (record.indexOf("#") === 0) {
-                                if (getHeader) {
-                                    return true;
-                                } else {
-                                    return false;
-                                }
-                            } else if (record !== "") {
-                                var fields = record.split("\t");
-                                var chrom = fields[0];
-                                var start = fields[1];
-                                var ref = fields[3];
-                                var alt = fields[4];
-                                var found = false;
-                                alt.split(",").forEach(function (theAlt) {
-                                    if (!found &&
-                                        me.getVcfRefName(theGene.chr) === chrom &&
-                                        start === variant.start &&
-                                        theAlt === variant.alt &&
-                                        ref === variant.ref) {
-                                        found = true;
-                                    }
-                                });
-                                return found;
-                            }
-                        });
-                        let theVcfData = data[1];
-                        if (theVcfData != null && theVcfData.features != null && theVcfData.features.length > 0) {
-                            // Now update the hgvs notation on the variant
-                            var matchingVariants = theVcfData.features.filter(function (aVariant) {
-                                var matches =
-                                    (variant.start === aVariant.start &&
-                                        variant.alt === aVariant.alt &&
-                                        variant.ref === aVariant.ref);
-                                return matches;
-                            });
-                            if (matchingVariants.length > 0) {
-                                var v = matchingVariants[0];
-                                if (format && (format === 'csv' || format === 'json')) {
-                                    resolve([v, variant, vcfRecords]);
-                                } else if (format && format === 'vcf') {
-                                    if (vcfRecords) {
-                                        resolve([v, variant, vcfRecords]);
-                                    } else {
-                                        reject('Cannot find vcf record for variant ' + theGene.gene_name + " " + variant.start + " " + variant.ref + "->" + variant.alt);
-                                    }
-                                } else {
-                                    me.promiseGetVcfData(theGene, theTranscript)
-                                        .then(function (data) {
-                                            var cachedVcfData = data.vcfData;
-                                            var msg = '';
-                                            if (cachedVcfData) {
-                                                var theVariants = cachedVcfData.features.filter(function (d) {
-                                                    if (d.start === v.start &&
-                                                        d.alt === v.alt &&
-                                                        d.ref === v.ref) {
-                                                        return true;
-                                                    } else {
-                                                        return false;
-                                                    }
-                                                });
-                                                if (theVariants && theVariants.length > 0) {
-                                                    let theVariant = theVariants[0];
-
-                                                    // set the hgvs and rsid on the existing variant
-                                                    theVariant.extraAnnot = true;
-                                                    const vepAnnots = [
-                                                        'vepConsequence',
-                                                        'vepImpact',
-                                                        'vepExon',
-                                                        'vepHGVSc',
-                                                        'vepHGVSp',
-                                                        'vepAminoAcids',
-                                                        'vepVariationIds',
-                                                        'vepSIFT',
-                                                        'vepPolyPhen',
-                                                        'vepRegs',
-                                                        'regulatory',
-                                                        'vepAf',
-                                                        'highestImpactVep',
-                                                        'highestSIFT',
-                                                        'highestPolyphen'
-                                                    ];
-                                                    vepAnnots.forEach(function (vepAnnot) {
-                                                        theVariant[vepAnnot] = v[vepAnnot];
-                                                    });
-
-                                                    // re-cache the data
-                                                    me._promiseCacheData(cachedVcfData, CacheHelper.VCF_DATA, theGene.gene_name, theTranscript)
-                                                        .then(function () {
-                                                            // return the annotated variant
-                                                            resolve(theVariant);
-                                                        }, function (error) {
-                                                            msg = "Problem caching data in SampleModel.promiseGetVariantExtraAnnotations(): " + error;
-                                                            console.log(msg);
-                                                            reject(msg);
-                                                        });
-                                                } else {
-                                                    msg = "Cannot find corresponding variant to update HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
-                                                    console.log(msg);
-                                                    reject(msg);
-                                                }
-                                            } else {
-                                                msg = "Unable to update gene vcfData cache with updated HGVS notation for variant " + v.chrom + " " + v.start + " " + v.ref + "->" + v.alt;
-                                                console.log(msg);
-                                                reject(msg);
-                                            }
-                                        })
-                                }
-                            } else {
-                                reject('Cannot find vcf record for variant ' + theGene.gene_name + " " + variant.start + " " + variant.ref + "->" + variant.alt);
-                            }
-                        } else {
-                            const msg = "Empty results returned from SampleModel.promiseGetVariantExtraAnnotations() for variant " + variant.chrom + " " + variant.start + " " + variant.ref + "->" + variant.alt;
-                            console.log(msg);
-                            if (format === 'csv' || format === 'json' || format === 'vcf') {
-                                resolve([variant, variant, []]);
-                            }
-                            reject(msg);
-                        }
-                    });
-                });
-            }
-        });
-    }
-
-    promiseGetImpactfulVariantIds(theGeneObject, theTranscript) {
-        var me = this;
-
-
-        return new Promise(function (resolve, reject) {
-
-            var trRefName = null;
-
-            me._promiseVcfRefName(theGeneObject.chr)
-                .then(function () {
-                    trRefName = me.getVcfRefName(theGeneObject.chr);
-
-                    // Get the coords for variants of high or moder impact
-                    return me.promiseGetVcfData(theGeneObject, theTranscript)
-                })
-                .then(function (data) {
-                        var theVcfData = data.vcfData;
-
-                        var regions = theVcfData.features.filter(function (variant) {
-                            if (variant.fbCalled == 'Y') {
-                                return false;
-                            } else if (variant.extraAnnot) {
-                                return false;
-                            } else {
-                                return (variant.vepImpact['HIGH'] || variant.vepImpact['MODERATE']);
-                            }
-                        }).map(function (variant) {
-                            return {name: trRefName, start: variant.start, end: variant.end};
-                        })
-
-                        if (regions.length > 0) {
-
-                            me.vcf.promiseGetVariants(
-                                trRefName,
-                                theGeneObject,
-                                theTranscript,
-                                regions,   // regions
-                                false,        // is multi-sample
-                                me._getSamplesToRetrieve(),  // sample names
-                                me.getAnnotationScheme().toLowerCase(), // annot scheme
-                                me.getTranslator().clinvarMap,  // clinvar map
-                                me.getGeneModel().geneSource == 'refseq' ? true : false,
-                                true,  // hgvs notation
-                                true,  // rsid
-                                false, // vep af
-                                me.globalApp.useServerCache, // serverside cache
-                                me.id,
-                                me.rnaSeqUrlEntered,
-                                me.atacSeqUrlEntered
-                            ).then(function (data) {
-
-                                var annotVcfData = data[1];
-
-                                if (annotVcfData != null && annotVcfData.features != null && annotVcfData.features.length > 0) {
-                                    // refresh the variants with the variant ids
-                                    me._refreshVariantsWithVariantIds(theVcfData, annotVcfData);
-                                    me._promiseCacheData(theVcfData, CacheHelper.VCF_DATA, theGeneObject.gene_name, theTranscript)
-                                        .then(function () {
-                                                me.theVcfData = theVcfData;
-                                                resolve(theVcfData.features);
-                                            },
-                                            function (error) {
-                                                var msg = "Problem caching data in SampleModel.promiseGetImpactfulVariantIds(): " + error;
-                                                console.log(msg);
-                                                reject(msg);
-                                            })
-                                } else {
-                                    var msg = "Empty results returned from SampleModel.promiseGetImpactfulVariantIds() for gene " + theGeneObject.gene_name;
-                                    console.log(msg);
-                                    reject(msg);
-                                }
-
-                            });
-
-                        } else {
-                            resolve(theVcfData.features);
-                        }
-
-                    },
-                    function (error) {
-                        var msg = "A problem occurred in SampleModel.promiseGetImpactfulVariantIds(): " + error;
-                        console.log(msg);
-                        reject(msg);
-                    })
-
-
-        });
-    }
+    // promiseGetImpactfulVariantIds(theGeneObject, theTranscript) {
+    //     var me = this;
+    //
+    //
+    //     return new Promise(function (resolve, reject) {
+    //
+    //         var trRefName = null;
+    //
+    //         me._promiseVcfRefName(theGeneObject.chr)
+    //             .then(function () {
+    //                 trRefName = me.getVcfRefName(theGeneObject.chr);
+    //
+    //                 // Get the coords for variants of high or moder impact
+    //                 return me.promiseGetVcfData(theGeneObject, theTranscript)
+    //             })
+    //             .then(function (data) {
+    //                     var theVcfData = data.vcfData;
+    //
+    //                     var regions = theVcfData.features.filter(function (variant) {
+    //                         if (variant.fbCalled == 'Y') {
+    //                             return false;
+    //                         } else if (variant.extraAnnot) {
+    //                             return false;
+    //                         } else {
+    //                             return (variant.vepImpact['HIGH'] || variant.vepImpact['MODERATE']);
+    //                         }
+    //                     }).map(function (variant) {
+    //                         return {name: trRefName, start: variant.start, end: variant.end};
+    //                     })
+    //
+    //                     if (regions.length > 0) {
+    //
+    //                         me.vcf.promiseGetVariants(
+    //                             trRefName,
+    //                             theGeneObject,
+    //                             theTranscript,
+    //                             regions,   // regions
+    //                             false,        // is multi-sample
+    //                             me._getSamplesToRetrieve(),  // sample names
+    //                             me.getAnnotationScheme().toLowerCase(), // annot scheme
+    //                             me.getTranslator().clinvarMap,  // clinvar map
+    //                             me.getGeneModel().geneSource == 'refseq' ? true : false,
+    //                             true,  // hgvs notation
+    //                             true,  // rsid
+    //                             false, // vep af
+    //                             me.globalApp.useServerCache, // serverside cache
+    //                             me.id,
+    //                             me.rnaSeqUrlEntered,
+    //                             me.atacSeqUrlEntered
+    //                         ).then(function (data) {
+    //
+    //                             var annotVcfData = data[1];
+    //
+    //                             if (annotVcfData != null && annotVcfData.features != null && annotVcfData.features.length > 0) {
+    //                                 // refresh the variants with the variant ids
+    //                                 me._refreshVariantsWithVariantIds(theVcfData, annotVcfData);
+    //                                 me._promiseCacheData(theVcfData, CacheHelper.VCF_DATA, theGeneObject.gene_name, theTranscript)
+    //                                     .then(function () {
+    //                                             me.theVcfData = theVcfData;
+    //                                             resolve(theVcfData.features);
+    //                                         },
+    //                                         function (error) {
+    //                                             var msg = "Problem caching data in SampleModel.promiseGetImpactfulVariantIds(): " + error;
+    //                                             console.log(msg);
+    //                                             reject(msg);
+    //                                         })
+    //                             } else {
+    //                                 var msg = "Empty results returned from SampleModel.promiseGetImpactfulVariantIds() for gene " + theGeneObject.gene_name;
+    //                                 console.log(msg);
+    //                                 reject(msg);
+    //                             }
+    //
+    //                         });
+    //
+    //                     } else {
+    //                         resolve(theVcfData.features);
+    //                     }
+    //
+    //                 },
+    //                 function (error) {
+    //                     var msg = "A problem occurred in SampleModel.promiseGetImpactfulVariantIds(): " + error;
+    //                     console.log(msg);
+    //                     reject(msg);
+    //                 })
+    //
+    //
+    //     });
+    // }
 
     /* Takes in a list of regions, calls 5 regions at a time to process. */
     promiseGetVariantIds(regions) {
@@ -1670,7 +1678,7 @@ class SampleModel {
     }
 
     // Returns all vcf data in multi-sample vcf, per track
-    promiseGetAllVariants(theGene, theTranscript, isMultiSample, keepHomRefVariants) {
+    promiseGetAllVariants(theGene, theTranscript, isMultiSample, bcsqImpactMap) {
         const me = this;
         return new Promise(function (resolve, reject) {
             // First the gene vcf data has been cached, just return
@@ -1684,23 +1692,16 @@ class SampleModel {
                     } else {
                         me._promiseVcfRefName(theGene.chr)
                             .then(function () {
-                                let samplesInFile = me._getSamplesToRetrieve();
+                                //let samplesInFile = me._getSamplesToRetrieve();
+                                //function (refName, geneObject, selectedTranscript, regions, isMultiSample, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap) {
                                 return me.vcf.promiseGetVariants(
                                     me.getVcfRefName(theGene.chr),
                                     theGene,
                                     theTranscript,
-                                    null,   // regions
                                     isMultiSample, // is multi-sample
-                                    samplesInFile,
-                                    me.getAnnotationScheme().toLowerCase(),
-                                    me.getTranslator().clinvarMap,
-                                    me.getGeneModel().geneSource === 'refseq',
-                                    me.isBasicMode || me.globalApp.getVariantIdsForGene,  // hgvs notation
-                                    me.globalApp.getVariantIdsForGene,  // rsid
-                                    me.globalApp.vepAF,   // vep af
-                                    null,   // cache
-                                    me.id,
-                                    keepHomRefVariants
+                                    me.getCohortModel().selectedSamples,
+                                    false,
+                                    bcsqImpactMap
                                 );
                             })
                             .then(data => {
@@ -1728,6 +1729,7 @@ class SampleModel {
                 filtData = results[0];
             }
 
+            // todo: no gene prop here
             let theGeneObject = me.getGeneModel().geneObjects[filtData.gene];
             if (theGeneObject) {
 
@@ -2042,35 +2044,42 @@ class SampleModel {
     }
 
 
+    // Assigns variant afFieldHighest field
     _determineHighestAf(variant) {
         var me = this;
         // Find the highest value (the least rare AF) betweem exac and 1000g to evaluate
         // as 'lowest' af for all variants in gene
         var afHighest = null;
-        if (me.globalApp.$.isNumeric(variant.afExAC) && me.globalApp.$.isNumeric(variant.af1000G)) {
-            // Ignore exac n/a.  If exac is higher than 1000g, evaluate exac
-            if (variant.afExAC > -100 && variant.afExAC >= variant.af1000G) {
+
+        if (me.globalApp.useVEP) {
+            if (me.globalApp.$.isNumeric(variant.afExAC) && me.globalApp.$.isNumeric(variant.af1000G)) {
+                // Ignore exac n/a.  If exac is higher than 1000g, evaluate exac
+                if (variant.afExAC > -100 && variant.afExAC >= variant.af1000G) {
+                    variant.afFieldHighest = 'afExAC';
+                } else {
+                    variant.afFieldHighest = 'af1000G';
+                }
+            } else if (me.globalApp.$.isNumeric(variant.afExAC)) {
                 variant.afFieldHighest = 'afExAC';
-            } else {
+
+            } else if (me.globalApp.$.isNumeric(variant.af1000G)) {
                 variant.afFieldHighest = 'af1000G';
             }
-        } else if (me.globalApp.$.isNumeric(variant.afExAC)) {
-            variant.afFieldHighest = 'afExAC';
+            afHighest = me.getHighestAf(variant);
 
-        } else if (me.globalApp.$.isNumeric(variant.af1000G)) {
-            variant.afFieldHighest = 'af1000G';
-        }
-        afHighest = me.getHighestAf(variant);
-
-        if (me.globalApp.vepAF) {
-            if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
-                if (variant.vepAf.gnomAD.AF >= afHighest) {
+            if (me.globalApp.vepAF) {
+                if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF) && afHighest) {
+                    if (variant.vepAf.gnomAD.AF >= afHighest) {
+                        variant.afFieldHighest = 'afgnomAD';
+                    }
+                } else if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF)) {
                     variant.afFieldHighest = 'afgnomAD';
                 }
-            } else if (me.globalApp.$.isNumeric(variant.vepAf.gnomAD.AF)) {
-                variant.afFieldHighest = 'afgnomAD';
             }
         }
+
+        //
+
         variant.afHighest = me.getHighestAf(variant);
     }
 
@@ -3007,19 +3016,28 @@ class SampleModel {
     }
 
 
-    classifyByImpact(d, annotationScheme, inTumorTrack, inKnownTrack, somaticOnlyMode) {
+    classifyByImpact(d, annotationScheme, inTumorTrack, inKnownTrack, somaticOnlyMode, selectedTranscriptId) {
         let self = this;
 
         var impacts = "";
         var colorimpacts = "";
         var effects = "";
         var filterStatus = "";
-        // var sift = "";
-        // var polyphen = "";
-        // var regulatory = "";
-        // TODO: cleanup unused
 
-        var effectList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.effect : d.vepConsequence);
+        var transVarBcsq = '';
+        if (annotationScheme === 'bcsq') {
+            let trimmedTranscript = selectedTranscriptId.substring(0, selectedTranscriptId.indexOf('.'));
+            transVarBcsq = d.bcsq[trimmedTranscript] ? d.bcsq[trimmedTranscript] : {};
+        }
+
+        let effectList = {};
+        if (annotationScheme === 'vep') {
+            effectList = d.vepConsequence;
+        } else {
+            // If we can't get the current transcript info (because it doesn't exist) color by highest impact from other transcript
+            let type = transVarBcsq ? transVarBcsq['csqType'] : '';
+            effectList[type] = type;
+        }
         for (var key in effectList) {
             if (annotationScheme.toLowerCase() === 'vep' && key.indexOf("&") > 0) {
                 var tokens = key.split("&");
@@ -3031,7 +3049,16 @@ class SampleModel {
                 effects += " " + key;
             }
         }
-        var impactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToFilter]);
+
+        let impactList = {};
+        if (annotationScheme === 'vep') {
+            impactList = d[self.globalApp.impactFieldToFilter];
+        } else {
+            let impact = transVarBcsq.impact;
+            if (impact) {
+                impactList[impact] = impact;
+            }
+        }
         for (key in impactList) {
             impacts += " " + key;
         }
@@ -3039,7 +3066,15 @@ class SampleModel {
         if (d.isInherited != null && d.isInherited === false && inTumorTrack && !inKnownTrack && !somaticOnlyMode) {
             colorimpacts += " " + "impact_SOMATIC";
         } else {
-            var colorImpactList = (annotationScheme == null || annotationScheme.toLowerCase() === 'snpeff' ? d.impact : d[self.globalApp.impactFieldToColor]);
+            let colorImpactList = {};
+            if (annotationScheme === 'vep') {
+                colorImpactList = d[self.globalApp.impactFieldToColor];
+            } else {
+                let impact = (transVarBcsq && transVarBcsq.impact) ? transVarBcsq.impact : '';
+                if (impact !== '') {
+                    colorImpactList[impact] = impact;
+                }
+            }
             for (key in colorImpactList) {
                 colorimpacts += " " + 'impact_' + key;
             }
@@ -3052,17 +3087,6 @@ class SampleModel {
         if (d.passesFilters) {
             filterStatus = "filtered";
         }
-
-        // Taking out as of 08/19
-        // for (var key in d.sift) {
-        //     sift += " " + key;
-        // }
-        // for (var key in d.polyphen) {
-        //     polyphen += " " + key;
-        // }
-        // for (var key in d.regulatory) {
-        //     regulatory += " " + key;
-        // }
 
         return 'variant ' + d.type.toLowerCase() + ' ' + d.zygosity.toLowerCase() + ' ' + (d.inheritance ? d.inheritance.toLowerCase() : "") + ' ' + d.clinvar + ' ' + impacts + ' ' + effects + ' ' + d.consensus + ' ' + colorimpacts + ' ' + filterStatus;
     }

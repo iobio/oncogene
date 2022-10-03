@@ -356,6 +356,8 @@ export default {
                   self.filteredVcfSampleNames.push(sampleNames[i]);
                 } else {
                   let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+                  modelInfo.vcfUrl = vcfUrl;
+                  modelInfo.tbiUrl = tbiUrl;
                   infoList.push(modelInfo);
                   self.modelInfoIdx++;
                   self.filteredVcfSampleNames.push(sampleNames[i]);
@@ -392,28 +394,7 @@ export default {
       }
     },
     createModelInfo: function (selectedSample, isTumor, modelInfoIdx) {
-      let modelInfo = {};
-
-      modelInfo.id = 's' + modelInfoIdx;
-      modelInfo.order = modelInfoIdx;
-      modelInfo.selectedSample = selectedSample;
-      modelInfo.selectedSampleIdx = -1;
-      modelInfo.isTumor = isTumor;
-      modelInfo.vcfUrl = this.url;
-      modelInfo.tbiUrl = this.indexUrl;
-      modelInfo.coverageBamUrl = null;
-      modelInfo.coverageBaiUrl = null;
-      modelInfo.coverageVerified = false;
-      modelInfo.rnaSeqBamUrl = null;
-      modelInfo.rnaSeqBaiUrl = null;
-      modelInfo.rnaSeqVerified = false;
-      modelInfo.atacSeqBamUrl = null;
-      modelInfo.atacSeqBaiUrl = null;
-      modelInfo.atacSeqVefified = false;
-      modelInfo.cnvUrl = null;
-      modelInfo.cnvVerified = false;
-
-      return modelInfo;
+      return this.cohortModel.createModelInfo(selectedSample, isTumor, modelInfoIdx);
     },
     addTrack: function () {
       let newInfo = this.createModelInfo(null, true, this.modelInfoIdx);

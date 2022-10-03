@@ -45,11 +45,18 @@ export default function vcfiobio(theGlobalApp) {
     // Url for offline Clinvar URL
     var OFFLINE_CLINVAR_VCF_BASE_URL = globalApp.isOffline ? ("http://" + globalApp.serverInstance + globalApp.serverCacheDir) : "";
 
-    var VEP_FIELDS_AF_1000G = "AF|AFR_AF|AMR_AF|EAS_AF|EUR_AF|SAS_AF".split("|");
-    var VEP_FIELDS_AF_ESP = "AA_AF|EA_AF".split("|");
-    var VEP_FIELDS_AF_GNOMAD = "gnomAD_AF|gnomAD_AFR_AF|gnomAD_AMR_AF|gnomAD_ASJ_AF|gnomAD_EAS_AF|gnomAD_FIN_AF|gnomAD_NFE_AF|gnomAD_OTH_AF|gnomAD_SAS_AF".split("|");
-    var VEP_FIELDS_AF_MAX = "MAX_AF|MAX_AF_POPS".split("|");
+    // todo: old get rid of
+    // var VEP_FIELDS_AF_1000G = "AF|AFR_AF|AMR_AF|EAS_AF|EUR_AF|SAS_AF".split("|");
+    // var VEP_FIELDS_AF_ESP = "AA_AF|EA_AF".split("|");
+    // var VEP_FIELDS_AF_GNOMAD = "gnomAD_AF|gnomAD_AFR_AF|gnomAD_AMR_AF|gnomAD_ASJ_AF|gnomAD_EAS_AF|gnomAD_FIN_AF|gnomAD_NFE_AF|gnomAD_OTH_AF|gnomAD_SAS_AF".split("|");
+    // var VEP_FIELDS_AF_MAX = "MAX_AF|MAX_AF_POPS".split("|");
 
+    var VEP_FIELDS_AF_1000G  = "AF|AFR_AF|AMR_AF|EAS_AF|EUR_AF|SAS_AF".split("|");
+    var VEP_FIELDS_AF_ESP    = "AA_AF|EA_AF".split("|");
+    var VEP_FIELDS_AF_GNOMAD = "gnomAD_AF|gnomAD_AFR_AF|gnomAD_AMR_AF|gnomAD_ASJ_AF|gnomAD_EAS_AF|gnomAD_FIN_AF|gnomAD_NFE_AF|gnomAD_OTH_AF|gnomAD_SAS_AF".split("|");
+    var VEP_FIELDS_AF_MAX    = "MAX_AF|MAX_AF_POPS".split("|");
+    var VEP_FIELDS_AF_GNOMAD_GENOMES = "gnomADg_AF|gnomADg_AN|gnomADg_AC|gnomADg_nhomalt_raw|gnomADg_nhomalt-raw|gnomADg_AF_popmax|gnomADg_faf95_popmax|gnomADg_AC_fin|gnomADg_AC_nfe|gnomADg_AC_oth|gnomADg_AC_amr|gnomADg_AC_afr|gnomADg_AC_asj|gnomADg_AC_eas|gnomADg_AC_sas|gnomADg_AC_fin|gnomADg_AN_nfe|gnomADg_AN_oth|gnomADg_AN_amr|gnomADg_AN_afr|gnomADg_AN_asj|gnomADg_AN_eas|gnomADg_AN_sas".split("|");
+    var VEP_FIELDS_AF_GNOMAD_EXOMES  = "gnomADe_AF|gnomADe_AN|gnomADe_AC|gnomADe_nhomalt_raw|gnomADe_AF_popmax|gnomADe_AC_fin|gnomADe_AC_nfe|gnomADe_AC_oth|gnomADe_AC_amr|gnomADe_AC_afr|gnomADe_AC_asj|gnomADe_AC_eas|gnomADe_AC_sas|gnomADe_AC_fin|gnomADe_AN_nfe|gnomADe_AN_oth|gnomADe_AN_amr|gnomADe_AN_afr|gnomADe_AN_asj|gnomADe_AN_eas|gnomADe_AN_sas".split("|");
 
     var CLINVAR_CODES = {
         '0': 'not_provided',
@@ -63,6 +70,24 @@ export default function vcfiobio(theGlobalApp) {
         '255': 'other'
     };
 
+    const CSQ_TYPE = 'csqType';
+    const GENE_SYMBOL = 'geneSymbol';
+    const TRANSCRIPT_ID = "ensemblId";
+    var BCSQ_FIELDS = [
+        CSQ_TYPE,
+        GENE_SYMBOL,
+        TRANSCRIPT_ID,
+        "transcriptType",
+        "strand",
+        "aaPos",
+        "corrVars"
+    ];
+    const ENSEMBL_ID_IDX = 2; // Note: corresponds to BCSQ_FIELDS [TRANSCRIPT_ID} idx
+
+    const HIGH = 'HIGH',
+        MODERATE = 'MODERATE',
+        LOW = 'LOW',
+        MODIFIER = 'MODIFIER';
 
 // var effectCategories = [
 // ['coding_sequence_variant', 'coding'],
@@ -700,7 +725,7 @@ export default function vcfiobio(theGlobalApp) {
     };
 
 
-    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions, somaticOnlyMode) {
+    exports.promiseAnnotateSomaticVariants = function (somaticFilterPhrase, selectedSamples, regions, somaticOnlyMode, bcsqImpactMap) {
         const self = this;
         return new Promise((resolve, reject) => {
                 if (!vcfURL) {
@@ -770,7 +795,7 @@ export default function vcfiobio(theGlobalApp) {
                         }
 
                         let vepAf = true;
-                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode);
+                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap);
                         resolve(results);
                     });
 
@@ -786,49 +811,22 @@ export default function vcfiobio(theGlobalApp) {
         );
     };
 
-    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, regions, isMultiSample, samplesToRetrieve, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache, sampleModelId, keepHomRef) {
-        var me = this;
+    exports.promiseGetVariants = function (refName, geneObject, selectedTranscript, isMultiSample, selectedSamples, somaticOnlyMode, bcsqImpactMap) {
+        const me = this;
 
         return new Promise(function (resolve, reject) {
-            // This comma separated string of samples to perform vcf subset on
-            let vcfSampleNames = samplesToRetrieve.filter(function (sample) {
-                return (sample.vcfSampleName !== "" && sample.vcfSampleName != null);
-            })
-                .map(function (sample) {
-                    return sample.vcfSampleName;
-                })
-                .join(",");
-
-            // This comma separated string of samples to be contained in the maps of genotypes
-            let sampleNamesToGenotype = samplesToRetrieve.map(function (sample) {
-                return sample.sampleName;
-            })
-                .join(",");
-
-
             if (sourceType === SOURCE_TYPE_URL) {
-                me._getRemoteVariantsImpl(refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache,
+                me._getAllVariants(refName, geneObject, selectedTranscript, isMultiSample, selectedSamples, somaticOnlyMode, bcsqImpactMap,
                     function (annotatedData, results) {
                         if (annotatedData && results) {
                             resolve([annotatedData, results]);
                         } else {
                             reject();
                         }
-                    }, null, sampleModelId, keepHomRef);
+                    });
             } else {
-                //me._getLocalStats(refName, geneObject.start, geneObject.end, sampleName);
-
-                me._getLocalVariantsImpl(refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, cache,
-                    function (annotatedData, results) {
-                        if (annotatedData && results) {
-                            resolve([annotatedData, results]);
-                        } else {
-                            reject();
-                        }
-                    }, null, sampleModelId);
-
+                reject("Oncogene does not currently annotate local files");
             }
-
         });
     }
 
@@ -889,27 +887,15 @@ export default function vcfiobio(theGlobalApp) {
         });
     };
 
-    exports._getRemoteVariantsImpl = function (refName, geneObject, selectedTranscript, regions, isMultiSample, vcfSampleNames, sampleNamesToGenotype, annotationEngine, clinvarMap, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, callback, errorCallback, sampleModelId, keepHomRef) {
+    exports._getAllVariants = function (refName, geneObject, selectedTranscript, isMultiSample, selectedSamples, somaticOnlyMode, bcsqImpactMap, callback) {
+        const me = this;
 
-        var me = this;
-
-
-        if (regions == null || regions.length === 0) {
-            regions = [];
-            regions.push({'name': refName, 'start': geneObject.start, 'end': geneObject.end});
-        }
-
-        var serverCacheKey = me._getServerCacheKey(vcfURL, annotationEngine, refName, geneObject, vcfSampleNames, {
-            refseq: isRefSeq,
-            hgvs: hgvsNotation,
-            rsid: getRsId
-        });
-
-        var cmd = me.getEndpoint().annotateVariants({
+        let regions = somaticOnlyMode ? null : [refName + ':' + geneObject.start + '-' + geneObject.end];
+        let somaticFilterPhrase = '';
+        let cmd = me.getEndpoint().annotateSomaticVariants({
             'vcfUrl': vcfURL,
-            'tbiUrl': tbiUrl
-        }, refName, regions, vcfSampleNames, annotationEngine, isRefSeq, hgvsNotation, getRsId, vepAF, useServerCache, serverCacheKey);
-
+            'tbiUrl': tbiUrl,
+        }, selectedSamples, regions, somaticFilterPhrase);
 
         var annotatedData = "";
         // Get the results from the iobio command
@@ -956,7 +942,9 @@ export default function vcfiobio(theGlobalApp) {
             });
 
             // Parse the vcf object into a variant object that is visualized by the client.
-            var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, keepHomRef);
+            //var results = me._parseVcfRecords(vcfObjects, refName, geneObject, selectedTranscript, clinvarMap, (hgvsNotation && getRsId), isMultiSample, sampleNamesToGenotype, null, vepAF, sampleModelId, keepHomRef);
+            const vepAf = true;
+            let results = me._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap, geneObject);
 
             callback(annotatedRecs, results);
         });
@@ -1555,8 +1543,9 @@ export default function vcfiobio(theGlobalApp) {
         cmd.run();
     };
 
-    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF, somaticOnlyMode) {
+    exports._parseSomaticVcfRecords = function(vcfRecs, sampleNames, vepAF, somaticOnlyMode, bcsqImpactMap, geneObject) {
         const me = this;
+        const useVEP = globalApp.useVEP;
 
         // Use the sample index to grab the right genotype column from the vcf record
         // If it isn't provided, assume that the first genotype column is the one
@@ -1578,6 +1567,10 @@ export default function vcfiobio(theGlobalApp) {
         var allVariants = gtSampleIndices.map(function () { return []; });
         let somaticGenes = {};
         let unmatchedVars = {};
+
+        // Used for bcsq annotations
+        let bcsqVarMap = {};
+        let bcsqVarRefList = []; // List of pointers to variants that have @REF annotations
 
         vcfRecs.forEach(function (rec) {
             if (rec.pos && rec.id) {
@@ -1641,28 +1634,46 @@ export default function vcfiobio(theGlobalApp) {
                     //let selectedTranscriptID = globalApp.utility.stripTranscriptPrefix(selectedTranscript.transcript_id);
 
                     // If we don't have a gene list for somaticOnlyMode though, have to rely on VEP annotation and take majority
-                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
+                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF, bcsqVarMap, bcsqImpactMap);
 
                     // Amend VEP AF annotation for multi/no gene matches
-                    let majSymArr = annot.vep.symbol;
-                    if (majSymArr.length === 1) {
-                        annot.vep.symbol = majSymArr[0];
-                    } else if (somaticOnlyMode) {
-                        if (majSymArr.length === 0 && !me._isIntergenic(annot.vep.vepConsequence)) {
-                            if (unmatchedVars['Unknown']) {
-                                unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
-                            } else {
-                                unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
-                            }
-                        } else if (majSymArr.length > 1) {
-                            let combinedSymStr = majSymArr.join(' / ');
-                            if (unmatchedVars[combinedSymStr]) {
-                                unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
-                            } else {
-                                unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                    // Add to list of unknown variants
+                    if (useVEP) {
+                        let majSym = annot.vep.symbol;
+                        if (somaticOnlyMode) {
+                            if (majSym === "" && !me._isIntergenic(annot.vep.vepConsequence)) {
+                                if (unmatchedVars['Unknown']) {
+                                    unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
+                            } else if (majSym === "") {
+                                let combinedSymStr = Object.keys(annot.vep.symbols).join(' / ');
+                                if (unmatchedVars[combinedSymStr]) {
+                                    unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
                             }
                         }
-                        annot.vep.symbol = '';
+                    } else {
+                        let majSym = annot.bcsq.symbol;
+                        if (somaticOnlyMode) {
+                            if (majSym === "" && annot.bcsq.type !== 'intronic_variant') {
+                                if (unmatchedVars['Unknown']) {
+                                    unmatchedVars['Unknown'].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars['Unknown'] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
+                            } else if (majSym === "") {
+                                let combinedSymStr = Object.keys(annot.bcsq.symbols).join(' / ');
+                                if (unmatchedVars[combinedSymStr]) {
+                                    unmatchedVars[combinedSymStr].push({ id : me.getVariantId(rec, alt), rec : rec.rawRecord });
+                                } else {
+                                    unmatchedVars[combinedSymStr] = [{ id : me.getVariantId(rec, alt), rec : rec.rawRecord }];
+                                }
+                            }
+                        }
                     }
 
                     const keepHomRefs = !somaticOnlyMode;
@@ -1670,10 +1681,20 @@ export default function vcfiobio(theGlobalApp) {
 
                     if (gtResult.keep) {
                         var highestImpactSnpeff = me._getHighestImpact(annot.snpEff.allSnpeff, me._cullTranscripts, selectedTranscriptID);
-                        var highestImpactVep = me._getHighestImpact(annot.vep.allVep, me._cullTranscripts, selectedTranscriptID);
-                        var highestSIFT = me._getLowestScore(annot.vep.allSIFT, me._cullTranscripts, selectedTranscriptID);
-                        var highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
-                        var highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
+                        var highestImpactVep = '';
+                        var highestSIFT = '';
+                        var highestPolyphen = '';
+                        var highestREVEL = '';
+                        var highestImpactBcsq = '';
+
+                        if (globalApp.useVEP) {
+                            highestImpactVep = me._getHighestImpact(annot.vep.allVep, me._cullTranscripts, selectedTranscriptID);
+                            highestSIFT = me._getLowestScore(annot.vep.allSIFT, me._cullTranscripts, selectedTranscriptID);
+                            highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
+                            highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
+                        } else {
+                            highestImpactBcsq = annot.bcsq.highestImpactString;
+                        }
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
@@ -1717,47 +1738,60 @@ export default function vcfiobio(theGlobalApp) {
                                     'rsid': annot.rs,
                                     'combinedDepth': annot.combinedDepth,
 
-                                    // vep
-                                    'vepConsequence': annot.vep.vepConsequence,
-                                    'vepImpact': annot.vep.vepImpact,
-                                    'vepExon': annot.vep.vepExon,
-                                    'vepHGVSc': annot.vep.vepHGVSc,
-                                    'vepHGVSp': annot.vep.vepHGVSp,
-                                    'vepAminoAcids': annot.vep.vepAminoAcids,
-                                    'vepVariationIds': annot.vep.vepVariationIds,
-                                    'vepREVEL': annot.vep.vepREVEL,
-                                    'vepSIFT': annot.vep.vepSIFT,
-                                    'sift': annot.vep.sift,
-                                    'vepPolyPhen': annot.vep.vepPolyPhen,
-                                    'polyphen': annot.vep.polyphen,
-                                    'vepRegs': annot.vep.vepRegs,
-                                    'regulatory': annot.vep.regulatory,
-                                    'vepAf': annot.vep.af,
-                                    'geneSymbol' : annot.vep.symbol,
-
                                     // generic annots
                                     'genericAnnots': annot.genericAnnots,
-
-                                    //  when multiple impacts, pick the highest one (by variant type and transcript)
-                                    'highestImpactSnpeff': highestImpactSnpeff,
-                                    'highestImpactVep': highestImpactVep,
-                                    'highestSIFT': highestSIFT,
-                                    'highestPolyphen': highestPolyphen,
-                                    'highestREVEL': highestREVEL,
 
                                     // somatic specific
                                     'isInherited': null,              // Null = undetermined, True = inherited, False = somatic
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
-                                    'inCosmic': false,
+                                    'inCosmic': null,
                                     'cosmicId': null,           // Used for cosmic links in variant detail tooltip
                                     'subcloneId': annot.nodeId
                                 };
 
+                                if (useVEP) {
+                                    // vep
+                                    variant['vepConsequence'] = annot.vep.vepConsequence;
+                                    variant['vepImpact'] = annot.vep.vepImpact;
+                                    variant['vepExon'] = annot.vep.vepExon;
+                                    variant['vepHGVSc'] = annot.vep.vepHGVSc;
+                                    variant['vepHGVSp'] = annot.vep.vepHGVSp;
+                                    variant['vepAminoAcids'] = annot.vep.vepAminoAcids;
+                                    variant['vepVariationIds'] = annot.vep.vepVariationIds;
+                                    variant['vepREVEL'] = annot.vep.vepREVEL;
+                                    variant['vepSIFT'] = annot.vep.vepSIFT;
+                                    variant['sift'] = annot.vep.sift;
+                                    variant['vepPolyPhen'] = annot.vep.vepPolyPhen;
+                                    variant['polyphen'] = annot.vep.polyphen;
+                                    variant['vepRegs'] = annot.vep.vepRegs;
+                                    variant['regulatory'] = annot.vep.regulatory;
+                                    variant['vepAf'] = annot.vep.af;
+                                    variant['geneSymbol'] = annot.vep.symbol;
+
+                                    //  when multiple impacts, pick the highest one (by variant type and transcript)
+                                    variant['highestImpactSnpeff'] = highestImpactSnpeff;
+                                    variant['highestImpactVep'] = highestImpactVep;
+                                    variant['highestSIFT'] = highestSIFT;
+                                    variant['highestPolyphen'] = highestPolyphen;
+                                    variant['highestREVEL'] = highestREVEL;
+                                } else {
+                                    variant['bcsq'] = annot.bcsq;
+                                    variant['geneSymbol'] = annot.bcsq.symbol
+                                    // Note: we don't put just the impact here b/c will look up by transcript
+                                    variant['highestImpactBcsq'] = highestImpactBcsq;
+                                }
+
                                 if (somaticOnlyMode) {
-                                    allVariants[i].push(variant);
-                                    somaticGenes[annot.vep.symbol] = true;
-                                } else if (!somaticOnlyMode) {
-                                    allVariants[i].push(variant);
+                                    if (globalApp.useVEP) {
+                                        somaticGenes[annot.vep.symbol] = true;
+                                    } else {
+                                        somaticGenes[annot.bcsq.symbol] = true;
+                                    }
+                                }
+                                allVariants[i].push(variant);
+
+                                if (annot.bcsqRefFlag) {
+                                    bcsqVarRefList.push(variant);
                                 }
                             }
                         }
@@ -1767,6 +1801,11 @@ export default function vcfiobio(theGlobalApp) {
             }
         });
 
+        // Update BCSQ references
+        if (!globalApp.useVEP) {
+            me._updateBcsqRefs(bcsqVarRefList, bcsqVarMap);
+        }
+
         // Here is the result set.  An object representing the entire region with a field called
         // 'features' that contains an array of variants for this region of interest.
         let results = {};
@@ -1775,6 +1814,7 @@ export default function vcfiobio(theGlobalApp) {
             var data = {
                 'name': gtSampleNames ? gtSampleNames[i] : 'somaticVariants',
                 'features': allVariants[i],
+                'gene': geneObject ? geneObject.gene_name : '',
             };
             sampleMapList.push(data);
         }
@@ -1786,7 +1826,6 @@ export default function vcfiobio(theGlobalApp) {
             results['somaticGenes'] = Object.keys(somaticGenes);
             results['unmatchedVars'] = unmatchedVars;
         }
-
         return results;
     };
 
@@ -1897,7 +1936,7 @@ export default function vcfiobio(theGlobalApp) {
                     }
 
 
-                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF, false);
+                    var annot = me._parseAnnot(rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF);
 
                     var clinvarResult = me.parseClinvarInfo(rec.info, clinvarMap);
 
@@ -1908,10 +1947,21 @@ export default function vcfiobio(theGlobalApp) {
                     if (gtResult.keep) {
 
                         var highestImpactSnpeff = me._getHighestImpact(annot.snpEff.allSnpeff, me._cullTranscripts, selectedTranscriptID);
-                        var highestImpactVep = me._getHighestImpact(annot.vep.allVep, me._cullTranscripts, selectedTranscriptID);
-                        var highestSIFT = me._getLowestScore(annot.vep.allSIFT, me._cullTranscripts, selectedTranscriptID);
-                        var highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
-                        var highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
+                        var highestImpactVep = '';
+                        var highestSIFT = '';
+                        var highestPolyphen = '';
+                        var highestREVEL = '';
+                        var highestImpactBcsq = '';
+
+                        if (globalApp.useVEP) {
+                            highestImpactVep = me._getHighestImpact(annot.vep.allVep, me._cullTranscripts, selectedTranscriptID);
+                            highestSIFT = me._getLowestScore(annot.vep.allSIFT, me._cullTranscripts, selectedTranscriptID);
+                            highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
+                            highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
+                        } else {
+                            //highestImpactBcsq = me._getHighestImpact(annot.bcsq.types, me._cullTranscripts, selectedTranscriptID);
+                            highestImpactBcsq = annot.bcsq.highestImpactString;
+                        }
 
                         for (var i = 0; i < allVariants.length; i++) {
                             var genotype = gtResult.genotypes[i];
@@ -2000,6 +2050,7 @@ export default function vcfiobio(theGlobalApp) {
                                     'highestSIFT': highestSIFT,
                                     'highestPolyphen': highestPolyphen,
                                     'highestREVEL': highestREVEL,
+                                    'highestImpactBcsq': highestImpactBcsq,
                                     'isInherited': null,              // Null = undetermined, True = inherited, False = somatic
                                     'passesFilters': true,            // Used for somatic calling when other filters applied
                                     'inCosmic': false,
@@ -2062,7 +2113,8 @@ export default function vcfiobio(theGlobalApp) {
         return ('var_' + rec.pos + '_' + trimmedChromName + '_' + rec.ref + '_' + alt);
     };
 
-    exports._parseAnnot = function (rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {
+    exports._parseAnnot = function (rec, altIdx, isMultiAllelic, geneObject, selectedTranscript, selectedTranscriptID, vepAF, bcsqVarMap, bcsqImpactMap) {
+
         var me = this;
         var annot = {
             af: null,
@@ -2076,6 +2128,14 @@ export default function vcfiobio(theGlobalApp) {
                 impacts: {},
                 allSnpeff: {}
             },
+            bcsq: {
+                symbol: '',
+                symbols: {},
+                type: '', // aka csq type
+                types: {},
+                impact: ''
+            },
+            bcsqRefFlag: false,
             vep: {
                 allVep: {},
                 allSIFT: {},
@@ -2089,6 +2149,7 @@ export default function vcfiobio(theGlobalApp) {
                 vepHGVSc: {},
                 vepHGVSp: {},
                 vepAminoAcids: {},
+                vepProteinPosition: {},
                 vepVariationIds: {},
                 vepSIFT: {},
                 vepPolyPhen: {},
@@ -2099,11 +2160,18 @@ export default function vcfiobio(theGlobalApp) {
                 polyphen: {},   // need a special field for filtering purposes
                 regulatory: {}, // need a special field for filtering purposes
                 vepRegs: [],
-                af: {'1000G': {}, 'ESP': {}, 'gnomAD': {}, 'MAX': {}}
+                af: {'1000G': {},
+                    'ESP': {},
+                    'gnomAD': {},
+                    'MAX': {},
+                    'gnomADg': (globalApp.gnomADExtraMethod === globalApp.GNOMAD_METHOD_CUSTOM_VEP ? {} : null),
+                    'gnomADe': (globalApp.gnomADExtraMethod === globalApp.GNOMAD_METHOD_CUSTOM_VEP ? {} : null)
+                }
             },
             genericAnnots: {}
         };
 
+        let start = rec.pos;
         var annotTokens = rec.info.split(";");
         annotTokens.forEach(function (annotToken) {
             if (annotToken.indexOf("BGAF_1KG=") === 0) {
@@ -2115,6 +2183,8 @@ export default function vcfiobio(theGlobalApp) {
             } else if (annotToken.indexOf("AF=") === 0) {
                 // For now, just grab first af
                 // todo: talk to Yi about this issue
+                // todo: how does gene deal with this?
+                // todo: why did I change this to zero and change back?
                 //af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), altIdx);
                 annot.af = me._parseAnnotForAlt(annotToken.substring(3, annotToken.length), 0);
             } else if (annotToken.indexOf("TYPE=") === 0) {
@@ -2123,9 +2193,15 @@ export default function vcfiobio(theGlobalApp) {
                 annot.combinedDepth = annotToken.substring(3, annotToken.length);
             } else if (annotToken.indexOf("EFF=") === 0) {
                 me._parseSnpEffAnnot(annotToken, annot, geneObject, selectedTranscriptID);
-            } else if (annotToken.indexOf("CSQ") === 0) {
+            } else if (annotToken.indexOf("CSQ=") === 0) {
                 me._parseVepAnnot(altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF)
-                annot.vep.symbol = me._getMajorityGeneSymbol(annot);
+                annot.vep.symbol = me._getMajorityGeneSymbol(annot, true);
+            } else if (annotToken.indexOf("BCSQ") === 0) {
+                annot.bcsqRefFlag = me._parseBcsqAnnot(annotToken, annot, bcsqVarMap, bcsqImpactMap, start);
+                annot.bcsq.symbol = me._getMajorityGeneSymbol(annot, false);
+                let retObj = me._getMajorityCsqTypeImpact(annot, bcsqImpactMap);
+                annot.bcsq.type = retObj.type;
+                annot.bcsq.impact = retObj.impact;
             } else if (annotToken.indexOf("AVIA3") === 0) {
                 me._parseGenericAnnot("AVIA3", annotToken, annot);
             } else if (annotToken.indexOf("AFCLU=") === 0) {
@@ -2135,84 +2211,352 @@ export default function vcfiobio(theGlobalApp) {
         return annot;
     };
 
-    exports._getMajorityGeneSymbol = function(annot) {
+    exports._getMajorityGeneSymbol = function(annot, useVEP) {
         let maxCount = 0;
-        let maxSymbolArr = [];
+        let maxSymbol = "";
         let tieExists = false;
-        if (annot.vep && annot.vep.symbols && Object.keys(annot.vep.symbols).length > 0) {
-            for (let symbol in annot.vep.symbols) {
-                let currCount = annot.vep.symbols[symbol];
+        if (useVEP) {
+            if (annot.vep && annot.vep.symbols && Object.keys(annot.vep.symbols).length > 0) {
+                Object.keys(annot.vep.symbols).forEach(symbol => {
+                    let currCount = annot.vep.symbols[symbol];
+                    if (currCount > maxCount) {
+                        maxCount = annot.vep.symbols[symbol];
+                        maxSymbol = symbol;
+                        tieExists = false;
+                    } else if (currCount === maxCount) {
+                        tieExists = true;
+                    }
+                });
+            } else {
+                console.log('No symbols reported in VEP annotation for provided variant');
+            }
+        } else {
+            if (annot.bcsq && annot.bcsq.symbols && (Object.keys(annot.bcsq.symbols).length > 0)) {
+                Object.keys(annot.bcsq.symbols).forEach(symbol => {
+                    let currCount = annot.bcsq.symbols[symbol];
+                    if (currCount > maxCount) {
+                        maxCount = annot.bcsq.symbols[symbol];
+                        maxSymbol = symbol;
+                        tieExists = false;
+                    } else if (currCount === maxCount) {
+                        tieExists = true;
+                    }
+                });
+            } else {
+                console.log('No symbols reported in BCSQ annotation for provided variant');
+            }
+        }
+
+        if (tieExists) {
+            let symbols = useVEP ? annot.vep.symbols : annot.bcsq.symbols;
+            console.log('Warning: multiple symbols reported equal times for a single variant by predictor: ' + Object.keys(symbols));
+            //maxSymbolArr.concat(Object.keys(annot.vep.symbols));
+        }
+        return maxSymbol;
+    }
+
+    /*  Returns { consequence, impact} object that corresponds to the relative highest impact.
+        For example, if a variant has two annotations that are { transcript_ablation (HIGH impact) } and { inframe_insertion (MODERATE impact) },
+        will return { csq: transcription_ablation, impact: HIGH }.
+     */
+    exports._getMajorityCsqTypeImpact = function(annot, bcsqImpactMap) {
+        let maxCount = 0;
+        let maxType = "";
+        let highestImpact = "";
+        let tieExists = false;
+
+        if (annot.bcsq && annot.bcsq.types && (Object.keys(annot.bcsq.types).length > 0)) {
+            Object.keys(annot.bcsq.types).forEach(symbol => {
+                let currCount = annot.bcsq.types[symbol];
                 if (currCount > maxCount) {
-                    maxCount = annot.vep.symbols[symbol];
-                    maxSymbolArr.push(symbol);
+                    maxCount = annot.bcsq.types[symbol];
+                    maxType = symbol;
+                    highestImpact = this._getHighestImpactSeries(maxType, bcsqImpactMap);
+                    if (!highestImpact) {
+                        console.log("Warning: could not find impact corresponding to given type for BCSQ");
+                    }
                     tieExists = false;
                 } else if (currCount === maxCount) {
                     tieExists = true;
                 }
-            }
+            });
         } else {
-            console.log('No symbols reported in VEP annotation for provided variant');
+            console.log('No symbols reported in BCSQ annotation for provided variant');
         }
+
         if (tieExists) {
-            console.log('Warning: multiple symbols reported equal times for a single variant by VEP: ' + Object.keys(annot.vep.symbols));
-            maxSymbolArr.concat(Object.keys(annot.vep.symbols));
+            let types = Object.keys(annot.bcsq.types);
+            console.log('Warning: multiple consequence types reported equal times for a single variant by predictor: ' + types + ': using highest impact type');
+
+            // Lookup the highest impact type from the map to break the tie
+            // If the impacts are the same, use the first type
+            let highestImpactIdx = 0;
+            let highestScore = 0;
+            highestImpact = '';
+            for (let i = 0; i < types.length; i++) {
+                let currType = types[i];
+                let currImpact = this._getHighestImpactSeries(currType, bcsqImpactMap);
+                if (!currImpact) {
+                    console.log("Warning: could not find impact corresponding to given type " + currType + " for BCSQ");
+                }
+                let score = this._getImpactScore[currImpact];
+                if (score > highestScore) {
+                    highestImpactIdx = i;
+                    highestImpact = currImpact;
+                }
+            }
+            maxType = types[highestImpactIdx];
         }
-        return maxSymbolArr;
+        return { type: maxType, impact: highestImpact };
     }
 
-    /* To parse the VEP annot, split the CSQ string into its parts.
-       Each part represents the annotations for a given transcript.
+/* From BCFTools CSQ manpage:
+   # Two separate VCF records at positions 2:122106101 and 2:122106102
+   # change the same codon. This UV-induced C>T dinucleotide mutation
+   # has been annotated fully at the position 2:122106101 with
+        #   - consequence type
+        #   - gene name
+        #   - ensembl transcript ID
+        #   - coding strand (+ fwd, - rev)
+        #   - amino acid position (in the coding strand orientation)
+        #   - list of corresponding VCF variants
+        # The annotation at the second position gives the position of the full
+        # annotation
+    BCSQ=missense|CLASP1|ENST00000545861|-|1174P>1174L|122106101G>A+122106102G>A
+    BCSQ=@122106101
 
-      Here is the field mapping for each transcript
-      which is separated by a comma
+    NOTE: docs are missing a field after Ensembl transcript ID for GRCh37 version
 
-       Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Feature|BIOTYPE|EXON|INTRON|HGVSc|HGVSp
-       |cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation
-       |DISTANCE|STRAND|FLAGS|SYMBOL_SOURCE|HGNC_ID|GENE_PHENO|SIFT|PolyPhen|HGVS_OFFSET
-       |AFR_AF|AMR_AF|EAS_AF|EUR_AF|SAS_AF
-       |AA_AF|EA_AF
-       |gnomAD_AF|gnomAD_AFR_AF|gnomAD_AMR_AF|gnomAD_ASJ_AF|gnomAD_EAS_AF|gnomAD_FIN_AF|gnomAD_NFE_AF|gnomAD_OTH_AF|gnomAD_SAS_AF
-       |MAX_AF|MAX_AF_POPS
-       |CLIN_SIG|SOMATIC|PHENO|MOTIF_NAME|MOTIF_POS|HIGH_INF_POS|MOTIF_SCORE_CHANGE
-    */
-    exports._parseVepAnnot = function (altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF) {
+    Actual return val examples for non-intronic variation for GRCh37:
+    synonymous|CDCA7L|ENST00000435717|protein_coding|-|61A|21942699T>G
+    missense|CDCA7L|ENST00000356195|protein_coding|-|377N>377H|21942699T>G
+
+    Actual return val example for intronic variation for GRCh37:
+    intron|FAR2C|''|protein_coding
+    unprocessed_pseudogene
+
+    posit that fields for GRCh37 are:
+    consequenceType|geneName|ensemblTranscriptId|transcriptType|strand|aaPos|correspondingVars
+    (note: curious that transcriptType seems to be fixed for protein_coding for intronic variants though, without reporting a transcript)
+
+    Actual return val examples for non-intronic variation for GRCh38:
+    5_prime_utr|NBL1|ENST00000451758|protein_coding
+    G|structural_interaction_variant|HIGH|BTK|ENSG00000010671|interaction|4YHF:B_481-B_527:ENST00000308731|protein_coding|15/19|c.1442G>C||||||
+    synonymous|C1orf216|ENST00000270815|protein_coding|-|197R|35715733G>T
+
+
+    What this function does:
+    Annotates BCSQ object to each variant containing 1+ BCSQ annotation object.
+    BCSQ object has format:
+    bcsq: {
+                transcriptIdA:      {
+                                        "csqType": val
+                                        "geneSymbol": val
+                                        "ensemblId": val
+                                        "transcriptType": val
+                                        "strand": val
+                                        "aaPos": val
+                                        "corrVars": val
+                                    },
+                transcriptIdB:      {
+                                        "csqType": val
+                                        "geneSymbol": val
+                                        "ensemblId": val
+                                        "transcriptType": val
+                                        "strand": val
+                                        "aaPos": val
+                                        "corrVars": val
+                                    },
+                "intron":           {   "csqType": val
+                                        "geneSymbol": val
+                                        "ensemblId": ""
+                                        "transcriptType": val
+                                        "strand": ""
+                                        "aaPos": ""
+                                        "corrVars": ""
+
+                "@REF": "@REF",
+                etc...
+            }
+
+    Returns true if any of the BCSQ tokens have an @REF in them.
+
+    NOTE: full annotation may not be at numerically lowest position, so have to look up @ pointers after this step
+
+ */
+    exports._parseBcsqAnnot = function(annotToken, annot, bcsqVarMap, bcsqImpactMap, start) {
+        let trimmedToken = annotToken.substring(5, annotToken.length);
+        let transcriptTokens = trimmedToken.split(',');
+        let hasRef = false;
+        let highestImpactScore = 0;
+        let highestImpactString = '';
+        let highestImpactTranscriptId = 'non-coding';
+
+        transcriptTokens.forEach(token => {
+            // Check to see if we have a pointer & reroute if necessary
+            if (token.startsWith("@")) {
+                annot['bcsq'][token] = token;
+                hasRef = true;
+            } else {
+                let fields = token.split("|");
+                let tokenObj = {};
+                for (let i = 0; i < BCSQ_FIELDS.length; i++) {
+                    let fieldName = BCSQ_FIELDS[i];
+                    tokenObj[fieldName] = fields[i];
+
+                    if (fieldName === CSQ_TYPE) {
+                        let theType = fields[i];
+                        if (annot.bcsq.types[theType]) {
+                            annot.bcsq.types[theType] = annot.bcsq.types[theType] + 1;
+                        } else {
+                            annot.bcsq.types[theType] = 1;
+                        }
+
+                        tokenObj.impact = bcsqImpactMap[theType] ? bcsqImpactMap[theType].impact : '';
+                        if (!tokenObj.impact && theType.includes('&')) {
+                            tokenObj.impact = this._getHighestImpactSeries(theType, bcsqImpactMap);
+                        }
+                        if (!tokenObj.impact) {
+                            console.log("Could not obtain impact from provided bcsq type: " + theType);
+                        }
+
+                        let currImpactScore = this._getImpactScore(tokenObj.impact);
+                        if (currImpactScore > highestImpactScore) {
+                            highestImpactTranscriptId = fields[ENSEMBL_ID_IDX];
+                            highestImpactScore = currImpactScore;
+                            highestImpactString = tokenObj.impact;
+                        }
+                    } else if (fieldName === GENE_SYMBOL) {
+                        let theSymbol = fields[i];
+                        if (annot.bcsq.symbols[theSymbol]) {
+                            annot.bcsq.symbols[theSymbol] = annot.bcsq.symbols[theSymbol] + 1;
+                        } else {
+                            annot.bcsq.symbols[theSymbol] = 1;
+                        }
+                    }
+                }
+
+                // Note: just keeping one catch-all non-coding annotation for introns/non-coding annotations
+                let transcriptId = tokenObj[TRANSCRIPT_ID] === "" ? "non-coding" : tokenObj[TRANSCRIPT_ID];
+                annot.bcsq[transcriptId] = tokenObj;
+                annot.bcsq.highestImpactTranscriptId = highestImpactTranscriptId;
+                annot.bcsq.highestImpactString = highestImpactString;
+                // Add to lookup for updating @ references
+                bcsqVarMap[start] = annot.bcsq;
+            }
+        });
+        return hasRef;
+    }
+
+    // Returns index of higher impact
+    exports._getImpactScore = function(impact) {
+        if (impact === HIGH) {
+            return 4;
+        } else if (impact === MODERATE) {
+            return 3;
+        } else if (impact === LOW) {
+            return 2;
+        } else if (impact === MODIFIER) {
+            return 1;
+        } else {
+            return 0;
+        }
+    };
+
+    // Returns highest impact string from a type that has multiple entries delineated by ampersands
+    // If highest impact cannot be found, returns empty string
+    exports._getHighestImpactSeries = function(theType, bcsqImpactMap) {
+        let types = theType.split('&');
+        let highestImpact = '';
+        let highestImpactScore = 0;
+        for (let i = 0; i < types.length; i++) {
+            let type = types[i];
+            let impact = bcsqImpactMap[type] ? bcsqImpactMap[type].impact : '';
+            let currScore = this._getImpactScore(impact);
+            if (currScore > highestImpactScore) {
+                highestImpactScore = currScore;
+                highestImpact = impact;
+            }
+        }
+        return highestImpact;
+    }
+
+    // Iterates through variant list and updates any bcsq fields that have @ references
+    exports._updateBcsqRefs = function(bcsqVarRefList, bcsqMap) {
+        bcsqVarRefList.forEach(variant => {
+            let bcsqKeys = Object.keys(variant.bcsq);
+            let foundRefs = [];
+
+            // Add transcriptId: ref for each @REF to variant.bcsq
+            bcsqKeys.forEach(key => {
+                let val = variant.bcsq[key];
+                if (val.startsWith('@')) {
+                    let position = val.substring(1);
+                    let matchingRef = bcsqMap[+position];
+                    let matchingTranscriptId = matchingRef[TRANSCRIPT_ID] === "" ? "intron_variant" : matchingRef[TRANSCRIPT_ID];
+                    if (!matchingRef) {
+                        console.log("Warning: could not find matching ref for " + variant.bcsq[key]);
+                    } else {
+                        variant.bcsq[matchingTranscriptId] = matchingRef;
+                        foundRefs.push(val);
+                    }
+                }
+            });
+
+            // Remove updated refs to reduce variant object bloat
+            foundRefs.forEach(ref => {
+                delete(variant.bcsq[ref]);
+            })
+        });
+    }
+
+    exports._parseVepAnnot = function(altIdx, isMultiAllelic, annotToken, annot, geneObject, selectedTranscript, selectedTranscriptID, vepAF, gnomADExtra) {
         var me = this;
+
         var vepFields = me.infoFields.VEP;
+
         var tokenValue = annotToken.substring(4, annotToken.length);
         var transcriptTokens = tokenValue.split(",");
 
-        transcriptTokens.forEach(function (transcriptToken) {
-            var vepTokens = transcriptToken.split("|");
+        transcriptTokens.forEach(function(transcriptToken) {
+            var vepTokens   = transcriptToken.split("|");
+
             var keep = true;
             if (isMultiAllelic) {
                 if (vepFields.hasOwnProperty('ALLELE_NUM') && vepFields.ALLELE_NUM >= 0) {
-                    var vepAlleleNumber = vepTokens[vepFields.ALLELE_NUM];
-                    if (altIdx >= 0 && vepAlleleNumber >= 0) {
-                        if (altIdx + 1 !== parseInt(vepAlleleNumber)) {
+                    var vepAlleleNumber   = vepTokens[vepFields.ALLELE_NUM];
+                    if (altIdx >= 0 &&  vepAlleleNumber >= 0) {
+                        if (altIdx+1 != vepAlleleNumber) {
                             keep = false;
                         }
                     }
                 }
             }
+
             if (keep) {
-                var feature = vepTokens[vepFields.Feature];
+                var feature     = vepTokens[vepFields.Feature];
                 var featureType = vepTokens[vepFields.Feature_type];
 
                 // If the transcript is the selected transcript, parse
                 // all of the vep fields.  We place these into maps
                 // because we can have multiple vep consequences for
                 // the same transcript.
-                // TODO:  Need to sort so that highest impact shows first and is used for filtering and ranking purposes.
                 if (featureType === 'Transcript') {
                     if ((selectedTranscriptID == null && selectedTranscript == null) ||
-                        // Have to accomodate oncogene pulling in many targets - just accept all transcripts
-                        (feature === selectedTranscriptID || feature === selectedTranscript.transcript_id)) {
+                        // Have to accommodate oncogene pulling in many targets - just accept all transcripts
+                        (feature === selectedTranscriptID || feature === selectedTranscript.transcript_id)
+                        // For now, RefSeq transcripts may not match last digit after '.'.
+                        // For example, GRCh37 transcript from geneinfo for RAI1
+                        // is NM_030665.3 (a previous patch release)
+                        // and VEP shows the transcript NM_030665.4 for GRCh37.p13
+                        || feature.indexOf(selectedTranscriptID) === 0) {
+
                         annot.vep.vepImpact[vepTokens[vepFields.IMPACT]] = vepTokens[vepFields.IMPACT];
 
-                        var consequence = vepTokens[vepFields.Consequence];
+                        let consequence = vepTokens[vepFields.Consequence];
                         consequence.split("&").forEach(function (token) {
                             annot.vep.vepConsequence[token] = token;
-                        });
+                        })
 
                         if (vepTokens[vepFields.EXON] && vepTokens[vepFields.EXON].length > 0) {
                             annot.vep.vepExon[vepTokens[vepFields.EXON]] = vepTokens[vepFields.EXON];
@@ -2220,32 +2564,33 @@ export default function vcfiobio(theGlobalApp) {
                         annot.vep.vepHGVSc[vepTokens[vepFields.HGVSc]] = vepTokens[vepFields.HGVSc];
                         annot.vep.vepHGVSp[vepTokens[vepFields.HGVSp]] = vepTokens[vepFields.HGVSp];
                         annot.vep.vepAminoAcids[vepTokens[vepFields.Amino_acids]] = vepTokens[vepFields.Amino_acids];
-                        annot.vep.vepAminoAcids['position'] = vepTokens[vepFields.Protein_position];
+                        annot.vep.vepProteinPosition[vepTokens[vepFields.Protein_position]] = vepTokens[vepFields.Protein_position];
                         annot.vep.vepVariationIds[vepTokens[vepFields.Existing_variation]] = vepTokens[vepFields.Existing_variation];
 
-                        var siftString = vepTokens[vepFields.SIFT];
-                        var siftDisplay = siftString != null && siftString !== "" ? siftString.split("(")[0] : "";
+                        let siftString = vepTokens[vepFields.SIFT];
+                        let siftDisplay = siftString != null && siftString != "" ? siftString.split("(")[0] : "";
                         annot.vep.vepSIFT[siftDisplay] = siftDisplay;
                         annot.vep.sift['sift_' + siftDisplay] = 'sift_' + siftDisplay;
 
-                        var polyphenString = vepTokens[vepFields.PolyPhen];
-                        var polyphenDisplay = polyphenString != null && polyphenString !== "" ? polyphenString.split("(")[0] : "";
+                        let polyphenString = vepTokens[vepFields.PolyPhen];
+                        let polyphenDisplay = polyphenString != null && polyphenString !== "" ? polyphenString.split("(")[0] : "";
                         annot.vep.vepPolyPhen[polyphenDisplay] = polyphenDisplay;
                         annot.vep.polyphen['polyphen_' + polyphenDisplay] = 'polyphen_' + polyphenDisplay;
 
                         if (vepFields.REVEL) {
-                            var revelScore = vepTokens[vepFields.REVEL];
+                            let revelScore = vepTokens[vepFields.REVEL];
                             annot.vep.vepREVEL[revelScore] = revelScore;
                         }
+
                     }
-                } else if (featureType === 'RegulatoryFeature' || featureType === 'MotifFeature') {
-                    annot.vep.vepRegs.push({
-                        'impact': vepTokens[vepFields.IMPACT],
-                        'consequence': vepTokens[vepFields.Consequence],
+                } else if (featureType === 'RegulatoryFeature' || featureType === 'MotifFeature' ) {
+                    annot.vep.vepRegs.push( {
+                        'impact' :  vepTokens[vepFields.IMPACT],
+                        'consequence' : vepTokens[vepFields.Consequence],
                         'biotype': vepTokens[vepFields.BIOTYPE],
-                        'motifName': vepTokens[vepFields.MOTIF_NAME],
-                        'motifPos': vepTokens[vepFields.MOTIF_POS],
-                        'motifHiInf': vepTokens[vepFields.HIGH_INF_POS]
+                        'motifName' : vepTokens[vepFields.MOTIF_NAME],
+                        'motifPos'  : vepTokens[vepFields.MOTIF_POS],
+                        'motifHiInf' : vepTokens[vepFields.HIGH_INF_POS]
                     });
                     var reg = vepTokens[vepFields.Consequence] === 'regulatory_region_variant' ? vepTokens[vepFields.BIOTYPE] : vepTokens[vepFields.Consequence];
                     var regKey = reg;
@@ -2261,14 +2606,7 @@ export default function vcfiobio(theGlobalApp) {
                         valueUrl = reg.split("_").join(" ").toLowerCase();
                     }
                     annot.vep.regulatory[(featureType === 'RegulatoryFeature' ? "reg_" : "mot_") + regKey.toLowerCase()] = valueUrl;
-                } else {
-                    // Just annotate consequence here so somatic only can eliminate intergenic variants
-                    let consequence = vepTokens[vepFields.Consequence];
-                    consequence.split("&").forEach(function (token) {
-                        annot.vep.vepConsequence[token] = token;
-                    });
                 }
-
                 if (featureType === 'Transcript') {
                     var theTranscriptId = feature;
 
@@ -2290,73 +2628,77 @@ export default function vcfiobio(theGlobalApp) {
                     if (validTranscript) {
                         // Keep track of all VEP impact and consequence so that we can determine the highest impact
                         // variant across all transcripts
-                        var theImpact = vepTokens[vepFields.IMPACT];
-                        var theConsequences = vepTokens[vepFields.Consequence];
+                        let theImpact = vepTokens[vepFields.IMPACT];
+                        let theConsequences = vepTokens[vepFields.Consequence];
                         var theSymbol = vepTokens[vepFields.SYMBOL];
-                        // var siftString = vepTokens[vepFields.SIFT];
-                        // var siftDisplay = siftString != null && siftString != "" ? siftString.split("(")[0] : "";
-                        var siftScore = "99";
+
+                        let siftString = vepTokens[vepFields.SIFT];
+                        let siftDisplay = siftString != null && siftString !== "" ? siftString.split("(")[0] : "";
+                        let siftScore = "99";
                         if (siftString != null && siftString !== "" && siftString.indexOf("(") >= 0) {
                             siftScore = siftString.split("(")[1].split(")")[0];
                         }
-                        // var polyphenString = vepTokens[vepFields.PolyPhen];
-                        // var polyphenDisplay = polyphenString != null && polyphenString != "" ? polyphenString.split("(")[0] : "";
-                        var polyphenScore = -99;
+                        let polyphenString = vepTokens[vepFields.PolyPhen];
+                        let polyphenDisplay = polyphenString != null && polyphenString !== "" ? polyphenString.split("(")[0] : "";
+                        let polyphenScore = -99;
                         if (polyphenString != null && polyphenString !== "" && polyphenString.indexOf("(") >= 0) {
                             polyphenScore = polyphenString.split("(")[1].split(")")[0];
                         }
 
-                        revelScore = vepFields.REVEL ? vepTokens[vepFields.REVEL] : "";
+                        let revelScore  = vepFields.REVEL ? vepTokens[vepFields.REVEL] : "";
 
-                        var consequencesObject = annot.vep.allVep[theImpact];
+                        let consequencesObject = annot.vep.allVep[theImpact];
                         if (consequencesObject == null) {
                             consequencesObject = {};
                         }
-
                         me._appendTranscript(consequencesObject, theConsequences, theTranscriptId);
                         annot.vep.allVep[theImpact] = consequencesObject;
+
                         if (annot.vep.symbols[theSymbol]) {
                             annot.vep.symbols[theSymbol] = annot.vep.symbols[theSymbol] + 1;
                         } else {
                             annot.vep.symbols[theSymbol] = 1;
                         }
 
-                        var siftObject = annot.vep.allSIFT[siftScore];
+                        let siftObject = annot.vep.allSIFT[siftScore];
                         if (siftObject == null) {
                             siftObject = {};
                         }
                         me._appendTranscript(siftObject, siftDisplay, theTranscriptId);
                         annot.vep.allSIFT[siftScore] = siftObject;
 
-                        var polyphenObject = annot.vep.allPolyphen[polyphenScore];
+                        let polyphenObject = annot.vep.allPolyphen[polyphenScore];
                         if (polyphenObject == null) {
                             polyphenObject = {};
                         }
                         me._appendTranscript(polyphenObject, polyphenDisplay, theTranscriptId);
                         annot.vep.allPolyphen[polyphenScore] = polyphenObject;
 
-                        var revelObject = annot.vep.allREVEL[revelScore];
+                        let revelObject = annot.vep.allREVEL[revelScore];
                         if (revelObject == null) {
                             revelObject = {};
                         }
                         me._appendTranscript(revelObject, revelScore, theTranscriptId);
                         annot.vep.allREVEL[revelScore] = revelObject;
 
+
                         if (vepAF) {
                             me._parseVepAfAnnot(VEP_FIELDS_AF_GNOMAD, vepFields, vepTokens, "gnomAD", "gnomAD", annot);
-                            me._parseVepAfAnnot(VEP_FIELDS_AF_1000G, vepFields, vepTokens, "1000G", null, annot);
-                            me._parseVepAfAnnot(VEP_FIELDS_AF_ESP, vepFields, vepTokens, "ESP", null, annot);
-                            me._parseVepAfAnnot(VEP_FIELDS_AF_MAX, vepFields, vepTokens, "MAX", "MAX", annot);
+                            me._parseVepAfAnnot(VEP_FIELDS_AF_1000G,  vepFields, vepTokens, "1000G",  null,     annot);
+                            me._parseVepAfAnnot(VEP_FIELDS_AF_ESP,    vepFields, vepTokens, "ESP",    null,     annot);
+                            me._parseVepAfAnnot(VEP_FIELDS_AF_MAX,    vepFields, vepTokens, "MAX",    "MAX",    annot);
+                        }
+                        if (vepAF && gnomADExtra && globalApp.gnomADExtraMethod === globalApp.GNOMAD_METHOD_CUSTOM_VEP ) {
+                            me._parseVepAfAnnot(VEP_FIELDS_AF_GNOMAD_GENOMES, vepFields, vepTokens, "gnomADg", "gnomADg", annot);
+                            me._parseVepAfAnnot(VEP_FIELDS_AF_GNOMAD_EXOMES, vepFields, vepTokens, "gnomADe", "gnomADe", annot);
                         }
 
-                    } else {
-                        consequence = vepTokens[vepFields.Consequence];
-                        console.log(geneObject.gene_name + " " + consequence + ": throwing out invalid transcript " + theTranscriptId);
                     }
                 }
             }
         });
-    };
+    }
+
 
     exports._parseVepAfAnnot = function (fieldNames, vepFields, vepTokens, afSource, omitPrefix, annot) {
         fieldNames.forEach(function (fieldName) {

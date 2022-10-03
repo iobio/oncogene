@@ -32,9 +32,10 @@ class CohortModel {
         this.sampleMap = {};                    // Relates IDs to model objects
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
-        this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for feature matrix)
+        this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for subclone viz)
         this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
+        this.selectedTranscriptId = null;       // Used by sampleModels when assigning impact
 
         this.mode = 'time';                     // Indicates time-series mode
         this.maxAlleleCount = null;
@@ -60,7 +61,7 @@ class CohortModel {
         this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
         this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
         this.hasSubcloneAnno = false;
-        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from VEP annotations b/c somaticOnlyMode does not take in gene list
+        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from predictor engine annotations b/c somaticOnlyMode does not take in gene list
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -293,6 +294,30 @@ class CohortModel {
                 ]
             };
         }
+    }
+    createModelInfo(selectedSample, isTumor, modelInfoIdx) {
+        let modelInfo = {};
+
+        modelInfo.id = 's' + modelInfoIdx;
+        modelInfo.order = modelInfoIdx;
+        modelInfo.selectedSample = selectedSample;
+        modelInfo.selectedSampleIdx = -1;
+        modelInfo.isTumor = isTumor;
+        modelInfo.vcfUrl = this.url;
+        modelInfo.tbiUrl = this.indexUrl;
+        modelInfo.coverageBamUrl = null;
+        modelInfo.coverageBaiUrl = null;
+        modelInfo.coverageVerified = false;
+        modelInfo.rnaSeqBamUrl = null;
+        modelInfo.rnaSeqBaiUrl = null;
+        modelInfo.rnaSeqVerified = false;
+        modelInfo.atacSeqBamUrl = null;
+        modelInfo.atacSeqBaiUrl = null;
+        modelInfo.atacSeqVefified = false;
+        modelInfo.cnvUrl = null;
+        modelInfo.cnvVerified = false;
+
+        return modelInfo;
     }
 
     // Returns list of variant objects corresponding to the provided variant ID
@@ -861,31 +886,30 @@ class CohortModel {
                     geneP.then(() => {
                         self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
                             .then(groupObj => {
-                                self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-                                    .then(() => {
-                                        let cosmicPs = [];
-                                        groupObj.fullGeneObjs.forEach(geneObj => {
-                                            cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-                                        });
-                                        Promise.all(cosmicPs)
-                                            .then(() => {
-                                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
-                                                    .then((rankObj) => {
-                                                        resolve(rankObj);
-                                                    }).catch(err => {
-                                                    reject('Fatal error scoring and ranking somatic genes: ' + err);
-                                                })
-                                            });
+                                //self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
+                                //.then(() => {
+                                // let cosmicPs = [];
+                                // groupObj.fullGeneObjs.forEach(geneObj => {
+                                //     cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
+                                // });
+                                //Promise.all(cosmicPs)
+                                    //.then(() => {
+                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                    .then((rankObj) => {
+                                        resolve(rankObj);
                                     }).catch(err => {
+                                        reject('Fatal error scoring and ranking somatic genes: ' + err);
+                                    })
+                                    //});
+                                }).catch(err => {
                                     reject('Problem getting cosmic variants for global somatic regions: ' + err);
                                 })
-                            }).catch(error => {
+                        }).catch(error => {
                             console.log('Something went wrong grouping and assigning somatic variants ' + error);
                             reject('Something went wrong ranking genes by variants ' + error);
                         });
-                    }).catch(err => {
+                }).catch(err => {
                         console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
-                    })
                 });
         });
     }
@@ -914,7 +938,7 @@ class CohortModel {
 
     /* Returns a hash of samples: parsed vcf results. Iterates through list of features per sample,
      * and appends each unique feature to a hash of varId : varObj. Updates feature objects (varObj)
-     * added to has to reflect which samples in cohort contains the variant.
+     * added to hash to reflect which samples in cohort contains the variant.
     */
     populateSomaticVarMap(somaticVarMap) {
         const self = this;
@@ -1165,7 +1189,7 @@ class CohortModel {
             if (!self.onlySomaticCalls) {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls)
+            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
                 .then((returnArr) => {
                     // Always populate unique variant dictionary
                     let sampleMap = returnArr['sampleMap'];
@@ -1359,10 +1383,40 @@ class CohortModel {
         })
     }
 
+    promiseGetCosmicStatus(variant) {
+        const self = this;
+        let regions = [variant.chrom + ':' + variant.start + '-' + variant.end];
+        let varId = 'var_' + variant.start + '_' + variant.chrom + '_' + variant.ref + '_' + variant.alt;
+
+        return new Promise(function (resolve, reject) {
+            if (self.cosmicVariantIdHash[varId]) {
+                resolve(true);
+            } else {
+                self.getModel('cosmic-variants').inProgress.loadingVariants = true;
+                self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
+                    .then(function (resultMap) {
+                        self.getModel('cosmic-variants').inProgress.loadingVariants = false;
+                        // Add variants to existing hash
+                        if (resultMap['cosmic-variants-ids'][varId]) {
+                            self.cosmicVariantIdHash[varId] = resultMap['cosmic-variants-ids'][varId];
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    })
+                    .catch((error) => {
+                        reject('Problem loading cosmic variants: ' + error);
+                    })
+            }
+        })
+    }
+
     /* Takes in a list of genes and regions (STABLY ORDERED), composes a region string of all to send to bcftools view on COSMIC vcf to pull in variants
      * that fall within that region. Populates model level map of cosmic variant IDs.
      * If gene has already been pulled back, will not re-fetch. */
     promiseGetCosmicVariantIds(regions, geneNames) {
+        // todo: this is the blocker on loading - needs to be optimized
+
         let self = this;
         if (regions.length !== geneNames.length) {
             console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');
@@ -1447,7 +1501,7 @@ class CohortModel {
         let self = this;
 
         return new Promise(function (resolve, reject) {
-            const isMultiSample = true;
+            const isMultiSample = true; // We require a multi-sample vcf for now
             self.promiseAnnotateVariants(theGene, theTranscript, isMultiSample, false, options)
                 .then(function (resultMap) {
                     resolve(resultMap);
@@ -1645,6 +1699,7 @@ class CohortModel {
                 sampleModel.loadedVariants = null;
                 sampleModel.inProgress.loadingVariants = true;
 
+                // todo: left off here - why is vcfData empty?
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
@@ -1819,21 +1874,25 @@ class CohortModel {
 
     promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
         const self = this;
-        const keepHomRefs = !!options.keepHomRefs;
 
         return new Promise(function (resolve, reject) {
             let annotatePromises = [];
             let theResultMap = {};
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, keepHomRefs)
+            // todo: if we're in somatic only mode, we can skip this call
+            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
                 .then((resultMap) => {
-                    resultMap.forEach(resultObj => {
-                        let sampleModel = self.getModelBySelectedSample(resultObj.name);
-                        sampleModel.processVariants([resultObj]);
-                        theResultMap[sampleModel.id] = resultObj;
-                    });
-                    self.annotationComplete = false;
+                    if (resultMap && resultMap.sampleMap) {
+                        resultMap.sampleMap.forEach(resultObj => {
+                            let sampleModel = self.getModelBySelectedSample(resultObj.name);
+                            sampleModel.processVariants([resultObj]);
+                            theResultMap[sampleModel.id] = resultObj;
+                        });
+                        self.annotationComplete = false;
+                    } else {
+                        reject('No sampleMap returned when getting all variants');
+                    }
                 }).catch((error) => {
                     reject('Problem annotating variants: ' + error);
                 });
