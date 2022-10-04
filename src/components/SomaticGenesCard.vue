@@ -88,19 +88,19 @@
                                                          </g>
                                                        </svg>
                                                        <svg v-else-if="feat.type==='del'" class="impact-badge" height="12" width="13">
-                                                         <g transform="translate(5,6)" class="filter-symbol" v-bind:class="getImpactColor(feat)">
+                                                         <g transform="translate(5,6)" class="filter-symbol" :class="getImpactColor(feat)">
                                                            <path d="M0,-4.161791450287817L4.805622828269509,4.161791450287817 -4.805622828269509,4.161791450287817Z">
                                                            </path>
                                                          </g>
                                                        </svg>
                                                        <svg v-else-if="feat.type==='ins'" class="impact-badge" height="12" width="13">
-                                                         <g transform="translate(7,7)" class="filter-symbol" v-bind:class="getImpactColor(feat)">
+                                                         <g transform="translate(7,7)" class="filter-symbol" :class="getImpactColor(feat)">
                                                            <path d="M0,3.5682482323055424A3.5682482323055424,3.5682482323055424 0 1,1 0,-3.5682482323055424A3.5682482323055424,3.5682482323055424 0 1,1 0,3.5682482323055424Z">
                                                            </path>
                                                          </g>
                                                        </svg>
                                                        <svg v-else-if="feat.type==='complex'" class="impact-badge" height="13" width="13">
-                                                         <g transform="translate(4,6)" class="filter-symbol" v-bind:class="getImpactColor(feat)">
+                                                         <g transform="translate(4,6)" class="filter-symbol" :class="getImpactColor(feat)">
                                                            <path d="M0,-5.885661912765424L3.398088489694245,0 0,5.885661912765424 -3.398088489694245,0Z">
                                                            </path>
                                                          </g>
@@ -262,6 +262,7 @@
             },
             onCnvSelected: function(cnv) {
                 // todo cnv: implement highlighting fxnality
+              console.log(cnv);
             },
             isSelectedGene: function(geneObj) {
                 if (!geneObj) return false;
