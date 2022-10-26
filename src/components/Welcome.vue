@@ -1457,6 +1457,7 @@ export default {
       modelInfo.tbiUrl = param.tbis[0];
       modelInfo.coverageBamUrl = param.coverageBam;
       modelInfo.coverageBaiUrl = param.coverageBai;
+      modelInfo.cnvUrl = param.cnv;
       return modelInfo;
     },
     loadDemoFromMosaic: function() {
@@ -1489,6 +1490,9 @@ export default {
         // Set other necessary flags
         self.somaticCallsOnly = self.demoParams.somaticOnly;
         self.selectedUserData = ['vcf', 'coverage', 'summary'];
+        if (self.demoParams.tumors[0].cnv) {
+          self.selectedUserData = ['vcf', 'coverage', 'cnv', 'summary'];
+        }
         self.listInput = self.demoParams.genes;
         self.uploadedVcfUrls = self.demoParams.vcfs;
         self.uploadedTbiUrls = self.demoParams.tbis;
@@ -1630,18 +1634,6 @@ export default {
   },
   mounted: function () {
     const self = this;
-
-    // Only import demo file if not external launch
-    // NOTE: todo this will go away soon
-    // todo demo: old get rid of
-    // if (self.nativeLaunch) {
-    //   import('../data/demo.json')
-    //       .then(demoFile => {
-    //         self.demoFile = demoFile;
-    //       }).catch(err => {
-    //         console.log('Could not import demo file: ' + err);
-    //       });
-    //}
 
     // this.makeItRain();
     this.listInput = this.STARTING_INPUT;
