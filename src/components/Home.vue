@@ -91,15 +91,16 @@
                     @filter-change="onFilterChange">
                 </filter-panel-menu>
               </v-tab-item>
-              <v-tab-item
-                  :key="'historyTab'"
-                  :id="'history-tab'">
-                <history-tab v-if="filterModel"
-                             ref="historyTabRef"
-                             :filterModel="filterModel"
-                             @reload-analysis-history="reloadAnalysis">
-                </history-tab>
-              </v-tab-item>
+<!--              Leaving out as of Oct2022-->
+<!--              <v-tab-item-->
+<!--                  :key="'historyTab'"-->
+<!--                  :id="'history-tab'">-->
+<!--                <history-tab v-if="filterModel"-->
+<!--                             ref="historyTabRef"-->
+<!--                             :filterModel="filterModel"-->
+<!--                             @reload-analysis-history="reloadAnalysis">-->
+<!--                </history-tab>-->
+<!--              </v-tab-item>-->
             </v-tabs-items>
           </v-tabs>
         </v-card>
@@ -367,7 +368,7 @@ import VariantSummaryCard from './VariantSummaryCard.vue'
 import SubcloneSummaryCard from './SubcloneSummaryCard.vue'
 import FilterPanelMenu from './filter/FilterPanelMenu.vue'
 import Pileup from './partials/Pileup.vue'
-import HistoryTab from './HistoryTab.vue'
+//import HistoryTab from './HistoryTab.vue'
 import CnvDialog from './CnvDialog.vue'
 import SubcloneDialog from './SubcloneDialog.vue'
 import SomaticGenesCard from './SomaticGenesCard.vue'
@@ -386,7 +387,7 @@ export default {
     SubcloneSummaryCard,
     // CnvSummaryCard,
     FilterPanelMenu,
-    HistoryTab,
+    //HistoryTab,
     GeneCard,
     SomaticGenesCard,
     Pileup,

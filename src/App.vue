@@ -118,9 +118,6 @@ export default {
       // constants
       GALAXY: 'galaxy',
 
-      // testing
-      cnvDemoMode: true,
-
       // views
       hoverTooltip: null,
       selectedGeneName: null,
@@ -265,7 +262,7 @@ export default {
     this.launchSource = this.integration.getSource();
     this.integration.init().then(() => {
       self.launchParams = this.integration.buildParams();
-      self.integration.promiseGetDemoUrls(self.cnvDemoMode)
+      self.integration.promiseGetDemoUrls(self.globalApp.cnvDemoMode)
           .then(demoParams => {
             self.demoParams = demoParams;
             self.demoParamsReady = true;

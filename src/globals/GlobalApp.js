@@ -5,6 +5,7 @@
 class GlobalApp {
   constructor($, d3, _) {
     this.GALAXY_TEST_MODE      = false;
+    this.cnvDemoMode           = true;
 
     this.cacheHelper           = null;
     this.tour                  = "";

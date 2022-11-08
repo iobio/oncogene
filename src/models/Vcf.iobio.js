@@ -734,8 +734,6 @@ export default function vcfiobio(theGlobalApp) {
 
                 if (sourceType === SOURCE_TYPE_URL) {
                     let cmd = self.getEndpoint().annotateSomaticVariants({
-                    // todo: put this back to V2 when have better service and can ssh into backend to test
-                    // let cmd = self.getEndpoint().annotateSomaticVariantsV2({
                         'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl,
                     }, selectedSamples, regions, somaticFilterPhrase);
@@ -1959,7 +1957,6 @@ export default function vcfiobio(theGlobalApp) {
                             highestPolyphen = me._getHighestScore(annot.vep.allPolyphen, me._cullTranscripts, selectedTranscriptID);
                             highestREVEL = me._getHighestScore(annot.vep.allREVEL, me._cullTranscripts, selectedTranscriptID);
                         } else {
-                            //highestImpactBcsq = me._getHighestImpact(annot.bcsq.types, me._cullTranscripts, selectedTranscriptID);
                             highestImpactBcsq = annot.bcsq.highestImpactString;
                         }
 

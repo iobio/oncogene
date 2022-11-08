@@ -406,6 +406,7 @@ class GeneModel {
 
             let aLevel = +2;
             let bLevel = +2;
+            // todo: this is not being passed in correctly for switching sources
             if (me.geneSource.toLowerCase() === 'refseq') {
                 if (a.transcript_id.indexOf("NM_") === 0 ) {
                     aLevel = +0;
@@ -902,6 +903,10 @@ class GeneModel {
         return new Promise(function (resolve, reject) {
             var url = me.geneInfoServer + geneName;
 
+            if (geneName === 'MLLT6') {
+                debugger;
+            }
+
             // If current build not specified, default to GRCh37
             var buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
             me.globalApp.$('#build-link').text(buildName);
@@ -925,6 +930,7 @@ class GeneModel {
 
                 fetch(url).then(r => r.json())
                     .then((response) => {
+
                         if (response.length > 0 && response[0].hasOwnProperty('gene_name')) {
                             var theGeneObject = response[0];
                             theGeneObject.somaticVariantList = [];
@@ -1609,6 +1615,10 @@ class GeneModel {
         const MODER = 'MODERATE';
         const LOW = 'LOW';
         let score = 0;
+
+        if (geneObj.gene_name === 'MLLT6') {
+            debugger;
+        }
 
         return new Promise((resolve) => {
             if (geneObj) {
