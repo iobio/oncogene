@@ -536,6 +536,7 @@ export default function variantD3(d3, vizSettings) {
             var mousex = x(matchingVariant.start);
             var mousey = height - ((matchingVariant.level + 1) * (variantHeight + verticalPadding));
 
+            // select with both prefixed with dots
             var circleClazz = pinned ? '.pinned.circle' : '.hover.circle';
             var circle = svgContainer.select(circleClazz);
             circle.transition()

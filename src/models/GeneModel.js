@@ -903,10 +903,6 @@ class GeneModel {
         return new Promise(function (resolve, reject) {
             var url = me.geneInfoServer + geneName;
 
-            if (geneName === 'MLLT6') {
-                debugger;
-            }
-
             // If current build not specified, default to GRCh37
             var buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
             me.globalApp.$('#build-link').text(buildName);
@@ -1615,10 +1611,6 @@ class GeneModel {
         const MODER = 'MODERATE';
         const LOW = 'LOW';
         let score = 0;
-
-        if (geneObj.gene_name === 'MLLT6') {
-            debugger;
-        }
 
         return new Promise((resolve) => {
             if (geneObj) {

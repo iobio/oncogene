@@ -56,9 +56,9 @@
             <v-tab href="#filter-tab" style="font-size: 10px">
               <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
             </v-tab>
-            <v-tab href="#history-tab" style="font-size: 10px">
-              <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>
-            </v-tab>
+<!--            <v-tab href="#history-tab" style="font-size: 10px">-->
+<!--              <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
+<!--            </v-tab>-->
             <v-tabs-items v-model="selectedTab" style="background-color: transparent">
               <v-tab-item
                   :key="'genesTab'"
@@ -739,7 +739,8 @@ export default {
           // if (sourceComponent == null || variantCard != sourceComponent) {
           variantCard.hideVariantCircle(true);
           variantCard.showVariantCircle(variant, true);
-          variantCard.showCoverageCircle(variant);
+          variantCard.hideCoverageCircle(true);
+          variantCard.showCoverageCircle(variant, true);
           // }
         });
 
@@ -816,7 +817,7 @@ export default {
         self.$refs.variantCardRef.forEach(function (variantCard) {
           // variantCard.hideVariantTooltip();
           variantCard.hideVariantCircle(true);
-          variantCard.hideCoverageCircle();
+          variantCard.hideCoverageCircle(true);
         })
       }
       if (self.$refs.somaticGenesCard) {

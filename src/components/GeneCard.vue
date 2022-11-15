@@ -96,7 +96,7 @@
     </v-row>
     <v-row no-gutters class="pt-0">
       <v-col cols="12" sm="8">
-        <div id="gene-track" style="height:100px">
+        <div id="gene-track" :style="geneTrackHeight">
           <div :id="geneVizName" v-if="showGene" style="height:100px">
             <gene-viz id="gene-viz"
                       ref="transcriptGeneVizRef"
@@ -325,6 +325,13 @@ export default {
         Vue.nextTick(() => {
           this.$emit('input', val)
         })
+      }
+    },
+    geneTrackHeight: function() {
+      if (this.hasCnvData) {
+        return "height:125px";
+      } else {
+        return "height:100px";
       }
     }
   },

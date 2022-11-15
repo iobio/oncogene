@@ -457,7 +457,7 @@ export default function lineD3(d3, vizSettings) {
 
         // Get pinned class
         const pinPrefix = pinned? 'pinned' : 'hover';
-        const depthClazz = '.' + pinPrefix + '.depth'
+        const depthClazz =  '.' + pinPrefix + '.depth'
         const labelClazz = '.' + pinPrefix + '.depth-label';
 
         // Find the closest position in the data
@@ -495,7 +495,7 @@ export default function lineD3(d3, vizSettings) {
                 .style("opacity", 1);
             label.attr("x", 0)
                 .attr("y", margin.top + 5)
-                .attr("class", pinPrefix + ' depth-label')  // sjg todo - fix this
+                .attr("class", pinPrefix + ' depth-label')
                 .text(circleText);
 
             container.select(labelClazz)
@@ -517,15 +517,13 @@ export default function lineD3(d3, vizSettings) {
                     return x;
                 });
 
-            // todo: left off here - need to figure out what the select is doing
             var circle = container.select('circle' + depthClazz);
             circle.transition()
                 .duration(200)
-                .style("opacity", .7);
+                .style("opacity", function(pinned) {return pinned ? 1 : .7});
             circle.attr("cx", mousex + margin.left + 2)
                 .attr("cy", mousey + margin.top)
                 .attr("r", 3)
-
         }
     };
 
@@ -533,37 +531,16 @@ export default function lineD3(d3, vizSettings) {
         if (container == null) {
             return;
         }
-        const hoverClazz = pinned ? '.pinned.depth' : '.hover.depth';
-        const labelClazz = pinned ? 'g.pinned.depth-label' : 'g.hover.depth-label';
+        const circleClazz = pinned ? '.pinned.depth' : '.hover.depth';
+        const labelClazz = pinned ? '.pinned.depth-label' : '.hover.depth-label';
 
-        if (pinned) {
-            container.selectAll(hoverClazz).selectAll(".depth").transition()
-                .duration(500)
-                .style("opacity", 0);
+        container.selectAll(circleClazz).transition()
+            .duration(500)
+            .style("opacity", 0);
 
-            container.select(labelClazz).transition()
-                .duration(500)
-                .style("opacity", 0);
-        }
-        if (!pinned) {
-            container.selectAll(hoverClazz).selectAll(".depth").transition()
-                .duration(500)
-                .style("opacity", 0);
-
-            container.select(labelClazz).transition()
-                .duration(500)
-                .style("opacity", 0);
-        }
-
-        // todo: old - get rid of
-
-        // container.select(".circle").transition()
-        //     .duration(500)
-        //     .style("opacity", 0);
-        //
-        // container.select(".circle-label").transition()
-        //     .duration(500)
-        //     .style("opacity", 0);
+        container.select(labelClazz).transition()
+            .duration(500)
+            .style("opacity", 0);
     };
 
     /*** INTERNAL HELPER FUNCTIONS ***/
