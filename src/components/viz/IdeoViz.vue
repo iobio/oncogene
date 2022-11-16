@@ -114,6 +114,20 @@ export default {
     return {
       data: null,  // cnvs that go into d3 viz
       ideograms: [], // gets rid of linter error and allows two ideograms
+      chrWidth: 12
+    }
+  },
+  copmuted: {
+    chrHeight: function() {
+      return this.width * 0.5; // Ideogram orientation is rotated
+    },
+    strippedChr: function() {
+      let chrom = this.selectedGene.chr;
+      if (chrom && chrom.startsWith('chr')) {
+        return chrom.substring(3);
+      } else {
+        return chrom;
+      }
     }
   },
   mounted: function () {
@@ -123,10 +137,6 @@ export default {
   },
   methods: {
     drawChrLevel: function () {
-      let strippedChr = this.selectedGene.chr;
-      if (strippedChr && strippedChr.startsWith('chr')) {
-        strippedChr = this.selectedGene.chr.substring(3);
-      }
       let annotations = [];
       // Fill in CNVs for variant card
       if (this.data && !this.inGeneCard) {
@@ -135,17 +145,15 @@ export default {
         cnvObjs.forEach(cnvObj => {
           annotations.push({
             color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
-            chr: strippedChr,
+            chr: this.strippedChr,
             start: cnvObj.start,
             stop: cnvObj.end,
             name: 'CNV ' + (i + 1),
+            id: 'test'
           });
           i++;
         })
       }
-
-      const chrWidth = 12;
-      const chrHeight = (this.width * 0.5); // Ideogram orientation is rotated
 
       // Draw pseudo-ideogram with gene marker annotation
       const pseudoConfig = {
@@ -153,12 +161,12 @@ export default {
         assembly: this.assemblyVersion,
         container: ('#' + this.getIdeoId(true)),
         orientation: 'horizontal',
-        chrHeight: chrHeight,
-        chrWidth: chrWidth,
-        chromosome: strippedChr,
+        chrHeight: this.chrHeight,
+        chrWidth: this.chrWidth,
+        chromosome: this.strippedChr,
         annotations: [{
           color: '#194d81',
-          chr: strippedChr,
+          chr: this.strippedChr,
           start: +this.selectedGene.start,
           stop: +this.selectedGene.end,
           name: (this.selectedGene.gene_name + " Location")
@@ -171,6 +179,9 @@ export default {
       let pseudoIdeo = new Ideogram(pseudoConfig);
       this.ideograms.push(pseudoIdeo);
 
+      // todo: idea is to put another pseudo ideo behind main one to add drop shadow to for highlighting
+      // or can I just make another one with only the highlighted cnv in question and draw under these
+
       // Draw main ideogram on top
       let config = {};
       if (this.inGeneCard) {
@@ -180,9 +191,9 @@ export default {
           assembly: this.assemblyVersion,
           container: ('#' + this.getIdeoId(false)),
           orientation: 'horizontal',
-          chrHeight: chrHeight,
-          chrWidth: chrWidth,
-          chromosome: strippedChr,
+          chrHeight: this.chrHeight,
+          chrWidth: this.chrWidth,
+          chromosome: this.strippedChr,
           annotationsLayout: 'overlay',
           chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
           showBandLabels: this.inGeneCard,
@@ -194,9 +205,9 @@ export default {
           assembly: this.assemblyVersion,
           container: ('#' + this.getIdeoId(false)),
           orientation: 'horizontal',
-          chrHeight: chrHeight,
-          chrWidth: chrWidth,
-          chromosome: strippedChr,
+          chrHeight: this.chrHeight,
+          chrWidth: this.chrWidth,
+          chromosome: this.strippedChr,
           annotations: annotations,
           annotationsLayout: 'overlay',
           chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
@@ -218,11 +229,40 @@ export default {
         console.log("WARNING: fed in non-abnormal CNV to ideogram");
       }
     },
-    getIdeoId: function (isPseudo) {
-      return 'cnv-' + (isPseudo ? 'psuedo-' : '') + 'ideo-' + (this.inGeneCard ? 'gene' : this.model.id);
+    getIdeoId: function (isPseudo, isHighlight) {
+      return 'cnv-' + (isPseudo ? 'psuedo-' : isHighlight? 'highlight-' : '') + 'ideo-' + (this.inGeneCard ? 'gene' : this.model.id);
     },
-    getIdeoClass : function (isPseudo) {
+    getIdeoClass: function (isPseudo) {
       return (this.inGeneCard ? 'gene-' : 'cnv-') + (isPseudo ? 'pseudo-' : '') + 'ideo';
+    },
+    highlightSegment: function(cnvObj) {
+      let selectedAnnotation = {
+        color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
+        chr: this.strippedChr,
+        start: cnvObj.start,
+        stop: cnvObj.end,
+        name: 'selected-CNV',
+      };
+
+      // todo: left off testing drawing this + need to add sass styling for drop shadow
+      // + z-index class application
+
+      let config = {
+        organism: 'human',
+        assembly: this.assemblyVersion,
+        container: ('#' + this.getIdeoId(false)),
+        orientation: 'horizontal',
+        chrHeight: this.chrHeight,
+        chrWidth: this.chrWidth,
+        chromosome: this.strippedChr,
+        annotations: selectedAnnotation,
+        annotationsLayout: 'overlay',
+        chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
+        showBandLabels: this.inGeneCard,
+        showAnnotTooltip: false,
+      };
+      let ideo = new Ideogram(config);
+      this.ideograms.push(ideo);
     }
   },
   watch: {

@@ -586,7 +586,7 @@ class GeneModel {
 
     promiseGetNCBIGeneSearchesImpl(geneNames) {
         const me = this;
-        return new Promise( function(resolve, reject) {
+        return new Promise( function(resolve) {
             let theGeneNames = geneNames.filter(function(geneName) {
                 return me.geneNCBISummaries[geneName] == null;
             });
@@ -615,7 +615,9 @@ class GeneModel {
                     })
                     .fail(function() {
                         delete me.pendingNCBIRequests[theGeneNames];
-                        reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
+                        // todo: so many error messages taking out reject for now (Nov2022)
+                        resolve();
+                        //reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
                     })
             }
         })
@@ -624,7 +626,7 @@ class GeneModel {
     promiseGetNCBIGeneSummariesImpl(data, theGeneNames) {
         const me = this;
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             // Now that we have the gene ID, get the NCBI gene summary
             var webenv = data["esearchresult"]["webenv"];
             var queryKey = data["esearchresult"]["querykey"];
@@ -639,7 +641,8 @@ class GeneModel {
                             });
                         }
                         delete me.pendingNCBIRequests[theGeneNames];
-                        reject();
+                        //reject();
+                        resolve();
                     } else {
                         sumData.result.uids.forEach(function(uid) {
                             var geneInfo = sumData.result[uid];
@@ -654,7 +657,8 @@ class GeneModel {
                 })
                 .fail(function() {
                     delete me.pendingNCBIRequests[theGeneNames];
-                    reject("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
+                    //reject("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
+                    resolve();
                 })
         })
     }

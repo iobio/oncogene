@@ -765,7 +765,7 @@ export default {
       }
     },
     showCoverageCircle: function (variant, lock) {
-      let self = this;
+      const self = this;
 
       if (self.showDepthViz && self.$refs.depthVizRef && self.sampleModel.coverage != null) {
         let theDepth = null;
@@ -923,38 +923,6 @@ export default {
       let container = self.getTrackSVG(self.sampleModel.id);
       self.$refs.variantVizRef.applyActiveFilters(container);
     },
-    // drawIdeograms: function() {
-    //     // TODO: reformat this for our use
-    //     let cnvConfig = {
-    //         organism: 'human',
-    //         container: '#cnv-ideo',
-    //         chromosome: this.selectedGene.chr,
-    //         chrHeight: 500,
-    //         orientation: 'horizontal',
-    //         annotations: [{
-    //             name: this.selectedGene.gene_name,
-    //             chr: this.selectedGene.chr, // TODO: what are field names here
-    //             start: this.selectedGene.start,
-    //             stop: this.selectedGene.end
-    //         }]
-    //     };
-    // let cnvIdeogram = new Ideogram(cnvConfig);
-    //
-    // let lohConfig = {
-    //     organism: 'human',
-    //     container: '#loh-ideo',
-    //     chromosome: this.ncbiSummary.chromosome,
-    //     chrHeight: 500,
-    //     orientation: 'horizontal',
-    //     annotations: [{
-    //         name: this.gene,
-    //         chr: this.ncbiSummary.chromosome,
-    //         start: this.ncbiSummary.genomicinfo[0].chrstart,
-    //         stop: this.ncbiSummary.genomicinfo[0].chrstop
-    //     }]
-    // };
-    // let lohIdeogram = newIdeogram(lohConfig);
-    //},
     getCategories: function (sampleModelId) {
       if (sampleModelId === 'known-variants') {
         return ['unknown', 'other', 'benign', 'path']
@@ -972,6 +940,14 @@ export default {
     },
     displayCnvDialog: function (cnvObj, width, selectedSample) {
       this.$emit('display-cnv-dialog', cnvObj, width, selectedSample);
+    },
+    highlightCnvSegment: function(variant) {
+      const self = this;
+
+      if (self.showCnvViz && self.sampleModel.cnvData != null && self.cnvIdeoRef != null) {
+        let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end);
+        self.cnvIdeoRef.highlightSegment(cnvObj);
+      }
     }
   },
   filters: {},

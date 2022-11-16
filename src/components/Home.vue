@@ -736,12 +736,14 @@ export default {
         self.selectedVariantInterpretation = variant.interpretation;
 
         self.$refs.variantCardRef.forEach(function (variantCard) {
-          // if (sourceComponent == null || variantCard != sourceComponent) {
           variantCard.hideVariantCircle(true);
           variantCard.showVariantCircle(variant, true);
           variantCard.hideCoverageCircle(true);
           variantCard.showCoverageCircle(variant, true);
-          // }
+          if (self.cohortModel.hasCnvData) {
+            // todo: for now just doing on click but can also highlight
+            variantCard.highlightCnvSegment(variant);
+          }
         });
 
         let matchingVar = self.cohortModel.allUniqueFeaturesObj[variant.id];
