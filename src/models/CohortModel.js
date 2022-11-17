@@ -1785,6 +1785,8 @@ class CohortModel {
         };
         let sampleModel = this.sampleMap[sampleModelId];
         if (sampleModel.cnv) {
+            debugger;
+            // todo: why am I using the merged cnv here
             let cnvObj = sampleModel.cnv.findEntryByCoord(varInfo.chr, varInfo.start, varInfo.end, false);
             let mergeObj = cnvObj.mergedCnv[0];
             if (+mergeObj.maxTcn === 2 && +mergeObj.maxLcn === 0) {

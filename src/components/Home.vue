@@ -820,6 +820,9 @@ export default {
           // variantCard.hideVariantTooltip();
           variantCard.hideVariantCircle(true);
           variantCard.hideCoverageCircle(true);
+          if (self.cohortModel.hasCnvData) {
+            variantCard.removeCnvHighlight();
+          }
         })
       }
       if (self.$refs.somaticGenesCard) {

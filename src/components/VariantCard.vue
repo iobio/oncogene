@@ -943,10 +943,17 @@ export default {
     },
     highlightCnvSegment: function(variant) {
       const self = this;
-
-      if (self.showCnvViz && self.sampleModel.cnvData != null && self.cnvIdeoRef != null) {
-        let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end);
-        self.cnvIdeoRef.highlightSegment(cnvObj);
+      if (self.showCnvViz && self.sampleModel.isCnvLoaded() && self.$refs.cnvIdeoRef != null) {
+        let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end, true);
+        if (cnvObj) {
+          self.$refs.cnvIdeoRef.highlightSegment(cnvObj);
+        }
+      }
+    },
+    removeCnvHighlight: function() {
+      const self = this;
+      if (self.showCnvViz && self.$refs.cnvIdeoRef != null) {
+        self.$refs.cnvIdeoRef.removeHighlight();
       }
     }
   },

@@ -8,8 +8,11 @@
   left: 38%
   z-index: 4
 
-  .bands
-    display: none !important
+  .chromosome
+    .bands
+      display: none !important
+    .chromosome-border
+      stroke-width: 0.5
 
   .chrLabel
     font-family: Quicksand !important
@@ -24,6 +27,28 @@
 
   .chrLabel
     display: none
+
+  .chromosome
+    .chromosome-border
+      stroke-width: 0.5
+
+.cnv-highlight-ideo
+  position: absolute
+  bottom: 96%
+  left: 38%
+  z-index: 6
+
+  .chrLabel
+    display: none
+
+  .chromosome
+    .chromosome-border
+      stroke-width: 0.5
+    .bands
+      display: none !important
+    .annot
+      stroke-width: 3
+      stroke: #3586c0
 
 .gene-pseudo-ideo
   position: absolute
@@ -68,8 +93,9 @@
 <template>
   <v-container pa-0>
     <div v-if="inGeneCard" class="gene-ideo-label">{{ selectedGene.chr }}</div>
-    <div :id="getIdeoId(false)" :class=getIdeoClass(false)></div>
-    <div :id="getIdeoId(true)" class="cnv-pseudo-ideo"></div>
+    <div :id="getIdeoId(false, false)" :class="getIdeoClass(false, false)"></div>
+    <div v-show="showHighlight" :id="getIdeoId(false, true)" :class="getIdeoClass(false, true)"></div>
+    <div :id="getIdeoId(true, false)" :class="getIdeoClass(true, false)"></div>
   </v-container>
 </template>
 
@@ -114,10 +140,11 @@ export default {
     return {
       data: null,  // cnvs that go into d3 viz
       ideograms: [], // gets rid of linter error and allows two ideograms
-      chrWidth: 12
+      chrWidth: 12,
+      showHighlight: false
     }
   },
-  copmuted: {
+  computed: {
     chrHeight: function() {
       return this.width * 0.5; // Ideogram orientation is rotated
     },
@@ -137,6 +164,9 @@ export default {
   },
   methods: {
     drawChrLevel: function () {
+      // Clear out any old ideograms
+      this.ideograms = [];
+
       let annotations = [];
       // Fill in CNVs for variant card
       if (this.data && !this.inGeneCard) {
@@ -159,7 +189,7 @@ export default {
       const pseudoConfig = {
         organism: 'human',
         assembly: this.assemblyVersion,
-        container: ('#' + this.getIdeoId(true)),
+        container: ('#' + this.getIdeoId(true, false)),
         orientation: 'horizontal',
         chrHeight: this.chrHeight,
         chrWidth: this.chrWidth,
@@ -179,9 +209,6 @@ export default {
       let pseudoIdeo = new Ideogram(pseudoConfig);
       this.ideograms.push(pseudoIdeo);
 
-      // todo: idea is to put another pseudo ideo behind main one to add drop shadow to for highlighting
-      // or can I just make another one with only the highlighted cnv in question and draw under these
-
       // Draw main ideogram on top
       let config = {};
       if (this.inGeneCard) {
@@ -189,7 +216,7 @@ export default {
         config = {
           organism: 'human',
           assembly: this.assemblyVersion,
-          container: ('#' + this.getIdeoId(false)),
+          container: ('#' + this.getIdeoId(false, false)),
           orientation: 'horizontal',
           chrHeight: this.chrHeight,
           chrWidth: this.chrWidth,
@@ -203,7 +230,7 @@ export default {
         config = {
           organism: 'human',
           assembly: this.assemblyVersion,
-          container: ('#' + this.getIdeoId(false)),
+          container: ('#' + this.getIdeoId(false, false)),
           orientation: 'horizontal',
           chrHeight: this.chrHeight,
           chrWidth: this.chrWidth,
@@ -232,15 +259,23 @@ export default {
     getIdeoId: function (isPseudo, isHighlight) {
       return 'cnv-' + (isPseudo ? 'psuedo-' : isHighlight? 'highlight-' : '') + 'ideo-' + (this.inGeneCard ? 'gene' : this.model.id);
     },
-    getIdeoClass: function (isPseudo) {
-      return (this.inGeneCard ? 'gene-' : 'cnv-') + (isPseudo ? 'pseudo-' : '') + 'ideo';
+    getIdeoClass: function (isPseudo, isHighlight) {
+      return (this.inGeneCard ? 'gene-' : 'cnv-') + (isPseudo ? 'pseudo-' : isHighlight ? 'highlight-' : '') + 'ideo';
     },
     highlightSegment: function(cnvObj) {
+      let start = 0;
+      let end = 0;
+      if (cnvObj && cnvObj.matchingCnvs.length > 0) {
+        start = cnvObj.matchingCnvs[0].start;
+        end = cnvObj.matchingCnvs[0].end;
+      }
+
       let selectedAnnotation = {
-        color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
+        //color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
+        color: "rgba(255, 255, 255, 0.1)",
         chr: this.strippedChr,
-        start: cnvObj.start,
-        stop: cnvObj.end,
+        start: start,
+        stop: end,
         name: 'selected-CNV',
       };
 
@@ -250,12 +285,12 @@ export default {
       let config = {
         organism: 'human',
         assembly: this.assemblyVersion,
-        container: ('#' + this.getIdeoId(false)),
+        container: ('#' + this.getIdeoId(false, true)),
         orientation: 'horizontal',
         chrHeight: this.chrHeight,
         chrWidth: this.chrWidth,
         chromosome: this.strippedChr,
-        annotations: selectedAnnotation,
+        annotations: [selectedAnnotation],
         annotationsLayout: 'overlay',
         chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
         showBandLabels: this.inGeneCard,
@@ -263,6 +298,16 @@ export default {
       };
       let ideo = new Ideogram(config);
       this.ideograms.push(ideo);
+
+      this.showHighlight = true;
+    },
+    removeHighlight: function() {
+      this.showHighlight = false;
+
+      // Guaranteed that last ideogram added is highlight
+      this.ideograms.pop();
+
+      // todo: getting lag here - force update?
     }
   },
   watch: {

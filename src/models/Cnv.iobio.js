@@ -115,7 +115,6 @@ class cnviobio {
     // NOTE: ASSUMES NON-OVERLAPPING CNVs PROVIDED PER FACETS
     findEntryByCoord(chr, startCoord, endCoord, abnormalOnly = false, chrOnly = false) {
         const self = this
-        // Some weird scoping here
         const start = startCoord;
         const end = endCoord;
 
