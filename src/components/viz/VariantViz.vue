@@ -9,7 +9,7 @@
 
         &.current
             stroke: #036DB7 !important
-            stroke-width: 1.5px !important
+            //stroke-width: 1.5px
             stroke-opacity: 1 !important
 
     .ibo-variant

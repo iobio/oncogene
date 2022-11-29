@@ -81,9 +81,9 @@ export default {
       dispatch.on('d3mouseout', function () {
         self.$emit('toggle-cnv-tooltip');
       });
-      dispatch.on('d3click', function (cnvInfo, width) {
-        self.$emit('display-cnv-dialog', cnvInfo, width, self.model.selectedSample);
-      })
+      // dispatch.on('d3click', function (cnvInfo, width) {
+      //   self.$emit('display-cnv-dialog', cnvInfo, width, self.model.selectedSample);
+      // })
     },
     updateGeneLevel: function () {
       const self = this;

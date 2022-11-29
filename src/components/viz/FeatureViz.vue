@@ -93,7 +93,7 @@
                         <g transform="translate(7,6)">
                             <path d="M0,-6.771323825530848L5.79617697938849,0 0,6.771323825530848 -5.79617697938849,0Z"
                                   class="legend-symbol complex"
-                                  style="opacity: 1;fill: none;stroke-width: 1.5px !important;"></path>
+                                  style="opacity: 1;fill: none;stroke-width: 1.5px;"></path>
                         </g>
                     </svg>
                 </span>

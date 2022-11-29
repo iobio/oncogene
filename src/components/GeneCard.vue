@@ -125,7 +125,7 @@
                       :cnvPalette="cnvPalette"
                       :width="width"
                       :margin="margin"
-                      :inGeneCard="true"
+                      :inGeneCard="inGeneCard"
                       :assemblyVersion="assemblyVersion"
             ></ideo-viz>
           </div>
@@ -214,7 +214,8 @@ export default {
       showZoom: false,
       zoomMessage: "Drag to zoom",
       geneVizName: 'transcript-panel',
-      updateMatrix: false  // Used to control redraw of feature matrix when zoom status changes
+      updateMatrix: false,  // Used to control redraw of feature matrix when zoom status changes
+      inGeneCard: true
     }
   },
   methods: {

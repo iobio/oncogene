@@ -290,7 +290,8 @@
                         :width="width"
                         :margin="cnvVizMargin"
                         :inGeneCard="false"
-                        :assemblyVersion="assemblyVersion">
+                        :assemblyVersion="assemblyVersion"
+                        :d3="d3">
               </ideo-viz>
               <variant-viz id="loaded-variant-viz"
                            ref="variantVizRef"
@@ -610,18 +611,18 @@ export default {
       }
     },
     onVariantClick: function (variant, xCoord) {
-      if (this.showDepthViz) {
-        if (variant) {
-          this.hideCoverageCircle(true);
-          this.showCoverageCircle(variant, true);
-        }
-      }
-      if (this.showVariantViz) {
-        if (variant) {
-          this.hideVariantCircle(true);
-          this.showVariantCircle(variant, true);
-        }
-      }
+      // if (this.showDepthViz) {
+      //   if (variant) {
+      //     this.hideCoverageCircle(true);
+      //     this.showCoverageCircle(variant, true);
+      //   }
+      // }
+      // if (this.showVariantViz) {
+      //   if (variant) {
+      //     this.hideVariantCircle(true);
+      //     this.showVariantCircle(variant, true);
+      //   }
+      // }
       this.$emit('cohort-variant-click', variant, this, this.sampleModel.id, xCoord);
     },
     onVariantHover: function (variant) {
@@ -944,7 +945,7 @@ export default {
     highlightCnvSegment: function(variant) {
       const self = this;
       if (self.showCnvViz && self.sampleModel.isCnvLoaded() && self.$refs.cnvIdeoRef != null) {
-        let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end, true);
+        let cnvObj = self.sampleModel.cnv.findEntryByCoord(variant.chrom, variant.start, variant.end, false);
         if (cnvObj) {
           self.$refs.cnvIdeoRef.highlightSegment(cnvObj);
         }

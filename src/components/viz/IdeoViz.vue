@@ -1,4 +1,9 @@
 <style lang="sass">
+#ideogram-viz
+  line
+    stroke-width: 1px !important
+    stroke: #888 !important
+
 .cnv-svg
   margin-top: -20px !important
 
@@ -6,20 +11,27 @@
   position: absolute
   bottom: 96%
   left: 38%
-  z-index: 4
-
-  .chromosome
-    .bands
-      display: none !important
-    .chromosome-border
-      stroke-width: 0.5
+  z-index: 3
 
   .chrLabel
     font-family: Quicksand !important
     font-size: 11px !important
     color: #888 !important
 
+  .annot
+    path, line
+      stroke-width: 0 !important
+
 .cnv-ideo
+  position: absolute
+  bottom: 96%
+  left: 38%
+  z-index: 4
+
+  .chrLabel
+    display: none
+
+.cnv-highlight-ideo
   position: absolute
   bottom: 96%
   left: 38%
@@ -29,21 +41,6 @@
     display: none
 
   .chromosome
-    .chromosome-border
-      stroke-width: 0.5
-
-.cnv-highlight-ideo
-  position: absolute
-  bottom: 96%
-  left: 38%
-  z-index: 6
-
-  .chrLabel
-    display: none
-
-  .chromosome
-    .chromosome-border
-      stroke-width: 0.5
     .bands
       display: none !important
     .annot
@@ -54,7 +51,7 @@
   position: absolute
   bottom: -8%
   left: 25.5%
-  z-index: 2
+  z-index: 3
 
   .chrLabel
     font-family: Quicksand
@@ -68,7 +65,7 @@
   position: absolute
   bottom: -8%
   left: 25.5%
-  z-index: 3
+  z-index: 4
 
   .chrLabel
     display: none
@@ -87,15 +84,20 @@
   padding-bottom: 7px
   font-size: 12px
 
+.cnv-pseudo-ideo-gene
+  .annot
+    path, line
+      stroke-width: 0 !important
+
 
 </style>
 
 <template>
-  <v-container pa-0>
+  <v-container id="ideogram-viz" pa-0>
     <div v-if="inGeneCard" class="gene-ideo-label">{{ selectedGene.chr }}</div>
-    <div :id="getIdeoId(false, false)" :class="getIdeoClass(false, false)"></div>
-    <div v-show="showHighlight" :id="getIdeoId(false, true)" :class="getIdeoClass(false, true)"></div>
     <div :id="getIdeoId(true, false)" :class="getIdeoClass(true, false)"></div>
+    <div :id="getIdeoId(false, false)" :class="getIdeoClass(false, false)"></div>
+    <div :id="getIdeoId(false, true)" :class="getIdeoClass(false, true)"></div>
   </v-container>
 </template>
 
@@ -135,13 +137,20 @@ export default {
       type: String,
       default: ''
     },
+    d3: {
+      type: Object,
+      default: null
+    }
   },
   data() {
     return {
       data: null,  // cnvs that go into d3 viz
-      ideograms: [], // gets rid of linter error and allows two ideograms
+      ideo: null,
+      pseudoIdeo: null,
+      highlightIdeo: null,
       chrWidth: 12,
-      showHighlight: false
+      showHighlight: false,
+      highlightConfig: null,
     }
   },
   computed: {
@@ -164,8 +173,8 @@ export default {
   },
   methods: {
     drawChrLevel: function () {
-      // Clear out any old ideograms
-      this.ideograms = [];
+      this.ideo = null;
+      this.pseudoIdeo = null;
 
       let annotations = [];
       // Fill in CNVs for variant card
@@ -206,8 +215,7 @@ export default {
         showBandLabels: false,
         showChromosomeLabels: true
       };
-      let pseudoIdeo = new Ideogram(pseudoConfig);
-      this.ideograms.push(pseudoIdeo);
+      this.pseudoIdeo = new Ideogram(pseudoConfig);
 
       // Draw main ideogram on top
       let config = {};
@@ -222,7 +230,7 @@ export default {
           chrWidth: this.chrWidth,
           chromosome: this.strippedChr,
           annotationsLayout: 'overlay',
-          chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
+          chrFillColor: 'transparent',
           showBandLabels: this.inGeneCard,
           showAnnotTooltip: false,
         };
@@ -237,13 +245,12 @@ export default {
           chromosome: this.strippedChr,
           annotations: annotations,
           annotationsLayout: 'overlay',
-          chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
+          chrFillColor: 'white',
           showBandLabels: this.inGeneCard,
           showAnnotTooltip: false,
         };
       }
-      let ideo = new Ideogram(config);
-      this.ideograms.push(ideo);
+      this.ideo = new Ideogram(config);
     },
     getCnvColor: function (tcn, lcn) {
       if (tcn === 2 && lcn !== 1) {
@@ -262,6 +269,8 @@ export default {
     getIdeoClass: function (isPseudo, isHighlight) {
       return (this.inGeneCard ? 'gene-' : 'cnv-') + (isPseudo ? 'pseudo-' : isHighlight ? 'highlight-' : '') + 'ideo';
     },
+    // This actually draws another ideogram on top, with a highlighted border
+    // This is only called on variant card refs, so don't need inGeneCard logic
     highlightSegment: function(cnvObj) {
       let start = 0;
       let end = 0;
@@ -271,49 +280,53 @@ export default {
       }
 
       let selectedAnnotation = {
-        //color: this.getCnvColor(cnvObj.tcn, cnvObj.lcn),
         color: "rgba(255, 255, 255, 0.1)",
         chr: this.strippedChr,
         start: start,
         stop: end,
-        name: 'selected-CNV',
+        name: 'selected-CNV-' + this.model.id,
       };
 
-      // todo: left off testing drawing this + need to add sass styling for drop shadow
-      // + z-index class application
-
-      let config = {
+      let id = this.getIdeoId(false, true);
+      this.highlightConfig = {
         organism: 'human',
         assembly: this.assemblyVersion,
-        container: ('#' + this.getIdeoId(false, true)),
+        container: ('#' + id),
         orientation: 'horizontal',
         chrHeight: this.chrHeight,
         chrWidth: this.chrWidth,
         chromosome: this.strippedChr,
         annotations: [selectedAnnotation],
         annotationsLayout: 'overlay',
-        chrFillColor: (this.inGeneCard ? 'transparent' : 'white'),
+        chrFillColor: 'transparent',
         showBandLabels: this.inGeneCard,
         showAnnotTooltip: false,
       };
-      let ideo = new Ideogram(config);
-      this.ideograms.push(ideo);
-
-      this.showHighlight = true;
+      this.highlightIdeo = new Ideogram(this.highlightConfig);
+      this.d3.select('#' + id).style('opacity', 1);
     },
     removeHighlight: function() {
-      this.showHighlight = false;
-
-      // Guaranteed that last ideogram added is highlight
-      this.ideograms.pop();
-
-      // todo: getting lag here - force update?
+      let id = this.getIdeoId(false, true);
+      this.d3.select('#' + id).style('opacity', 0);
+      this.highlightConfig = {
+        organism: 'human',
+        assembly: this.assemblyVersion,
+        container: ('#' + id),
+        orientation: 'horizontal',
+        chrHeight: this.chrHeight,
+        chrWidth: this.chrWidth,
+        chromosome: this.strippedChr,
+        annotationsLayout: 'overlay',
+        chrFillColor: 'transparent',
+        showBandLabels: this.inGeneCard,
+        showAnnotTooltip: false,
+      };
+      this.highlightIdeo = new Ideogram(this.highlightConfig);
     }
   },
   watch: {
     'model.cnvsOnSelectedChrom': function () {
       if (this.model && !this.inGeneCard) {
-        // todo: look for oob coordinates here for ch22
         this.data = this.model.cnvsOnSelectedChrom;
         this.drawChrLevel();
       }

@@ -741,7 +741,6 @@ export default {
           variantCard.hideCoverageCircle(true);
           variantCard.showCoverageCircle(variant, true);
           if (self.cohortModel.hasCnvData) {
-            // todo: for now just doing on click but can also highlight
             variantCard.highlightCnvSegment(variant);
           }
         });
@@ -765,6 +764,11 @@ export default {
           if (self.cohortModel.hasCnvData) {
             self.$refs.variantSummaryCardRef.setCnvInfo();
           }
+        }
+        if (self.cohortModel.hasCnvData) {
+          self.$refs.variantCardRef.forEach(function (variantCard) {
+            variantCard.removeCnvHighlight();
+          });
         }
       }
     },
@@ -820,9 +824,6 @@ export default {
           // variantCard.hideVariantTooltip();
           variantCard.hideVariantCircle(true);
           variantCard.hideCoverageCircle(true);
-          if (self.cohortModel.hasCnvData) {
-            variantCard.removeCnvHighlight();
-          }
         })
       }
       if (self.$refs.somaticGenesCard) {
