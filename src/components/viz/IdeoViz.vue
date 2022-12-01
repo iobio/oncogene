@@ -20,7 +20,13 @@
 
   .annot
     path, line
-      stroke-width: 0 !important
+      //fill: rgb(25, 77, 129)
+      fill: none
+      stroke: rgb(25, 77, 129)
+      stroke-dasharray: 5.2
+      //stroke-dasharray: 8.6
+      transform: translate(0, 2.5px)
+
 
 .cnv-ideo
   position: absolute
@@ -61,6 +67,14 @@
   .bands
     display: none !important
 
+  .annot
+    path, line
+      fill: none
+      stroke: rgb(25, 77, 129)
+      stroke-dasharray: 5.2
+      //stroke-dasharray: 8.6
+      transform: translate(0, 2.5px)
+
 .gene-ideo
   position: absolute
   bottom: -8%
@@ -84,11 +98,9 @@
   padding-bottom: 7px
   font-size: 12px
 
-.cnv-pseudo-ideo-gene
-  .annot
-    path, line
-      stroke-width: 0 !important
 
+
+      //todo: try to get rid of all styling
 
 </style>
 
@@ -97,7 +109,7 @@
     <div v-if="inGeneCard" class="gene-ideo-label">{{ selectedGene.chr }}</div>
     <div :id="getIdeoId(true, false)" :class="getIdeoClass(true, false)"></div>
     <div :id="getIdeoId(false, false)" :class="getIdeoClass(false, false)"></div>
-    <div :id="getIdeoId(false, true)" :class="getIdeoClass(false, true)"></div>
+    <div v-if="!inGeneCard" :id="getIdeoId(false, true)" :class="getIdeoClass(false, true)"></div>
   </v-container>
 </template>
 
@@ -173,8 +185,10 @@ export default {
   },
   methods: {
     drawChrLevel: function () {
-      this.ideo = null;
+      let pseudoId = this.getIdeoId(true, false);
+      this.d3.select('#' + pseudoId).style("opacity", 0);
       this.pseudoIdeo = null;
+      this.ideo = null;
 
       let annotations = [];
       // Fill in CNVs for variant card
@@ -213,7 +227,8 @@ export default {
         annotationsLayout: 'tracks',
         showAnnotTooltip: false,
         showBandLabels: false,
-        showChromosomeLabels: true
+        showChromosomeLabels: true,
+        onDrawAnnots: this.appendGeneLength
       };
       this.pseudoIdeo = new Ideogram(pseudoConfig);
 
@@ -251,6 +266,7 @@ export default {
         };
       }
       this.ideo = new Ideogram(config);
+      this.d3.select('#' + pseudoId).style("opacity", 1);
     },
     getCnvColor: function (tcn, lcn) {
       if (tcn === 2 && lcn !== 1) {
@@ -303,25 +319,29 @@ export default {
         showAnnotTooltip: false,
       };
       this.highlightIdeo = new Ideogram(this.highlightConfig);
-      this.d3.select('#' + id).style('opacity', 1);
+      // Need timeout so we don't get flash from previously drawn highlight ideo
+      setTimeout(() => {
+        this.d3.select('#' + id).style('opacity', 1);
+      }, 200);
     },
     removeHighlight: function() {
       let id = this.getIdeoId(false, true);
-      this.d3.select('#' + id).style('opacity', 0);
-      this.highlightConfig = {
-        organism: 'human',
-        assembly: this.assemblyVersion,
-        container: ('#' + id),
-        orientation: 'horizontal',
-        chrHeight: this.chrHeight,
-        chrWidth: this.chrWidth,
-        chromosome: this.strippedChr,
-        annotationsLayout: 'overlay',
-        chrFillColor: 'transparent',
-        showBandLabels: this.inGeneCard,
-        showAnnotTooltip: false,
-      };
-      this.highlightIdeo = new Ideogram(this.highlightConfig);
+      this.d3.select('#' + id).style("opacity", 0);
+      this.highlightIdeo = null;
+    },
+    appendGeneLength: function() {
+      if (this.inGeneCard) {
+        let geneLength = this.selectedGene.end - this.selectedGene.start;
+        geneLength = new Intl.NumberFormat().format(geneLength);
+        let id = this.getIdeoId(true, false);
+        let geneMarkerEl = this.d3.select('#' + id).select('.annot');
+        let geneMarkerBbox = geneMarkerEl.node().getBBox();
+        geneMarkerEl.append('text')
+            .attr('x', (geneMarkerBbox.x + 10) + 'px')
+            .attr('y', geneMarkerBbox.y + 8)
+            .text(geneLength + ' bp')
+            .style('fill', 'rgb(25, 77, 129)');
+      }
     }
   },
   watch: {
@@ -335,6 +355,7 @@ export default {
       if (this.inGeneCard) {
         this.drawChrLevel();
       } else {
+        this.removeHighlight();
         if (this.model) {
           this.data = this.model.cnvsOnSelectedChrom;
           this.drawChrLevel();

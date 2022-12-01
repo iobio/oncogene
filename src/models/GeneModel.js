@@ -1457,8 +1457,8 @@ class GeneModel {
 
     /* Returns a list of genes, ranked according to the somatic variants each contains.
      * Ranks, in order, by:
-     *      1. Contains highest number of {x} VEP impact, COSMIC-containing features
-     *      2. Contains highest number of {x} VEP impact features
+     *      1. Contains greatest number of {x} VEP impact, COSMIC-containing features
+     *      2. Contains greatest number of {x} VEP impact features
      *      ...where {x} is High, Moderate, Low, Modifier in order
      * Takes in a list of unique, somatic variants. Each variant contains a boolean
      * representing if a sample contains it or not. Annotates each gene object to append

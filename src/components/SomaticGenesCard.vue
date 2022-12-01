@@ -124,7 +124,7 @@
                                                          </g>
                                                        </svg>
                                                      </span>
-                                <v-list-item-title class="variant-text" v-text="getCnvText(cnv)" @click="onCnvSelected(cnv)"></v-list-item-title>
+                                <v-list-item-title class="variant-text" v-text="getCnvText(cnv)"></v-list-item-title>
                               </v-col>
                             </v-row>
                           </v-list-item-content>
@@ -259,10 +259,6 @@
             },
             onVariantSelected: function(feature) {
                 this.$emit('variant-selected', feature, this, 'rankedList');
-            },
-            onCnvSelected: function(cnv) {
-                // todo cnv: implement highlighting fxnality
-              console.log(cnv);
             },
             isSelectedGene: function(geneObj) {
                 if (!geneObj) return false;

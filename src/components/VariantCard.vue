@@ -611,18 +611,18 @@ export default {
       }
     },
     onVariantClick: function (variant, xCoord) {
-      // if (this.showDepthViz) {
-      //   if (variant) {
-      //     this.hideCoverageCircle(true);
-      //     this.showCoverageCircle(variant, true);
-      //   }
-      // }
-      // if (this.showVariantViz) {
-      //   if (variant) {
-      //     this.hideVariantCircle(true);
-      //     this.showVariantCircle(variant, true);
-      //   }
-      // }
+      if (this.showDepthViz) {
+        if (variant) {
+          this.hideCoverageCircle(true);
+          this.showCoverageCircle(variant, true);
+        }
+      }
+      if (this.showVariantViz) {
+        if (variant) {
+          this.hideVariantCircle(true);
+          this.showVariantCircle(variant, true);
+        }
+      }
       this.$emit('cohort-variant-click', variant, this, this.sampleModel.id, xCoord);
     },
     onVariantHover: function (variant) {

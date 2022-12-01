@@ -127,6 +127,7 @@
                       :margin="margin"
                       :inGeneCard="inGeneCard"
                       :assemblyVersion="assemblyVersion"
+                      :d3="d3"
             ></ideo-viz>
           </div>
         </div>
