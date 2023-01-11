@@ -5,7 +5,7 @@
 class GlobalApp {
   constructor($, d3, _) {
     this.GALAXY_TEST_MODE      = false;
-    this.cnvDemoMode           = true;
+    this.cnvDemoMode           = false;
 
     this.cacheHelper           = null;
     this.tour                  = "";
@@ -158,6 +158,24 @@ class GlobalApp {
             threeAa = '*';
         }
         return threeAa ? threeAa : singleAa;
+    }
+
+    // Returns 'N' for GRCh37; 'chrN' for GRCh38
+    // If cannot parse build from chrString, returns null
+    getChrByBuild(chrString, genomeBuild) {
+        if (genomeBuild === 'GRCh37') {
+            if (chrString.startsWith('chr')) {
+                return genomeBuild.substring(3);
+            }
+        } else {
+            if (!chrString.startsWith('chr')) {
+                return 'chr' + chrString;
+            } else {
+                return chrString;
+            }
+        }
+        console.log('Could not parse build according to provided string: ' + chrString);
+        return null;
     }
 }
 

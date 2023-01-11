@@ -659,7 +659,8 @@ export default function vcfiobio(theGlobalApp) {
     };
 
     /* Returns dictionary with variant_IDs as keys and values. If inInfo is true, pulls INFO column according to infoValueField if provided.
-     * Otherwise, returns ID column field if fieldName === ID. Otherwise, just returns true for map value. */
+     * Otherwise, returns ID column field if fieldName === ID. Otherwise, just returns true for map value.
+     * REGIONS MUST HAVE PROPERLY FORMATTED CHROMOSOME FIELD, I.E. CHRN for GRCH38, N FOR GRCH37 */
     exports.promiseGetVariantIds = function (regions, fieldName, inInfo = false) {
         const me = this;
 

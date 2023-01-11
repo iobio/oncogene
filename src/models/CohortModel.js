@@ -33,7 +33,7 @@ class CohortModel {
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for subclone viz)
-        this.cosmicVariantIdHash = {};          // Contains the multiple genes cosmic IDs
+        this.cosmicVariantIdHash = {};          // Hash of varKey: cosmicID or varKey: {emptyString} if not corresponding cosmic variant found
         this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
         this.selectedTranscriptId = null;       // Used by sampleModels when assigning impact
 
@@ -884,8 +884,10 @@ class CohortModel {
                         self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {replace: true, warnOnDup: false})
                         : Promise.resolve();
                     geneP.then(() => {
+                        let retObj = {};
                         self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
                             .then(groupObj => {
+                                retObj['groupObj'] = groupObj;
                                 //self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
                                 //.then(() => {
                                 // let cosmicPs = [];
@@ -896,7 +898,8 @@ class CohortModel {
                                     //.then(() => {
                                 self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
                                     .then((rankObj) => {
-                                        resolve(rankObj);
+                                        retObj['rankObj'] = rankObj;
+                                        resolve(retObj);
                                     }).catch(err => {
                                         reject('Fatal error scoring and ranking somatic genes: ' + err);
                                     })
@@ -1385,15 +1388,26 @@ class CohortModel {
 
     promiseGetCosmicStatus(variant) {
         const self = this;
-        let regions = [variant.chrom + ':' + variant.start + '-' + variant.end];
-        let varId = 'var_' + variant.start + '_' + variant.chrom + '_' + variant.ref + '_' + variant.alt;
+        let regionObj = {
+            name: variant.chrom,
+            start: variant.start,
+            end: variant.end
+        };
+        // cosmicVariantIdHash never has 'chr' prefix in keys, even for GRCh38
+        let safeChr = variant.chrom.indexOf('chr') > -1 ? variant.chrom.substring(3) : variant.chrom;
+        let varId = 'var_' + variant.start + '_' + safeChr + '_' + variant.ref + '_' + variant.alt;
 
         return new Promise(function (resolve, reject) {
-            if (self.cosmicVariantIdHash[varId]) {
+            let cosmicId = self.cosmicVariantIdHash[varId];
+            if (cosmicId === '') {
+                // We may have already fetched this variant, and found no matching cosmic variant
+                // Don't redundantly make a backend call, just return false
+                resolve(false);
+            } else if (cosmicId) {
                 resolve(true);
             } else {
                 self.getModel('cosmic-variants').inProgress.loadingVariants = true;
-                self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
+                self.sampleMap['cosmic-variants'].promiseGetVariantIds([regionObj])
                     .then(function (resultMap) {
                         self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                         // Add variants to existing hash
@@ -1401,6 +1415,7 @@ class CohortModel {
                             self.cosmicVariantIdHash[varId] = resultMap['cosmic-variants-ids'][varId];
                             resolve(true);
                         } else {
+                            self.cosmicVariantIdHash[varId] = '';
                             resolve(false);
                         }
                     })
@@ -1415,9 +1430,7 @@ class CohortModel {
      * that fall within that region. Populates model level map of cosmic variant IDs.
      * If gene has already been pulled back, will not re-fetch. */
     promiseGetCosmicVariantIds(regions, geneNames) {
-        // todo: this is the blocker on loading - needs to be optimized
-
-        let self = this;
+        const self = this;
         if (regions.length !== geneNames.length) {
             console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');
         }
@@ -1437,6 +1450,7 @@ class CohortModel {
                     self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                     // Add variants to existing hash
                     for (var varKey in resultMap['cosmic-variants-ids']) {
+                        // Note: varKey never contains 'chr' prefix
                         self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
                     }
                     // Add gene names to existing hash

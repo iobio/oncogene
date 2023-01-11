@@ -528,7 +528,8 @@ export default {
       let aaChange = '-';
       if (this.variant != null) {
         aaChange = 'N/A';
-        if (this.variant.vepAminoAcids) {
+
+        if (this.useVEP && this.variant.vepAminoAcids) {
           let changeString = Object.values(this.variant.vepAminoAcids)[0];
           if (changeString) {
             let acids = changeString.split('/');
@@ -543,6 +544,9 @@ export default {
             let posDelim = this.variant.vepAminoAcids['position'] ? this.variant.vepAminoAcids['position'] : '->';
             aaChange = expectAa + posDelim + actualAa;
           }
+        } else if (this.variantInfo.bcsqAAChange) {
+          // todo: split this into formatted string
+          return this.variantInfo.bcsqAAChange;
         }
       }
       return aaChange;

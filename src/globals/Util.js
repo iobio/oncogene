@@ -937,14 +937,15 @@ class Util {
       if (transcriptAnno) {
         info.bcsqConsequence = transcriptAnno.csqType;
         info.bcsqImpact = transcriptAnno.impact;
+        info.bcsqAAChange = transcriptAnno.aaPos;
       }
       info.bcsqHighestImpact = variant.highestImpactBcsq;
     }
     info.filtersPassed = variant.filtersPassed ? variant.filtersPassed.join(",") : "";
 
-    // if (variant.cosmicId) {
-    //   info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicId;
-    // }
+    if (variant.cosmicId) {
+      info.cosmicUrl = 'https://cancer.sanger.ac.uk/cosmic/search?q=' + variant.cosmicId;
+    }
 
     return info;
   }

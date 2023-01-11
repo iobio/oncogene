@@ -20,11 +20,8 @@
 
   .annot
     path, line
-      //fill: rgb(25, 77, 129)
-      fill: none
-      stroke: rgb(25, 77, 129)
-      stroke-dasharray: 5.2
-      //stroke-dasharray: 8.6
+      fill: yellow
+      stroke: #888
       transform: translate(0, 2.5px)
 
 
@@ -69,10 +66,8 @@
 
   .annot
     path, line
-      fill: none
-      stroke: rgb(25, 77, 129)
-      stroke-dasharray: 5.2
-      //stroke-dasharray: 8.6
+      stroke: #888
+      fill: yellow
       transform: translate(0, 2.5px)
 
 .gene-ideo
@@ -337,10 +332,9 @@ export default {
         let geneMarkerEl = this.d3.select('#' + id).select('.annot');
         let geneMarkerBbox = geneMarkerEl.node().getBBox();
         geneMarkerEl.append('text')
-            .attr('x', (geneMarkerBbox.x + 10) + 'px')
+            .attr('x', (geneMarkerBbox.x + 15) + 'px')
             .attr('y', geneMarkerBbox.y + 8)
-            .text(geneLength + ' bp')
-            .style('fill', 'rgb(25, 77, 129)');
+            .text(geneLength + ' bp');
       }
     }
   },

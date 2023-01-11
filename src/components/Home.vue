@@ -605,15 +605,19 @@ export default {
       const self = this;
       self.selectedVariant = null;
       self.displayLoader = true;
-      // let showTracks = false;
-      // if (self.$refs.variantCardRef) {
-      //     self.$refs.variantCardRef.forEach(function (variantCard) {
-      //         variantCard.toggleTracks(showTracks);
-      //     })
-      // }
       self.geneModel.clearGeneObjects();
       self.cohortModel.promiseAnnotateGlobalSomatics()
-          .then(rankObj => {
+          .then(retObj => {
+            let rankObj = retObj.rankObj;
+            let groupObj = retObj.groupObj;
+            // Don't want to block on this, do in background
+            self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
+              .then(() => {
+                let cosmicPs = [];
+                groupObj.fullGeneObjs.forEach(geneObj => {
+                  cosmicPs.push(self.cohortModel.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
+                });
+              });
             let totalSomaticVarCount = rankObj.count;
             let totalSomaticGenes = rankObj.geneCount;
             let topRankedGene = rankObj.gene;
@@ -660,6 +664,7 @@ export default {
               // Get rid of global loader
               self.displayLoader = false;
               self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
+                  // todo: silently put this in a list
                   // .then(() => {
                   //   if (Object.keys(self.unmatchedGenes).length > 0) {
                   //     self.displayUnmatchedGenesWarning = true;
@@ -947,8 +952,10 @@ export default {
                 }
 
                 if (self.cohortModel.isLoaded) {
-                  let strippedChr = self.selectedGene.chr.startsWith('chr') ? self.selectedGene.chr.substring(3) : self.selectedGene.chr;
-                  let region = strippedChr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
+                  // todo: left off testing this
+                  debugger;
+                  //let matchingChr = self.cohortModel.globalApp.getChrByBuild(self.selectedGene.chr, self.genomeBuildHelper.currentBuild);
+                  let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
                   self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
                       .then(() => {
                         self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)

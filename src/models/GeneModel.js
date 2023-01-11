@@ -1527,11 +1527,6 @@ class GeneModel {
                         genesWithVars[name] = true;
                     })
 
-                    // Fetch NCBI summary for all somatic genes
-                    //todo: this seems to be breaking - can we just get a single summary at a time after we rank?
-                    //let summaryP = self.promiseGetNCBIGeneSummaries(Object.keys(genesWithVars));
-                    //promises.push(summaryP);
-
                     Promise.all(promises)
                         .then(() => {
                             // Compose list of gene objects for return

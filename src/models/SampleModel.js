@@ -1631,7 +1631,9 @@ class SampleModel {
     //     });
     // }
 
-    /* Takes in a list of regions, calls 5 regions at a time to process. */
+    /* Takes in a list of regions, calls 5 regions at a time to process.
+     * regions may be an array of variant objects with properties name, start, and end
+     * or an array of strings already preformatted for bcftools */
     promiseGetVariantIds(regions) {
         const self = this;
         const batchCount = 5;
@@ -1648,7 +1650,6 @@ class SampleModel {
                             if (Object.keys(data).length === 0) {
                                 let regionStr = '';
                                 regionBatch.forEach(region => {
-                                    // Regions are hard coded to come in without chr prefix - add back if needed
                                     regionStr += (region.name + ':' + region.start + '-' + region.end + ', ');
                                 })
                                 console.log('Warning: no cosmic variants found for the batch: ' + regionStr);
