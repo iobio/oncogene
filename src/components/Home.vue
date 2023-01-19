@@ -952,9 +952,6 @@ export default {
                 }
 
                 if (self.cohortModel.isLoaded) {
-                  // todo: left off testing this
-                  debugger;
-                  //let matchingChr = self.cohortModel.globalApp.getChrByBuild(self.selectedGene.chr, self.genomeBuildHelper.currentBuild);
                   let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
                   self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
                       .then(() => {

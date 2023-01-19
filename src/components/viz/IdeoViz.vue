@@ -93,10 +93,6 @@
   padding-bottom: 7px
   font-size: 12px
 
-
-
-      //todo: try to get rid of all styling
-
 </style>
 
 <template>
