@@ -1,7 +1,6 @@
 // import CacheHelper from './CacheHelper.js'
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
-import CmmlUrls from '../data/cmml_urls.json'
 import SubcloneModel from './SubcloneModel.js';
 
 /* One per patient - contains sample models for tumor and normal samples. */
@@ -69,10 +68,6 @@ class CohortModel {
         this.knownVariantViz = 'variants';     // variants, histo, histoExon
         this.cosmicVariantViz = 'counts';
         this.demoCmmlFiles = false;             // If true, loads demo CMML data - ONLY LOCAL
-        this.demoVcfs = this.getDemoVcfs();
-        this.demoBams = this.getDemoBams();
-        this.demoModelInfos = this.getDemoModelInfos();
-        this.demoGenes = ['KRAS', 'APC', 'BRCA2', 'TGFB1', 'RB1'];
 
         this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
         this.sampleModelUtil.init(this);
@@ -88,213 +83,34 @@ class CohortModel {
      * GETTERS
      */
 
-    // todo: this needs to be updated with valid sample data
-    getDemoVcfs() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeriesVcf': CmmlUrls['pt1Vcf'],
-                'timeSeriesTbi': CmmlUrls['pt1Tbi'],
-                'dualVcf': CmmlUrls['pt1Vcf'],
-                'dualTbi': CmmlUrls['pt1Tbi']
-            };
-        } else {
-            return {
-                'timeSeries': "https://s3.amazonaws.com/iobio/gene/wgs_platinum/platinum-trio.vcf.gz",
-                'dual': "https://s3.amazonaws.com/iobio/gene/wgs_platinum/platinum-trio.vcf.gz"
-            };
-        }
+    // Returns array of global statistic objects, one per sample
+    promiseGetGlobalStats() {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            if (self.sampleModels.length === 0) {
+                reject("No sample models to derive global stats from");
+            } else {
+                let sampleStatObjs = [];
+                self.sampleModels.forEach(sampleModel => {
+                    let statsObj = sampleModel.vcf.getStatsObj(); // todo: implement
+                    let sampleObj = {
+                        selectedSample: sampleModel.selectedSample,  // The name in the vcf file
+                        sampleName: sampleModel.displayName,         // The name entered in modal
+                        sampleType: sampleModel.isTumor ? 'Tumor' : 'Normal',
+                        mutationBurden: statsObj.mutationBurden,
+                        snvCount: statsObj.snvCount,
+                        indelCount: statsObj.indelCount
+                    };
+                    if (sampleModel.cnv) {
+                        sampleObj.cnPercentage = sampleModel.cnv.getGenomePercentage();  // todo: implement
+                    }
+                    sampleStatObjs.push(sampleObj);
+                });
+                resolve(sampleStatObjs);
+            }
+        });
     }
 
-    // todo: this needs to be updated with valid sample data
-    getDemoBams() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeries': {
-                    't0Bam': CmmlUrls['t0Bam'],
-                    't1Bam': CmmlUrls['t1Bam'],
-                    't2Bam': CmmlUrls['t2Bam'],
-                    't3Bam': CmmlUrls['t3Bam'],
-                    't0Bai': CmmlUrls['t0Bai'],
-                    't1Bai': CmmlUrls['t1Bai'],
-                    't2Bai': CmmlUrls['t2Bai'],
-                    't3Bai': CmmlUrls['t3Bai']
-                },
-                'dual': {
-                    'normalBam': CmmlUrls['t0Bam'],
-                    'normalBai': CmmlUrls['t0Bai'],
-                    'tumorBam': CmmlUrls['t3Bam'],
-                    'tumorBai': CmmlUrls['t3Bai']
-                }
-            };
-        } else {
-            return {
-                'timeSeries': {
-                    't0': 'https://s3.amazonaws.com/iobio/samples/bam/NA12878.exome.bam',
-                    't1': 'https://s3.amazonaws.com/iobio/samples/bam/NA12892.exome.bam',
-                    't2': 'https://s3.amazonaws.com/iobio/samples/bam/NA12891.exome.bam',
-                    't3': 'https://s3.amazonaws.com/iobio/samples/bam/NA12891.exome.bam'
-                },
-                'dual': {
-                    'normal': 'https://s3.amazonaws.com/iobio/gene/wgs_platinum/NA12878.bam',
-                    'tumor': 'https://s3.amazonaws.com/iobio/gene/wgs_platinum/NA12892.bam'
-                }
-            };
-        }
-    }
-
-    // todo: this needs to be updated with valid sample data
-    getDemoModelInfos() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeries': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'CMML Normal',
-                        'selectedSample': '14063X1',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t0Bam'],
-                        'bai': this.demoBams.timeSeries['t0Bai'],
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'CMML T1',
-                        'selectedSample': '11200X11',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t1Bam'],
-                        'bai': this.demoBams.timeSeries['t1Bai'],
-                        'order': 1
-                    },
-                    {
-                        id: 's2',
-                        isTumor: true,
-                        displayName: 'CMML T2',
-                        'selectedSample': '11200X12',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t2Bam'],
-                        'bai': this.demoBams.timeSeries['t2Bai'],
-                        'order': 2
-                    },
-                    {
-                        id: 's3',
-                        isTumor: true,
-                        displayName: 'CMML T3',
-                        'selectedSample': '11200X9',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t3Bam'],
-                        'bai': this.demoBams.timeSeries['t3Bai'],
-                        'order': 3
-                    }
-                ],
-                'dual': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'CMML Normal',
-                        'selectedSample': '14063X1',
-                        'vcf': this.demoVcfs.dualVcf,
-                        'tbi': this.demoVcfs.dualTbi,
-                        'bam': this.demoBams.dual['normalBam'],
-                        'bai': this.demoBams.dual['normalBai'],
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'CMML Tumor',
-                        'selectedSample': '11200X9',
-                        'vcf': this.demoVcfs.dualVcf,
-                        'tbi': this.demoVcfs.dualTbi,
-                        'bam': this.demoBams.dual['tumorBam'],
-                        'bai': this.demoBams.dual['tumorBai'],
-                        'order': 1
-                    }
-                ]
-            };
-        } else {
-            return {
-                'timeSeries': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'Normal',
-                        'selectedSample': 'NA12878',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t0'],
-                        'bai': null,
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'T1 Tumor',
-                        'selectedSample': 'NA12892',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t1'],
-                        'bai': null,
-                        'order': 1
-                    },
-                    {
-                        id: 's2',
-                        isTumor: true,
-                        displayName: 'T2 Tumor',
-                        'selectedSample': 'NA12891',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t2'],
-                        'bai': null,
-                        'order': 2
-                    },
-                    {
-                        id: 's3',
-                        isTumor: true,
-                        displayName: 'T3 Tumor',
-                        'selectedSample': 'NA12891',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t3'],
-                        'bai': null,
-                        'order': 3
-                    }
-                ],
-                'dual': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'Normal',
-                        'selectedSample': 'NA12878',
-                        'vcf': this.demoVcfs.dual,
-                        'tbi': null,
-                        'bam': this.demoBams.dual['normal'],
-                        'bai': null,
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'Tumor',
-                        'selectedSample': 'NA12892',
-                        'vcf': this.demoVcfs.dual,
-                        'tbi': null,
-                        'bam': this.demoBams.dual['tumor'],
-                        'bai': null,
-                        'order': 1
-                    }
-                ]
-            };
-        }
-    }
     createModelInfo(selectedSample, isTumor, modelInfoIdx) {
         let modelInfo = {};
 

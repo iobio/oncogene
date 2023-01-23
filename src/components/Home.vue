@@ -1,6 +1,7 @@
 <template>
   <v-container fluid fill-height style="width: 100%; height: 100%; background: white" class="ma-0 pa-0">
-    <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
+<!--    <Welcome v-show="!dataEntered && !debugMode || displayCarousel"-->
+    <Welcome v-show="false"
              :d3="d3"
              :cohortModel="cohortModel"
              :welcomeWidth="screenWidth"
@@ -357,6 +358,41 @@
     <v-overlay :value="displayLoader">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
+    <v-dialog
+      v-model="globalDialog"
+      hide-overlay
+      width="900">
+      <v-card
+        class="global-dialog"
+        color="white">
+        <v-card-title>
+          {{ loadingAction }}
+        </v-card-title>
+        <v-card-text>
+          <v-progress-linear
+              :v-show="showGlobalLoader"
+              indeterminate
+              color="secondary"
+              class="mb-0"
+          ></v-progress-linear>
+          <div class="py-3 global_subtitle">
+            While we're loading your data, here's a quick look at your samples:
+          </div>
+          <v-data-table
+              :v-show="showGlobalTable"
+              :headers="GLOBAL_TABLE_HEADERS"
+              :items="globalStats">
+          </v-data-table>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+              text
+              color="secondary">
+            Read Docs
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -448,6 +484,15 @@ export default {
   },
   data: () => {
     return {
+      // Constants
+      GLOBAL_TABLE_HEADERS: [
+        { text: 'Sample Name', value: 'sampleName' },
+        { text: 'Sample Type', value: 'sampleType' },
+        { text: 'Mutation Burden', value: 'mutationBurden' },
+        { text: '% Genome Under CN Event', value: 'cnPercentage' },
+        { text: 'Total SNVs', value: 'snvCount' },
+        { text: 'Total Indels', value: 'indelCount' }
+      ],
       screenWidth: (window.innerWidth * 0.5),
       screenHeight: window.innerHeight,
 
@@ -468,6 +513,9 @@ export default {
       aboutDialog: false,
       noVarsDialog: false,
       subcloneDialog: false,
+      globalDialog: true,
+      showGlobalTable: true,
+      showGlobalLoader: true,
       selectedSubclone: '',
       selectedSubcloneVariants: [],
       showGeneSnackbar: false,
@@ -532,9 +580,11 @@ export default {
       rankedGeneList: [],
       expandedUserList: false,    // True if we have automatically expanded the user supplied list to include UCSC500 (b/c no targets from their list returned)
       noVarsFound: false,
+      globalStats: [],          // Global stats such as mutation burden, per sample
 
       lookupGene: null,
       debugMode: false,
+      loadingAction: "Loading Samples..."
     };
   },
   watch: {
@@ -571,6 +621,15 @@ export default {
     // Point of entry for launch
     onLaunch: function (modelInfos, userGeneList, demoMode = false) {
       const self = this;
+      self.cohortModel.promiseGetGlobalStats()
+          .then(globalStats => {
+            self.globalStats = globalStats;
+            // todo: add loader into table
+            // todo: hide loader via bool
+            // todo: show table via bool
+          }).catch(err => {
+            console.log("Problem getting global statistics for samples: " + err);
+      });
       self.dataEntered = true;
       self.displayCarousel = false;
       self.firstLoadComplete = true;
@@ -1379,4 +1438,15 @@ export default {
       font-size: 18px
       background-color: #7f1010
       color: white
+
+.global-dialog
+  .v-card__title
+    font-family: Quicksand
+    font-size: 1.5rem !important
+
+  .global_subtitle
+    font-family: 'Open Sans'
+
+  .v-data-footer
+    display: none
 </style>
