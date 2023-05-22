@@ -1,4 +1,5 @@
 # oncogene
+oncogene.iobio is developed by the Gabor Marth lab, is free for academic use, and is distributed under the MIT license. For further information, or commercial usage inquiries, please contact iobioproject@gmail.com.
 
 ## Project setup
 ```
