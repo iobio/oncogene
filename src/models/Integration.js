@@ -78,16 +78,19 @@ class Integration {
 
     promiseGetDemoUrls() {
         const self = this;
+        const cnvDemo = self.globalApp.useCnvDemo;
+
+        // todo: left off here - launch working but need to add tsv files
 
         return new Promise((resolve, reject) => {
-            const projectId = process.env.VUE_APP_DEMO_PROJECT_ID;
+            const projectId = cnvDemo? process.env.VUE_APP_CNV_DEMO_PROJECT_ID : process.env.VUE_APP_DEMO_PROJECT_ID;
             if (projectId) {
                 let params = self.config.params;
                 params['mosaic_distro'] = FRAMESHIFT;
                 params.source = "https://mosaic.frameshift.io";
                 params.project_id = projectId;
-                params.sample_id = "2835";      // todo: add these as mosaic attributes or do getSamples call
-                params.tumor_sample_ids = "2836,2837,2838,2839,2840";
+                params.sample_id = cnvDemo ? "2843" : "2835";      // todo: add these as mosaic attributes or do getSamples call
+                params.tumor_sample_ids = cnvDemo ? "2844,2847,2845,2846" : "2836,2837,2838,2839,2840";
 
                 self.promiseGetMosaicIobioUrls(params)
                     .then(urlMap => {
