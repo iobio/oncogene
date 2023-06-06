@@ -1515,6 +1515,7 @@ export default {
         })
       });
     },
+    // todo: deprecated, get rid of
     loadDemo: function () {
       const self = this;
       self.displayDemoLoader = true;
