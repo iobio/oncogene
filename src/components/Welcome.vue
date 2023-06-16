@@ -1457,6 +1457,8 @@ export default {
       modelInfo.tbiUrl = param.tbis[0];
       modelInfo.coverageBamUrl = param.coverageBam;
       modelInfo.coverageBaiUrl = param.coverageBai;
+      debugger;
+      modelInfo.cnvUrl = param.cnv;
       return modelInfo;
     },
     loadDemoFromMosaic: function() {
@@ -1489,6 +1491,9 @@ export default {
         // Set other necessary flags
         self.somaticCallsOnly = self.demoParams.somaticOnly;
         self.selectedUserData = ['vcf', 'coverage', 'summary'];
+        if (self.globalApp.useCnvDemo) {
+          self.selectedUserData = ['vcf', 'coverage', 'cnv', 'summary'];
+        }
         self.listInput = self.demoParams.genes;
         self.uploadedVcfUrls = self.demoParams.vcfs;
         self.uploadedTbiUrls = self.demoParams.tbis;
