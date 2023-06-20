@@ -78,16 +78,17 @@ class Integration {
 
     promiseGetDemoUrls() {
         const self = this;
+        const cnvDemo = self.globalApp.useCnvDemo;
 
         return new Promise((resolve, reject) => {
-            const projectId = process.env.VUE_APP_DEMO_PROJECT_ID;
+            const projectId = cnvDemo? process.env.VUE_APP_CNV_DEMO_PROJECT_ID : process.env.VUE_APP_DEMO_PROJECT_ID;
             if (projectId) {
                 let params = self.config.params;
                 params['mosaic_distro'] = FRAMESHIFT;
                 params.source = "https://mosaic.frameshift.io";
                 params.project_id = projectId;
-                params.sample_id = "2835";      // todo: add these as mosaic attributes or do getSamples call
-                params.tumor_sample_ids = "2836,2837,2838,2839,2840";
+                params.sample_id = cnvDemo ? "2843" : "2835";      // todo: add these as mosaic attributes or do getSamples call
+                params.tumor_sample_ids = cnvDemo ? "2844,2847,2845,2846" : "2836,2837,2838,2839,2840";
 
                 self.promiseGetMosaicIobioUrls(params)
                     .then(urlMap => {
@@ -123,7 +124,7 @@ class Integration {
     }
 }
 
-// Stand-alone launch or Galaxy (TBD)
+// Stand-alone launch
 class StandardIntegration extends Integration {
     init() {
         const self = this;
@@ -249,9 +250,7 @@ class MosaicIntegration extends Integration {
                                         self.tumors.push(urlMap[sampleId]);
                                     }
                                 });
-                                // todo: a better method is for Mosaic to provide samples in order specified
-                                // todo: move this fxn into global
-                                sortAlphaNum(self.tumors, self.globalApp._);
+                                sortAlphaNum(self.tumors, self.globalApp._); // Mosaic does not guarantee return in specified order
                                 fileResolve();
                             }).catch(err => {
                             fileReject("There was a problem getting Mosaic data: " + err);
@@ -356,8 +355,8 @@ class MosaicIntegration extends Integration {
 
 /* Returns object with one entry for the normal sample, and
  * one entry per tumor sample. The entry contains presigned
- * url for vcf/tbi files and bam/bai files
- * FOR COVERAGE ONLY FOR NOW (if they exist). */
+ * url for vcf/tbi files, bam/bai files (FOR COVERAGE ONLY if exist),
+ * and cnv files (if exist). */
 export function promiseGetSampleUrls(api, token, params, $) {
     return new Promise((resolve, reject) => {
 
@@ -394,7 +393,8 @@ export function promiseGetSampleUrls(api, token, params, $) {
 
 /* Returns an object with presigned urls for the single sample
  * corresponding to the provided sample_id argument.
- * For now, ONLY CONTAINS COVERAGE bam file urls. */
+ * For now, DOES NOT INCLUDE RNASEQ BAM FILES. */
+// todo: add rnaseq bam files here if use case
 export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $) {
     return new Promise((resolve, reject) => {
         getFilesForSample(project_id, sample_id, api, token, $).done(data => {
@@ -403,7 +403,7 @@ export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $)
                 let tbis = data.data.filter(f => (f.type === 'tbi'));
                 const bam = data.data.filter(f => (f.type === 'bam' || f.type === 'cram'))[0];
                 const bai = data.data.filter(f => (f.type === 'bai' || f.type === 'crai'))[0];
-                // todo: see note about pulling out rnaseq/facets data below
+                const cnv = data.data.filter(f => (f.type === 'tsv' || f.type === 'csv'))[0];   // todo: are these ever any other file types
 
                 if (vcfs.length === 0) {
                     reject('No vcf file obtained from Mosaic launch');
@@ -454,32 +454,65 @@ export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $)
                                 const bamUrl = bamUrlData.url;
                                 getSignedUrlForFile(project_id, bai, api, token, $).done(baiUrlData => {
                                     const baiUrl = baiUrlData.url;
-                                    // todo: add rnaSeq, cnv here
-                                    let urlObj = {
-                                        'vcfs': vcfUrls,
-                                        'tbis': tbiUrls,
-                                        'coverageBam': bamUrl,
-                                        'bamName': bam.name,
-                                        'coverageBai': baiUrl,
-                                        'baiName': bai.name,
-                                        selectedSamples,
-                                        vcfFileNames,
-                                        tbiFileNames
+                                    if (cnv) {
+                                        getSignedUrlForFile(project_id, cnv, api, token, $).done(cnvUrlData => {
+                                            const cnvUrl = cnvUrlData.url;
+                                            let urlObj = {
+                                                'vcfs': vcfUrls,
+                                                'tbis': tbiUrls,
+                                                'coverageBam': bamUrl,
+                                                'bamName': bam.name,
+                                                'coverageBai': baiUrl,
+                                                'baiName': bai.name,
+                                                'cnv': cnvUrl,
+                                                'cnvName': cnv.name,
+                                                selectedSamples,
+                                                vcfFileNames,
+                                                tbiFileNames
+                                            };
+                                            resolve(urlObj);
+                                        })
+                                    } else {
+                                        let urlObj = {
+                                            'vcfs': vcfUrls,
+                                            'tbis': tbiUrls,
+                                            'coverageBam': bamUrl,
+                                            'bamName': bam.name,
+                                            'coverageBai': baiUrl,
+                                            'baiName': bai.name,
+                                            selectedSamples,
+                                            vcfFileNames,
+                                            tbiFileNames
+                                        };
+                                        resolve(urlObj);
                                     }
-                                    resolve(urlObj);
                                 })
                             })
                         } else {
-                            console.log("No bam & bai files obtained for normal sample");
-                            // todo: add rnaseq, cnv here
-                            let urlObj = {
-                                'vcfs': vcfUrls,
-                                'tbis': tbiUrls,
-                                selectedSamples,
-                                vcfFileNames,
-                                tbiFileNames
-                            };
-                            resolve(urlObj);
+                            if (cnv) {
+                                getSignedUrlForFile(project_id, cnv, api, token, $).done(cnvUrlData => {
+                                    const cnvUrl = cnvUrlData.url;
+                                    let urlObj = {
+                                        'vcfs': vcfUrls,
+                                        'tbis': tbiUrls,
+                                        'cnv': cnvUrl,
+                                        'cnvName': cnv.name,
+                                        selectedSamples,
+                                        vcfFileNames,
+                                        tbiFileNames
+                                    };
+                                    resolve(urlObj);
+                                })
+                            } else {
+                                let urlObj = {
+                                    'vcfs': vcfUrls,
+                                    'tbis': tbiUrls,
+                                    selectedSamples,
+                                    vcfFileNames,
+                                    tbiFileNames
+                                };
+                                resolve(urlObj);
+                            }
                         }
                     })
             }
@@ -526,6 +559,7 @@ export function getGeneListById(project_id, gene_set_id, api, $) {
     });
 }
 
+/* Sorts alphanumerically by selected sample ID. */
 export function sortAlphaNum(list) {
     // const reA = /[^a-zA-Z]/g;
     // const reN = /[^0-9]/g;

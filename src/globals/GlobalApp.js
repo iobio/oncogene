@@ -94,6 +94,8 @@ class GlobalApp {
     this.ATACSEQ_TYPE = 'atacSeq';
 
     this.INDIV_QUALITY_CUTOFF = 10; // ~99% assurance of read alignment
+
+    this.useCnvDemo = true;
   }
 
     getClinvarUrl(build, forVizTrack = false) {
