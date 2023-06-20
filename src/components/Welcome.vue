@@ -1457,7 +1457,6 @@ export default {
       modelInfo.tbiUrl = param.tbis[0];
       modelInfo.coverageBamUrl = param.coverageBam;
       modelInfo.coverageBaiUrl = param.coverageBai;
-      debugger;
       modelInfo.cnvUrl = param.cnv;
       return modelInfo;
     },
