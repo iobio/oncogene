@@ -68,7 +68,7 @@ class CohortModel {
 
         this.knownVariantViz = 'variants';     // variants, histo, histoExon
         this.cosmicVariantViz = 'counts';
-        this.demoCmmlFiles = false;             // If true, loads demo CMML data - ONLY LOCAL
+        this.demoCmmlFiles = false;             // If true, loads demo CMML data - ONLY FOR LOCAL DEV todo: deprecated - get rid of
         this.demoVcfs = this.getDemoVcfs();
         this.demoBams = this.getDemoBams();
         this.demoModelInfos = this.getDemoModelInfos();

@@ -1490,7 +1490,7 @@ export default {
         // Set other necessary flags
         self.somaticCallsOnly = self.demoParams.somaticOnly;
         self.selectedUserData = ['vcf', 'coverage', 'summary'];
-        if (self.demoParams.tumors[0].cnv) {
+        if (self.globalApp.useCnvDemo) {
           self.selectedUserData = ['vcf', 'coverage', 'cnv', 'summary'];
         }
         self.listInput = self.demoParams.genes;
@@ -1520,6 +1520,7 @@ export default {
         })
       });
     },
+    // todo: deprecated, get rid of
     loadDemo: function () {
       const self = this;
       self.displayDemoLoader = true;

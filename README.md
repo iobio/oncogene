@@ -1,4 +1,5 @@
 # oncogene
+oncogene.iobio is developed by the Gabor Marth lab, and is free for academic use. For further information, or commercial usage inquiries, please contact info@frameshift.io.
 
 ## Project setup
 ```
