@@ -76,7 +76,7 @@ class Integration {
         });
     }
 
-    promiseGetDemoUrls(cnvDemoMode) {
+    promiseGetDemoUrls() {
         const self = this;
         const cnvDemo = self.globalApp.useCnvDemo;
 
@@ -87,6 +87,7 @@ class Integration {
                 params['mosaic_distro'] = FRAMESHIFT;
                 params.source = "https://mosaic.frameshift.io";
                 params.project_id = projectId;
+                // todo: put these in .env.local for now
                 params.sample_id = cnvDemo ? "2843" : "2835";      // todo: add these as mosaic attributes or do getSamples call
                 params.tumor_sample_ids = cnvDemo ? "2844,2847,2845,2846" : "2836,2837,2838,2839,2840";
 
