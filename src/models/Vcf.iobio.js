@@ -9,6 +9,8 @@
 //    1. the bgzipped vcf (.vcf.gz)
 //    2. its corresponding tabix file (.vcf.gz.tbi).
 //
+import {createHoster} from "fibridge-host";
+
 export default function vcfiobio(theGlobalApp) {
 
     var globalApp = theGlobalApp;
@@ -36,6 +38,7 @@ export default function vcfiobio(theGlobalApp) {
     // var infoFields =  {};
 
     var regions = [];
+    var contigRecords = [];
 
     var endpoint = null;
     var genericAnnotation = null;
@@ -372,10 +375,13 @@ export default function vcfiobio(theGlobalApp) {
         tabixFile = null;
     };
 
-    exports.openVcfFile = function (fileSelection, callback) {
+    exports.openVcfFile = function(fileSelection, callback) {
+        let me = this;
         sourceType = SOURCE_TYPE_FILE;
+
+
         if (fileSelection.files.length !== 2) {
-            callback(false, 'must select 2 files, both a .vcf.gz and .vcf.gz.tbi file');
+            callback(false, 'must select 2 files, both a .vcf.gz and .vcf.gz.tbi/csi file');
             return;
         }
 
@@ -385,42 +391,133 @@ export default function vcfiobio(theGlobalApp) {
             return;
         }
 
-        var fileType0 = /([^.]*)\.(vcf\.gz(\.tbi)?)$/.exec(fileSelection.files[0].name);
-        var fileType1 = /([^.]*)\.(vcf\.gz(\.tbi)?)$/.exec(fileSelection.files[1].name);
 
-        var fileExt0 = fileType0 && fileType0.length > 1 ? fileType0[2] : null;
-        var fileExt1 = fileType1 && fileType1.length > 1 ? fileType1[2] : null;
+        let fileType0 = /([^.]*)\.(vcf\.gz(\.tbi|\.csi)?)$/.exec(fileSelection.files[0].name);
+        let fileType1 = /([^.]*)\.(vcf\.gz(\.tbi|\.csi)?)$/.exec(fileSelection.files[1].name);
 
-        var rootFileName0 = fileType0 && fileType0.length > 1 ? fileType0[1] : null;
-        var rootFileName1 = fileType1 && fileType1.length > 1 ? fileType1[1] : null;
+        let fileExt0 = fileType0 && fileType0.length > 1 ? fileType0[2] : null;
+        let fileExt1 = fileType1 && fileType1.length > 1 ? fileType1[2] : null;
 
-        if (fileType0 == null || fileType0.length < 3 || fileType1 == null || fileType1.length < 3) {
-            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi)  file');
+        let rootFileName0 = fileType0 && fileType0.length > 1 ? fileType0[1] : null;
+        let rootFileName1 = fileType1 && fileType1.length > 1 ? fileType1[1] : null;
+
+
+        if (fileType0 == null || fileType0.length < 3 || fileType1 == null || fileType1.length <  3) {
+            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi/.csi)  file');
             return;
         }
 
-        if (fileExt0 == 'vcf.gz' && fileExt1 == 'vcf.gz.tbi') {
-            if (rootFileName0 != rootFileName1) {
-                callback(false, 'The index (.tbi) file must be named ' + rootFileName0 + ".tbi");
+
+        if (fileExt0 === 'vcf.gz' && (fileExt1 === 'vcf.gz.tbi' || fileExt1 === 'vcf.gz.csi')) {
+            if (rootFileName0 !== rootFileName1) {
+                callback(false, 'The index (.tbi) file must be named ' +  rootFileName0 + ".tbi/.csi");
                 return;
             } else {
-                vcfFile = fileSelection.files[0];
+                vcfFile   = fileSelection.files[0];
                 tabixFile = fileSelection.files[1];
             }
-        } else if (fileExt1 == 'vcf.gz' && fileExt0 == 'vcf.gz.tbi') {
-            if (rootFileName0 != rootFileName1) {
-                callback(false, 'The index (.tbi) file must be named ' + rootFileName1 + ".tbi");
+        } else if (fileExt1 === 'vcf.gz' && (fileExt0 === 'vcf.gz.tbi' || fileExt0 === 'vcf.gz.csi')) {
+            if (rootFileName0 !== rootFileName1) {
+                callback(false, 'The index (.tbi) file must be named ' +  rootFileName1 + ".tbi/.csi");
                 return;
             } else {
-                vcfFile = fileSelection.files[1];
+                vcfFile   = fileSelection.files[1];
                 tabixFile = fileSelection.files[0];
             }
         } else {
-            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi)  file');
+            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi/.csi)  file');
             return;
         }
-        callback(true);
+
+        this.processVcfFile(vcfFile, tabixFile, function(data) {
+            me.promiseOpenVcfUrl(data.vcf, data.tbi)
+                .then(function() {
+                    callback(data)
+                })
+                .catch(function(error) {
+                    callback(false, error);
+                })
+        })
+    }
+
+    exports.processVcfFile = function(vcfFile, tbiFile, callback){
+        const self = this;
+        const proxyAddress = 'lf-proxy.iobio.io';
+        const port = 443;
+        const secure = true;
+        const protocol = secure ? 'https:' : 'http:';
+        createHoster({ proxyAddress, port, secure }).then((hoster) => {
+            const vcfPath = '/' + vcfFile.name;
+            hoster.hostFile({ path: vcfPath, file: vcfFile });
+            const tbiPath = '/' + tbiFile.name;
+            hoster.hostFile({ path: tbiPath, file: tbiFile });
+            const portStr = hoster.getPortStr();
+            const baseUrl = `${protocol}//${proxyAddress}${portStr}`;
+            self.vcfURL = `${baseUrl}${hoster.getHostedPath(vcfPath)}`;
+            self.tbiUrl = `${baseUrl}${hoster.getHostedPath(tbiPath)}`;
+            self.sourceType = SOURCE_TYPE_URL;
+            callback({vcf: self.vcfURL, tbi: self.tbiUrl })
+        });
     };
+
+    exports.promiseOpenVcfUrl = function(url, theTbiUrl) {
+        const me = this;
+        return new Promise(function(resolve, reject) {
+            sourceType = SOURCE_TYPE_URL;
+            vcfURL = url;
+            tbiUrl = theTbiUrl;
+            return me.promiseCheckVcfUrl(url, tbiUrl)
+                .then(function() {
+                    resolve()
+                })
+                .catch(function(error) {
+                    reject(error)
+                })
+        })
+    }
+
+    exports.promiseCheckVcfUrl = function(url, tbiUrl) {
+        const me = this;
+
+        return new Promise(function(resolve, reject) {
+            let buffer = "";
+            let success = false;
+            let cmd = me.getEndpoint().getVcfHeader(url, tbiUrl);
+
+            cmd.on('data', function(data) {
+                if (data != null) {
+                    success = true;
+                    buffer += data;
+                }
+            });
+            cmd.on('end', function() {
+                if (success == null) {
+                    success = true;
+                }
+                if (success && buffer.length > 0) {
+                    buffer.split("\n").forEach( function(rec) {
+                        if (rec.indexOf("##contig") === 0) {
+                            me._parseHeaderForContigFields(rec)
+                        }
+                        if (rec.indexOf("#") === 0) {
+                            me._parseHeaderForInfoFields(rec);
+                        }
+                    })
+                    resolve(success);
+                } else if (buffer.length === 0) {
+                    reject("No data returned for vcf header.")
+                }
+            });
+            cmd.on('error', function(error) {
+                if (me.ignoreErrorMessage(error)) {
+                    resolve();
+                } else {
+                    reject(me.translateErrorMessage(error));
+                }
+            });
+            cmd.run();
+        })
+    }
 
 
     // function showFileFormatMessage() {
@@ -1058,6 +1155,33 @@ export default function vcfiobio(theGlobalApp) {
     exports.clearVepInfoFields = function () {
         this.infoFields.VEP = null;
     };
+
+    exports._parseHeaderForContigFields = function(record) {
+        let fieldMap = {'ID': 'name', 'length': 'length', 'assembly': 'assembly'}
+        if (contigRecords == null) {
+            contigRecords = [];
+        }
+        if (record.indexOf("##contig=") >= 0) {
+            record = record.replace("<", "")
+            record = record.replace(">", "")
+            let rest = record.split("##contig=")
+            let parts = rest[1].split(",")
+            let contigRecord = {};
+            for (let i=0; i < parts.length; i++) {
+                let part = parts[i];
+                ['ID', 'length', 'assembly'].forEach(function(key) {
+                    if (part.indexOf(key+"=") >= 0) {
+                        contigRecord[fieldMap[key]] = part.split(key+"=")[1];
+                    }
+                })
+            }
+            if (contigRecord.hasOwnProperty('name')) {
+                contigRecords.push(contigRecord)
+            } else {
+                console.log("Bypassing contig record; no ID. " + record)
+            }
+        }
+    }
 
     exports._parseHeaderForInfoFields = function (record) {
         var me = this;
