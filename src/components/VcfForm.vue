@@ -5,7 +5,13 @@
     </v-card-title>
     <v-divider class="mx-12"></v-divider>
     <v-card-actions>
-      <v-container fluid v-if="!urlsVerified">
+      <v-container v-if="!urlsVerified">
+        <div class="d-flex justify-center" style="margin-top:-10px">
+          <v-radio-group row v-model="localData">
+            <v-radio label="Cloud Data" :value="false"></v-radio>
+            <v-radio label="Local Data" :value="true"></v-radio>
+          </v-radio-group>
+        </div>
         <v-select v-if="externalLaunchMode"
                   v-model="url"
                   class="drop"
@@ -17,6 +23,12 @@
                   return-object
                   @change="populateRespectiveIndex()">
         </v-select>
+        <v-file-input v-else-if="localData"
+                      label="Select vcf file"
+                      :rules="vcfRules"
+                      v-model="file"
+                      class="top-file">
+        </v-file-input>
         <v-text-field v-else class="top-url"
                       :label="'Enter .' + fileType +  ' URL'"
                       hide-details
@@ -34,6 +46,12 @@
                   placeholder="Select tbi"
                   return-object>
         </v-select>
+        <v-file-input v-else-if="localData"
+                      label="Select tbi file"
+                      :rules="tbiRules"
+                      v-model="indexFile"
+                      class="bot-file">
+        </v-file-input>
         <v-text-field v-else class="bot-url"
                       :label="'Enter .' + getIndexFileType() +  ' URL'"
                       hide-details
@@ -44,7 +62,7 @@
         <v-select v-model="selectedBuild"
                   label="Genome Build"
                   :items="genomeBuilds"
-                  @change="onUrlChange()"
+                  @change="onChange()"
                   class="drop">
         </v-select>
       </v-container>
@@ -200,6 +218,8 @@ export default {
     return {
       url: null,
       indexUrl: null,
+      file: null,
+      indexFile: null,
       vcfSampleNames: [], // the vcf column IDs pulled from actual file
       filteredVcfSampleNames: [], // the intersection of vcf column IDs & passed selectedSampleIds
       selectedSamples: [],
@@ -211,7 +231,31 @@ export default {
       modelInfoIdx: 0,
       galaxySampleCap: 0,
       genomeBuilds: ['GRCh37', 'GRCh38'],
-      GALAXY: 'galaxy'
+      GALAXY: 'galaxy',
+      URL: 'url',
+      FILE: 'local',
+      localData: false,
+      vcfRules: [
+        value => {
+          if (!value || (value && value.name.length > 7
+              && value.name.substring(value.name.length - 7) === '.vcf.gz')) {
+            return true;
+          } else {
+            return 'vcf files must be of type .vcf.gz';
+          }
+        }
+      ],
+      tbiRules: [
+        value => {
+          if (!value || (value && value.name.length > 11
+              && value.name.substring(value.name.length - 11) === '.vcf.gz.tbi'
+              || value.name.substring(value.name.length - 11) === '.vcf.gz.csi')) {
+            return true;
+          } else {
+            return 'index files must be of type .vcf.gz.tbi or .vcf.gz.csi';
+          }
+        }
+      ]
     }
   },
   computed: {
@@ -248,6 +292,13 @@ export default {
     }
   },
   methods: {
+    onChange: function() {
+      if (this.localData) {
+        this.onFileChange();
+      } else {
+        this.onUrlChange();
+      }
+    },
     onUrlChange: function () {
       if (this.url && this.indexUrl && this.selectedBuild) {
         // If we autofill, don't have to parse object itself
@@ -261,6 +312,38 @@ export default {
         this.$emit('on-build-change', this.selectedBuild);
       }
     },
+    onFileChange: function() {
+      if (this.file && this.indexFile && this.selectedBuild) {
+        this.onVcfFileEntered(this.file, this.indexFile);
+      } else if (this.file == null || this.indexFile == null) {
+        this.$emit('clear-model-info', null);
+      }
+      if (this.selectedBuild !== '') {
+        this.$emit('on-build-change', this.selectedBuild);
+      }
+    },
+    onVcfFileEntered: function(vcfFile, tbiFile, uploadedSelectedSamples) {
+      const self = this;
+
+      // todo: do we need to do this for local file
+      if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
+        self.$emit('clear-model-info', null);
+      }
+      return new Promise(resolve => {
+        self.cohortModel.sampleModelUtil.onVcfFileEntered(vcfFile, tbiFile, function (success, sampleNames, hdrBuild) {
+          self.displayLoader = false;
+          if (success) {
+            self.promiseUpdateModelInfo(self.FILE, vcfFile, tbiFile, hdrBuild, uploadedSelectedSamples, sampleNames)
+                .then(() => {
+                  resolve();
+                })
+          } else {
+            self.displayAccessAlert();
+            resolve();
+          }
+        })
+      });
+    },
     /* Asks cohort model to check vcf and returns number of samples in vcf
      * NOTE: in the future, if allowing for single vcfs per sample,
      * can cycle through each sampleModel and ask, then return this
@@ -272,117 +355,137 @@ export default {
       if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
         self.$emit('clear-model-info', null);
       }
-      return new Promise((resolve, reject) => {
+      return new Promise(resolve => {
         self.$emit('hide-alerts');
         self.displayLoader = true;
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames, hdrBuild) {
           self.displayLoader = false;
           if (success) {
-            if (sampleNames.length < 2) {
-              let alertText = 'It looks like your file only contains one sample - Oncogene is currently configured to work with at least one normal and one tumor sample. Please try again.';
-              self.$emit('show-alert', 'error', alertText);
-              reject();
-            } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
-              // Check for correct build
-              if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
-                let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
-                self.$emit('show-alert', 'warning', warningText);
-              }
-              // Still populate drop-down lists
-              // Note: don't have to filter vcf sample names when we provide only one list
-              for (let i = 0; i < sampleNames.length; i++) {
-                self.filteredVcfSampleNames.push(sampleNames[i]);
-                self.vcfSampleNames.push(sampleNames[i]);
-              }
-              self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
-
-              // Update verified urls in model info objects
-              self.$emit('update-model-info', 'vcfUrl', vcfUrl);
-              self.$emit('update-model-info', 'tbiUrl', tbiUrl);
-
-              // Flip front end flags
-              self.urlsVerified = true;
-              self.$emit('urls-verified');
-              resolve();
-            } else {
-              if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
-                let alertText = 'The selected samples used in previous analyses could not be found, please re-select your samples.';
-                self.$emit('show-alert', 'error', alertText);
-              }
-              // Check that build is correct
-              if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
-                let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
-                self.$emit('show-alert', 'warning', warningText);
-                resolve();
-              }
-
-              // Extract actual urls out of objects
-              let selectedVcfIdx = 0;
-              if (self.externalLaunchMode) {
-                let vcfListVals = [];
-                self.vcfList.forEach(obj => {
-                  vcfListVals.push(obj.value);
+            self.promiseUpdateModelInfo(self.URL, vcfUrl, tbiUrl, hdrBuild, uploadedSelectedSamples, sampleNames)
+                .then(() => {
+                  resolve();
                 })
-                let strippedUrl = (typeof self.url === 'string' ? self.url : self.url.value);
-                selectedVcfIdx = vcfListVals.indexOf(strippedUrl);
-                if (self.externalLaunchMode && self.multipleVcfsExist) {
-                  self.$emit('vcf-index-selected', selectedVcfIdx);
-                }
-              }
-
-              // Set urls for removing/adding sample functionality
-              self.url = vcfUrl;
-              self.indexUrl = tbiUrl;
-
-              // Create modelInfos and add to drop down lists in loader
-              let infoList = [];
-              for (let i = 0; i < sampleNames.length; i++) {
-                // Only create modelInfos for samples that Mosaic has passed over in URL params
-                if (self.externalLaunchMode && self.uploadedSelectedSampleLists && self.uploadedSelectedSampleLists.length > 0) {
-                  let selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
-                  let currSampleFromFile = sampleNames[i];
-                  if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
-                    let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
-                    infoList.push(modelInfo);
-                    self.modelInfoIdx++;
-                    self.filteredVcfSampleNames.push(currSampleFromFile);
-                  }
-                } else if (self.externalLaunchSource === self.GALAXY) {
-                  if (i < self.galaxySampleCap) {
-                    let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
-                    infoList.push(modelInfo);
-                    self.modelInfoIdx++;
-                  }
-                  self.filteredVcfSampleNames.push(sampleNames[i]);
-                } else {
-                  let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
-                  modelInfo.vcfUrl = vcfUrl;
-                  modelInfo.tbiUrl = tbiUrl;
-                  infoList.push(modelInfo);
-                  self.modelInfoIdx++;
-                  self.filteredVcfSampleNames.push(sampleNames[i]);
-                }
-                // Always add to vcfSampleNames array though, important for getting correct column from vcf file
-                self.vcfSampleNames.push(sampleNames[i]);
-              }
-              self.$emit('set-model-info', infoList);
-
-              // Toggle display flags
-              self.urlsVerified = true;
-
-              // Ensure if user adds sample after galaxy, it's allowed
-              self.galaxySampleCap = Math.max;
-
-              self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
-              resolve();
-            }
           } else {
-            let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
-            self.$emit('show-alert', 'error', alertText);
-            self.$emit('upload-fail');
+            self.displayAccessAlert();
+            resolve();
           }
         })
       })
+    },
+    displayAccessAlert: function() {
+      let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
+      this.$emit('show-alert', 'error', alertText);
+      this.$emit('upload-fail');
+    },
+    promiseUpdateModelInfo: function(mode, vcf, tbi, hdrBuild, uploadedSelectedSamples, sampleNames) {
+      const self = this;
+
+      return new Promise((resolve, reject) => {
+        if (sampleNames.length < 2) {
+          let alertText = 'It looks like your file only contains one sample - Oncogene is currently configured to work with at least one normal and one tumor sample. Please try again.';
+          self.$emit('show-alert', 'error', alertText);
+          reject();
+        } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
+          // Check for correct build
+          if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
+            let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
+            self.$emit('show-alert', 'warning', warningText);
+          }
+          // Still populate drop-down lists
+          // Note: don't have to filter vcf sample names when we provide only one list
+          for (let i = 0; i < sampleNames.length; i++) {
+            self.filteredVcfSampleNames.push(sampleNames[i]);
+            self.vcfSampleNames.push(sampleNames[i]);
+          }
+          self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
+
+          // Update verified urls in model info objects
+          if (mode === self.URL) {
+            self.$emit('update-model-info', 'vcfUrl', vcf);
+            self.$emit('update-model-info', 'tbiUrl', tbi);
+          } else {
+            // todo: left off here -need to add file props to modelInfo object
+            self.$emit('update-model-info', 'vcfFile', vcf);
+            self.$emit('update-model-info', 'tbiFile', tbi);
+          }
+
+          // Flip front end flags
+          self.urlsVerified = true;
+          self.$emit('urls-verified');
+          resolve();
+        } else {
+          if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
+            let alertText = 'The selected samples used in previous analyses could not be found, please re-select your samples.';
+            self.$emit('show-alert', 'error', alertText);
+          }
+          // Check that build is correct
+          if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
+            let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
+            self.$emit('show-alert', 'warning', warningText);
+            resolve();
+          }
+
+          // Extract actual urls out of objects
+          let selectedVcfIdx = 0;
+          if (self.externalLaunchMode) {
+            let vcfListVals = [];
+            self.vcfList.forEach(obj => {
+              vcfListVals.push(obj.value);
+            })
+            let strippedUrl = (typeof self.url === 'string' ? self.url : self.url.value);
+            selectedVcfIdx = vcfListVals.indexOf(strippedUrl);
+            if (self.externalLaunchMode && self.multipleVcfsExist) {
+              self.$emit('vcf-index-selected', selectedVcfIdx);
+            }
+          }
+
+          // Set urls for removing/adding sample functionality
+          self.url = vcfUrl;
+          self.indexUrl = tbiUrl;
+
+          // Create modelInfos and add to drop down lists in loader
+          let infoList = [];
+          for (let i = 0; i < sampleNames.length; i++) {
+            // Only create modelInfos for samples that Mosaic has passed over in URL params
+            if (self.externalLaunchMode && self.uploadedSelectedSampleLists && self.uploadedSelectedSampleLists.length > 0) {
+              let selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
+              let currSampleFromFile = sampleNames[i];
+              if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
+                let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
+                infoList.push(modelInfo);
+                self.modelInfoIdx++;
+                self.filteredVcfSampleNames.push(currSampleFromFile);
+              }
+            } else if (self.externalLaunchSource === self.GALAXY) {
+              if (i < self.galaxySampleCap) {
+                let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+                infoList.push(modelInfo);
+                self.modelInfoIdx++;
+              }
+              self.filteredVcfSampleNames.push(sampleNames[i]);
+            } else {
+              let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+              modelInfo.vcfUrl = vcfUrl;
+              modelInfo.tbiUrl = tbiUrl;
+              infoList.push(modelInfo);
+              self.modelInfoIdx++;
+              self.filteredVcfSampleNames.push(sampleNames[i]);
+            }
+            // Always add to vcfSampleNames array though, important for getting correct column from vcf file
+            self.vcfSampleNames.push(sampleNames[i]);
+          }
+          self.$emit('set-model-info', infoList);
+
+          // Toggle display flags
+          self.urlsVerified = true;
+
+          // Ensure if user adds sample after galaxy, it's allowed
+          self.galaxySampleCap = Math.max;
+
+          self.$emit('vcf-sample-names-updated', self.vcfSampleNames);
+          resolve();
+        }
+      });
     },
     getIndexFileType: function () {
       if (this.fileType.toLowerCase() === 'vcf') {
@@ -483,7 +586,7 @@ export default {
   color: #4a4a4a
 
 .top-url
-  padding-top: 100px
+  padding-top: 50px
   padding-bottom: 10px
   padding-left: 20px
   padding-right: 20px
@@ -491,6 +594,17 @@ export default {
 .bot-url
   padding-bottom: 10px
   padding-left: 20px
+  padding-right: 20px
+
+.top-file
+  padding-top: 50px
+  padding-left: 10px
+  padding-right: 20px
+
+.bot-file
+  margin-top: 0
+  padding-top: 5px
+  padding-left: 10px
   padding-right: 20px
 
 .drop
