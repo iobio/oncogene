@@ -1111,6 +1111,66 @@ class SampleModel {
         }
     }
 
+    onVcfFileEntered(vcfFile, tbiFile, callback) {
+        const me = this;
+        let success = true;
+        this.vcfData = null;
+        this.sampleName = null;
+
+        if (vcfFile == null || vcfFile === '') {
+            this.vcfFileOpened = false;
+            this.vcf.clearVcfFile();
+            success = false;
+            if (callback) {
+                callback(success)
+            }
+        } else {
+            me.vcfFileOpened = true;
+            me.vcfUrlEntered = false;
+            me.getVcfRefName = null;
+            me.isMultiSample = false;
+            let fileSelection = {
+
+            }
+            this.vcf.openVcfFile(fileSelection, function (success, hdrBuild, errorMsg) {
+                if (success) {
+                    me.vcfUrlEntered = true;
+                    me.vcfFileOpened = false;
+                    me.getVcfRefName = null;
+                    let build = '';
+
+                    // if we couldn't determine build from header, try looking at chromosomes
+                    if ((hdrBuild != null) && ((!hdrBuild.build) || hdrBuild.build === '')) {
+                        me.vcf.getBuildFromChromosomes(me.vcf.vcfURL, me.vcf.tbiUrl, function (success, chrBuild) {
+                            build = chrBuild;
+                            if (!success) {
+                                console.log('Warning could not get build information from chromosome formatting.');
+                            }
+
+                            // Get the sample names from the vcf header
+                            me.vcf.getSampleNames(function (sampleNames) {
+                                me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                                callback(success, sampleNames, build);
+                            });
+                        })
+                    } else {
+                        build = hdrBuild != null ? hdrBuild.build : null;
+
+                        // Get the sample names from the vcf header
+                        me.vcf.getSampleNames(function (sampleNames) {
+                            me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                            callback(success, sampleNames, build);
+                        });
+                    }
+                } else {
+                    me.vcfUrlEntered = false;
+                    console.log("Problem opening vcf/tbi: " + errorMsg);
+                    callback(success);
+                }
+            });
+        }
+    }
+
     _promiseVcfRefName(ref) {
         const me = this;
         const theRef = ref != null ? ref : window.gene.chr;

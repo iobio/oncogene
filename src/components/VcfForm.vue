@@ -325,7 +325,7 @@ export default {
     onVcfFileEntered: function(vcfFile, tbiFile, uploadedSelectedSamples) {
       const self = this;
 
-      // todo: do we need to do this for local file
+      // todo: do we need to do this for local file - only if we can coordinate local files with config
       if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
         self.$emit('clear-model-info', null);
       }
@@ -404,14 +404,13 @@ export default {
             self.$emit('update-model-info', 'vcfUrl', vcf);
             self.$emit('update-model-info', 'tbiUrl', tbi);
           } else {
-            // todo: left off here -need to add file props to modelInfo object
             self.$emit('update-model-info', 'vcfFile', vcf);
             self.$emit('update-model-info', 'tbiFile', tbi);
           }
 
           // Flip front end flags
           self.urlsVerified = true;
-          self.$emit('urls-verified');
+          self.$emit('sources-verified');
           resolve();
         } else {
           if (uploadedSelectedSamples && sampleNames.length < uploadedSelectedSamples.length) {
@@ -440,8 +439,13 @@ export default {
           }
 
           // Set urls for removing/adding sample functionality
-          self.url = vcfUrl;
-          self.indexUrl = tbiUrl;
+          if (mode === self.URL) {
+            self.url = vcf;
+            self.indexUrl = tbi;
+          } else {
+            self.file = vcf;
+            self.indexFile = tbi;
+          }
 
           // Create modelInfos and add to drop down lists in loader
           let infoList = [];
@@ -465,8 +469,13 @@ export default {
               self.filteredVcfSampleNames.push(sampleNames[i]);
             } else {
               let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
-              modelInfo.vcfUrl = vcfUrl;
-              modelInfo.tbiUrl = tbiUrl;
+              if (mode === self.URL) {
+                modelInfo.vcfUrl = vcf;
+                modelInfo.tbiUrl = tbi;
+              } else {
+                modelInfo.vcfFile = vcf;
+                modelInfo.tbiFile = tbi;
+              }
               infoList.push(modelInfo);
               self.modelInfoIdx++;
               self.filteredVcfSampleNames.push(sampleNames[i]);

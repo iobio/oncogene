@@ -244,15 +244,18 @@
                 <v-card-actions>
                   <v-container class="px-11">
                     <v-row no-gutters>
-                      <v-col sm="12" class="pr-1">
+                      <v-col id="selectCol" sm="12" class="pr-1">
                         <v-select
                             :items="cancerListNames"
+                            id="listSelect"
+                            class="scroll-menu"
+                            menu-props="auto"
                             color="appColor"
                             background-color="white"
                             label="Cancer Type"
                             outlined
-                            dense
                             v-model="selectedCancerList"
+                            @click="applyScrollableStyle"
                             @change="populateListInput('cancer')"
                         ></v-select>
                       </v-col>
@@ -329,7 +332,7 @@
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
                         @update-model-info="updateModelInfo"
-                        @urls-verified="onUploadedUrlsVerified"
+                        @sources-verified="onUploadedSourcesVerified"
                         @upload-fail="onUploadFail"
                         @on-build-change="updateBuild"
                         @show-alert="displayAlert"
@@ -506,8 +509,10 @@ export default {
       configFile: [],
       canMountVcf: true,
       vcfFormMounted: false,
-      uploadedVcfUrls: null,
+      uploadedVcfUrls: null,  // todo: duplicate functionality for files here in config loading if possible
       uploadedTbiUrls: null,
+      uploadedVcfFiles: null,
+      uploadedTbiFiles: null,
 
       // Used for Mosaic/Galaxy integration launch
       fileLists: {
@@ -918,6 +923,14 @@ export default {
         this.validGenesMap[gene['gene_name']] = true;
       });
     },
+    // Some hackey BS to get scrollable to work with dumb vuetify
+    applyScrollableStyle: function() {
+      const self = this;
+      setTimeout(() => {
+        self.d3.selectAll('.v-menu__content')
+            .style('overflow-y', 'auto');
+      }, 500);
+    },
     populateListInput: function (listType) {
       this.clearGeneListFlag = false;
       if (this.listInput === this.STARTING_INPUT) {
@@ -1102,6 +1115,7 @@ export default {
         newVal.isTumor = modelInfo.isTumor;
         newVal.vcfUrl = modelInfo.vcfUrl;
         newVal.tbiUrl = modelInfo.tbiUrl;
+        // todo: is it possible to add file path here for local support?
         newVal.coverageBamUrl = modelInfo.coverageBamUrl;
         newVal.coverageBaiUrl = modelInfo.coverageBaiUrl;
         newVal.rnaSeqBamUrl = modelInfo.rnaSeqBamUrl;
@@ -1386,12 +1400,14 @@ export default {
       this.selectedBuild = null;
       this.uploadedVcfUrls = null;
       this.uploadedTbiUrls = null;
+      this.uploadedVcfFiles = null;
+      this.uploadedTbiFiles = null;
       this.modelInfoIdx = 0;
       this.uploadedSelectedSamples = [];
       this.launchedFromConfig = true;
       this.clearGeneListFlag = false;
     },
-    onUploadedUrlsVerified: function () {
+    onUploadedSourcesVerified: function () {
       if (this.launchedFromConfig || !this.nativeLaunch) {
         this.advanceSlide();
       }
@@ -1519,116 +1535,6 @@ export default {
           }
         })
       });
-    },
-    // todo: deprecated, get rid of
-    loadDemo: function () {
-      const self = this;
-      self.displayDemoLoader = true;
-
-      const exportFile = JSON.stringify(self.demoFile);
-      self.configFile = new Blob([exportFile], {type: 'text/plain'});
-
-      let reader = new FileReader();
-      reader.readAsText(self.configFile);
-      reader.onload = () => {
-        let result = reader.result;
-        let infoObj = JSON.parse(result);
-        let fulfillsList = infoObj['somaticCallsOnly'] || infoObj['listInput'];
-        if (!(infoObj['samples'] && fulfillsList && infoObj['dataTypes'])) {
-          self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-          self.showError = true;
-        } else {
-          self.modelInfoList = infoObj['samples'];
-          //self.vcfSampleNames = infoObj['vcfSampleNames'];
-          self.selectedUserData = [];
-          self.userData = infoObj['dataTypes'];
-          self.userData.forEach(data => {
-            if (data.model) {
-              self.selectedUserData.push(data.name);
-            }
-          });
-
-          self.listInput = infoObj['listInput'];
-          self.somaticCallsOnly = infoObj['somaticCallsOnly'];
-          self.selectedList = infoObj['selectedList'];
-          self.selectedBuild = infoObj['build'];
-
-          // Little extra work to fill in fields for vcf/tbi form
-          // Note: assumes single vcf
-          let firstSample = self.modelInfoList[0];
-          self.uploadedVcfUrls = [firstSample.vcfUrl];
-          self.uploadedTbiUrls = [firstSample.tbiUrl];
-
-          // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
-          let coverageActiveCount = 0;
-          let rnaSeqActiveCount = 0;
-          // let atacSeqActiveCount = 0;
-          let cnvActiveCount = 0;
-          for (let i = 0; i < self.modelInfoList.length; i++) {
-            let currModelInfo = self.modelInfoList[i];
-            if (currModelInfo['coverageBamUrl']) {
-              coverageActiveCount++;
-            }
-            if (currModelInfo['rnaSeqBamUrl']) {
-              rnaSeqActiveCount++;
-            }
-            // if (currModelInfo['atacSeqBamUrl']) {
-            //   atacSeqActiveCount++;
-            // }
-            if (currModelInfo['cnvUrl']) {
-              cnvActiveCount++;
-            }
-          }
-          self.configSampleCount['cnv'] = cnvActiveCount;
-          self.configSampleCount['coverage'] = coverageActiveCount;
-          self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
-          // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
-
-          let selectedSamples = [];
-          self.modelInfoIdx = 0;
-          let modelInfoCount = 0;
-
-          self.modelInfoList.forEach((modelInfo) => {
-            modelInfoCount++;
-            if (typeof modelInfo.isTumor !== 'boolean') {
-              modelInfo.isTumor = modelInfo.isTumor === 'true';  // Get rid of type casting issues
-            }
-            selectedSamples.push(modelInfo.selectedSample);
-          });
-          self.modelInfoIdx = modelInfoCount; // Update child component to stay on count
-          self.uploadedSelectedSamples = selectedSamples;
-          self.launchedFromConfig = true;
-
-          if (!(self.uploadedSelectedSamples && self.userData && fulfillsList &&
-              self.uploadedVcfUrls && self.uploadedTbiUrls) || self.somaticCallsOnly == null) {
-            self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-            self.showError = true;
-          }
-          self.clearGeneListFlag = false;
-        }
-
-        self.cohortModel.sampleModelUtil.onVcfUrlEntered(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], function (success, sampleNames, hdrBuild) {
-          if (success) {
-            if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
-              let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
-              self.$emit('show-alert', 'warning', warningText);
-            }
-            // Still populate drop-down lists
-            for (let i = 0; i < sampleNames.length; i++) {
-              self.vcfSampleNames.push(sampleNames[i]);
-            }
-            self.$gtag.pageview("/demo");
-            self.launch(true);
-          } else {
-            let alertText = 'There was a problem accessing the provided vcf or tbi file, please check your url and try again. If the problem persists, please email iobioproject@gmail.com for assistance.';
-            self.displayAlert('error', alertText);
-          }
-        })
-      };
-      reader.onerror = () => {
-        self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
-        self.showError = true;
-      };
     },
     isMosaic: function (source) {
       return (source === this.UTAH_MOSAIC || source === this.CDDRC_MOSAIC);

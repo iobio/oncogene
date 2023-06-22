@@ -376,61 +376,13 @@ export default function vcfiobio(theGlobalApp) {
     };
 
     exports.openVcfFile = function(fileSelection, callback) {
-        let me = this;
+        const self = this;
         sourceType = SOURCE_TYPE_FILE;
-
-
-        if (fileSelection.files.length !== 2) {
-            callback(false, 'must select 2 files, both a .vcf.gz and .vcf.gz.tbi/csi file');
-            return;
-        }
-
-        if (endsWith(fileSelection.files[0].name, ".vcf") ||
-            endsWith(fileSelection.files[1].name, ".vcf")) {
-            callback(false, 'You must select a compressed vcf file (.vcf.gz), not a vcf file');
-            return;
-        }
-
-
-        let fileType0 = /([^.]*)\.(vcf\.gz(\.tbi|\.csi)?)$/.exec(fileSelection.files[0].name);
-        let fileType1 = /([^.]*)\.(vcf\.gz(\.tbi|\.csi)?)$/.exec(fileSelection.files[1].name);
-
-        let fileExt0 = fileType0 && fileType0.length > 1 ? fileType0[2] : null;
-        let fileExt1 = fileType1 && fileType1.length > 1 ? fileType1[2] : null;
-
-        let rootFileName0 = fileType0 && fileType0.length > 1 ? fileType0[1] : null;
-        let rootFileName1 = fileType1 && fileType1.length > 1 ? fileType1[1] : null;
-
-
-        if (fileType0 == null || fileType0.length < 3 || fileType1 == null || fileType1.length <  3) {
-            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi/.csi)  file');
-            return;
-        }
-
-
-        if (fileExt0 === 'vcf.gz' && (fileExt1 === 'vcf.gz.tbi' || fileExt1 === 'vcf.gz.csi')) {
-            if (rootFileName0 !== rootFileName1) {
-                callback(false, 'The index (.tbi) file must be named ' +  rootFileName0 + ".tbi/.csi");
-                return;
-            } else {
-                vcfFile   = fileSelection.files[0];
-                tabixFile = fileSelection.files[1];
-            }
-        } else if (fileExt1 === 'vcf.gz' && (fileExt0 === 'vcf.gz.tbi' || fileExt0 === 'vcf.gz.csi')) {
-            if (rootFileName0 !== rootFileName1) {
-                callback(false, 'The index (.tbi) file must be named ' +  rootFileName1 + ".tbi/.csi");
-                return;
-            } else {
-                vcfFile   = fileSelection.files[1];
-                tabixFile = fileSelection.files[0];
-            }
-        } else {
-            callback(false, 'You must select BOTH  a compressed vcf file (.vcf.gz) and an index (.tbi/.csi)  file');
-            return;
-        }
+        vcfFile = fileSelection.vcf;
+        tabixFile = fileSelection.tbi;
 
         this.processVcfFile(vcfFile, tabixFile, function(data) {
-            me.promiseOpenVcfUrl(data.vcf, data.tbi)
+            self.promiseOpenVcfUrl(data.vcf, data.tbi)
                 .then(function() {
                     callback(data)
                 })

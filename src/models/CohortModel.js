@@ -303,8 +303,10 @@ class CohortModel {
         modelInfo.selectedSample = selectedSample;
         modelInfo.selectedSampleIdx = -1;
         modelInfo.isTumor = isTumor;
-        modelInfo.vcfUrl = this.url;
-        modelInfo.tbiUrl = this.indexUrl;
+        modelInfo.vcfUrl = null;
+        modelInfo.tbiUrl = null;
+        modelInfo.vcfFile = null;   // todo: update functionality here
+        modelInfo.tbiFile = null;
         modelInfo.coverageBamUrl = null;
         modelInfo.coverageBaiUrl = null;
         modelInfo.coverageVerified = false;
