@@ -194,14 +194,14 @@
                         <v-radio-group v-model="somaticCallsOnly"
                                        @change="updateGeneListReq">
                           <v-radio color="appColor"
-                                   key="som-false"
-                                   label="No"
-                                   :value="false"
-                          ></v-radio>
-                          <v-radio color="appColor"
                                    key="som-true"
                                    label="Yes"
                                    :value="true"
+                          ></v-radio>
+                          <v-radio color="appColor"
+                                   key="som-false"
+                                   label="No"
+                                   :value="false"
                           ></v-radio>
                         </v-radio-group>
                       </v-col>
@@ -649,9 +649,9 @@ export default {
         {
           step: 'geneList',
           active: true,
-          complete: false,
+          complete: true,
           index: 2,
-          optional: false,
+          optional: true,
           text: 'Enter Gene List'
         },
         {
@@ -743,7 +743,7 @@ export default {
         'rnaSeq': this.MAX_SAMPLES,
         // 'atacSeq': this.MAX_SAMPLES
       },
-      somaticCallsOnly: false,
+      somaticCallsOnly: true,
       selectedBuild: null,
       STARTING_INPUT: 'Select a type to populate gene list or enter your own',
       listInput: '',

@@ -305,7 +305,7 @@ class CohortModel {
         modelInfo.isTumor = isTumor;
         modelInfo.vcfUrl = null;
         modelInfo.tbiUrl = null;
-        modelInfo.vcfFile = null;   // todo: update functionality here
+        modelInfo.vcfFile = null;
         modelInfo.tbiFile = null;
         modelInfo.coverageBamUrl = null;
         modelInfo.coverageBaiUrl = null;

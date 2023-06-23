@@ -325,16 +325,20 @@ export default {
     onVcfFileEntered: function(vcfFile, tbiFile, uploadedSelectedSamples) {
       const self = this;
 
-      // todo: do we need to do this for local file - only if we can coordinate local files with config
       if (!uploadedSelectedSamples || uploadedSelectedSamples.length < 2) {
         self.$emit('clear-model-info', null);
       }
       return new Promise(resolve => {
-        self.cohortModel.sampleModelUtil.onVcfFileEntered(vcfFile, tbiFile, function (success, sampleNames, hdrBuild) {
-          self.displayLoader = false;
+        self.$emit('hide-alerts');
+        self.displayLoader = true;
+        self.cohortModel.sampleModelUtil.onVcfFileEntered(vcfFile, tbiFile, function (success, sampleNames, hdrBuild, vcfUrl, tbiUrl) {
           if (success) {
+            self.displayLoader = false;
             self.promiseUpdateModelInfo(self.FILE, vcfFile, tbiFile, hdrBuild, uploadedSelectedSamples, sampleNames)
                 .then(() => {
+                  // Also want to fill in file proxy urls for modelInfo objs
+                  self.$emit('update-model-info', 'vcfUrl', vcfUrl);
+                  self.$emit('update-model-info', 'tbiUrl', tbiUrl);
                   resolve();
                 })
           } else {

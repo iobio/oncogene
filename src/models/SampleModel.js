@@ -991,10 +991,13 @@ class SampleModel {
                             me.isMultiSample = false;
 
                             // Get the sample names from the vcf header
-                            me.vcf.getSampleNames(function (sampleNames) {
-                                me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
-                                resolve({'fileName': me.vcf.getVcfFile().name, 'sampleNames': sampleNames});
-                            });
+                            me.vcf.promiseGetSampleNames()
+                                .then(sampleNames => {
+                                  me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                                    resolve({'fileName': me.vcf.getVcfFile().name, 'sampleNames': sampleNames});
+                                }).catch(error => {
+                                    reject(error);
+                                });
                         } else {
 
                             var msg = "<span style='font-size:18px'>" + message + "</span>";
@@ -1088,17 +1091,19 @@ class SampleModel {
                             }
 
                             // Get the sample names from the vcf header
-                            me.vcf.getSampleNames(function (sampleNames) {
-                                me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                            me.vcf.promiseGetSampleNames()
+                                .then(sampleNames => {
+                                me.isMultiSample = sampleNames && sampleNames.length > 1;
                                 callback(success, sampleNames, build);
                             });
                         })
                     } else {
-                        build = hdrBuild.build;
+                        build = hdrBuild ? hdrBuild.build : "";
 
                         // Get the sample names from the vcf header
-                        me.vcf.getSampleNames(function (sampleNames) {
-                            me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                        me.vcf.promiseGetSampleNames()
+                            .then(sampleNames => {
+                            me.isMultiSample = sampleNames && sampleNames.length > 1;
                             callback(success, sampleNames, build);
                         });
                     }
@@ -1122,7 +1127,7 @@ class SampleModel {
             this.vcf.clearVcfFile();
             success = false;
             if (callback) {
-                callback(success)
+                callback(success);
             }
         } else {
             me.vcfFileOpened = true;
@@ -1135,41 +1140,48 @@ class SampleModel {
             };
             this.vcf.openVcfFile(fileSelection, function (urlObj) {
                 if (urlObj) {
-                    me.vcfUrlEntered = true;
-                    me.vcfFileOpened = false;
-                    me.getVcfRefName = null;
-                    let build = '';
+                    let vcfUrl = urlObj.vcf;
+                    let tbiUrl = urlObj.tbi;
+                    me.vcf.openVcfUrl(vcfUrl, tbiUrl, function (success, hdrBuild, errorMsg) {
+                        if (success) {
+                            me.vcfUrlEntered = true;
+                            me.vcfFileOpened = false;
+                            me.getVcfRefName = null;
+                            let build = '';
 
+                            // if we couldn't determine build from header, try looking at chromosomes
+                            if ((hdrBuild != null) && ((!hdrBuild.build) || hdrBuild.build === '')) {
+                                me.vcf.getBuildFromChromosomes(vcfUrl, tbiUrl, function (success, chrBuild) {
+                                    build = chrBuild;
+                                    if (!success) {
+                                        console.log('Warning could not get build information from chromosome formatting.');
+                                    }
 
-                    // if we couldn't determine build from header, try looking at chromosomes
-                    if ((hdrBuild != null) && ((!hdrBuild.build) || hdrBuild.build === '')) {
-                        me.vcf.getBuildFromChromosomes(me.vcf.vcfURL, me.vcf.tbiUrl, function (success, chrBuild) {
-                            build = chrBuild;
-                            if (!success) {
-                                console.log('Warning could not get build information from chromosome formatting.');
+                                    // Get the sample names from the vcf header
+                                    me.vcf.promiseGetSampleNames()
+                                        .then(sampleNames => {
+                                            me.isMultiSample = sampleNames && sampleNames.length > 1;
+                                            callback(success, sampleNames, build, vcfUrl, tbiUrl);
+                                        });
+                                })
+                            } else {
+                                build = hdrBuild ? hdrBuild.build : "";
+
+                                // Get the sample names from the vcf header
+                                me.vcf.promiseGetSampleNames()
+                                    .then(sampleNames => {
+                                        me.isMultiSample = sampleNames && sampleNames.length > 1;
+                                        callback(success, sampleNames, build, vcfUrl, tbiUrl);
+                                    });
                             }
-
-                            // Get the sample names from the vcf header
-                            me.vcf.getSampleNames(function (sampleNames) {
-                                me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
-                                callback(success, sampleNames, build);
-                            });
-                        })
-                    } else {
-                        build = hdrBuild != null ? hdrBuild.build : null;
-
-                        // Get the sample names from the vcf header
-                        me.vcf.getSampleNames(function (sampleNames) {
-                            me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
-                            callback(success, sampleNames, build);
-                        });
-                    }
-                } else {
-                    me.vcfUrlEntered = false;
-                    console.log("Problem opening vcf/tbi: " + errorMsg);
-                    callback(success);
+                        } else {
+                            me.vcfUrlEntered = false;
+                            console.log("Problem opening vcf/tbi: " + errorMsg);
+                            callback(success);
+                        }
+                    })
                 }
-            });
+            })
         }
     }
 
