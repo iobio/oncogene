@@ -1176,70 +1176,69 @@ export default function vcfiobio(theGlobalApp) {
     }
 
 
-    exports.getSampleNames = function (callback) {
-        if (sourceType == SOURCE_TYPE_URL) {
-            this._getRemoteSampleNames(callback);
+    exports.promiseGetSampleNames = function(callback) {
+        if (sourceType === SOURCE_TYPE_URL) {
+            return this._promiseGetRemoteSampleNames(callback);
         } else {
-            this._getLocalSampleNames(callback);
+            return this._promiseGetLocalSampleNames(callback);
         }
     }
 
+    exports._promiseGetLocalSampleNames = function() {
+        return new Promise(function(resolve) {
+            // eslint-disable-next-line no-undef
+            let vcfReader = new readBinaryVCF(tabixFile, vcfFile, function() {
+                let sampleNames = [];
+                sampleNames.length = 0;
 
-    // exports._getLocalSampleNames = function(callback) {
-    //   var vcfReader = new readBinaryVCF(tabixFile, vcfFile, function(tbiR) {
-    //     var sampleNames = [];
-    //     sampleNames.length = 0;
-    //
-    //     var headerRecords = [];
-    //     vcfReader.getHeader( function(header) {
-    //        headerRecords = header.split("\n");
-    //        headerRecords.forEach(function(headerRec) {
-    //           if (headerRec.indexOf("#CHROM") == 0) {
-    //             var headerFields = headerRec.split("\t");
-    //             sampleNames = headerFields.slice(9);
-    //             callback(sampleNames);
-    //           }
-    //        });
-    //
-    //     });
-    //  });
-    // }
-
-
-    exports._getRemoteSampleNames = function (callback) {
-        var me = this;
-
-        var cmd = me.getEndpoint().getVcfHeader(vcfURL, tbiUrl);
-
-
-        var headerData = "";
-        // Use Results
-        cmd.on('data', function (data) {
-            if (data == undefined) {
-                return;
-            }
-            headerData += data;
-        });
-
-        cmd.on('end', function () {
-            var headerRecords = headerData.split("\n");
-            headerRecords.forEach(function (headerRec) {
-                if (headerRec.indexOf("#CHROM") == 0) {
-                    var headerFields = headerRec.split("\t");
-                    var sampleNames = headerFields.slice(9);
-                    callback(sampleNames);
-                }
+                let headerRecords = [];
+                vcfReader.getHeader( function(header) {
+                    headerRecords = header.split("\n");
+                    headerRecords.forEach(function(headerRec) {
+                        if (headerRec.indexOf("#CHROM") === 0) {
+                            let headerFields = headerRec.split("\t");
+                            sampleNames = headerFields.slice(9);
+                            resolve(sampleNames);
+                        }
+                    });
+                })
             });
-
-        });
-
-        cmd.on('error', function (error) {
-            console.log(error);
-        });
-
-        cmd.run();
-
+        })
     }
+
+
+    exports._promiseGetRemoteSampleNames = function() {
+        const me = this;
+        return new Promise(function(resolve, reject) {
+            let cmd = me.getEndpoint().getVcfHeader(vcfURL, tbiUrl);
+            let headerData = "";
+            // Use Results
+            cmd.on('data', function(data) {
+                if (data == null) {
+                    return;
+                }
+                headerData += data;
+            });
+            cmd.on('end', function() {
+                let headerRecords = headerData.split("\n");
+                headerRecords.forEach(function(headerRec) {
+                    if (headerRec.indexOf("#CHROM") === 0) {
+                        let headerFields = headerRec.split("\t");
+                        let sampleNames = headerFields.slice(9);
+                        resolve(sampleNames);
+                    }
+                });
+            });
+            cmd.on('error', function(error) {
+                let msg = "Error obtaining vcf header for file. Make sure your vcf file is properly formatted, and that the provided URL is accessible. " + error;
+                console.log(msg)
+                console.log(error);
+                reject(msg)
+            });
+            cmd.run();
+        })
+    }
+
 
     exports.parseVcfRecordsForASample = function (annotatedRecs, refName, geneObject, selectedTranscript, clinvarMap, hasExtraAnnot, sampleNamesToGenotype, sampleIndex, vepAF) {
         var me = this;

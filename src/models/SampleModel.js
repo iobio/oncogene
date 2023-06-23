@@ -1130,14 +1130,16 @@ class SampleModel {
             me.getVcfRefName = null;
             me.isMultiSample = false;
             let fileSelection = {
-
-            }
-            this.vcf.openVcfFile(fileSelection, function (success, hdrBuild, errorMsg) {
-                if (success) {
+                vcf: vcfFile,
+                tbi: tbiFile
+            };
+            this.vcf.openVcfFile(fileSelection, function (urlObj) {
+                if (urlObj) {
                     me.vcfUrlEntered = true;
                     me.vcfFileOpened = false;
                     me.getVcfRefName = null;
                     let build = '';
+
 
                     // if we couldn't determine build from header, try looking at chromosomes
                     if ((hdrBuild != null) && ((!hdrBuild.build) || hdrBuild.build === '')) {
