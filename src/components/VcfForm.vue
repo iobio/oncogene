@@ -67,6 +67,7 @@
         </v-select>
       </v-container>
       <v-container v-if="urlsVerified" fluid style="padding-top: 0">
+<!--        todo: put scrollable component here-->
         <v-row justify=center align="start">
           <v-col md="auto" dense>
             <v-btn dark small color="secondary" @click="urlsVerified = false">Edit Urls</v-btn>
@@ -90,6 +91,7 @@
                         autocomplete
                         dense
                         hide-details
+                        @click="applyScrollableStyle"
                     ></v-select>
                   </v-col>
                   <v-col md="4">
@@ -127,6 +129,10 @@
 export default {
   name: "VcfForm",
   props: {
+    d3: {
+      type: Object,
+      default: null
+    },
     dataType: {
       type: String,
       default: ''
@@ -292,6 +298,13 @@ export default {
     }
   },
   methods: {
+    applyScrollableStyle: function() {
+      const self = this;
+      setTimeout(() => {
+        self.d3.selectAll('.v-menu__content')
+            .style('overflow-y', 'auto');
+      }, 500);
+    },
     onChange: function() {
       if (this.localData) {
         this.onFileChange();

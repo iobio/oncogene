@@ -306,12 +306,11 @@ export default {
             glyph.translator = translator;
             let genericAnnotation = new GenericAnnotation(glyph, self.globalApp.d3);
 
-            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage, self.integration);
+            self.geneModel = new GeneModel(self.globalApp, self.forceLocalStorage, self.integration, process.env.VUE_APP_STEPH_EUTILS_KEY);
             self.geneModel.geneSource = "gencode";
             self.geneModel.genomeBuildHelper = self.genomeBuildHelper;
             self.geneModel.setAllKnownGenes(self.allGenes);
             self.geneModel.translator = translator;
-
 
             // Instantiate helper class than encapsulates IOBIO commands
             const backendUrl = self.launchParams.backendUrl;

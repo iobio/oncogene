@@ -247,7 +247,6 @@
                       <v-col id="selectCol" sm="12" class="pr-1">
                         <v-select
                             :items="cancerListNames"
-                            id="listSelect"
                             class="scroll-menu"
                             menu-props="auto"
                             color="appColor"
@@ -328,6 +327,7 @@
                         :vcfFileNames="vcfNameList"
                         :tbiFileNames="tbiNameList"
                         :galaxySampleCount="galaxySampleCount"
+                        :d3="d3"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
