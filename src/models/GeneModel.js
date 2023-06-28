@@ -71,20 +71,47 @@ class GeneModel {
         // d3.rebind(this, this.dispatch, "on");
     }
 
+    /* Adds the given gene list to this model's representation.
+     * Distinct from singly adding genes (promiseAddGeneName)
+     * in that it combines calls to Eutils eSearch API and
+     * optimizes performance. */
+    promiseAddGeneNames(geneNameList) {
+        const self = this;
+        let promises = [];
+
+        return new Promise((resolve, reject) => {
+           // We've already checked to see if geneObjects exist prior to this call
+           // so no need to do it again here
+            let p = self.promiseGetGeneObjects(geneNameList);
+            promises.push(p);
+            p = self.promiseBatchNCBIGeneSummaries(geneNameList);
+            promises.push(p);
+
+            Promise.all(promises)
+                .then(() => {
+                    resolve();
+                }).catch(error => {
+                reject(error);
+            });
+        });
+    }
+
+
+    /* Adds a single gene to this model's representation. */
     promiseAddGeneName(theGeneName) {
-        let me = this;
+        const self = this;
         let promises = [];
 
         return new Promise(function (resolve, reject) {
             let geneName = theGeneName.toUpperCase();
 
-            if (!me.geneObjects[geneName]) {
-                let objP = me.promiseGetGeneObject(geneName);
+            if (!self.geneObjects[geneName]) {
+                let objP = self.promiseGetGeneObject(geneName);
                 promises.push(objP);
             }
 
-            if (!me.geneNCBISummaries[geneName]) {
-                let sumP = me.promiseGetNCBIGeneSummaries([geneName]);
+            if (!self.geneNCBISummaries[geneName]) {
+                let sumP = self.promiseGetNCBIGeneSummaries([geneName]);
                 promises.push(sumP);
             }
 
@@ -560,20 +587,11 @@ class GeneModel {
     }
 
     /* Connects to the NCBI Eutils server to retrieve gene summary information.
-     * First asynchronously retrieves all eSearch information for each gene.
-     * Then, only after all search information is retrieved, are eSummary data retrieved.
-     * Some failure tolerance from the eutils website is tolerated, see internal function
-     * descriptions for details. */
-    promiseGetNCBIGeneSummariesV2(geneNames) {
+     * First retrieves all eSearch information for each gene in a single query.
+     * Then, batches eSummary requests. Some failure tolerance from the eutils
+     * website is tolerated, see internal function descriptions for details. */
+    promiseBatchNCBIGeneSummaries(geneNames) {
         const self = this;
-        let searchPromiseQueue = [];
-        let summaryPromiseQueue = [];
-        let EUTILS_REQ_LIMIT = 10;
-        let searchWaitCtr = 0;
-        let summaryWaitCtr = 0;
-        let failedSearchNames = [];
-        let failedSummaryNames = [];
-
         return new Promise((resolve, reject) => {
             let theGeneNames = geneNames.filter(function(geneName) {
                 return self.geneNCBISummaries[geneName] == null;
@@ -583,9 +601,10 @@ class GeneModel {
                 resolve();
             } else {
                 self.promiseGetNCBISearchResults(geneNames)
-                    .then(() => {
+                    .then((geneIds) => {
                         self.promiseGetNCBISummaryResults(geneIds)
                             .then(() => {
+                                // todo: does this function need to return anything?
                                 resolve();
                             }).catch(err => {
                                 reject("Could not retrieve NCBI summaries: " + err);
@@ -595,49 +614,40 @@ class GeneModel {
                     })
             }
         });
-
-        // Check to see if we've already cached the NCBI summary
-
-        // If we have, return resolved promise with info
-        // Else, check to see what counter is at, if we hit 10, get wait promise and insert one second wait, reset counter
-            // get search promise and increment counter (add to searchPromiseQueue)
-            // then check to see what summary counter is at, if we hit 10, get wait promise and
-
-            // Wait on all search promises settling here
-                // If we have any rejected promises, add them to the failed list and recurse (do this twice?)
-                // Then call promiseGetSummaries
     }
 
     /* Returns a resolved promise containing a list of objects containing eSearch result properties
-     * necessary for retrieving corresponding eSummary data.
-     * Only returns when either all eSearch results for the provided geneNames
-     * have been retrieved, or after three tries to the eutils servers.
-     * Thus this function may only return results for part of the provided geneNames list,
-     * with an error warning in the console for those that didn't succeed.
-     * The eutils requests are guaranteed to be 1 second apart for every 10 requests. */
+     * necessary for retrieving corresponding eSummary data. Retries eutils server once if
+     * initial request fails. */
     promiseGetNCBISearchResults(geneNames) {
         const self = this;
-        let eutilsSearchQueue = [];
-        let geneSearchObjs = [];
-
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             let searchGeneExpr = "";
             geneNames.forEach(geneName => {
                 if (searchGeneExpr.length > 0) {
                     searchGeneExpr += " OR ";
                 }
                 searchGeneExpr += geneName + "[Gene name]";
-            })
+            });
             let searchUrl = self.NCBI_GENE_SEARCH_URL + "&term=" + "(9606[Taxonomy ID] AND (" + searchGeneExpr + "))"
                 + "&api_key=" + self.EUTILS_API_KEY;
+
             self.globalApp.$.ajax(searchUrl)
-                .done(function(data) {
-                    setTimeout(() => {
-                        me.promiseGetNCBIGeneSummariesImpl(data, theGeneNames)
-                    }, 5000);
+                .done(data => {
+                    let geneObjects = self._processSearchResults(data);
+                    resolve(geneObjects);
                 })
-                .fail(function() {
-                    reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
+                .fail(() => {
+                    // Try it one more time
+                    console.log("First attempt to retrieve eSearch results for gene batch failed, trying again...");
+                    self.globalApp.$.ajax(searchUrl)
+                        .done(data => {
+                            let geneObjects = self._processSearchResults(data);
+                            resolve(geneObjects);
+                        })
+                        .fail(() => {
+                            reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
+                        })
                 })
         })
     }
@@ -650,7 +660,59 @@ class GeneModel {
      * with an error warning in the console for those that didn't succeed.
      * The eutils requests are guaranteed to be 1 second apart for every 10 requests. */
     promiseGetNCBISummaryResults(geneSearchObjs) {
+        // todo: implement
+        const self = this;
+        const TIMEOUT = 1000;
+        const delay = ms => new Promise(res => setTimeout(res, ms));
 
+        let summaryPromiseQueue = [];
+        let EUTILS_REQ_LIMIT = 10;
+        let summaryWaitCtr = 0;
+        let failedSummaryData = [];
+
+
+        return new Promise(resolve => {
+            let batchList = [];
+            for (let i = 0; i < geneSearchObjs.length; i++) {
+                let data = geneSearchObjs[i];
+                if (i%10 === 0) {
+                    self.promiseGetNCBISummaryBatch(batchList);
+                    batchList = [data];
+                    await delay(TIMEOUT);
+                } else {
+                    batchList.push(data);
+                }
+                // todo: need to deal with final batchList if length not multiple of 10
+            }
+        })
+    }
+
+    /* Takes in batch of genes to get eSummary for. Returns when all
+     * individual calls are completed. */
+    promiseGetNCBISummaryBatch(geneBatch) {
+        const self = this;
+        let batchPromises = [];
+
+        return new Promise((resolve, reject) => {
+            geneBatch.forEach(data => {
+                var webenv = data["esearchresult"]["webenv"];
+                var queryKey = data["esearchresult"]["querykey"];
+                var summaryUrl = self.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv + "&api_key=" + self.EUTILS_API_KEY;
+                let p = self.globalApp.$.ajax(summaryUrl)
+                    .done(function(data) {
+
+                    }).fail(function() {
+                        delete me.pendingNCBIRequests[theGeneNames];
+                    });
+                batchPromises.push(p);
+            })
+
+            Promise.allSettled(batchPromises)
+                .then(() => {
+
+                }).catch(err => {
+            })
+        });
     }
 
     promiseGetNCBIGeneSummaries(geneNames) {
@@ -1538,96 +1600,84 @@ class GeneModel {
         const self = this;
         let genesWithVars = {};
         let somaticGeneNames = [];
-        let promises = [];
-        let genePromises = [];
         let totalSomaticVarCount = 0;
         let formattedGeneObj = [];  // Only contains genes with snps/small indels to compare to COSMIC
         let fullGeneObj = [];       // Contains genes with snps, small indels, and CNVs - any gene which somaticVars/somaticCnvs fall into
-
+        let featuresToAdd = [];
+        let geneNamesToAdd = {};
         return new Promise((resolve, reject) => {
             Object.values(somaticVars).forEach(feat => {
-                // todo: left off here - need to organize this so we call promiseAddGeneName a single time
-
-                // For now, just adding a list of vars per object
-                // We may want to change this depending on gene list viz needs
                 if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
                     self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
                     totalSomaticVarCount++;
                     genesWithVars[feat.geneSymbol] = true;
                 } else {
-                    // We might have a different, valid name for the geneSymbol
-                    // First try to get gene object
-                    if (feat.geneSymbol !== '') { // These are those VEP could not assign a single (or any) gene names to
-                        let p = self.promiseAddGeneName(feat.geneSymbol)
-                            .then(() => {
-                                if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
-                                    self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
-                                    totalSomaticVarCount++;
-                                    genesWithVars[feat.geneSymbol] = true;
-                                } else {
-                                    // If we can't find the gene object, then add to unmatched
-                                    if (!unmatchedVars[feat.geneSymbol]) {
-                                        unmatchedVars[feat.geneSymbol] = [];
-                                    }
-                                    unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
-                                    console.log('Could not match predictor(VEP/BCSQ) gene symbol to ClinGen for gene ' + feat.geneSymbol);
-                                }
-                            }).catch(err => {
-                                if (!unmatchedVars[feat.geneSymbol]) {
-                                    unmatchedVars[feat.geneSymbol] = [];
-                                }
-                                unmatchedVars[feat.geneSymbol].push({ id : feat.id, rec : feat.id });
-                                console.log('ERROR: Could not match predictor(VEP/BCSQ) gene symbol to ClinGen for gene: ' + feat.geneSymbol + ' due to: ' + err);
-                            });
-                        genePromises.push(p);
+                    if (feat.geneSymbol !== '') {
+                        featuresToAdd.push(feat);
+                        geneNamesToAdd[feat.geneSymbol] = true;
                     }
                 }
             });
-            Promise.all(genePromises)
-                .then(() =>{
-                    // Add all CNVs to existing genes
-                    // Note: shouldn't have nomenclature symbol issue here, since CNVs go off of coords exclusively
-                    Object.keys(somaticCnvs).forEach(geneName => {
-                        let name = geneName.toUpperCase();
-                        if (self.geneObjects[name]) {
-                            self.geneObjects[name].somaticCnvList = somaticCnvs[geneName];
-                        } else {
-                            console.log('WARNING: could not find gene object to match CNV with for: ' + geneName);
-                        }
-                        genesWithVars[name] = true;
-                    })
-
-                    Promise.all(promises)
-                        .then(() => {
-                            // Compose list of gene objects for return
-                            Object.keys(genesWithVars).forEach(gene => {
-                                somaticGeneNames.push(gene);
-                                let currGeneObj = self.geneObjects[gene];
-                                if (!currGeneObj) {
-                                    console.log('Something went wrong fetching gene object for somatic gene: ' + gene);
-                                } else {
-                                    let strippedChr = currGeneObj.chr.startsWith('chr') ? currGeneObj.chr.substring(3) : currGeneObj.chr;
-                                    formattedGeneObj.push({
-                                        name: strippedChr,
-                                        start: currGeneObj.start,
-                                        end: currGeneObj.end,
-                                    });
-                                    fullGeneObj.push(currGeneObj);
+            let geneNameList = Object.keys(geneNamesToAdd);
+            if (geneNameList.length > 0) {
+                self.promiseAddGeneNames(geneNameList)
+                    .then(() => {
+                        featuresToAdd.forEach(feat => {
+                            if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
+                                self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
+                                totalSomaticVarCount++;
+                                genesWithVars[feat.geneSymbol] = true;
+                            } else {
+                                // If we can't find the gene object, then add to unmatched
+                                if (!unmatchedVars[feat.geneSymbol]) {
+                                    unmatchedVars[feat.geneSymbol] = [];
                                 }
-                            })
-                            let retObj = {
-                                formattedGeneObjs: formattedGeneObj,
-                                fullGeneObjs: fullGeneObj,
-                                somaticCount: totalSomaticVarCount,
-                                unmatchedSymbols: unmatchedVars,
-                                somaticGeneNames: somaticGeneNames
+                                unmatchedVars[feat.geneSymbol].push({id: feat.id, rec: feat.id});
+                                console.log('Could not match predictor(VEP/BCSQ) gene symbol to ClinGen for gene ' + feat.geneSymbol);
                             }
-                            resolve(retObj);
-                        }).catch(err => {
-                            reject('Fatal problem grouping genes for somatic annotation: ' + err);
-                    })
-                })
-        })
+                        })
+                        // Add all CNVs to existing genes
+                        // Note: shouldn't have nomenclature symbol issue here, since CNVs go off of coords exclusively
+                        Object.keys(somaticCnvs).forEach(geneName => {
+                            let name = geneName.toUpperCase();
+                            if (self.geneObjects[name]) {
+                                self.geneObjects[name].somaticCnvList = somaticCnvs[geneName];
+                            } else {
+                                console.log('WARNING: could not find gene object to match CNV with for: ' + geneName);
+                            }
+                            genesWithVars[name] = true;
+                        });
+
+                        // Compose list of gene objects for return
+                        Object.keys(genesWithVars).forEach(gene => {
+                            somaticGeneNames.push(gene);
+                            let currGeneObj = self.geneObjects[gene];
+                            if (!currGeneObj) {
+                                console.log('Something went wrong fetching gene object for somatic gene: ' + gene);
+                            } else {
+                                let strippedChr = currGeneObj.chr.startsWith('chr') ? currGeneObj.chr.substring(3) : currGeneObj.chr;
+                                formattedGeneObj.push({
+                                    name: strippedChr,
+                                    start: currGeneObj.start,
+                                    end: currGeneObj.end,
+                                });
+                                fullGeneObj.push(currGeneObj);
+                            }
+                        });
+
+                        let retObj = {
+                            formattedGeneObjs: formattedGeneObj,
+                            fullGeneObjs: fullGeneObj,
+                            somaticCount: totalSomaticVarCount,
+                            unmatchedSymbols: unmatchedVars,
+                            somaticGeneNames: somaticGeneNames
+                        }
+                        resolve(retObj);
+                    }).catch(err => {
+                    reject("Could not add genes: " + err);
+                });
+            }
+        });
     }
 
     promiseScoreAndRank(genesWithVars, totalSomaticVarCount, unmatchedGeneSymbols) {
