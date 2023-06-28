@@ -179,6 +179,14 @@ class GlobalApp {
         console.log('Could not parse build according to provided string: ' + chrString);
         return null;
     }
+
+    sleep(ms) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve();
+            }, ms);
+        });
+    }
 }
 
 export default GlobalApp

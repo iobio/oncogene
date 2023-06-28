@@ -78,14 +78,11 @@ class GeneModel {
     promiseAddGeneNames(geneNameList) {
         const self = this;
         let promises = [];
-
         return new Promise((resolve, reject) => {
            // We've already checked to see if geneObjects exist prior to this call
            // so no need to do it again here
-            let p = self.promiseGetGeneObjects(geneNameList);
-            promises.push(p);
-            p = self.promiseBatchNCBIGeneSummaries(geneNameList);
-            promises.push(p);
+            promises.push(self.promiseGetGeneObjects(geneNameList));
+            promises.push(self.promiseBatchNCBIGeneSummaries(geneNameList));
 
             Promise.all(promises)
                 .then(() => {
@@ -111,7 +108,7 @@ class GeneModel {
             }
 
             if (!self.geneNCBISummaries[geneName]) {
-                let sumP = self.promiseGetNCBIGeneSummaries([geneName]);
+                let sumP = self.promiseGetNCBIGeneSummary(geneName);
                 promises.push(sumP);
             }
 
@@ -587,234 +584,175 @@ class GeneModel {
     }
 
     /* Connects to the NCBI Eutils server to retrieve gene summary information.
-     * First retrieves all eSearch information for each gene in a single query.
-     * Then, batches eSummary requests. Some failure tolerance from the eutils
-     * website is tolerated, see internal function descriptions for details. */
+     * First retrieves all eSearch information for each gene in batches of 50.
+     * Then, retrieves all eSummary information for each gene in a single query. */
     promiseBatchNCBIGeneSummaries(geneNames) {
         const self = this;
-        return new Promise((resolve, reject) => {
-            let theGeneNames = geneNames.filter(function(geneName) {
-                return self.geneNCBISummaries[geneName] == null;
-            });
-
-            if (theGeneNames.length === 0) {
-                resolve();
-            } else {
-                self.promiseGetNCBISearchResults(geneNames)
-                    .then((geneIds) => {
-                        self.promiseGetNCBISummaryResults(geneIds)
-                            .then(() => {
-                                // todo: does this function need to return anything?
-                                resolve();
-                            }).catch(err => {
-                                reject("Could not retrieve NCBI summaries: " + err);
-                        })
-                    }).catch(err => {
-                        reject("Could not retrieve NCBI search results: " + err);
-                    })
-            }
-        });
-    }
-
-    /* Returns a resolved promise containing a list of objects containing eSearch result properties
-     * necessary for retrieving corresponding eSummary data. Retries eutils server once if
-     * initial request fails. */
-    promiseGetNCBISearchResults(geneNames) {
-        const self = this;
-        return new Promise((resolve, reject) => {
-            let searchGeneExpr = "";
-            geneNames.forEach(geneName => {
-                if (searchGeneExpr.length > 0) {
-                    searchGeneExpr += " OR ";
-                }
-                searchGeneExpr += geneName + "[Gene name]";
-            });
-            let searchUrl = self.NCBI_GENE_SEARCH_URL + "&term=" + "(9606[Taxonomy ID] AND (" + searchGeneExpr + "))"
-                + "&api_key=" + self.EUTILS_API_KEY;
-
-            self.globalApp.$.ajax(searchUrl)
-                .done(data => {
-                    let geneObjects = self._processSearchResults(data);
-                    resolve(geneObjects);
-                })
-                .fail(() => {
-                    // Try it one more time
-                    console.log("First attempt to retrieve eSearch results for gene batch failed, trying again...");
-                    self.globalApp.$.ajax(searchUrl)
-                        .done(data => {
-                            let geneObjects = self._processSearchResults(data);
-                            resolve(geneObjects);
-                        })
-                        .fail(() => {
-                            reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
-                        })
-                })
-        })
-    }
-
-    /* Returns a resolved promise containing a list of objects containing eSummary
-     * results corresponding to the provided list of geneSearchObjs.
-     * Only returns when either all eSummary results have been retrieved,
-     * or after three tries to the eutils servers.
-     * Thus this function may only return results for part of the provided list,
-     * with an error warning in the console for those that didn't succeed.
-     * The eutils requests are guaranteed to be 1 second apart for every 10 requests. */
-    promiseGetNCBISummaryResults(geneSearchObjs) {
-        // todo: implement
-        const self = this;
-        const TIMEOUT = 1000;
-        const delay = ms => new Promise(res => setTimeout(res, ms));
-
-        let summaryPromiseQueue = [];
-        let EUTILS_REQ_LIMIT = 10;
-        let summaryWaitCtr = 0;
-        let failedSummaryData = [];
-
-
-        return new Promise(resolve => {
-            let batchList = [];
-            for (let i = 0; i < geneSearchObjs.length; i++) {
-                let data = geneSearchObjs[i];
-                if (i%10 === 0) {
-                    self.promiseGetNCBISummaryBatch(batchList);
-                    batchList = [data];
-                    await delay(TIMEOUT);
-                } else {
-                    batchList.push(data);
-                }
-                // todo: need to deal with final batchList if length not multiple of 10
-            }
-        })
-    }
-
-    /* Takes in batch of genes to get eSummary for. Returns when all
-     * individual calls are completed. */
-    promiseGetNCBISummaryBatch(geneBatch) {
-        const self = this;
-        let batchPromises = [];
-
-        return new Promise((resolve, reject) => {
-            geneBatch.forEach(data => {
-                var webenv = data["esearchresult"]["webenv"];
-                var queryKey = data["esearchresult"]["querykey"];
-                var summaryUrl = self.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv + "&api_key=" + self.EUTILS_API_KEY;
-                let p = self.globalApp.$.ajax(summaryUrl)
-                    .done(function(data) {
-
-                    }).fail(function() {
-                        delete me.pendingNCBIRequests[theGeneNames];
-                    });
-                batchPromises.push(p);
-            })
-
-            Promise.allSettled(batchPromises)
-                .then(() => {
-
-                }).catch(err => {
-            })
-        });
-    }
-
-    promiseGetNCBIGeneSummaries(geneNames) {
-        const me = this;
+        const MAX_GENES = 50;
+        let EUTILS_RPS_MAX = 10;
+        let EUTILS_REFRACTORY_MS = 1000;
 
         return new Promise( function(resolve, reject) {
             let theGeneNames = geneNames.filter(function(geneName) {
-                return me.geneNCBISummaries[geneName] == null;
+                return self.geneNCBISummaries[geneName] == null;
             });
-
             if (theGeneNames.length === 0) {
                 resolve();
             } else {
                 let searchGeneExpr = "";
-                theGeneNames.forEach(function(geneName) {
-                    let geneInfo = me.geneNCBISummaries[geneName];
+                let count = 0;
+                let geneExprs = [];    // List of expressions
+                theGeneNames.forEach(function (geneName) {
+                    let geneInfo = self.geneNCBISummaries[geneName];
                     if (geneInfo == null) {
-                        if (searchGeneExpr.length > 0) {
-                            searchGeneExpr += " OR ";
+                        // Wrap at max
+                        if (count === MAX_GENES) {
+                            geneExprs.push(searchGeneExpr);
+                            searchGeneExpr = "";
+                            count = 0;
+                        } else {
+                            if (searchGeneExpr.length > 0) {
+                                searchGeneExpr += " OR ";
+                            }
+                            searchGeneExpr += geneName + "[Gene name]";
+                            count++;
                         }
-                        searchGeneExpr += geneName + "[Gene name]";
                     }
                 });
-                let searchUrl = me.NCBI_GENE_SEARCH_URL + "&term=" + "(9606[Taxonomy ID] AND (" + searchGeneExpr + "))" + "&api_key=" + me.EUTILS_API_KEY;
-                me.pendingNCBIRequests[theGeneNames] = true;
-
-                me.globalApp.$.ajax(searchUrl)
-                    .done(function(data) {
-                        setTimeout(() => {
-                            me.promiseGetNCBIGeneSummariesImpl(data, theGeneNames)
-                        }, 5000);
-                    })
-                    .fail(function() {
-                        delete me.pendingNCBIRequests[theGeneNames];
-                        reject("Error occurred when making http request to NCBI eutils esearch for gene " + geneNames.join(","));
-                    })
+                // We want this to be sequential to not overwhelm API
+                self.promisePostNCBISearch(geneExprs, EUTILS_RPS_MAX, EUTILS_REFRACTORY_MS)
+                    .then(async fetchParams => {
+                        await self.globalApp.sleep(EUTILS_REFRACTORY_MS);
+                        self.promiseRetrieveNCBISummaries(fetchParams, EUTILS_RPS_MAX, EUTILS_REFRACTORY_MS)
+                            .then(() => {
+                                resolve();
+                            }).catch(err => {
+                            reject("Could not retrieve NCBI eSummary results: " + err);
+                        })
+                    }).catch(err => {
+                    reject("Could not post NCBI eSearch query: " + err);
+                })
             }
         })
     }
 
-    promiseGetNCBIGeneSummariesImpl(data, theGeneNames) {
-        const me = this;
 
-        return new Promise((resolve) => {
-            // Now that we have the gene ID, get the NCBI gene summary
-            var webenv = data["esearchresult"]["webenv"];
-            var queryKey = data["esearchresult"]["querykey"];
-            var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv + "&api_key=" + me.EUTILS_API_KEY;
-            me.globalApp.$.ajax(summaryUrl)
-                .done(function(sumData) {
-                    if (sumData.result == null || sumData.result.uids.length === 0) {
-                        if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
-                            sumData.esummaryresult.forEach( function(message) {
-                                console.log("Unable to get NCBI gene summary from eutils esummary");
-                                console.log(message);
-                            });
-                        }
-                        delete me.pendingNCBIRequests[theGeneNames];
-                        //reject();
-                        resolve();
-                    } else {
-                        sumData.result.uids.forEach(function(uid) {
-                            var geneInfo = sumData.result[uid];
-                            me.geneNCBISummaries[geneInfo.name] = geneInfo;
-                            let currObj = me.geneObjects[geneInfo.name];
-                            if (currObj)
-                                currObj.geneInfo = geneInfo;
-                        });
-                        delete me.pendingNCBIRequests[theGeneNames];
-                        resolve();
-                    }
-                })
-                .fail(function() {
-                    delete me.pendingNCBIRequests[theGeneNames];
-                    //reject("Error occurred when making http request to NCBI eutils esummary for genes " + theGeneNames.join(","));
-                    resolve();
+
+    /* Posts NCBI eSearch query for each expression in provided list.
+     * Used with follow up promiseRetrieveNCBISummaries function to get
+     * eSummary results for each gene provided in geneExprs list.
+     * Ensures Eutils API requests are spaced EUTILS_REFRACTORY_MS apart. */
+    promisePostNCBISearch(geneExprs, eutilsMaxReq, eutilsRefractoryMs) {
+        const self = this;
+        let promises = [];
+        let fetchData = {};
+        let eutilsReqCount = 0;
+
+        return new Promise(async allResolve => {
+            for (let i = 0; i < geneExprs.length; i++) {
+                if (eutilsReqCount === eutilsMaxReq) {
+                    await self.globalApp.sleep(eutilsRefractoryMs);
+                    eutilsReqCount = 0;
+                }
+                let expr = geneExprs[i];
+                let p = new Promise((resolve, reject) => {
+                    let searchUrl = self.NCBI_GENE_SEARCH_URL + "&term=" + "(9606[Taxonomy ID] AND (" + expr + "))" + "&api_key=" + self.EUTILS_API_KEY;
+                    self.globalApp.$.ajax(searchUrl)
+                        .done(function(data) {
+                            let webEnv = data["esearchresult"]["webenv"];
+                            let queryKey = data["esearchresult"]["querykey"];
+                            fetchData[webEnv] = { webEnv, queryKey };
+                            resolve();
+                        }).fail(function() {
+                        reject("Error occurred when making http request to NCBI eutils esearch for gene batch");
+                    })
+                });
+                promises.push(p);
+                eutilsReqCount++;
+            }
+            Promise.all(promises)
+                .then(() => {
+                    allResolve(fetchData);
                 })
         })
     }
 
+    /* Uses the history option of the eutils servers to look up the
+     * eSummary results of the last eSearch query.
+     * Ensures Eutils API requests are spaced EUTILS_REFRACTORY_MS apart */
+    promiseRetrieveNCBISummaries(fetchData, eutilsMaxReq, eutilsRefractoryMs) {
+        const self = this;
+        let promises = [];
+        let eutilsReqCount = 0;
+
+        return new Promise( async allResolve => {
+            let fetchObjs = Object.values(fetchData);
+            for (let i = 0; i < fetchObjs.length; i++) {
+                if (eutilsReqCount === eutilsMaxReq) {
+                    await self.globalApp.sleep(eutilsRefractoryMs);
+                    eutilsReqCount = 0;
+                }
+                let currObj = fetchObjs[i];
+                let p = new Promise((resolve, reject) => {
+                    let summaryUrl = self.NCBI_GENE_SUMMARY_URL + "&query_key=" + currObj.queryKey + "&WebEnv=" + currObj.webEnv + "&api_key=" + self.EUTILS_API_KEY;
+                    self.globalApp.$.ajax(summaryUrl)
+                        .done(function (sumData) {
+                            if (sumData.result == null || sumData.result.uids.length === 0) {
+                                if (sumData.esummaryresult && sumData.esummaryresult.length > 0) {
+                                    sumData.esummaryresult.forEach(function (message) {
+                                        console.log("Unable to get NCBI gene summary from eutils esummary");
+                                        console.log(message);
+                                    });
+                                }
+                                resolve();
+                            } else {
+                                sumData.result.uids.forEach(function (uid) {
+                                    let geneInfo = sumData.result[uid];
+                                    self.geneNCBISummaries[geneInfo.name] = geneInfo;
+                                    let currObj = self.geneObjects[geneInfo.name];
+                                    if (currObj)
+                                        currObj.geneInfo = geneInfo;
+                                });
+                                resolve();
+                            }
+                        })
+                        .fail(function () {
+                            reject("Error occurred when making http request to NCBI eutils eSummary for genes");
+                        })
+                });
+                promises.push(p);
+                eutilsReqCount++;
+            }
+            Promise.all(promises)
+                .then(() => {
+                    allResolve();
+                })
+        });
+    }
+
+    // Gets eSummary for a single gene
     promiseGetNCBIGeneSummary(geneName) {
         let me = this;
         return new Promise( function(resolve) {
-            var geneInfo = me.geneNCBISummaries[geneName];
+            let geneInfo = me.geneNCBISummaries[geneName];
             let unknownGeneInfo = {description: ' ', summary: ' '};
 
             if (geneInfo != null && geneInfo.summary !== " ") {
                 resolve(geneInfo);
             } else {
                 // Search NCBI based on the gene name to obtain the gene ID
-                let waitSeconds = 4000;
-                // if (Object.keys(me.geneNCBISummaries).length > 0) {
-                //     waitSeconds = 5000;
-                // }
+                let waitSeconds = 0;
+                if (Object.keys(me.geneNCBISummaries).length > 0) {
+                    waitSeconds = 5000;
+                }
                 setTimeout(function() {
-                    var url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
+                    let url = me.NCBI_GENE_SEARCH_URL + "&term=" + "(" + geneName + "[Gene name]" + " AND 9606[Taxonomy ID]";
                     me.globalApp.$.ajax(url)
                         .done(function(data) {
                             // Now that we have the gene ID, get the NCBI gene summary
-                            var webenv = data["esearchresult"]["webenv"];
-                            var queryKey = data["esearchresult"]["querykey"];
-                            var summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
+                            let webenv = data["esearchresult"]["webenv"];
+                            let queryKey = data["esearchresult"]["querykey"];
+                            let summaryUrl = me.NCBI_GENE_SUMMARY_URL + "&query_key=" + queryKey + "&WebEnv=" + webenv;
                             me.globalApp.$.ajax(summaryUrl)
                                 .done(function(sumData) {
                                     if (sumData.result == null || sumData.result.uids.length === 0) {
@@ -828,10 +766,8 @@ class GeneModel {
                                         resolve(unknownGeneInfo);
 
                                     } else {
-
-                                        var uid = sumData.result.uids[0];
-                                        var geneInfo = sumData.result[uid];
-
+                                        let uid = sumData.result.uids[0];
+                                        let geneInfo = sumData.result[uid];
                                         me.geneNCBISummaries[geneName] = geneInfo;
                                         resolve(geneInfo)
                                     }
@@ -841,7 +777,6 @@ class GeneModel {
                                     me.geneNCBISummaries[geneName] = unknownGeneInfo;
                                     resolve(unknownGeneInfo);
                                 })
-
                         })
                         .fail(function() {
                             console.log("Error occurred when making http request to NCBI eutils esearch for gene " + geneName);
@@ -981,7 +916,7 @@ class GeneModel {
         return new Promise((resolve, reject) => {
             let url = me.geneInfoServer + 'api/genes?genes=' + geneNames.join();
 
-            var buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
+            let buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
             me.globalApp.$('#build-link').text(buildName);
 
             url += "&source=" + (me.geneSource ? me.geneSource : 'gencode');
@@ -1695,7 +1630,7 @@ class GeneModel {
                     self.promiseRankGenes()
                         .then(topGene => {
                             let summaryP = [];
-                            summaryP.push(self.promiseGetNCBIGeneSummaries([topGene]));
+                            summaryP.push(self.promiseGetNCBIGeneSummary(topGene));
                             Promise.all(summaryP)
                                 .then(() => {
                                     resolve({
