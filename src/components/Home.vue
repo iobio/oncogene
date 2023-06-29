@@ -609,16 +609,16 @@ export default {
       self.cohortModel.promiseAnnotateGlobalSomatics()
           .then(retObj => {
             let rankObj = retObj.rankObj;
-            let groupObj = retObj.groupObj;
+            //let groupObj = retObj.groupObj;
             // Don't want to block on this, do in background
-            // todo: here is the memory problem
-            self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-              .then(() => {
-                let cosmicPs = [];
-                groupObj.fullGeneObjs.forEach(geneObj => {
-                  cosmicPs.push(self.cohortModel.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-                });
-              });
+            // todo: here is the memory problem COSMIC
+            // self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
+            //   .then(() => {
+            //     let cosmicPs = [];
+            //     groupObj.fullGeneObjs.forEach(geneObj => {
+            //       cosmicPs.push(self.cohortModel.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
+            //     });
+            //   });
             let totalSomaticVarCount = rankObj.count;
             let totalSomaticGenes = rankObj.geneCount;
             let topRankedGene = rankObj.gene;

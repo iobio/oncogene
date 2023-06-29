@@ -3697,6 +3697,16 @@ class CohortModel {
         });
         return passingFeatureLookup;
     }
+
+    /* Returns map of header state previously annotated by oncogene.iobio.
+     * Fields include samples, somaticOnly, geneList, and lastGeneAnalyzed. */
+    parseHeaderState() {
+        const self = this;
+        let vcfModel = self.sampleModelUtil.vcf;
+        vcfModel.getHeader(header => {
+            return vcfModel.parseOncogeneState(header);
+        })
+    }
 }
 
 export default CohortModel;

@@ -78,12 +78,11 @@
             <v-row class="flex-child mx-12 align-stretch" style="height: 100%">
               <v-col class="d-flex align-stretch"
                      cols="12" height="100">
-                <!--                                todo: left off put transition on here for buttons-->
                 <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
                          :color="slideBackground">
                   <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
-                    <v-col md="10">
-                      <v-row justify-center class="pb-8">
+                    <v-col md="10" class="mt-13">
+                      <v-row justify-center class="pb-3">
                         <div
                             style="text-align: center; width: 100%; font-family: Quicksand; font-size: 54px; color: #7f1010">
                           ONCOGENE.IOBIO
@@ -114,9 +113,14 @@
                           </v-btn>
                         </v-col>
                       </v-row>
-                      <v-row v-show="showUploadEntry" justify="center" class="pa-3">
-                        <v-file-input v-model="configFile" accept=".json"
-                                      label="Click to Select File"
+                      <v-row justify="center" class="pa-3">
+                        <v-file-input v-model="configFiles" accept=".json,.gz,.tbi"
+                                      label="Drop vcf/tbi pair or json config here"
+                                      prepend-icon="none"
+                                      :rules="uploadRules"
+                                      outlined
+                                      multiple
+                                      @click:clear="uploadIsValid=false"
                                       @change="checkAndUploadConfig">
                         </v-file-input>
                       </v-row>
@@ -506,7 +510,7 @@ export default {
       carouselModel: 0,
       clearGeneListFlag: true,
       showUploadEntry: false,
-      configFile: [],
+      configFiles: [],
       canMountVcf: true,
       vcfFormMounted: false,
       uploadedVcfUrls: null,  // todo: duplicate functionality for files here in config loading if possible
@@ -723,6 +727,12 @@ export default {
           return isValid || 'Maximum number of genes is 1000';
         }
       ],
+      uploadIsValid: false,
+      uploadRules: [
+        values => {
+          return this.uploadValid(values);
+        }
+      ],
       multiMountedStatus: {
         'coverage': false,
         'cnv': false,
@@ -780,6 +790,37 @@ export default {
     }
   },
   methods: {
+    uploadValid: function(values) {
+        this.uploadIsValid = false;
+
+        const VCF = ".vcf.gz";
+        const TBI = ".vcf.gz.tbi";
+        const JSON = ".json";
+        const errMsg = 'Must upload a vcf.gz and vcf.gz.tbi pair, or a single .json file';
+
+        if (values.length === 0) {
+          this.uploadIsValid = true;
+        }
+        else if (values.length === 1) {
+          if (values[0].name.includes(JSON)) {
+            this.uploadIsValid = true;
+          } else {
+            this.uploadIsValid = errMsg;
+          }
+        } else if (values.length === 2) {
+          let file0 = values[0].name;
+          let file1 = values[1].name;
+          if ((file0.includes(VCF) && file1.includes(TBI))
+              || (file0.includes(TBI) && file1.includes(VCF))) {
+            this.uploadIsValid = true;
+          } else {
+            this.uploadIsValid = 'File pair must be of type .vcf.gz and .vcf.gz.tbi';
+          }
+        } else {
+          this.uploadIsValid = errMsg;
+        }
+        return this.uploadIsValid;
+    },
     makeItRain: function () {
       variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight, this.navBarHeight);
     },
@@ -1141,15 +1182,141 @@ export default {
     },
     checkAndUploadConfig: function () {
       const self = this;
-      if (!self.configFile) {
+      if (!self.uploadIsValid) {
         return;
       }
 
       // Clear out any previous data if this is a second upload
       self.clearUploadForm();
 
+      if (self.configFiles.length === 1) {
+        let config = self.configFiles[0];
+        self.parseJsonConfig(config);
+      } else if (self.configFiles.length === 2) {
+        let file0 = self.configFiles[0];
+        let file1 = self.configFiles[1];
+        let vcf = file0;
+        let tbi = file1;
+        if (file0.name.includes('.tbi')) {
+          vcf = file1;
+          tbi = file0;
+        }
+        self.parseVcfTbiPair(vcf, tbi);
+      }
+    },
+    checkAndUploadExternalConfig: function () {
+      const self = this;
+      self.displayDemoLoader = true;
+      let formattedSource = this.launchSource === this.GALAXY ? this.GALAXY : 'Mosaic';
+      let displayWarning = function (warningText) {
+        const warningType = 'error';
+        self.displayAlert(warningType, warningText);
+      }
+
+      let coverageExists = false,
+          rnaSeqExists = false,
+          // atacSeqExists = false,
+          cnvExists = false;
+
+      let samples = [self.launchParams.normal];
+      samples = samples.concat(self.launchParams.tumors);
+      self.galaxySampleCount = samples.length;
+      samples.forEach(sample => {
+
+        // Create file-specific lists used for vcf-dropdown
+        if (self.isMosaic(self.launchSource)) {
+          for (let i = 0; i < sample.selectedSamples.length; i++) {
+            if (self.uploadedSelectedSamples[i] == null) {
+              self.uploadedSelectedSamples[i] = [sample.selectedSamples[i]];
+            } else {
+              self.uploadedSelectedSamples[i].push(sample.selectedSamples[i]);
+            }
+          }
+        }
+
+        // Optional fields
+        if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
+          displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        } else {
+          // Still need to check if this sample has optional data type
+          if (sample.coverageBam) {
+            self.fileLists[self.COVERAGE].push(sample.coverageBam);
+            self.indexLists[self.COVERAGE].push(sample.coverageBai);
+            self.fileNameLists[self.COVERAGE].push(sample.bamName);
+            self.indexNameLists[self.COVERAGE].push(sample.baiName);
+            coverageExists = true;
+          }
+        }
+        if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
+          displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        } else {
+          // Still need to check if this sample has optional data type
+          if (sample.rnaSeqBam) {
+            self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
+            self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
+            self.fileNameLists[self.RNASEQ].push(sample.bamName);
+            self.indexNameLists[self.RNASEQ].push(sample.baiName);
+            rnaSeqExists = true;
+          }
+        }
+        // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
+        //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
+        // } else {
+        // Still need to check if this sample has optional data type
+        // if (sample.atacSeqBam) {
+        //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
+        //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
+        //   atacSeqExists = true;
+        // }
+        // }
+        if (sample.cnv) {
+          self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
+          self.fileNameLists[self.CNV].push(sample.cnvName); // todo: this will need to be added when CNV added to integration
+          cnvExists = true;
+        }
+      });
+
+      // Toggle switches in loader
+      if (coverageExists) {
+        self.addDataType(self.COVERAGE);
+      }
+      if (rnaSeqExists) {
+        self.addDataType(self.RNASEQ);
+      }
+      // if (atacSeqExists) {
+      //   self.addDataType(self.ATACSEQ);
+      // }
+      if (cnvExists) {
+        self.addDataType(self.CNV);
+      }
+
+      // todo: once Mosaic passes over the coverage/rnaseq/cnv data
+      // todo: need to populate those slides and advance
+
+      self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
+
+      if (self.launchParams.genes) {
+        self.listInput = self.launchParams.genes.join('\n');
+        self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
+        self.clearGeneListFlag = false;
+        self.updateStepProp('geneList', 'active', true);
+        self.updateStepProp('geneList', 'complete', true);
+        self.advanceSlide();
+      } else if (self.launchParams.somaticOnly) {
+        self.updateStepProp('geneList', 'complete', true);
+      }
+      self.displayDemoLoader = false;
+
+      if (!self.uploadedVcfUrls || self.uploadedVcfUrls.length === 0 ||
+          !self.uploadedTbiUrls || self.uploadedTbiUrls.length === 0) {
+        displayWarning('Missing required data files from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
+      }
+    },
+    parseJsonConfig: function() {
+      const self = this;
+
       let reader = new FileReader();
-      reader.readAsText(self.configFile);
+      reader.readAsText(self.configFiles);
       reader.onload = () => {
         let result = reader.result;
         let infoObj = JSON.parse(result);
@@ -1268,113 +1435,22 @@ export default {
         self.showError = true;
       };
     },
-    checkAndUploadExternalConfig: function () {
+    parseVcfTbiPair: function(vcf, tbi) {
       const self = this;
-      self.displayDemoLoader = true;
-      let formattedSource = this.launchSource === this.GALAXY ? this.GALAXY : 'Mosaic';
-      let displayWarning = function (warningText) {
-        const warningType = 'error';
-        self.displayAlert(warningType, warningText);
-      }
+      // todo: implement
+      console.log(vcf, tbi);
 
-      let coverageExists = false,
-          rnaSeqExists = false,
-          // atacSeqExists = false,
-          cnvExists = false;
+      // Stream header back
+      self.cohortModel.parseHeaderState();
 
-      let samples = [self.launchParams.normal];
-      samples = samples.concat(self.launchParams.tumors);
-      self.galaxySampleCount = samples.length;
-      samples.forEach(sample => {
+      // Parse out samples
 
-        // Create file-specific lists used for vcf-dropdown
-        if (self.isMosaic(self.launchSource)) {
-          for (let i = 0; i < sample.selectedSamples.length; i++) {
-            if (self.uploadedSelectedSamples[i] == null) {
-              self.uploadedSelectedSamples[i] = [sample.selectedSamples[i]];
-            } else {
-              self.uploadedSelectedSamples[i].push(sample.selectedSamples[i]);
-            }
-          }
-        }
+      // Parse out somatic only
 
-        // Optional fields
-        if ((sample.coverageBam && !sample.coverageBai) || (sample.coverageBai && !sample.coverageBam)) {
-          displayWarning('There was a problem passing coverage BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
-        } else {
-          // Still need to check if this sample has optional data type
-          if (sample.coverageBam) {
-            self.fileLists[self.COVERAGE].push(sample.coverageBam);
-            self.indexLists[self.COVERAGE].push(sample.coverageBai);
-            self.fileNameLists[self.COVERAGE].push(sample.bamName);
-            self.indexNameLists[self.COVERAGE].push(sample.baiName);
-            coverageExists = true;
-          }
-        }
-        if ((sample.rnaSeqBam && !sample.rnaSeqBai) || (sample.rnaSeqBai && !sample.rnaSeqBam)) {
-          displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
-        } else {
-          // Still need to check if this sample has optional data type
-          if (sample.rnaSeqBam) {
-            self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
-            self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
-            self.fileNameLists[self.RNASEQ].push(sample.bamName);
-            self.indexNameLists[self.RNASEQ].push(sample.baiName);
-            rnaSeqExists = true;
-          }
-        }
-        // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
-        //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
-        // } else {
-        // Still need to check if this sample has optional data type
-        // if (sample.atacSeqBam) {
-        //   self.fileLists[self.ATACSEQ].push(sample.atacSeqBam);
-        //   self.indexLists[self.ATACSEQ].push(sample.atacSeqBai);
-        //   atacSeqExists = true;
-        // }
-        // }
-        if (sample.cnv) {
-          self.fileLists[self.CNV].push('[' + sample.selectedSample + '] ' + sample.cnv);
-          self.fileNameLists[self.CNV].push(sample.cnvName); // todo: this will need to be added when CNV added to integration
-          cnvExists = true;
-        }
-      });
+      // Parse out gene list
 
-      // Toggle switches in loader
-      if (coverageExists) {
-        self.addDataType(self.COVERAGE);
-      }
-      if (rnaSeqExists) {
-        self.addDataType(self.RNASEQ);
-      }
-      // if (atacSeqExists) {
-      //   self.addDataType(self.ATACSEQ);
-      // }
-      if (cnvExists) {
-        self.addDataType(self.CNV);
-      }
+      // Parse out last gene analyzed
 
-      // todo: once Mosaic passes over the coverage/rnaseq/cnv data
-      // todo: need to populate those slides and advance
-
-      self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
-
-      if (self.launchParams.genes) {
-        self.listInput = self.launchParams.genes.join('\n');
-        self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
-        self.clearGeneListFlag = false;
-        self.updateStepProp('geneList', 'active', true);
-        self.updateStepProp('geneList', 'complete', true);
-        self.advanceSlide();
-      } else if (self.launchParams.somaticOnly) {
-        self.updateStepProp('geneList', 'complete', true);
-      }
-      self.displayDemoLoader = false;
-
-      if (!self.uploadedVcfUrls || self.uploadedVcfUrls.length === 0 ||
-          !self.uploadedTbiUrls || self.uploadedTbiUrls.length === 0) {
-        displayWarning('Missing required data files from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
-      }
     },
     clearUploadForm: function () {
       this.errorText = null;
