@@ -611,6 +611,7 @@ export default {
             let rankObj = retObj.rankObj;
             let groupObj = retObj.groupObj;
             // Don't want to block on this, do in background
+            // todo: here is the memory problem
             self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
               .then(() => {
                 let cosmicPs = [];

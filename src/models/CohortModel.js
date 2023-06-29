@@ -871,50 +871,40 @@ class CohortModel {
                 });
             promises.push(varP);
 
-            if (self.hasCnvData) {
-                let cnvP = self.promiseAnnotateSomaticCnvs()
-                    .then(somaticCnvMap => {
-                        self.somaticCnvMap = somaticCnvMap;
-                    }).catch(error => {
-                        reject('Something went wrong annotating global somatic CNVs ' + error);
-                    })
-                promises.push(cnvP);
-            }
             Promise.all(promises)
                 .then(() => {
                     let geneP = self.onlySomaticCalls ?
-                        self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {replace: true, warnOnDup: false})
+                        self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {
+                            replace: true,
+                            warnOnDup: false
+                        })
                         : Promise.resolve();
                     geneP.then(() => {
-                        let retObj = {};
-                        self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
-                            .then(groupObj => {
-                                retObj['groupObj'] = groupObj;
-                                //self.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-                                //.then(() => {
-                                // let cosmicPs = [];
-                                // groupObj.fullGeneObjs.forEach(geneObj => {
-                                //     cosmicPs.push(self.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-                                // });
-                                //Promise.all(cosmicPs)
-                                    //.then(() => {
-                                self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
-                                    .then((rankObj) => {
-                                        retObj['rankObj'] = rankObj;
-                                        resolve(retObj);
-                                    }).catch(err => {
+                        let cnvP = self.hasCnvData ?
+                            self.promiseAnnotateSomaticCnvs() : Promise.resolve();
+                        cnvP.then(somaticCnvMap => {
+                            self.somaticCnvMap = somaticCnvMap;
+                            let retObj = {};
+                            self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
+                                .then(groupObj => {
+                                    retObj['groupObj'] = groupObj;
+                                    self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                        .then((rankObj) => {
+                                            retObj['rankObj'] = rankObj;
+                                            resolve(retObj);
+                                        }).catch(err => {
                                         reject('Fatal error scoring and ranking somatic genes: ' + err);
                                     })
-                                    //});
-                                }).catch(err => {
-                                    reject('Problem getting cosmic variants for global somatic regions: ' + err);
+                                }).catch(error => {
+                                console.log('Something went wrong grouping and assigning somatic variants ' + error);
+                                reject('Something went wrong ranking genes by variants ' + error);
                                 })
                         }).catch(error => {
-                            console.log('Something went wrong grouping and assigning somatic variants ' + error);
-                            reject('Something went wrong ranking genes by variants ' + error);
-                        });
-                }).catch(err => {
+                            reject('Something went wrong annotating global somatic CNVs ' + error);
+                        })
+                    }).catch(err => {
                         console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
+                    });
                 });
         });
     }
@@ -1201,6 +1191,9 @@ class CohortModel {
                     let allVariants = self.getAllUniqVars(sampleMap);
                     let subclonesExist = false;
 
+                    // Always see if we have somatic genes to pull out
+                    self.composedSomaticGenes = returnArr['somaticGenes'];
+
                     // Pull subclone info out of return object
                     if (returnArr['subcloneStr']) {
                         subclonesExist = true;
@@ -1208,11 +1201,7 @@ class CohortModel {
 
                         // Organize subclone variants
                         if (self.onlySomaticCalls) {
-                            // Pull out somatic genes from return object
-                            self.composedSomaticGenes = returnArr['somaticGenes'];
-
                             self.subcloneModel.populateSubcloneVariants(allVariants);
-
                         } else {
                             console.log('Subclone visualization not supported for combined inherited/somatic vcfs');
                             // NOTE: we would need a new backend service to pull back just variant IDs filtered by AFCLU

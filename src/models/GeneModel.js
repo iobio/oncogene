@@ -605,20 +605,26 @@ class GeneModel {
                 theGeneNames.forEach(function (geneName) {
                     let geneInfo = self.geneNCBISummaries[geneName];
                     if (geneInfo == null) {
+                        if (searchGeneExpr.length > 0) {
+                            searchGeneExpr += " OR ";
+                        }
+                        searchGeneExpr += geneName + "[Gene name]";
+                        count++;
+
                         // Wrap at max
                         if (count === MAX_GENES) {
+                            console.log("wrapping genes");
                             geneExprs.push(searchGeneExpr);
                             searchGeneExpr = "";
                             count = 0;
-                        } else {
-                            if (searchGeneExpr.length > 0) {
-                                searchGeneExpr += " OR ";
-                            }
-                            searchGeneExpr += geneName + "[Gene name]";
-                            count++;
                         }
                     }
                 });
+                // Add on any genes after last MAX_GENES interval
+                if (searchGeneExpr !== "") {
+                    geneExprs.push(searchGeneExpr);
+                }
+
                 // We want this to be sequential to not overwhelm API
                 self.promisePostNCBISearch(geneExprs, EUTILS_RPS_MAX, EUTILS_REFRACTORY_MS)
                     .then(async fetchParams => {
@@ -1533,15 +1539,19 @@ class GeneModel {
      */
     promiseGroupAndAssign(somaticVars, somaticCnvs, unmatchedVars) {
         const self = this;
-        let genesWithVars = {};
-        let somaticGeneNames = [];
-        let totalSomaticVarCount = 0;
-        let formattedGeneObj = [];  // Only contains genes with snps/small indels to compare to COSMIC
-        let fullGeneObj = [];       // Contains genes with snps, small indels, and CNVs - any gene which somaticVars/somaticCnvs fall into
-        let featuresToAdd = [];
-        let geneNamesToAdd = {};
         return new Promise((resolve, reject) => {
-            Object.values(somaticVars).forEach(feat => {
+            let genesWithVars = {};
+            let somaticGeneNames = [];
+            let totalSomaticVarCount = 0;
+            let formattedGeneObj = [];  // Only contains genes with snps/small indels to compare to COSMIC
+            let fullGeneObj = [];       // Contains genes with snps, small indels, and CNVs - any gene which somaticVars/somaticCnvs fall into
+            let featuresToAdd = [];
+            let geneNamesToAdd = {};
+
+            let varKeys = Object.keys(somaticVars);
+            for (let i = 0; i < varKeys.length; i++) {
+                let key = varKeys[i];
+                let feat = somaticVars[key];
                 if (self.geneObjects[(feat.geneSymbol).toUpperCase()]) {
                     self.geneObjects[(feat.geneSymbol.toUpperCase())].somaticVariantList.push(feat);
                     totalSomaticVarCount++;
@@ -1552,7 +1562,7 @@ class GeneModel {
                         geneNamesToAdd[feat.geneSymbol] = true;
                     }
                 }
-            });
+            }
             let geneNameList = Object.keys(geneNamesToAdd);
             if (geneNameList.length > 0) {
                 self.promiseAddGeneNames(geneNameList)
@@ -1599,7 +1609,6 @@ class GeneModel {
                                 fullGeneObj.push(currGeneObj);
                             }
                         });
-
                         let retObj = {
                             formattedGeneObjs: formattedGeneObj,
                             fullGeneObjs: fullGeneObj,
@@ -1630,7 +1639,7 @@ class GeneModel {
                     self.promiseRankGenes()
                         .then(topGene => {
                             let summaryP = [];
-                            summaryP.push(self.promiseGetNCBIGeneSummary(topGene));
+                            summaryP.push(self.promiseGetNCBIGeneSummary(topGene.gene_name));
                             Promise.all(summaryP)
                                 .then(() => {
                                     resolve({
