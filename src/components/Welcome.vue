@@ -247,15 +247,15 @@
                         outlined
                         rows="8"
                         label="Genes"
+                        :readonly="!customListSelected"
                         :rules="geneRules"
                         v-model="listInput"
                         class="pt-1"
-                        @click="checkFirstClick"
                     ></v-textarea>
                     <div class="v-text-field__details" style="margin-top: -25px">
                       <div class="v-messages theme--light">
                         <div class="v-messages__wrapper float-right">
-                          {{ geneCount + ' genes' }}
+                          {{ geneCount + (geneCount === 1 ? ' gene' : ' genes') }}
                         </div>
                       </div>
                     </div>
@@ -473,7 +473,6 @@ export default {
       slideBackground: 'white',
       aboutElevation: 4,
       carouselModel: 0,
-      clearGeneListFlag: true,
       configFile: null,
       canMountVcf: true,
       vcfFormMounted: false,
@@ -482,22 +481,23 @@ export default {
       uploadedVcfFiles: null,
       uploadedTbiFiles: null,
       localUploadMode: false,
+      customListSelected: false,
 
       // Used for Mosaic/Galaxy integration launch
       fileLists: {
         'coverage': [],
-        'rnaSeq': [],
+        // 'rnaSeq': [],
         // 'atacSeq': [],
         'cnv': []
       },
       indexLists: {
         'coverage': [],
-        'rnaSeq': [],
+        // 'rnaSeq': [],
         // 'atacSeq': [],
       },
       fileNameLists: {
         'coverage': [],
-        'rnaSeq': [],
+        // 'rnaSeq': [],
         // 'atacSeq': [],
         'cnv': []
       },
@@ -672,14 +672,20 @@ export default {
           text: 'Complete Required Data'
         },
       ],
+      // Controls summary reactivity as well as error state for entry
       geneRules: [
         v => {
-          if (!v) {
-            return;
-          }
           const self = this;
+          if (v === self.STARTING_INPUT || v === "") {
+            self.updateStepProp('geneList', 'active', false)
+            self.updateStepProp('geneList', 'complete', false);
+            return true;
+          }
+
+          // Check to make sure each string is actual gene
+          let genes = v.split('\n');
           let invalids = [];
-          v.split('\n').forEach((gene) => {
+          genes.forEach((gene) => {
             if (!self.validGenesMap[gene.toUpperCase()] && gene !== '') {
               invalids.push(gene.toUpperCase());
             }
@@ -687,25 +693,24 @@ export default {
           let isValid = invalids.length === 0;
           self.updateStepProp('geneList', 'active', true);
           self.updateStepProp('geneList', 'complete', isValid);
-          return isValid || 'Cannot process the following genes: ' + invalids.join();
-        },
-        v => {
-          if (!v) {
-            return;
+          if (!isValid) {
+            return 'Cannot process the following genes: ' + invalids.join();
           }
 
-          const self = this;
-          let numGenes = v.split('\n').length;
-          let isValid = numGenes < 1000;
-          self.updateStepProp('geneList', 'active', true);
-          self.updateStepProp('geneList', 'complete', false);
-          return isValid || 'Maximum number of genes is 1000';
+          // Check to make sure reasonable sized gene list
+          if (genes.length > 1000) {
+            self.updateStepProp('geneList', 'active', true);
+            self.updateStepProp('geneList', 'complete', false);
+            return 'Maximum number of genes is 1000';
+          }
+          // If we've made it this far, we have a valid gene list
+          return true;
         }
       ],
       multiMountedStatus: {
         'coverage': false,
         'cnv': false,
-        'rnaSeq': false,
+        // 'rnaSeq': false,
         // 'atacSeq': false
       },
       // retained (model) state
@@ -724,7 +729,8 @@ export default {
       },
       somaticCallsOnly: true, // todo: get rid of
       selectedBuild: null,
-      STARTING_INPUT: 'Select a gene list, enter your own, or leave blank to include all variants',
+      STARTING_INPUT: 'Select a gene list from above, or leave blank to include all variants',
+      CUSTOM_TEXT: 'Custom (Enter Below)',
       listInput: '',
       listText: '',
       geneCount: 0,
@@ -754,7 +760,13 @@ export default {
       if (this.listInput === this.STARTING_INPUT || this.listInput === '') {
         this.geneCount = 0;
       } else {
-        this.geneCount = this.listInput.split('\n').length;
+        let entries = this.listInput.split('\n');
+        let length = entries.length;
+        if (entries[length - 1] === "") {
+          this.geneCount = length - 1;
+        } else {
+          this.geneCount = length;
+        }
       }
     }
   },
@@ -789,6 +801,7 @@ export default {
       this.onDataChecked(model);
     },
     onDataChecked: function (model) {
+      debugger;
       // Set model to opposite
       let isActive = false;
       for (let i = 0; i < this.userData.length; i++) {
@@ -916,12 +929,11 @@ export default {
       }, 500);
     },
     populateListInput: function (listType) {
-      this.clearGeneListFlag = false;
-      if (this.listInput === this.STARTING_INPUT) {
-        this.listInput = '';
-      }
+      this.listInput = "";
       let selectedList = this.selectedCancerList;
       let geneList = [];
+
+      this.customListSelected = this.selectedCancerList === this.CUSTOM_TEXT;
 
       // Special case for Mosaic passed list
       if (selectedList.startsWith('Mosaic provided')) {
@@ -1054,12 +1066,6 @@ export default {
     markMultiSourceMounted: function (model) {
       this.multiMountedStatus[model] = true;
     },
-    checkFirstClick: function () {
-      if (this.clearGeneListFlag) {
-        this.listInput = '';
-        this.clearGeneListFlag = false;
-      }
-    },
     hideAlerts: function () {
       this.errorText = '';
       this.showError = false;
@@ -1135,7 +1141,7 @@ export default {
       }
 
       let coverageExists = false,
-          rnaSeqExists = false,
+          // rnaSeqExists = false,
           // atacSeqExists = false,
           cnvExists = false;
 
@@ -1177,7 +1183,7 @@ export default {
             self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
             self.fileNameLists[self.RNASEQ].push(sample.bamName);
             self.indexNameLists[self.RNASEQ].push(sample.baiName);
-            rnaSeqExists = true;
+            // rnaSeqExists = true;
           }
         }
         // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
@@ -1201,9 +1207,9 @@ export default {
       if (coverageExists) {
         self.addDataType(self.COVERAGE);
       }
-      if (rnaSeqExists) {
-        self.addDataType(self.RNASEQ);
-      }
+      // if (rnaSeqExists) {
+      //   self.addDataType(self.RNASEQ);
+      // }
       // if (atacSeqExists) {
       //   self.addDataType(self.ATACSEQ);
       // }
@@ -1219,7 +1225,6 @@ export default {
       if (self.launchParams.genes) {
         self.listInput = self.launchParams.genes.join('\n');
         self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
-        self.clearGeneListFlag = false;
         self.updateStepProp('geneList', 'active', true);
         self.updateStepProp('geneList', 'complete', true);
         self.advanceSlide();
@@ -1337,8 +1342,6 @@ export default {
             self.showError = true;
           }
 
-          self.clearGeneListFlag = false;
-
           // Have to mount vcf slide to do actual checks
           if (self.vcfFormMounted && self.$refs.vcfFormRef) {
             self.$refs.vcfFormRef.forEach(ref => {
@@ -1350,7 +1353,7 @@ export default {
               }
             });
           }
-          self.mountVcfSlide(self.somaticCallsOnly);
+          self.mountVcfSlide();
           self.$gtag.pageview("/uploadConfig");
         }
       };
@@ -1388,7 +1391,6 @@ export default {
       this.modelInfoIdx = 0;
       this.uploadedSelectedSamples = [];
       this.launchedFromConfig = true;
-      this.clearGeneListFlag = false;
     },
     onUploadedSourcesVerified: function () {
       if (this.launchedFromConfig || !this.nativeLaunch) {
@@ -1403,21 +1405,9 @@ export default {
     updateBuild: function (build) {
       this.selectedBuild = build;
     },
-    mountVcfSlide: function (somaticCallsOnly) {
-      const self = this;
+    mountVcfSlide: function () {
       // Sloppy but works
-      if (somaticCallsOnly) {
-        setTimeout(() => {
-          self.carouselModel = 3;
-        }, 200);
-      } else {
-        this.carouselModel = 4;
-      }
-    },
-    updateGeneListReq: function () {
-      this.updateStepProp('geneList', 'optional', this.somaticCallsOnly);
-      this.updateStepProp('geneList', 'active', !this.somaticCallsOnly);
-      this.listInput = this.somaticCallsOnly ? '' : this.STARTING_INPUT;
+      this.carouselModel = 4;
     },
     isNotSelected: function (s) {
       return s.optional && !s.active;
