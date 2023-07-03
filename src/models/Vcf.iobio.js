@@ -19,9 +19,6 @@ export default function vcfiobio(theGlobalApp) {
 
     var isEduMode = false;
 
-    var ONCOGENE_STATE_HDR_KEY = "##oncoIobioState=";
-    var ONCOGENE_STATE_HDR_PROP_KEYS = ["samples", "geneList", "lastGene", "somaticOnly"];
-
     var SOURCE_TYPE_URL = "URL";
     var SOURCE_TYPE_FILE = "file";
     var sourceType = "url";
@@ -3948,68 +3945,6 @@ export default function vcfiobio(theGlobalApp) {
             }
         }
     };
-
-    /* Returns map of header state previously annotated by oncogene.iobio.
-     * Fields include samples, somaticOnly, geneList, and lastGeneAnalyzed. */
-    exports.parseOncogeneState = function(header) {
-        const self = this;
-        let headerLines = header.split("\n");
-        for (let i = 0; i < headerLines.length; i++) {
-            let headerLine = headerLines[i];
-            if (headerLine.indexOf(ONCOGENE_STATE_HDR_KEY) === 0) {
-                return self._parseOncoStateHdrLine(headerLine);
-            }
-        }
-    }
-
-    exports._parseOncoStateHdrLine = function(line) {
-        let keys = ONCOGENE_STATE_HDR_PROP_KEYS;
-        let startIdx = ONCOGENE_STATE_HDR_KEY.length;
-        let payload = line.substring(startIdx);
-        let props = payload.split(";");
-        let hdrPropMap = {};
-
-        for (let i = 0; i < props.length; i++) {
-            let prop = props[i];
-            let key = keys[i];
-            if (!prop.startsWith(key)) {
-                console.log("WARNING: oncogene header state not assembled and parsed correctly");
-                return {};
-            }
-            let value = prop.substring(key.length + 1);     // Add one space for =
-            hdrPropMap[key] = value.split(",");
-        }
-        return hdrPropMap;
-    }
-
-    exports.addOncogeneStateToHeader = function(stateObj) {
-        const self = this;
-        let headerLine = self._getStateHeaderLine(stateObj);
-
-        if (headerLine !== "") {
-            // todo: compose entire header
-            // todo: stream into vcf
-        }
-    }
-
-    exports._getStateHeaderLine = function(stateObj) {
-        let headerLine = ONCOGENE_STATE_HDR_KEY;
-
-        let keys = ONCOGENE_STATE_HDR_PROP_KEYS;
-        for (let i = 0; i < keys.length; i++) {
-            let key = keys[i];
-            let value = stateObj[key];
-            if (!value) {
-                console.log("WARNING: could not append header state to vcf file; some information missing");
-                return "";
-            }
-            headerLine += key + "=" + value.join(",");
-            if (i < keys.length) {
-                headerLine += ";";
-            }
-        }
-        return headerLine;
-    }
 
     //
     //
