@@ -81,7 +81,7 @@
                 <v-sheet class="d-flex flex-grow-1 flex-shrink-0"
                          :color="slideBackground">
                   <v-row justify="center" align="center" class="mb-auto" style="height: 90%">
-                    <v-col md="10" class="mt-13">
+                    <v-col md="10" class="mt-9">
                       <v-row justify-center class="pb-3">
                         <div
                             style="text-align: center; width: 100%; font-family: Quicksand; font-size: 54px; color: #7f1010">
@@ -160,7 +160,7 @@
                 </v-card-subtitle>
                 <v-divider class="mx-12"></v-divider>
                 <v-card-actions class="mt-3">
-                  <v-container fluid>
+                  <v-container fluid class="pt-12">
                     <v-row v-for="i in userData.length"
                            :key="'checkbox-' + i"
                            no-gutters dense>
@@ -181,48 +181,6 @@
               </v-card>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="!isMosaic(launchSource)" :style="'background-color: ' + slideBackground">
-            <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
-                    light>
-              <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
-                      :elevation="aboutElevation">
-                <v-card-title class="about-title">
-                  Somatic Filtering
-                </v-card-title>
-                <v-card-text class="about-text">
-                  {{ somaticText }}
-                </v-card-text>
-              </v-card>
-              <v-card light flat :color="slideBackground" class="pa-2 pl-0 function-card" width="70%">
-                <v-card-title class="justify-center function-card-title">
-                  Does your VCF file contain somatic variants only?
-                </v-card-title>
-                <v-divider class="mx-12"></v-divider>
-                <v-card-actions style="height: 80%">
-                  <v-container fluid class="align-stretch">
-                    <v-row align="center">
-                      <v-col cols="4"></v-col>
-                      <v-col cols="6">
-                        <v-radio-group v-model="somaticCallsOnly"
-                                       @change="updateGeneListReq">
-                          <v-radio color="appColor"
-                                   key="som-true"
-                                   label="Yes"
-                                   :value="true"
-                          ></v-radio>
-                          <v-radio color="appColor"
-                                   key="som-false"
-                                   label="No"
-                                   :value="false"
-                          ></v-radio>
-                        </v-radio-group>
-                      </v-col>
-                    </v-row>
-                  </v-container>
-                </v-card-actions>
-              </v-card>
-            </v-card>
-          </v-carousel-item>
           <v-carousel-item v-if="isMosaic(launchSource) && !isReadyToLaunch()"
                            :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
@@ -232,8 +190,7 @@
               </v-card-title>
             </v-card>
           </v-carousel-item>
-          <v-carousel-item v-if="!somaticCallsOnly"
-                           :style="'background-color: ' + slideBackground">
+          <v-carousel-item :style="'background-color: ' + slideBackground">
             <v-card class="d-flex align-stretch justify-center base-card" :color="slideBackground" flat
                     light>
               <v-card shaped class="pa-2 ml-8 mr-6 justify-center about-card" width="30%"
@@ -250,7 +207,7 @@
                   What type of cancer are you examining?
                 </v-card-title>
                 <v-card-subtitle class="about-subtitle">
-                  (If you're not sure, select UCSF500)
+                  (Optionally filter displayed variants by selecting a gene list)
                 </v-card-subtitle>
                 <v-divider class="mx-12"></v-divider>
                 <v-card-actions>
@@ -398,7 +355,7 @@
                                       class="summary-label my-2">
                         {{ s.text }}
                         <small v-if="isNotSelected(s)">{{
-                            (s.step === 'geneList') ? 'Not Applicable' : 'Not Selected'
+                            'Not Selected'
                           }}</small>
                         <small v-if="isIncomplete(s)">Incomplete</small>
                       </v-stepper-step>
@@ -576,21 +533,21 @@ export default {
         'Variant Calls',
         'Read Coverage',
         'Copy Number',
-        'Raw RNAseq',
+        // 'Raw RNAseq',
         // 'Raw ATACseq'
       ],
       DATA_MODELS: [
         'vcf',
         'coverage',
         'cnv',
-        'rnaSeq',
+        // 'rnaSeq',
         // 'atacSeq'
       ],
       LOCKED_DATA: {
         'vcf': true,
         'coverage': false,
         'cnv': false,
-        'rnaSeq': false,
+        // 'rnaSeq': false,
         // 'atacSeq': false
       },
       FILE_DESCRIPTORS: [
@@ -642,7 +599,7 @@ export default {
           'frequency and observation thresholds in both the tumor and normal samples, ' +
           'along with certain quality thresholds. If your file contains only somatic calls, ' +
           'select \'Yes\' so this criteria will not be applied.',
-      geneListText: 'Using the provided list, oncogene.iobio will find somatic variants ' +
+      geneListText: 'Using the provided list, oncogene.iobio will filter variants from the vcf file ' +
           'and provide a ranked list of impactful loci for inspection. Each provided list, ' +
           'sourced from <a target="_blank" href="http://ncg.kcl.ac.uk/index.php">NCG6.0</a>, contains ' +
           'genes implicated in the corresponding type of cancer or found in cancers at the selected primary tissue.' +
@@ -660,8 +617,8 @@ export default {
         },
         {
           step: 'geneList',
-          active: true,
-          complete: true,
+          active: false,
+          complete: false,
           index: 2,
           optional: true,
           text: 'Enter Gene List'
@@ -690,14 +647,14 @@ export default {
           optional: true,
           text: 'Upload Copy Numbers'
         },
-        {
-          step: 'rnaSeq',
-          active: false,
-          complete: false,
-          index: 6,
-          optional: true,
-          text: 'Upload RNAseq Data'
-        },
+        // {
+        //   step: 'rnaSeq',
+        //   active: false,
+        //   complete: false,
+        //   index: 6,
+        //   optional: true,
+        //   text: 'Upload RNAseq Data'
+        // },
         // {
         //   step: 'atacSeq',
         //   active: false,
@@ -706,18 +663,20 @@ export default {
         //   optional: true,
         //   text: 'Upload ATACseq Data'
         // },
-        // {
-        //   step: 'review',
-        //   active: true,
-        //   complete: false,
-        //   index: 7,
-        //   optional: false,
-        //   text: 'Complete Required Data'
-        // },
+        {
+          step: 'review',
+          active: true,
+          complete: false,
+          index: 7,
+          optional: false,
+          text: 'Complete Required Data'
+        },
       ],
       geneRules: [
-        v => !!v || 'At least one gene is required',
         v => {
+          if (!v) {
+            return;
+          }
           const self = this;
           let invalids = [];
           v.split('\n').forEach((gene) => {
@@ -726,12 +685,20 @@ export default {
             }
           });
           let isValid = invalids.length === 0;
+          self.updateStepProp('geneList', 'active', true);
           self.updateStepProp('geneList', 'complete', isValid);
           return isValid || 'Cannot process the following genes: ' + invalids.join();
         },
         v => {
+          if (!v) {
+            return;
+          }
+
+          const self = this;
           let numGenes = v.split('\n').length;
           let isValid = numGenes < 1000;
+          self.updateStepProp('geneList', 'active', true);
+          self.updateStepProp('geneList', 'complete', false);
           return isValid || 'Maximum number of genes is 1000';
         }
       ],
@@ -746,18 +713,18 @@ export default {
         {name: 'vcf', model: true},
         {name: 'coverage', model: false},
         {name: 'cnv', model: false},
-        {name: 'rnaSeq', model: false},
+        // {name: 'rnaSeq', model: false},
         // {name: 'atacSeq', model: false},
         {name: 'summary', model: true}],        // NOT GUARANTEED TO BE IN SAME ORDER AS dataModels
       selectedUserData: ['vcf', 'summary'],       // List of current cards in carousel
       configSampleCount: {                        // Used to advance slide when optional data count less than total sample count
         'cnv': this.MAX_SAMPLES,
-        'rnaSeq': this.MAX_SAMPLES,
+        // 'rnaSeq': this.MAX_SAMPLES,
         // 'atacSeq': this.MAX_SAMPLES
       },
-      somaticCallsOnly: true,
+      somaticCallsOnly: true, // todo: get rid of
       selectedBuild: null,
-      STARTING_INPUT: 'Select a type to populate gene list or enter your own',
+      STARTING_INPUT: 'Select a gene list, enter your own, or leave blank to include all variants',
       listInput: '',
       listText: '',
       geneCount: 0,
