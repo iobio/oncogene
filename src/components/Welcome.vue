@@ -88,7 +88,7 @@
                           ONCOGENE.IOBIO
                         </div>
                       </v-row>
-                      <v-row justify="center" class="pa-3">
+                      <v-row v-show="!localUploadMode" justify="center" class="pa-3">
                         <v-col md="5" class="mx-2">
                           <v-btn x-large block color="secondary" class="carousel-btn"
                                  @click="advanceSlide">
@@ -97,11 +97,11 @@
                         </v-col>
                         <v-col md="5" class="mx-2">
                           <v-btn x-large block color="secondary" class="carousel-btn"
-                                 @click="displayConfigUploadSlide">Upload Analysis
+                                 @click="shiftSplashCard">Upload Analysis
                           </v-btn>
                         </v-col>
                       </v-row>
-                      <v-row justify="center" class="pa-3">
+                      <v-row v-show="!localUploadMode" justify="center" class="pa-3">
                         <v-col md="5" class="mx-2">
                           <v-btn x-large block color="#3a77ab" class="carousel-btn"
                                  @click="$emit('display-about')">About & Help
@@ -113,17 +113,25 @@
                           </v-btn>
                         </v-col>
                       </v-row>
-                      <v-row justify="center" class="pa-3">
-                        <v-file-input v-model="configFiles" accept=".json,.gz,.tbi"
-                                      label="Drop vcf/tbi pair or json config here"
-                                      prepend-icon="none"
-                                      :rules="uploadRules"
+                      <v-row v-show="localUploadMode" justify="center" class="pa-3">
+                        <v-file-input v-model="configFile"
+                                      accept=".json"
+                                      prepend-icon="mdi-cloud-upload"
+                                      label="Select config file"
                                       outlined
-                                      multiple
-                                      @click:clear="uploadIsValid=false"
                                       @change="checkAndUploadConfig">
                         </v-file-input>
                       </v-row>
+                      <v-btn v-show="localUploadMode"
+                             color="primary"
+                             style="margin-top: 50px"
+                             absolute
+                             left
+                             fab
+                             @click="shiftSplashCard"
+                      >
+                        <v-icon>arrow_back</v-icon>
+                      </v-btn>
                     </v-col>
                   </v-row>
                 </v-sheet>
@@ -509,14 +517,14 @@ export default {
       aboutElevation: 4,
       carouselModel: 0,
       clearGeneListFlag: true,
-      showUploadEntry: false,
-      configFiles: [],
+      configFile: null,
       canMountVcf: true,
       vcfFormMounted: false,
       uploadedVcfUrls: null,  // todo: duplicate functionality for files here in config loading if possible
       uploadedTbiUrls: null,
       uploadedVcfFiles: null,
       uploadedTbiFiles: null,
+      localUploadMode: false,
 
       // Used for Mosaic/Galaxy integration launch
       fileLists: {
@@ -727,12 +735,6 @@ export default {
           return isValid || 'Maximum number of genes is 1000';
         }
       ],
-      uploadIsValid: false,
-      uploadRules: [
-        values => {
-          return this.uploadValid(values);
-        }
-      ],
       multiMountedStatus: {
         'coverage': false,
         'cnv': false,
@@ -790,36 +792,10 @@ export default {
     }
   },
   methods: {
-    uploadValid: function(values) {
-        this.uploadIsValid = false;
-
-        const VCF = ".vcf.gz";
-        const TBI = ".vcf.gz.tbi";
-        const JSON = ".json";
-        const errMsg = 'Must upload a vcf.gz and vcf.gz.tbi pair, or a single .json file';
-
-        if (values.length === 0) {
-          this.uploadIsValid = true;
-        }
-        else if (values.length === 1) {
-          if (values[0].name.includes(JSON)) {
-            this.uploadIsValid = true;
-          } else {
-            this.uploadIsValid = errMsg;
-          }
-        } else if (values.length === 2) {
-          let file0 = values[0].name;
-          let file1 = values[1].name;
-          if ((file0.includes(VCF) && file1.includes(TBI))
-              || (file0.includes(TBI) && file1.includes(VCF))) {
-            this.uploadIsValid = true;
-          } else {
-            this.uploadIsValid = 'File pair must be of type .vcf.gz and .vcf.gz.tbi';
-          }
-        } else {
-          this.uploadIsValid = errMsg;
-        }
-        return this.uploadIsValid;
+    shiftSplashCard: function() {
+      this.localUploadMode = !this.localUploadMode;
+      let displayNextArrow = this.localUploadMode ? 'none' : '';
+      this.d3.selectAll('.v-window__next').style("display", displayNextArrow);
     },
     makeItRain: function () {
       variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight, this.navBarHeight);
@@ -1117,9 +1093,6 @@ export default {
         this.clearGeneListFlag = false;
       }
     },
-    displayConfigUploadSlide: function () {
-      this.showUploadEntry = true;
-    },
     hideAlerts: function () {
       this.errorText = '';
       this.showError = false;
@@ -1182,27 +1155,8 @@ export default {
     },
     checkAndUploadConfig: function () {
       const self = this;
-      if (!self.uploadIsValid) {
-        return;
-      }
-
-      // Clear out any previous data if this is a second upload
       self.clearUploadForm();
-
-      if (self.configFiles.length === 1) {
-        let config = self.configFiles[0];
-        self.parseJsonConfig(config);
-      } else if (self.configFiles.length === 2) {
-        let file0 = self.configFiles[0];
-        let file1 = self.configFiles[1];
-        let vcf = file0;
-        let tbi = file1;
-        if (file0.name.includes('.tbi')) {
-          vcf = file1;
-          tbi = file0;
-        }
-        self.parseVcfTbiPair(vcf, tbi);
-      }
+      self.parseJsonConfig();
     },
     checkAndUploadExternalConfig: function () {
       const self = this;
@@ -1315,8 +1269,11 @@ export default {
     parseJsonConfig: function() {
       const self = this;
 
+      // todo: need to add last gene analyzed field
+      // todo: need to add local file support + select local file prompt
+
       let reader = new FileReader();
-      reader.readAsText(self.configFiles);
+      reader.readAsText(self.configFile);
       reader.onload = () => {
         let result = reader.result;
         let infoObj = JSON.parse(result);
@@ -1434,23 +1391,6 @@ export default {
         self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
         self.showError = true;
       };
-    },
-    parseVcfTbiPair: function(vcf, tbi) {
-      const self = this;
-      // todo: implement
-      console.log(vcf, tbi);
-
-      // Stream header back
-      self.cohortModel.parseHeaderState();
-
-      // Parse out samples
-
-      // Parse out somatic only
-
-      // Parse out gene list
-
-      // Parse out last gene analyzed
-
     },
     clearUploadForm: function () {
       this.errorText = null;
