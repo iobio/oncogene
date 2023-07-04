@@ -473,6 +473,8 @@ export default {
       slideBackground: 'white',
       aboutElevation: 4,
       carouselModel: 0,
+      BASE_NUM_CARO_ITEMS: 5,
+      numberOfCaroItems: 5,   // Number of carousel slides given conditions
       configFile: null,
       canMountVcf: true,
       vcfFormMounted: false,
@@ -780,14 +782,17 @@ export default {
       variantRainD3(this.d3, this.divId, this.welcomeWidth, this.welcomeHeight, this.navBarHeight);
     },
     advanceSlide: function () {
-      this.carouselModel += 1;
+      // Zero-indexed model
+      if (this.carouselModel + 1 < this.numberOfCaroItems) {
+        this.carouselModel += 1;
+      }
 
       // If we've loaded the config completely, turn off advance flag
       // so if user circles back to edit, won't advance unexpectedly
-      const baseIdx = this.geneCount > 0 ? 3 : 2;
-      if (this.carouselModel === baseIdx + this.selectedUserData.length) {
-        this.launchedFromConfig = false;
-      }
+      // const baseIdx = this.geneCount > 0 ? 3 : 2;
+      // if (this.carouselModel === baseIdx + this.selectedUserData.length) {
+      //   this.launchedFromConfig = false;
+      // }
     },
     // Programmatically checks data type ON - used for Galaxy and Mosaic integrations. Updates loader accordingly.
     addDataType: function (model) {
@@ -801,7 +806,6 @@ export default {
       this.onDataChecked(model);
     },
     onDataChecked: function (model) {
-      debugger;
       // Set model to opposite
       let isActive = false;
       for (let i = 0; i < this.userData.length; i++) {
@@ -829,6 +833,11 @@ export default {
           }
           break;
         }
+      }
+      if (isActive) {
+        this.numberOfCaroItems += 1;
+      } else {
+        this.numberOfCaroItems -= 1;
       }
       this.updateStepProp(model, 'active', isActive);
     },
@@ -1086,8 +1095,13 @@ export default {
 
       // JSON.stringify
       let exportObj = {'dataTypes': self.userData};
-      exportObj['listInput'] = self.listInput;
-      exportObj['selectedList'] = self.selectedList;
+
+      // May not always have selected list
+      if (self.selectedCancerList) {
+        exportObj['listInput'] = self.listInput;
+        exportObj['selectedCancerList'] = self.selectedCancerList;
+      }
+
       exportObj['somaticCallsOnly'] = self.somaticCallsOnly;
       exportObj['build'] = self.selectedBuild;
 
@@ -1132,6 +1146,8 @@ export default {
       self.parseJsonConfig();
     },
     checkAndUploadExternalConfig: function () {
+      // todo: this needs to be ported for somaticOnly and geneList requirement changes
+
       const self = this;
       self.displayDemoLoader = true;
       let formattedSource = this.launchSource === this.GALAXY ? this.GALAXY : 'Mosaic';
@@ -1178,13 +1194,13 @@ export default {
           displayWarning('There was a problem passing RNA-seq BAM file data from ' + formattedSource + '. Please try launching again, or contact iobioproject@gmail.com for assistance');
         } else {
           // Still need to check if this sample has optional data type
-          if (sample.rnaSeqBam) {
-            self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
-            self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
-            self.fileNameLists[self.RNASEQ].push(sample.bamName);
-            self.indexNameLists[self.RNASEQ].push(sample.baiName);
+          // if (sample.rnaSeqBam) {
+          //   self.fileLists[self.RNASEQ].push(sample.rnaSeqBam);
+          //   self.indexLists[self.RNASEQ].push(sample.rnaSeqBai);
+          //   self.fileNameLists[self.RNASEQ].push(sample.bamName);
+          //   self.indexNameLists[self.RNASEQ].push(sample.baiName);
             // rnaSeqExists = true;
-          }
+          // }
         }
         // if ((sample.atacSeqBam && !sample.atacSeqBai) || (sample.atacSeqBai && !sample.atacSeqBam)) {
         //   displayGalaxyWarning('There was a problem passing ATAC-seq BAM file data from Galaxy. Please try launching again, or contact iobioproject@gmail.com for assistance');
@@ -1217,19 +1233,12 @@ export default {
         self.addDataType(self.CNV);
       }
 
-      // todo: once Mosaic passes over the coverage/rnaseq/cnv data
-      // todo: need to populate those slides and advance
-
-      self.somaticCallsOnly = self.launchParams.somaticOnly === 'true';
-
       if (self.launchParams.genes) {
         self.listInput = self.launchParams.genes.join('\n');
         self.selectedCancerList = self.launchParams.geneListName ? self.launchParams.geneListName : null;
         self.updateStepProp('geneList', 'active', true);
         self.updateStepProp('geneList', 'complete', true);
         self.advanceSlide();
-      } else if (self.launchParams.somaticOnly) {
-        self.updateStepProp('geneList', 'complete', true);
       }
       self.displayDemoLoader = false;
 
@@ -1242,6 +1251,7 @@ export default {
       const self = this;
 
       // todo: need to add last gene analyzed field
+      // todo: add expiration date field? can we parse this from urls?
       // todo: need to add local file support + select local file prompt
 
       let reader = new FileReader();
@@ -1263,15 +1273,13 @@ export default {
             }
           });
 
-          self.listInput = infoObj['listInput'];
-          self.updateStepProp('geneList', 'complete', true);
-          self.somaticCallsOnly = infoObj['somaticCallsOnly'];
-
-          // Clear out starting string from gene list if somatic only
-          if (self.somaticCallsOnly) {
-            self.listInput = "";
+          if (infoObj['selectedCancerList']) {
+            self.selectedCancerList = infoObj['selectedCancerList'];
+            self.listInput = infoObj['listInput'];
+            self.updateStepProp('geneList', 'active', true);
+            self.updateStepProp('geneList', 'complete', true);
           }
-          self.selectedList = infoObj['selectedList'];
+          self.somaticCallsOnly = infoObj['somaticCallsOnly'];
           self.selectedBuild = infoObj['build'];
 
           // Little extra work to fill in fields for vcf/tbi form
@@ -1282,7 +1290,7 @@ export default {
 
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
-          let rnaSeqActiveCount = 0;
+          // let rnaSeqActiveCount = 0;
           // let atacSeqActiveCount = 0;
           let cnvActiveCount = 0;
           for (let i = 0; i < self.modelInfoList.length; i++) {
@@ -1292,15 +1300,16 @@ export default {
               // Just update for first one found
               if (coverageActiveCount === 1) {
                 self.updateStepProp('coverage', 'active', true);
+                self.numberOfCaroItems++;
               }
             }
-            if (currModelInfo['rnaSeqBamUrl']) {
-              rnaSeqActiveCount++;
-              // Just update for first one found
-              if (rnaSeqActiveCount === 1) {
-                self.updateStepProp('rnaSeq', 'active', true);
-              }
-            }
+            // if (currModelInfo['rnaSeqBamUrl']) {
+            //   rnaSeqActiveCount++;
+            //   // Just update for first one found
+            //   if (rnaSeqActiveCount === 1) {
+            //     self.updateStepProp('rnaSeq', 'active', true);
+            //   }
+            // }
             // if (currModelInfo['atacSeqBamUrl']) {
             //   atacSeqActiveCount++;
             //   // Just update for first one found
@@ -1313,12 +1322,13 @@ export default {
               // Just update for first one found
               if (cnvActiveCount === 1) {
                 self.updateStepProp('cnv', 'active', true);
+                self.numberOfCaroItems++;
               }
             }
           }
           self.configSampleCount['cnv'] = cnvActiveCount;
           self.configSampleCount['coverage'] = coverageActiveCount;
-          self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
+          // self.configSampleCount['rnaSeq'] = rnaSeqActiveCount;
           // self.configSampleCount['atacSeq'] = atacSeqActiveCount;
 
           let selectedSamples = [];
@@ -1366,19 +1376,28 @@ export default {
       this.errorText = null;
       this.showError = false;
       this.modelInfoList = [];
+      this.numberOfCaroItems = this.BASE_NUM_CARO_ITEMS;
+
+      // Make sure optional data types de-selected (todo: put this in function)
+      this.updateStepProp('coverage', 'active', false);
+      this.updateStepProp('coverage', 'complete', false);
+      this.updateStepProp('cnv', 'active', false);
+      this.updateStepProp('cnv', 'complete', false);
+
       this.userData = [
         {name: 'vcf', model: true},
         {name: 'coverage', model: false},
         {name: 'cnv', model: false},
-        {name: 'rnaSeq', model: false},
+        // {name: 'rnaSeq', model: false},
         // {name: 'atacSeq', model: false},
         {name: 'summary', model: true}];
       this.configSampleCount = {
         'cnv': this.MAX_SAMPLES,
         'coverage': this.MAX_SAMPLES,
-        'rnaSeq': this.MAX_SAMPLES,
+        // 'rnaSeq': this.MAX_SAMPLES,
         // 'atacSeq': this.MAX_SAMPLES
       };
+
       this.listInput = '';
       this.somaticCallsOnly = false;
       this.selectedCancerList = null;
@@ -1407,7 +1426,7 @@ export default {
     },
     mountVcfSlide: function () {
       // Sloppy but works
-      this.carouselModel = 4;
+      this.carouselModel = 3;
     },
     isNotSelected: function (s) {
       return s.optional && !s.active;
@@ -1418,7 +1437,7 @@ export default {
     launch: function (demoMode = false) {
       this.cohortModel.setInputDataTypes(this.selectedUserData);
       this.cohortModel.setBuild(this.selectedBuild);
-      this.cohortModel.setCallType(this.somaticCallsOnly);
+      //this.cohortModel.setCallType(this.somaticCallsOnly);
 
       if (!demoMode) {
         let omittedSampleFlags = [];
@@ -1438,7 +1457,8 @@ export default {
           modelInfo.selectedSampleIdx = bound - numSkipBefore;
         });
       }
-      this.$emit('launched', this.modelInfoList, this.listInput, demoMode);
+      let strippedGeneString = this.listInput === this.STARTING_INPUT ? "" : this.listInput;
+      this.$emit('launched', this.modelInfoList, strippedGeneString, demoMode);
     },
     createModelInfoFromParam: function(param, isTumor, modelInfoIdx) {
       let modelInfo = this.cohortModel.createModelInfo(param.selectedSamples[0], isTumor, modelInfoIdx);
@@ -1477,7 +1497,6 @@ export default {
         });
 
         // Set other necessary flags
-        self.somaticCallsOnly = self.demoParams.somaticOnly;
         self.selectedUserData = ['vcf', 'coverage', 'summary'];
         if (self.globalApp.useCnvDemo) {
           self.selectedUserData = ['vcf', 'coverage', 'cnv', 'summary'];

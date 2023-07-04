@@ -159,10 +159,6 @@ export default {
         type: String,
         default: ''
       },
-      somaticOnly: {
-        type: Boolean,
-        default: false
-      },
       projectId: {
         type: Number,
         default: 0

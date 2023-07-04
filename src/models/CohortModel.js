@@ -55,12 +55,13 @@ class CohortModel {
         // somatic specific
         this.allSomaticFeaturesLookup = {};     // Contains the IDs corresponding to variants from all tumor tracks classified as somatic
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
-        this.onlySomaticCalls = false;
+        this.onlySomaticCalls = true;       // SOMATIC ONLY MODE OUT JUL2023 - leaving in for now but todo: cleanup
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
         this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
         this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
         this.hasSubcloneAnno = false;
+        // todo: does this need to be renamed?
         this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from predictor engine annotations b/c somaticOnlyMode does not take in gene list
 
         this.genesInProgress = [];
@@ -411,6 +412,7 @@ class CohortModel {
         this.genomeBuildHelper.setCurrentBuild(build);
     }
 
+    // Unused as of 03Jul2023 - take out if agreement
     setCallType(somaticCallsOnly) {
         this.onlySomaticCalls = somaticCallsOnly;
     }
@@ -451,14 +453,14 @@ class CohortModel {
     }
 
     /* Creates gene objects for user-uploaded list and creates all sample models. */
-    promiseInit(modelInfos, userGeneList) {
+    promiseInit(modelInfos, userGeneString) {
         const self = this;
 
         // add gene list and validate
         return new Promise((resolve, reject) => {
             self.inProgress.loadingDataSource = true;
-            let geneP = self.onlySomaticCalls ? Promise.resolve() :
-                self.geneModel.promiseCopyPasteGenes(userGeneList, null, {replace: true, warnOnDup: false});
+            let geneP = userGeneString === "" ? Promise.resolve() :
+                self.geneModel.promiseCopyPasteGenes(userGeneString, null, {replace: true, warnOnDup: false});
             geneP.then(() => {
                     let samplePromises = [];
                     modelInfos.forEach(modelInfo => {
@@ -3696,16 +3698,6 @@ class CohortModel {
             }
         });
         return passingFeatureLookup;
-    }
-
-    /* Returns map of header state previously annotated by oncogene.iobio.
-     * Fields include samples, somaticOnly, geneList, and lastGeneAnalyzed. */
-    parseHeaderState() {
-        const self = this;
-        let vcfModel = self.sampleModelUtil.vcf;
-        vcfModel.getHeader(header => {
-            return vcfModel.parseOncogeneState(header);
-        })
     }
 }
 

@@ -86,8 +86,7 @@
                     :showCoverageCutoffs="showCoverageCutoffs"
                     :annotationComplete="annotationComplete"
                     :applyFilters="applyFilters"
-                    :somaticOnlyMode="cohortModel.onlySomaticCalls"
-                    @recall-somatic-variants="callSomaticVariants"
+                    @recall-somatic-variants="getSomaticVariants"
                     @filter-change="onFilterChange">
                 </filter-panel-menu>
               </v-tab-item>
@@ -153,8 +152,8 @@
                 :showGeneViz="true"
                 :geneVizShowXAxis="false"
                 :annotationComplete="annotationComplete"
-                :somaticOnlyMode="cohortModel.onlySomaticCalls"
                 :cnvPalette="cnvPalette"
+                :somaticOnlyMode="somaticOnlyMode"
                 :d3="d3"
                 :$="$"
                 @cohort-variant-click="onCohortVariantClick"
@@ -455,6 +454,7 @@ export default {
       // view state
       globalMode: false,
       dataEntered: false,
+      somaticOnlyMode: true, // todo: need to add this back in to welcome or get rid of
       displayCarousel: false,
       displayLoader: false,
       showKnownVariantsCard: false,
@@ -570,7 +570,7 @@ export default {
       self.$forceUpdate();
     },
     // Point of entry for launch
-    onLaunch: function (modelInfos, userGeneList, demoMode = false) {
+    onLaunch: function (modelInfos, userGeneString, demoMode = false) {
       const self = this;
       self.dataEntered = true;
       self.displayCarousel = false;
@@ -580,7 +580,7 @@ export default {
       if (demoMode) {
         self.$emit('hide-files-btn');
       }
-      self.cohortModel.promiseInit(modelInfos, userGeneList)
+      self.cohortModel.promiseInit(modelInfos, userGeneString)
           .then(() => {
             self.sampleModels = self.cohortModel.sampleModels;
             self.sampleIds = [];
@@ -591,7 +591,7 @@ export default {
               self.sampleIds.push(model.id);
               self.selectedSamples.push(model.selectedSample);
             });
-            self.callSomaticVariants();
+            self.getSomaticVariants();
           }).catch(error => {
         console.log('There was a problem initializing cohort model: ' + error);
       });
@@ -599,9 +599,9 @@ export default {
     reloadAnalysis: function (filterSettings) {
       // Set filtering criteria in model
       this.filterModel.loadFilterSettings(filterSettings);
-      this.callSomaticVariants();
+      this.getSomaticVariants();
     },
-    callSomaticVariants: function () {
+    getSomaticVariants: function () {
       const self = this;
       self.selectedVariant = null;
       self.displayLoader = true;
@@ -641,7 +641,7 @@ export default {
               .then(() => {
                 self.expandedUserList = true;
                 self.expandSnackbar = true;
-                self.callSomaticVariants();
+                self.getSomaticVariants();
               })
             } else if (totalSomaticVarCount === 0 && self.expandedUserList) {
               // Already tried to expand user list, give them warning to manually explore
