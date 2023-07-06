@@ -786,13 +786,6 @@ export default {
       if (this.carouselModel + 1 < this.numberOfCaroItems) {
         this.carouselModel += 1;
       }
-
-      // If we've loaded the config completely, turn off advance flag
-      // so if user circles back to edit, won't advance unexpectedly
-      // const baseIdx = this.geneCount > 0 ? 3 : 2;
-      // if (this.carouselModel === baseIdx + this.selectedUserData.length) {
-      //   this.launchedFromConfig = false;
-      // }
     },
     // Programmatically checks data type ON - used for Galaxy and Mosaic integrations. Updates loader accordingly.
     addDataType: function (model) {
