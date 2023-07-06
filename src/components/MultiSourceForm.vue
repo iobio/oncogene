@@ -3,6 +3,7 @@
     <v-card-title class="justify-center function-card-title">
       {{ dataType }} Data
     </v-card-title>
+    <v-card-subtitle v-if="modelInfoList.length > 2" style="color: #888; text-align: center">(Entire lines may be left blank)</v-card-subtitle>
     <v-divider class="mx-12"></v-divider>
     <v-card-actions>
       <v-container v-if="modelInfoList.length < 2" class="info-blurb">
@@ -13,7 +14,7 @@
           </v-col>
         </v-row>
       </v-container>
-      <v-container fluid v-else>
+      <v-container fluid v-else class="pt-0">
         <v-list dense flat>
           <v-list-item-group v-model="listInfo">
             <v-list-item v-for="(listInfo, i) in modelInfoList"
@@ -38,7 +39,8 @@
                               @change="populateRespectiveIndex(listInfo[key], i)">
                     </v-select>
                     <v-text-field v-else
-                                  :label="'Enter .' + fileType +  ' URL'"
+                                  :label="listInfo.selectedSample"
+                                  :placeholder="'Enter .' + fileType + ' URL'"
                                   hide-details
                                   dense
                                   v-model="listInfo[key]"
@@ -58,9 +60,9 @@
                               @change="onUrlChange(i)">
                     </v-select>
                     <v-text-field v-else
-                                  :label="'Enter .' + getIndexFileType() +  ' URL'"
                                   hide-details
                                   dense
+                                  :placeholder="'Enter .' + getIndexFileType() + ' URL'"
                                   v-model="listInfo[indexKey]"
                                   color="appColor"
                                   style="padding-left: 10px"
@@ -103,6 +105,10 @@ export default {
       default: ''
     },
     fileType: {
+      type: String,
+      default: ''
+    },
+    fileTypeQualifier: {
       type: String,
       default: ''
     },

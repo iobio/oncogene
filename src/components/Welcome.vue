@@ -317,6 +317,7 @@
                                  :dataType="getDataType(data)"
                                  :modelType="data"
                                  :fileType="getFileType(data)"
+                                 :fileTypeQualifier="getFileTypeQualifier(data)"
                                  :slideBackground="slideBackground"
                                  :modelInfoList="modelInfoList"
                                  :maxSamples="MAX_SAMPLES"
@@ -571,7 +572,7 @@ export default {
             'Oncogene.iobio supports genome builds GRCh37 and GRCh38. For other build or ' +
             'other input format requests, please email iobioproject@gmail.com.',
 
-        bam: 'Oncogene.iobio requires one coverage (bam) file and one index (bai) file ' +
+        bam: 'Oncogene.iobio optionally allows one coverage (bam) file and one index (bai) file ' +
             'per sample. Bam and bai files may exist in the same, or different, directories. ' +
             'If you don\'t have an index file, please see \'samtools index\' to create one. ' +
             'Local files are not currently accepted. For other input format requests, please ' +
@@ -863,6 +864,11 @@ export default {
         return 'summary';
       }
       return this.FILE_DESCRIPTORS[idx];
+    },
+    getFileTypeQualifier: function (type) {
+      if (type === this.CNV) {
+        return " (if available)";
+      }
     },
     getDataType: function (type) {
       let idx = this.DATA_MODELS.indexOf(type);
@@ -1673,6 +1679,10 @@ export default {
   .function-card-title
     font-family: 'Quicksand'
     font-size: 22px
+    color: #888888
+
+  .function-card-subtitle
+    font-size: 16px
     color: #888888
 
   .function-card
