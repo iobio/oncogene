@@ -297,6 +297,7 @@
                         :tbiFileNames="tbiNameList"
                         :galaxySampleCount="galaxySampleCount"
                         :d3="d3"
+                        :configLocalVcf="configLocalVcf"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
@@ -446,6 +447,10 @@ export default {
     demoParams: {
       type: Object,
       default: null
+    },
+    selectedGeneName: {
+      type: String,
+      default: ""
     }
   },
   data: function () {
@@ -578,7 +583,7 @@ export default {
             'Local files are not currently accepted. For other input format requests, please ' +
             'contact support at iobioproject@gmail.com.',
 
-        cnv: 'Oncogene.iobio requires one copy number file per sample. This file must be tab-delimited and contain ' +
+        cnv: 'Oncogene.iobio optionally consumes one copy number file per sample. When provided, this file must be tab-delimited and contain ' +
             'the following five headers: chr, start, end, lcn.em, and tcn.em (corresponding to chromosome, start coordinate, ' +
             'end coordinate, lesser copy number, and total copy number, respectively). Other data columns may exist in your tab-delimited file, ' +
             'however they will be ignored. The Facets program (by MSKCC) program outputs an ideal file for this purpose.',
@@ -731,6 +736,8 @@ export default {
       },
       somaticCallsOnly: true, // todo: get rid of
       selectedBuild: null,
+      configLastGene: null, // The last gene analyzed from a previous session; sourced from uploaded config file
+      configLocalVcf: false,
       STARTING_INPUT: 'Select a gene list from above, or leave blank to include all variants',
       CUSTOM_TEXT: 'Custom (Enter Below)',
       listInput: '',
@@ -1094,7 +1101,6 @@ export default {
         exportObj['listInput'] = self.listInput;
         exportObj['selectedCancerList'] = self.selectedCancerList;
       }
-
       exportObj['somaticCallsOnly'] = self.somaticCallsOnly;
       exportObj['build'] = self.selectedBuild;
 
@@ -1107,9 +1113,14 @@ export default {
         newVal.order = modelInfo.order ? modelInfo.order : order;
         newVal.selectedSample = modelInfo.selectedSample;
         newVal.isTumor = modelInfo.isTumor;
-        newVal.vcfUrl = modelInfo.vcfUrl;
-        newVal.tbiUrl = modelInfo.tbiUrl;
-        // todo: is it possible to add file path here for local support?
+
+        if (modelInfo.vcfFile) {
+          newVal.localVcf = true;
+        } else {
+          newVal.vcfUrl = modelInfo.vcfUrl;
+          newVal.tbiUrl = modelInfo.tbiUrl;
+          newVal.localVcf = false;
+        }
         newVal.coverageBamUrl = modelInfo.coverageBamUrl;
         newVal.coverageBaiUrl = modelInfo.coverageBaiUrl;
         newVal.rnaSeqBamUrl = modelInfo.rnaSeqBamUrl;
@@ -1117,6 +1128,9 @@ export default {
         // newVal.atacSeqBamUrl = modelInfo.atacSeqBamUrl;
         // newVal.atacSeqBaiUrl = modelInfo.atacSeqBaiUrl;
         newVal.cnvUrl = modelInfo.cnvUrl;
+
+        newVal.lastGene = self.selectedGeneName;  // todo: test
+
         sampleArr.push(newVal);
         order++;
       });
@@ -1243,17 +1257,12 @@ export default {
     parseJsonConfig: function() {
       const self = this;
 
-      // todo: need to add last gene analyzed field
-      // todo: add expiration date field? can we parse this from urls?
-      // todo: need to add local file support + select local file prompt
-
       let reader = new FileReader();
       reader.readAsText(self.configFile);
       reader.onload = () => {
         let result = reader.result;
         let infoObj = JSON.parse(result);
-        let fulfillsList = infoObj['somaticCallsOnly'] || infoObj['listInput'];
-        if (!(infoObj['samples'] && fulfillsList && infoObj['dataTypes'])) {
+        if (!(infoObj['samples'] && infoObj['dataTypes'])) {
           self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
           self.showError = true;
         } else {
@@ -1274,12 +1283,17 @@ export default {
           }
           self.somaticCallsOnly = infoObj['somaticCallsOnly'];
           self.selectedBuild = infoObj['build'];
+          self.configLastGene = infoObj['lastGene'];
 
           // Little extra work to fill in fields for vcf/tbi form
           // Note: assumes single vcf
           let firstSample = self.modelInfoList[0];
-          self.uploadedVcfUrls = [firstSample.vcfUrl];
-          self.uploadedTbiUrls = [firstSample.tbiUrl];
+          // todo: check to see if url is expired and notify user
+          let usedLocalVcf = firstSample.localVcf;
+          if (!usedLocalVcf) {
+            self.uploadedVcfUrls = [firstSample.vcfUrl];
+            self.uploadedTbiUrls = [firstSample.tbiUrl];
+          }
 
           // if we have optional data types, set flags (may only have optional data for a single sample, so check all)
           let coverageActiveCount = 0;
@@ -1339,8 +1353,8 @@ export default {
           self.uploadedSelectedSamples = selectedSamples;
           self.launchedFromConfig = true;
 
-          if (!(self.uploadedSelectedSamples && self.userData && fulfillsList &&
-              self.uploadedVcfUrls && self.uploadedTbiUrls) || self.somaticCallsOnly == null) {
+          if (!(self.uploadedSelectedSamples && self.userData &&
+              (self.uploadedVcfUrls && self.uploadedTbiUrls) || usedLocalVcf)) {
             self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
             self.showError = true;
           }
@@ -1348,13 +1362,17 @@ export default {
           // Have to mount vcf slide to do actual checks
           if (self.vcfFormMounted && self.$refs.vcfFormRef) {
             self.$refs.vcfFormRef.forEach(ref => {
-              if (self.uploadedVcfUrls.length > 1) {
+              if (!usedLocalVcf && self.uploadedVcfUrls.length > 1) {
                 self.errorText = "There was missing or corrupted information in the configuration file: please try a different file or manually upload your information.";
                 self.showError = true;
-              } else {
+              } else if (!usedLocalVcf) {
                 ref.uploadConfigInfo(self.uploadedVcfUrls[0], self.uploadedTbiUrls[0], self.selectedBuild, self.uploadedSelectedSamples);
               }
             });
+          }
+          if (usedLocalVcf) {
+            self.displayAlert("warning", "This configuration used a file from your local machine. Due to browser security protections, you will need to reselect your file below to proceed.");
+            self.configLocalVcf = true;
           }
           self.mountVcfSlide();
           self.$gtag.pageview("/uploadConfig");
@@ -1451,7 +1469,7 @@ export default {
         });
       }
       let strippedGeneString = this.listInput === this.STARTING_INPUT ? "" : this.listInput;
-      this.$emit('launched', this.modelInfoList, strippedGeneString, demoMode);
+      this.$emit('launched', this.modelInfoList, strippedGeneString, this.configLastGene, demoMode);
     },
     createModelInfoFromParam: function(param, isTumor, modelInfoIdx) {
       let modelInfo = this.cohortModel.createModelInfo(param.selectedSamples[0], isTumor, modelInfoIdx);

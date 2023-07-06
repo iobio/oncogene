@@ -218,6 +218,10 @@ export default {
     galaxySampleCount: {
       type: Number,
       default: 0
+    },
+    configLocalVcf: {
+      type: Boolean,
+      default: false
     }
   },
   data: function () {
@@ -352,6 +356,10 @@ export default {
                   // Also want to fill in file proxy urls for modelInfo objs
                   self.$emit('update-model-info', 'vcfUrl', vcfUrl);
                   self.$emit('update-model-info', 'tbiUrl', tbiUrl);
+
+                  // todo: if we're coming from a reload of a local file, want to fill in selected samples in correct order
+                  // uploadedSelectedSamples should already be filled in here - need to change sub-prop of modelInfo objects instead of just order?
+
                   resolve();
                 })
           } else {
@@ -594,6 +602,8 @@ export default {
   mounted: function () {
     // Coordinate with carousel to behave correctly for navigating then uploading
     this.$emit('vcf-form-mounted');
+
+    this.localData = this.configLocalVcf;
 
     // Check to see if we have info uploaded
     // NOTE: vcf-form may or may not be mounted yet

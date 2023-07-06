@@ -10,6 +10,7 @@
              :launchSource="launchSource"
              :launchParams="launchParams"
              :demoParams="demoParams"
+             :selectedGeneName="selectedGeneName"
              @toggle-carousel="toggleCarousel"
              @display-about="openAbout"
              @hide-welcome="demoHide"
@@ -570,7 +571,7 @@ export default {
       self.$forceUpdate();
     },
     // Point of entry for launch
-    onLaunch: function (modelInfos, userGeneString, demoMode = false) {
+    onLaunch: function (modelInfos, userGeneString, configLastGene, demoMode = false) {
       const self = this;
       self.dataEntered = true;
       self.displayCarousel = false;
@@ -580,6 +581,12 @@ export default {
       if (demoMode) {
         self.$emit('hide-files-btn');
       }
+      // todo: test formatting correct here
+      debugger;
+      if (configLastGene) {
+        userGeneString += "\n" + configLastGene;
+      }
+
       self.cohortModel.promiseInit(modelInfos, userGeneString)
           .then(() => {
             self.sampleModels = self.cohortModel.sampleModels;
@@ -591,7 +598,7 @@ export default {
               self.sampleIds.push(model.id);
               self.selectedSamples.push(model.selectedSample);
             });
-            self.getSomaticVariants();
+            self.getSomaticVariants(configLastGene);
           }).catch(error => {
         console.log('There was a problem initializing cohort model: ' + error);
       });
@@ -601,7 +608,7 @@ export default {
       this.filterModel.loadFilterSettings(filterSettings);
       this.getSomaticVariants();
     },
-    getSomaticVariants: function () {
+    getSomaticVariants: function (configLastGene) {
       const self = this;
       self.selectedVariant = null;
       self.displayLoader = true;
@@ -655,7 +662,7 @@ export default {
               self.cohortModel.setLoaders(true);
 
               self.rankedGeneList = geneModel.rankedGeneList;
-              self.selectedGene = topRankedGene;
+              self.selectedGene = configLastGene ? configLastGene : topRankedGene;
               self.selectedTranscript = geneModel.getCanonicalTranscript(self.selectedGene);
               self.cohortModel.selectedTranscriptId = self.selectedTranscript.transcript_id;
               self.geneRegionStart = self.selectedGene.start;
