@@ -412,7 +412,7 @@ export default {
     },
     promiseUpdateModelInfo: function(mode, vcf, tbi, hdrBuild, uploadedSelectedSamples, sampleNames) {
       const self = this;
-      let usingConfigWithLocalFiles = self.lastConfigFileName != null;
+      let usingConfigWithLocalFiles = self.lastConfigFileName != null && self.lastConfigFileName !== "";
 
       return new Promise((resolve, reject) => {
         if (sampleNames.length < 2) {
