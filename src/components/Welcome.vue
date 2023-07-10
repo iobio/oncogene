@@ -298,6 +298,8 @@
                         :galaxySampleCount="galaxySampleCount"
                         :d3="d3"
                         :configLocalVcf="configLocalVcf"
+                        :lastConfigFileName="configLocalVcfName"
+                        :lastConfigIndexFileName="configLocalTbiName"
                         @clear-model-info="setModelInfo"
                         @set-model-info="setModelInfo"
                         @remove-model-info="removeModelInfo"
@@ -488,8 +490,10 @@ export default {
       uploadedTbiUrls: null,
       uploadedVcfFiles: null,
       uploadedTbiFiles: null,
-      localUploadMode: false,
+      localUploadMode: false,   // True if we're uploading a local file pair rather than a URL provided one
       customListSelected: false,
+      configLocalVcfName: "", // The name of the last local vcf file loaded using a config
+      configLocalTbiName: "", // Same as above but tbi
 
       // Used for Mosaic/Galaxy integration launch
       fileLists: {
@@ -1099,6 +1103,8 @@ export default {
     downloadConfig: function () {
       const self = this;
 
+      // todo: need to add filtering parameters here if they've changed
+
       // JSON.stringify
       let exportObj = {'dataTypes': self.userData};
 
@@ -1122,6 +1128,8 @@ export default {
 
         if (modelInfo.vcfFile) {
           newVal.localVcf = true;
+          newVal.localVcfName = modelInfo.vcfFile.name;
+          newVal.localTbiName = modelInfo.tbiFile.name;
         } else {
           newVal.vcfUrl = modelInfo.vcfUrl;
           newVal.tbiUrl = modelInfo.tbiUrl;
@@ -1294,8 +1302,11 @@ export default {
           // Little extra work to fill in fields for vcf/tbi form
           // Note: assumes single vcf
           let firstSample = self.modelInfoList[0];
+
           // todo: check to see if url is expired and notify user
           let usedLocalVcf = firstSample.localVcf;
+          self.configLocalVcfName = firstSample.localVcfName;
+          self.configLocalTbiName = firstSample.localTbiName;
           if (!usedLocalVcf) {
             self.uploadedVcfUrls = [firstSample.vcfUrl];
             self.uploadedTbiUrls = [firstSample.tbiUrl];
@@ -1377,7 +1388,8 @@ export default {
             });
           }
           if (usedLocalVcf) {
-            self.displayAlert("warning", "This configuration used a file from your local machine. Due to browser security protections, you will need to reselect your file below to proceed.");
+            self.displayAlert("warning", "This configuration used a file from your local machine. Due to browser security protections, you will need to reselect your file below to proceed. " +
+                "The names of the files previously selected were: " + self.configLocalVcfName + " and " + self.configLocalTbiName + ".");
             self.configLocalVcf = true;
           }
           self.mountVcfSlide();

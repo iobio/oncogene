@@ -27,7 +27,8 @@
                       label="Select vcf file"
                       :rules="vcfRules"
                       v-model="file"
-                      class="top-file">
+                      class="top-file"
+                      @change="onFileChange()">
         </v-file-input>
         <v-text-field v-else class="top-url"
                       :label="'Enter .' + fileType +  ' URL'"
@@ -50,7 +51,8 @@
                       label="Select tbi file"
                       :rules="tbiRules"
                       v-model="indexFile"
-                      class="bot-file">
+                      class="bot-file"
+                      @change="onFileChange()">
         </v-file-input>
         <v-text-field v-else class="bot-url"
                       :label="'Enter .' + getIndexFileType() +  ' URL'"
@@ -222,6 +224,14 @@ export default {
     configLocalVcf: {
       type: Boolean,
       default: false
+    },
+    lastConfigFileName: {
+      type: String,
+      default: ""
+    },
+    lastConfigIndexFileName: {
+      type: String,
+      default: ""
     }
   },
   data: function () {
@@ -331,7 +341,9 @@ export default {
     },
     onFileChange: function() {
       if (this.file && this.indexFile && this.selectedBuild) {
-        this.onVcfFileEntered(this.file, this.indexFile);
+        // todo: if I pass selectedSamples here, will it just work
+        let selectedSamples = this.configLocalVcf ? this.uploadedSelectedSampleLists.filter(list => { return list[0]; }) : null;
+        this.onVcfFileEntered(this.file, this.indexFile, selectedSamples);
       } else if (this.file == null || this.indexFile == null) {
         this.$emit('clear-model-info', null);
       }
@@ -356,10 +368,6 @@ export default {
                   // Also want to fill in file proxy urls for modelInfo objs
                   self.$emit('update-model-info', 'vcfUrl', vcfUrl);
                   self.$emit('update-model-info', 'tbiUrl', tbiUrl);
-
-                  // todo: if we're coming from a reload of a local file, want to fill in selected samples in correct order
-                  // uploadedSelectedSamples should already be filled in here - need to change sub-prop of modelInfo objects instead of just order?
-
                   resolve();
                 })
           } else {
@@ -404,13 +412,14 @@ export default {
     },
     promiseUpdateModelInfo: function(mode, vcf, tbi, hdrBuild, uploadedSelectedSamples, sampleNames) {
       const self = this;
+      let usingConfigWithLocalFiles = self.lastConfigFileName != null;
 
       return new Promise((resolve, reject) => {
         if (sampleNames.length < 2) {
           let alertText = 'It looks like your file only contains one sample - Oncogene is currently configured to work with at least one normal and one tumor sample. Please try again.';
           self.$emit('show-alert', 'error', alertText);
           reject();
-        } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2) {
+        } else if (uploadedSelectedSamples && uploadedSelectedSamples.length >= 2 && !usingConfigWithLocalFiles) {
           // Check for correct build
           if (hdrBuild !== self.selectedBuild && self.selectedBuild !== '') {
             let warningText = "Warning: it looks like the selected genome build does not match the one reported in the header of the file.";
@@ -472,28 +481,53 @@ export default {
             self.indexFile = tbi;
           }
 
+          // If we're using a local config, make sure names match up
+          if (self.configLocalVcfName != null && (self.file.name !== self.lastConfigFileName || self.indexFile.name !== self.lastConfigIndexFileName)) {
+            self.$emit('show-alert', 'warning', "One or more of the files you selected do not match the names of the files " +
+                "previously selected for the configuration being uploaded. Things may not work properly, please double check loading settings " +
+                "before launching.");
+          }
+
           // Create modelInfos and add to drop down lists in loader
           let infoList = [];
-          for (let i = 0; i < sampleNames.length; i++) {
+          let modelInfo = null;
+          let selectedSamples = [];
+          let unsortedSampleList = [];  // Used only for config upload with local files
+          let currSampleFromFile = null;
+          for (var i = 0; i < sampleNames.length; i++) {
             // Only create modelInfos for samples that Mosaic has passed over in URL params
             if (self.externalLaunchMode && self.uploadedSelectedSampleLists && self.uploadedSelectedSampleLists.length > 0) {
-              let selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
-              let currSampleFromFile = sampleNames[i];
+              selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
+              currSampleFromFile = sampleNames[i];
               if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
-                let modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
+                // todo: ease this restriction so can all be tumor
+                modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
                 infoList.push(modelInfo);
                 self.modelInfoIdx++;
                 self.filteredVcfSampleNames.push(currSampleFromFile);
               }
             } else if (self.externalLaunchSource === self.GALAXY) {
               if (i < self.galaxySampleCap) {
-                let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+                // todo: ease this restriction so can all be tumor
+                modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
                 infoList.push(modelInfo);
                 self.modelInfoIdx++;
               }
               self.filteredVcfSampleNames.push(sampleNames[i]);
+            } else if (usingConfigWithLocalFiles && self.uploadedSelectedSampleLists && self.uploadedSelectedSampleLists.length > 0) {
+              selectedSamples = self.uploadedSelectedSampleLists;
+              currSampleFromFile = sampleNames[i];
+              let selSampleIdx = selectedSamples.indexOf(currSampleFromFile)
+              if (selSampleIdx >= 0) {
+                // todo: ease this restriction so can all be tumor
+                modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, selSampleIdx);
+                unsortedSampleList.push(modelInfo);
+                self.modelInfoIdx++;
+                self.filteredVcfSampleNames.push(currSampleFromFile);
+              }
             } else {
-              let modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
+              // todo: ease this restriction so can all be tumors
+              modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
               if (mode === self.URL) {
                 modelInfo.vcfUrl = vcf;
                 modelInfo.tbiUrl = tbi;
@@ -508,6 +542,10 @@ export default {
             // Always add to vcfSampleNames array though, important for getting correct column from vcf file
             self.vcfSampleNames.push(sampleNames[i]);
           }
+          if (usingConfigWithLocalFiles) {
+            infoList = unsortedSampleList.sort(function (a, b) { return a.order - b.order});
+          }
+
           self.$emit('set-model-info', infoList);
 
           // Toggle display flags
@@ -568,6 +606,8 @@ export default {
       if (this.externalLaunchMode) {
         let infoList = [];
         selectedSamples.forEach(sample => {
+          // todo: here's the part we're missing - making modelInfo obj per selected sample
+          // todo: this will be wrong if we don't have any tumor samples
           let modelInfo = self.createModelInfo(sample, self.modelInfoIdx !== 0, self.modelInfoIdx);
           infoList.push(modelInfo);
           self.modelInfoIdx++;
