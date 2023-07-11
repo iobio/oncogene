@@ -96,12 +96,20 @@
                         @click="applyScrollableStyle"
                     ></v-select>
                   </v-col>
-                  <v-col md="4">
-                    <v-chip small outlined color="appHighlight" dark class="mt-3"
-                            :close="isRemovable(i)"
+                  <v-col :md="isRemovable(i) ? 3 : 6">
+                    <v-switch class="px-0"
+                              style="margin-top: -4px"
+                              v-model="listInfo.isTumor"
+                              :label="listInfo.isTumor ? 'Tumor' : 'Normal'">
+                    </v-switch>
+                  </v-col>
+                  todo: left off here - deleteTrack not working and put padding on bottom of button
+                  <v-col v-if="isRemovable(i)" :md="isRemovable(i) ? 3 : 0">
+                    <v-btn x-small outlined icon color="appHighlight" dark class="mt-3"
                             @click:close="deleteTrack(i)">
-                      {{ isTumorTrack(listInfo) }}
-                    </v-chip>
+                      <v-icon>close</v-icon>
+<!--                      {{ isTumorTrack(listInfo) }}-->
+                    </v-btn>
                   </v-col>
                 </v-row>
               </v-list-item-content>
@@ -588,7 +596,7 @@ export default {
       }
     },
     isRemovable: function (i) {
-      return i > 1;
+      return i > 0;
     },
     uploadConfigInfo: function (uploadedUrl, uploadedIndexUrl, uploadedBuild, uploadedSelectedSamples) {
       const self = this;
