@@ -885,7 +885,7 @@ class CohortModel {
                         let cnvP = self.hasCnvData ?
                             self.promiseAnnotateSomaticCnvs() : Promise.resolve();
                         cnvP.then(somaticCnvMap => {
-                            self.somaticCnvMap = somaticCnvMap;
+                            self.somaticCnvMap = self.hasCnvData ? somaticCnvMap : {};
                             let retObj = {};
                             self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
                                 .then(groupObj => {

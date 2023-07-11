@@ -1104,6 +1104,7 @@ export default {
       const self = this;
 
       // todo: need to add filtering parameters here if they've changed
+      // todo: left off something wrong with grouping and ranking without gene list
 
       // JSON.stringify
       let exportObj = {'dataTypes': self.userData};
@@ -1303,11 +1304,11 @@ export default {
           // Note: assumes single vcf
           let firstSample = self.modelInfoList[0];
 
-          // todo: check to see if url is expired and notify user
           let usedLocalVcf = firstSample.localVcf;
           self.configLocalVcfName = firstSample.localVcfName;
           self.configLocalTbiName = firstSample.localTbiName;
           if (!usedLocalVcf) {
+            //self.checkUrlExpiration(firstSample.vcfUrl, firstSample.tbiUrl);
             self.uploadedVcfUrls = [firstSample.vcfUrl];
             self.uploadedTbiUrls = [firstSample.tbiUrl];
           }
@@ -1559,6 +1560,11 @@ export default {
     },
     isMosaic: function (source) {
       return (source === this.UTAH_MOSAIC || source === this.CDDRC_MOSAIC);
+    },
+    // Displays error alert if able to detect that urls are out of date. Currently only works with S3 urls.
+    // eslint-disable-next-line no-unused-vars
+    checkUrlExpiration: function(vcfUrl, tbiUrl) {
+      // todo: implement
     }
   },
   mounted: function () {

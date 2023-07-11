@@ -582,7 +582,6 @@ export default {
         self.$emit('hide-files-btn');
       }
       // todo: test formatting correct here
-      debugger;
       if (configLastGene) {
         userGeneString += "\n" + configLastGene;
       }
