@@ -1104,7 +1104,6 @@ export default {
       const self = this;
 
       // todo: need to add filtering parameters here if they've changed
-      // todo: left off something wrong with grouping and ranking without gene list
 
       // JSON.stringify
       let exportObj = {'dataTypes': self.userData};

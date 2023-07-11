@@ -6,6 +6,7 @@ class FilterModel {
         this.$ = $;
         this.cohortModel = cohortModel;
 
+        // todo: add allAltCount and allAltFrequency here if no normal sample selected
         /* Initializers */
         let qualCutoff = 'qual',
             genotypeDepth = 'genotypeDepth',
