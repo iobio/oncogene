@@ -69,25 +69,28 @@
         </v-select>
       </v-container>
       <v-container v-if="urlsVerified" fluid style="padding-top: 0">
-<!--        todo: put scrollable component here-->
         <v-row justify=center align="start">
           <v-col md="auto" dense>
             <v-btn dark small color="secondary" @click="urlsVerified = false">Edit Urls</v-btn>
           </v-col>
         </v-row>
-        <v-list dense>
-          <v-list-item-group v-model="listInfo">
-            <v-list-item v-for="(listInfo, i) in modelInfoList"
-                         :key="'listInfo-' + i">
-              <v-list-item-icon style="padding-top:25px">
-                <v-icon large color="appColor">filter_{{ i + 1 }}</v-icon>
+        <v-virtual-scroll
+            id="selected-sample-scroller"
+            :items="modelInfoList"
+            :item-height="scrollItemHeight"
+            :height="scrollerTotalHeight"
+        >
+          <template v-slot:default="{ item }">
+            <v-list-item :key="'listInfo-' + modelInfoList.indexOf(item)">
+              <v-list-item-icon style="padding-top:5px">
+                <v-icon large color="appColor">filter_{{ modelInfoList.indexOf(item) + 1 }}</v-icon>
               </v-list-item-icon>
               <v-list-item-content style="padding-bottom: 0">
                 <v-row dense>
                   <v-col md="6">
                     <v-select
                         label="Sample"
-                        v-model="listInfo.selectedSample"
+                        v-model="item.selectedSample"
                         :items="filteredVcfSampleNames"
                         color="appColor"
                         autocomplete
@@ -96,37 +99,35 @@
                         @click="applyScrollableStyle"
                     ></v-select>
                   </v-col>
-                  <v-col :md="isRemovable(i) ? 3 : 6">
+                  <v-col :md="isRemovable(modelInfoList.indexOf(item)) ? 3 : 6">
                     <v-switch class="px-0"
                               style="margin-top: -4px"
-                              v-model="listInfo.isTumor"
-                              :label="listInfo.isTumor ? 'Tumor' : 'Normal'">
+                              v-model="item.isTumor"
+                              :label="item.isTumor ? 'Tumor' : 'Normal'">
                     </v-switch>
                   </v-col>
-                  todo: left off here - deleteTrack not working and put padding on bottom of button
-                  <v-col v-if="isRemovable(i)" :md="isRemovable(i) ? 3 : 0">
-                    <v-btn x-small outlined icon color="appHighlight" dark class="mt-3"
-                            @click:close="deleteTrack(i)">
+                  <v-col v-if="isRemovable(modelInfoList.indexOf(item))" :md="isRemovable(modelInfoList.indexOf(item)) ? 3 : 0">
+                    <v-btn x-small outlined icon color="appHighlight" dark class="mt-0"
+                            @click="deleteTrack(modelInfoList.indexOf(item))">
                       <v-icon>close</v-icon>
-<!--                      {{ isTumorTrack(listInfo) }}-->
                     </v-btn>
                   </v-col>
                 </v-row>
               </v-list-item-content>
             </v-list-item>
-          </v-list-item-group>
-          <v-btn v-if="modelInfoList.length < maxSamples"
-                 color="secondary"
-                 absolute
-                 dark
-                 small
-                 right
-                 fab
-                 style="margin-right: 20px; margin-bottom: 20px"
-                 @click="addTrack">
-            <v-icon>add</v-icon>
-          </v-btn>
-        </v-list>
+          </template>
+        </v-virtual-scroll>
+        <v-btn v-if="modelInfoList.length < numSamplesInFile"
+               color="secondary"
+               absolute
+               dark
+               small
+               right
+               fab
+               style="margin-right: 20px; margin-bottom: 20px"
+               @click="addTrack">
+          <v-icon>add</v-icon>
+        </v-btn>
       </v-container>
     </v-card-actions>
     <v-overlay :value="displayLoader">
@@ -258,10 +259,13 @@ export default {
       listInfo: -1,
       modelInfoIdx: 0,
       galaxySampleCap: 0,
+      numSamplesInFile: 0, // The number of samples in the selected vcf file
       genomeBuilds: ['GRCh37', 'GRCh38'],
       GALAXY: 'galaxy',
       URL: 'url',
       FILE: 'local',
+      scrollItemHeight: 50,
+      scrollerTotalHeight: 290,
       localData: false,
       vcfRules: [
         value => {
@@ -349,7 +353,6 @@ export default {
     },
     onFileChange: function() {
       if (this.file && this.indexFile && this.selectedBuild) {
-        // todo: if I pass selectedSamples here, will it just work
         let selectedSamples = this.configLocalVcf ? this.uploadedSelectedSampleLists.filter(list => { return list[0]; }) : null;
         this.onVcfFileEntered(this.file, this.indexFile, selectedSamples);
       } else if (this.file == null || this.indexFile == null) {
@@ -370,6 +373,7 @@ export default {
         self.displayLoader = true;
         self.cohortModel.sampleModelUtil.onVcfFileEntered(vcfFile, tbiFile, function (success, sampleNames, hdrBuild, vcfUrl, tbiUrl) {
           if (success) {
+            self.numSamplesInFile = sampleNames.length;
             self.displayLoader = false;
             self.promiseUpdateModelInfo(self.FILE, vcfFile, tbiFile, hdrBuild, uploadedSelectedSamples, sampleNames)
                 .then(() => {
@@ -400,6 +404,7 @@ export default {
         self.$emit('hide-alerts');
         self.displayLoader = true;
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames, hdrBuild) {
+          self.numSamplesInFile = sampleNames.length;
           self.displayLoader = false;
           if (success) {
             self.promiseUpdateModelInfo(self.URL, vcfUrl, tbiUrl, hdrBuild, uploadedSelectedSamples, sampleNames)
@@ -580,9 +585,14 @@ export default {
       return this.cohortModel.createModelInfo(selectedSample, isTumor, modelInfoIdx);
     },
     addTrack: function () {
+      const self = this;
       let newInfo = this.createModelInfo(null, true, this.modelInfoIdx);
       this.modelInfoList.push(newInfo);
       this.modelInfoIdx++;
+      setTimeout(function () {
+        document.getElementById("selected-sample-scroller").scrollTop = self.scrollItemHeight * (self.modelInfoList.length)
+      }, 100);
+
     },
     deleteTrack: function (modelInfoIdx) {
       this.$emit('remove-model-info', modelInfoIdx);
