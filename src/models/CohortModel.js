@@ -499,7 +499,7 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
-        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples, this.getNormalModel().selectedSample);
+        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples, this.getNormalModelREPLACE(.selectedSample);
         this.hasSubcloneAnno = true;
     }
 
@@ -727,11 +727,10 @@ class CohortModel {
         }
     }
 
-    /* Returns first model in sample array that is normal, not tumor. */
-    getNormalModel() {
-        let self = this;
-        if (self.sampleMap && self.sampleMap['s0']) {
-            return self.sampleMap['s0'];
+    /* Returns the first . */
+    getFirstSampleModel() {
+        if (this.sampleModels && this.sampleModels.length > 0) {
+            return this.sampleModels[0];
         } else {
             return null;
         }
@@ -780,7 +779,7 @@ class CohortModel {
     }
 
     /* Returns all sample models where is Tumor = false, in order of track display */
-    getOrderedNormalModel() {
+    getOrderedNormalModels() {
         let self = this;
         let normalModels = [];
         self.getCanonicalModels().forEach((model) => {
@@ -917,17 +916,21 @@ class CohortModel {
             const genes = self.geneModel.geneObjects;
 
             // Check to see if normal sample has CNV data
-            let normalModel = self.getNormalModel();
-            let normalCnvModel = null;
-            if (normalModel.cnv != null) {
-                normalCnvModel = normalModel.cnv;
-            }
+            let normalCnvModels = [];
+            self.getOrderedNormalModels().forEach(normalModel => {
+                if (normalModel.cnv) {
+                    normalCnvModels.push(normalModel.cnv);
+                }
+            })
 
             let tumorCnvModels = [];
             self.getOrderedTumorModels().forEach(tumorModel => {
-                tumorCnvModels.push(tumorModel.cnv);
+                if (tumorModel.cnv) {
+                    tumorCnvModels.push(tumorModel.cnv);
+                }
             });
-            let somaticCnvs = self.filterModel.annotateSomaticCnvs(normalCnvModel, tumorCnvModels, genes);
+            // todo: left off here - removing all references to getNormalModelREPLACE
+            let somaticCnvs = self.filterModel.annotateSomaticCnvs(normalCnvModels, tumorCnvModels, genes);
             resolve(somaticCnvs);
         })
     }
@@ -1186,7 +1189,7 @@ class CohortModel {
             if (!self.onlySomaticCalls) {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
-            self.getNormalModel().vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
+            self.getNormalModelREPLACE(.vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
                 .then((returnArr) => {
                     // Always populate unique variant dictionary
                     let sampleMap = returnArr['sampleMap'];
@@ -1637,7 +1640,7 @@ class CohortModel {
         };
 
 
-        let allVariants = Object.assign({}, self.getNormalModel().loadedVariants);
+        let allVariants = Object.assign({}, self.getNormalModelREPLACE(.loadedVariants);
         allVariants.features = [];      // Start empty so when we get normal in loop below, we don't duplicate
         // let uniqueMatrixFeatures = {};  // The features to rank in the matrix
 
@@ -1888,7 +1891,7 @@ class CohortModel {
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
             // todo: if we're in somatic only mode, we can skip this call
-            let p = self.getNormalModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
+            let p = self.getNormalModelREPLACE(.promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
                 .then((resultMap) => {
                     if (resultMap && resultMap.sampleMap) {
                         resultMap.sampleMap.forEach(resultObj => {
@@ -2016,12 +2019,12 @@ class CohortModel {
                     unionVcfData.features.push(formatClinvarThinVariant(varKey));
                 }
                 var refreshVariantsFunction = self.globalApp.isClinvarOffline || self.globalApp.clinvarSource === 'vcf'
-                    ? self.getNormalModel()._refreshVariantsWithClinvarVCFRecs.bind(self.getNormalModel(), unionVcfData)
-                    : self.getNormalModel()._refreshVariantsWithClinvarEutils.bind(self.getNormalModel(), unionVcfData);
+                    ? self.getNormalModelREPLACE(._refreshVariantsWithClinvarVCFRecs.bind(self.getNormalModelREPLACE(, unionVcfData)
+                    : self.getNormalModelREPLACE(._refreshVariantsWithClinvarEutils.bind(self.getNormalModelREPLACE(, unionVcfData);
 
-                self.getNormalModel().vcf.promiseGetClinvarRecords(
+                self.getNormalModelREPLACE(.vcf.promiseGetClinvarRecords(
                     unionVcfData,
-                    self.getNormalModel()._stripRefName(geneObject.chr),
+                    self.getNormalModelREPLACE(._stripRefName(geneObject.chr),
                     geneObject,
                     self.geneModel.clinvarGenes,
                     refreshVariantsFunction)
@@ -2032,7 +2035,7 @@ class CohortModel {
                         unionVcfData.features.forEach(function (variant) {
                             var clinvarAnnot = {};
 
-                            for (var annotKey in self.getNormalModel().vcf.getClinvarAnnots()) {
+                            for (var annotKey in self.getNormalModelREPLACE(.vcf.getClinvarAnnots()) {
                                 clinvarAnnot[annotKey] = variant[annotKey];
                                 clinvarLookup[formatClinvarKey(variant)] = clinvarAnnot;
                             }
@@ -2180,15 +2183,15 @@ class CohortModel {
                     let geneCoverageAll = data.geneCoverage;
                     let theOptions = null;
 
-                    self.getNormalModel().promiseGetDangerSummary(geneObject.gene_name)
+                    self.getNormalModelREPLACE(.promiseGetDangerSummary(geneObject.gene_name)
                         .then(function () {
                             // Summarize the danger for the gene based on the filtered annotated variants and gene coverage
                             let filteredVcfData = null;
                             // let filteredFbData = null;
                             if (theVcfData) {
                                 if (theVcfData.features && theVcfData.features.length > 0) {
-                                    filteredVcfData = self.getNormalModel().filterVariants(theVcfData, self.filterModel.getFilterObject(), geneObject.start, geneObject.end, true);
-                                    // filteredFbData = self.getNormalModel().reconstituteFbData(filteredVcfData);
+                                    filteredVcfData = self.getNormalModelREPLACE(.filterVariants(theVcfData, self.filterModel.getFilterObject(), geneObject.start, geneObject.end, true);
+                                    // filteredFbData = self.getNormalModelREPLACE(.reconstituteFbData(filteredVcfData);
                                 } else if (theVcfData.features) {
                                     filteredVcfData = theVcfData;
                                 }
@@ -2202,13 +2205,13 @@ class CohortModel {
 
                             // TODO: write new method to determine compound hets using filteredFbData
                             //if (filteredVcfData && filteredVcfData.features) {
-                            //    return self.getNormalModel().promiseDetermineCompoundHets(filteredVcfData, geneObject, theTranscript);
+                            //    return self.getNormalModelREPLACE(.promiseDetermineCompoundHets(filteredVcfData, geneObject, theTranscript);
                             //} else {
                             return Promise.resolve(filteredVcfData);
                             //}
                         })
                         .then(function (theVcfData) {
-                            return self.getNormalModel().promiseSummarizeDanger(geneObject.gene_name, theVcfData, theOptions, geneCoverageAll, self.filterModel);
+                            return self.getNormalModelREPLACE(.promiseSummarizeDanger(geneObject.gene_name, theVcfData, theOptions, geneCoverageAll, self.filterModel);
                         })
                         .then(function (theDangerSummary) {
                             self.geneModel.setDangerSummary(geneObject, theDangerSummary);
@@ -2883,7 +2886,7 @@ class CohortModel {
 
     _recacheForFlaggedVariant(theGene, theTranscript, variant) {
         let self = this;
-        self.getNormalModel().promiseGetVcfData(theGene, theTranscript)
+        self.getNormalModelREPLACE(.promiseGetVcfData(theGene, theTranscript)
             .then(function (data) {
                 let cachedVcfData = data.vcfData;
                 cachedVcfData.features.forEach(function (v) {
@@ -2897,7 +2900,7 @@ class CohortModel {
                         v.filtersPassed = variant.filtersPassed;
                     }
                 });
-                self.getNormalModel()._promiseCacheData(cachedVcfData, 'vcfData', theGene.gene_name, theTranscript);
+                self.getNormalModelREPLACE(._promiseCacheData(cachedVcfData, 'vcfData', theGene.gene_name, theTranscript);
             });
     }
 

@@ -476,10 +476,10 @@ class FilterModel {
         })
     }
 
-    /* For each region, compares the abnormal (TCN != 2 || LCN != 1) CNVs for the normal model to those of the tumor model(s).
+    /* For each region, compares the abnormal (TCN != 2 || LCN != 1) CNVs of the normal model(s) to those of the tumor model(s).
      * Any CNVs present in only the tumor samples as a dictionary organized by geneName: list of abnormal CNVs.
-     * If no normalCnvModel is provided, just includes all tumor sample CNVs that are abnormal. */
-    annotateSomaticCnvs(normalCnvModel, tumorCnvModels, geneObjects) {
+     * If no normalCnvModels are provided, just includes all tumor sample CNVs that are abnormal. */
+    annotateSomaticCnvs(normalCnvModels, tumorCnvModels, geneObjects) {
         let somaticCnvs = {};
         Object.keys(geneObjects).forEach(geneName => {
             let geneObj = geneObjects[geneName];
@@ -488,12 +488,13 @@ class FilterModel {
 
             // We may not have normal CNVs to find 'somatic' CNVs - in that case, just include all abnormal tumor CNVs
             let normalCnvObj = {};
-            if (normalCnvModel != null) {
+            normalCnvModels.forEach(normalCnvModel => {
                 normalCnvObj = normalCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, true);
                 normalCnvObj.matchingCnvs.forEach(normalCnv => {
                     normalLookup[normalCnv.start + '_' + normalCnv.end + '_' + normalCnv.tcn + '_' + normalCnv.lcn] = true;
                 })
-            }
+            })
+
             tumorCnvModels.forEach(tumorCnvModel => {
                 let tumorCnvObj = tumorCnvModel.findEntryByCoord(geneObj.chr, geneObj.start, geneObj.end, true);
                 tumorCnvObj.matchingCnvs.forEach(tumorCnv => {

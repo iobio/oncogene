@@ -513,7 +513,6 @@ export default {
               selectedSamples = self.uploadedSelectedSampleLists[selectedVcfIdx];
               currSampleFromFile = sampleNames[i];
               if (selectedSamples.indexOf(currSampleFromFile) >= 0) {
-                // todo: ease this restriction so can all be tumor
                 modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, self.modelInfoIdx);
                 infoList.push(modelInfo);
                 self.modelInfoIdx++;
@@ -521,7 +520,6 @@ export default {
               }
             } else if (self.externalLaunchSource === self.GALAXY) {
               if (i < self.galaxySampleCap) {
-                // todo: ease this restriction so can all be tumor
                 modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
                 infoList.push(modelInfo);
                 self.modelInfoIdx++;
@@ -532,14 +530,12 @@ export default {
               currSampleFromFile = sampleNames[i];
               let selSampleIdx = selectedSamples.indexOf(currSampleFromFile)
               if (selSampleIdx >= 0) {
-                // todo: ease this restriction so can all be tumor
                 modelInfo = self.createModelInfo(currSampleFromFile, i !== 0, selSampleIdx);
                 unsortedSampleList.push(modelInfo);
                 self.modelInfoIdx++;
                 self.filteredVcfSampleNames.push(currSampleFromFile);
               }
             } else {
-              // todo: ease this restriction so can all be tumors
               modelInfo = self.createModelInfo(sampleNames[i], i !== 0, self.modelInfoIdx);
               if (mode === self.URL) {
                 modelInfo.vcfUrl = vcf;
@@ -592,18 +588,10 @@ export default {
       setTimeout(function () {
         document.getElementById("selected-sample-scroller").scrollTop = self.scrollItemHeight * (self.modelInfoList.length)
       }, 100);
-
     },
     deleteTrack: function (modelInfoIdx) {
       this.$emit('remove-model-info', modelInfoIdx);
       this.modelInfoIdx--;
-    },
-    isTumorTrack: function (modelInfo) {
-      if (modelInfo.isTumor) {
-        return 'Tumor';
-      } else {
-        return 'Normal';
-      }
     },
     isRemovable: function (i) {
       return i > 0;
