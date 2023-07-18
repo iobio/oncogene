@@ -120,13 +120,16 @@ class SubcloneModel {
                         return false;
                     } else {
                         let nodeId = (freqEls[0]).trim();
-                        let freq = freqEls[1];
+                        let freq = +freqEls[1];
+                        if (freq < 0) {
+                            freq = 0;
+                        }
                         let node = this.getNode(nodeId, subclone);
                         if (node == null) {
                             console.log('Could not get node ' + nodeId + ' to assign frequencies');
                             return false;
                         }
-                        node.freqs[sampleId] = +freq;
+                        node.freqs[sampleId] = freq;
                     }
 
                 }
@@ -250,7 +253,8 @@ class SubcloneModel {
         })
     }
 
-    /* Returns only selected samples for stacked bar viz */
+    /* Returns only selected samples for stacked bar viz. If normal sample exists,
+     * does not include in chart. */
     getBarVizTree(paginationIdx) {
         const self = this;
         if (self.barVizTrees[paginationIdx]) {
@@ -266,7 +270,8 @@ class SubcloneModel {
 
                 if (nodeId !== 'n') {
                     Object.keys(node.freqs).forEach(timepoint => {
-                        if (timepoint !== self.normalSelectedSample && self.selectedSamples.indexOf(timepoint) > -1) {
+                        let satisfiesNormal = self.normalSelectedSample ? self.normalSelectedSample !== timepoint : true;
+                        if (satisfiesNormal && self.selectedSamples.indexOf(timepoint) > -1) {
                             let freq = node.freqs[timepoint];
                             subnodeList.push({'subclone': nodeId, 'timepoint': timepoint, 'prev': freq})
                         }

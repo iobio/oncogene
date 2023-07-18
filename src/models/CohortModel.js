@@ -499,7 +499,9 @@ class CohortModel {
     }
 
     initSubclones(subcloneStr) {
-        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples, this.getNormalModelREPLACE(.selectedSample);
+        let normalSelSample = this.getOrderedNormalModels().length > 0 ?
+            this.getOrderedNormalModels()[0].selectedSample : null;
+        this.subcloneModel = new SubcloneModel(subcloneStr, this.selectedSamples, normalSelSample);
         this.hasSubcloneAnno = true;
     }
 
@@ -727,7 +729,7 @@ class CohortModel {
         }
     }
 
-    /* Returns the first . */
+    /* Returns the first sample model. If a normal model exists, will return that. */
     getFirstSampleModel() {
         if (this.sampleModels && this.sampleModels.length > 0) {
             return this.sampleModels[0];
@@ -1189,7 +1191,7 @@ class CohortModel {
             if (!self.onlySomaticCalls) {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
-            self.getNormalModelREPLACE(.vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
+            self.sampleModelUtil.vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
                 .then((returnArr) => {
                     // Always populate unique variant dictionary
                     let sampleMap = returnArr['sampleMap'];
@@ -1640,7 +1642,8 @@ class CohortModel {
         };
 
 
-        let allVariants = Object.assign({}, self.getNormalModelREPLACE(.loadedVariants);
+        // todo: need to test this normal sample change
+        let allVariants = Object.assign({}, self.getFirstSampleModel().loadedVariants);
         allVariants.features = [];      // Start empty so when we get normal in loop below, we don't duplicate
         // let uniqueMatrixFeatures = {};  // The features to rank in the matrix
 
@@ -1890,8 +1893,7 @@ class CohortModel {
             let theResultMap = {};
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            // todo: if we're in somatic only mode, we can skip this call
-            let p = self.getNormalModelREPLACE(.promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
+            let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
                 .then((resultMap) => {
                     if (resultMap && resultMap.sampleMap) {
                         resultMap.sampleMap.forEach(resultObj => {
@@ -2019,12 +2021,12 @@ class CohortModel {
                     unionVcfData.features.push(formatClinvarThinVariant(varKey));
                 }
                 var refreshVariantsFunction = self.globalApp.isClinvarOffline || self.globalApp.clinvarSource === 'vcf'
-                    ? self.getNormalModelREPLACE(._refreshVariantsWithClinvarVCFRecs.bind(self.getNormalModelREPLACE(, unionVcfData)
-                    : self.getNormalModelREPLACE(._refreshVariantsWithClinvarEutils.bind(self.getNormalModelREPLACE(, unionVcfData);
+                    ? self.getFirstSampleModel()._refreshVariantsWithClinvarVCFRecs.bind(self.getFirstSampleModel(), unionVcfData)
+                    : self.getFirstSampleModel()._refreshVariantsWithClinvarEutils.bind(self.getFirstSampleModel(), unionVcfData);
 
-                self.getNormalModelREPLACE(.vcf.promiseGetClinvarRecords(
+                self.getFirstSampleModel().vcf.promiseGetClinvarRecords(
                     unionVcfData,
-                    self.getNormalModelREPLACE(._stripRefName(geneObject.chr),
+                    self.getFirstSampleModel()._stripRefName(geneObject.chr),
                     geneObject,
                     self.geneModel.clinvarGenes,
                     refreshVariantsFunction)
@@ -2035,7 +2037,7 @@ class CohortModel {
                         unionVcfData.features.forEach(function (variant) {
                             var clinvarAnnot = {};
 
-                            for (var annotKey in self.getNormalModelREPLACE(.vcf.getClinvarAnnots()) {
+                            for (var annotKey in self.getFirstSampleModel().vcf.getClinvarAnnots()) {
                                 clinvarAnnot[annotKey] = variant[annotKey];
                                 clinvarLookup[formatClinvarKey(variant)] = clinvarAnnot;
                             }
@@ -2183,14 +2185,14 @@ class CohortModel {
                     let geneCoverageAll = data.geneCoverage;
                     let theOptions = null;
 
-                    self.getNormalModelREPLACE(.promiseGetDangerSummary(geneObject.gene_name)
+                    self.getFirstSampleModel().promiseGetDangerSummary(geneObject.gene_name)
                         .then(function () {
                             // Summarize the danger for the gene based on the filtered annotated variants and gene coverage
                             let filteredVcfData = null;
                             // let filteredFbData = null;
                             if (theVcfData) {
                                 if (theVcfData.features && theVcfData.features.length > 0) {
-                                    filteredVcfData = self.getNormalModelREPLACE(.filterVariants(theVcfData, self.filterModel.getFilterObject(), geneObject.start, geneObject.end, true);
+                                    filteredVcfData = self.getFirstSampleModel().filterVariants(theVcfData, self.filterModel.getFilterObject(), geneObject.start, geneObject.end, true);
                                     // filteredFbData = self.getNormalModelREPLACE(.reconstituteFbData(filteredVcfData);
                                 } else if (theVcfData.features) {
                                     filteredVcfData = theVcfData;
@@ -2211,7 +2213,7 @@ class CohortModel {
                             //}
                         })
                         .then(function (theVcfData) {
-                            return self.getNormalModelREPLACE(.promiseSummarizeDanger(geneObject.gene_name, theVcfData, theOptions, geneCoverageAll, self.filterModel);
+                            return self.getFirstSampleModel().promiseSummarizeDanger(geneObject.gene_name, theVcfData, theOptions, geneCoverageAll, self.filterModel);
                         })
                         .then(function (theDangerSummary) {
                             self.geneModel.setDangerSummary(geneObject, theDangerSummary);
@@ -2886,7 +2888,7 @@ class CohortModel {
 
     _recacheForFlaggedVariant(theGene, theTranscript, variant) {
         let self = this;
-        self.getNormalModelREPLACE(.promiseGetVcfData(theGene, theTranscript)
+        self.getFirstSampleModel().promiseGetVcfData(theGene, theTranscript)
             .then(function (data) {
                 let cachedVcfData = data.vcfData;
                 cachedVcfData.features.forEach(function (v) {
@@ -2900,7 +2902,7 @@ class CohortModel {
                         v.filtersPassed = variant.filtersPassed;
                     }
                 });
-                self.getNormalModelREPLACE(._promiseCacheData(cachedVcfData, 'vcfData', theGene.gene_name, theTranscript);
+                self.getFirstSampleModel()._promiseCacheData(cachedVcfData, 'vcfData', theGene.gene_name, theTranscript);
             });
     }
 

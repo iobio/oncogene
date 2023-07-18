@@ -76,6 +76,7 @@
         </v-row>
         <v-virtual-scroll
             id="selected-sample-scroller"
+            style="outline: solid lightgrey"
             :items="modelInfoList"
             :item-height="scrollItemHeight"
             :height="scrollerTotalHeight"
@@ -265,7 +266,7 @@ export default {
       URL: 'url',
       FILE: 'local',
       scrollItemHeight: 50,
-      scrollerTotalHeight: 290,
+      scrollerTotalHeight: 300,
       localData: false,
       vcfRules: [
         value => {
