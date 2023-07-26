@@ -1055,9 +1055,6 @@ export default {
     'sampleModel.inProgress.rnaSeqLoading': function () {
       this.loadingRnaSeq = this.sampleModel.inProgress.rnaSeqLoading;
     },
-    'sampleModel.inProgress.atacSeqLoading': function () {
-      this.loadingAtacSeq = this.sampleModel.inProgress.atacSeqLoading;
-    },
     selectedGene: function () {
       this.showChip = false;
     }

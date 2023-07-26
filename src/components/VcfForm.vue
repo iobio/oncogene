@@ -69,20 +69,20 @@
         </v-select>
       </v-container>
       <v-container v-if="urlsVerified" fluid style="padding-top: 0">
-        <v-row justify=center align="start">
+        <v-row justify=center align="center">
           <v-col md="auto" dense>
             <v-btn dark small color="secondary" @click="urlsVerified = false">Edit Urls</v-btn>
           </v-col>
         </v-row>
         <v-virtual-scroll
             id="selected-sample-scroller"
-            style="outline: solid lightgrey"
+            style="outline: solid lightgrey 1px"
             :items="modelInfoList"
             :item-height="scrollItemHeight"
             :height="scrollerTotalHeight"
         >
           <template v-slot:default="{ item }">
-            <v-list-item :key="'listInfo-' + modelInfoList.indexOf(item)">
+            <v-list-item :key="'listInfo-' + modelInfoList.indexOf(item)" style="padding-top: 5px">
               <v-list-item-icon style="padding-top:5px">
                 <v-icon large color="appColor">filter_{{ modelInfoList.indexOf(item) + 1 }}</v-icon>
               </v-list-item-icon>
@@ -101,15 +101,16 @@
                     ></v-select>
                   </v-col>
                   <v-col :md="isRemovable(modelInfoList.indexOf(item)) ? 3 : 6">
-                    <v-switch class="px-0"
+                    <v-switch :class="modelInfoList.indexOf(item) > 0 ? 'px-0 t-switch' : 'px-0'"
                               style="margin-top: -4px"
                               v-model="item.isTumor"
+                              :disabled="modelInfoList.indexOf(item) > 0"
                               :label="item.isTumor ? 'Tumor' : 'Normal'">
                     </v-switch>
                   </v-col>
                   <v-col v-if="isRemovable(modelInfoList.indexOf(item))" :md="isRemovable(modelInfoList.indexOf(item)) ? 3 : 0">
                     <v-btn x-small outlined icon color="appHighlight" dark class="mt-0"
-                            @click="deleteTrack(modelInfoList.indexOf(item))">
+                           @click="deleteTrack(modelInfoList.indexOf(item))">
                       <v-icon>close</v-icon>
                     </v-btn>
                   </v-col>
@@ -595,7 +596,7 @@ export default {
       this.modelInfoIdx--;
     },
     isRemovable: function (i) {
-      return i > 0;
+      return i > 1;
     },
     uploadConfigInfo: function (uploadedUrl, uploadedIndexUrl, uploadedBuild, uploadedSelectedSamples) {
       const self = this;
@@ -694,4 +695,9 @@ export default {
   padding-left: 19px
   padding-right: 19px
 
+.t-switch
+  opacity: 0.6 !important
+
+  .v-label--is-disabled
+    color: rgba(0, 0, 0, 1.0)
 </style>

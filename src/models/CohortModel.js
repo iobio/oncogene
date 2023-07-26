@@ -1630,7 +1630,7 @@ class CohortModel {
                 // let passesModelFilter = self.filterModel.passesModelFilter(model.id, feature);
                 let passesModelFilter = feature.passesFilters === true;
 
-                // Don't want to filter by front end filters here! Otherwise zooming with active filters will not work b/c variants never get drawn
+                // Don't want to filter by front end filters here! Otherwise, zooming with active filters will not work b/c variants never get drawn
                 return isTarget && !isHomRef && inRegion && passesModelFilter;
             });
 

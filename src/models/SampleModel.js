@@ -1767,8 +1767,6 @@ class SampleModel {
                     } else {
                         me._promiseVcfRefName(theGene.chr)
                             .then(function () {
-                                //let samplesInFile = me._getSamplesToRetrieve();
-                                //function (refName, geneObject, selectedTranscript, regions, isMultiSample, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap) {
                                 return me.vcf.promiseGetVariants(
                                     me.getVcfRefName(theGene.chr),
                                     theGene,

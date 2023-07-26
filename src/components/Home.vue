@@ -548,8 +548,8 @@ export default {
       }
     },
     'cohortModel.annotationComplete': function () {
-      if (this.cohortModel && this.cohortModel.getNormalModel()) {
-        this.annotationComplete = !this.cohortModel.getNormalModel().inProgress.loadingVariants;
+      if (this.cohortModel && this.cohortModel.getFirstSampleModel()) {
+        this.annotationComplete = !this.cohortModel.getFirstSampleModel().inProgress.loadingVariants;
       } else {
         this.annotationComplete = false;
       }
@@ -618,6 +618,7 @@ export default {
             //let groupObj = retObj.groupObj;
             // Don't want to block on this, do in background
             // todo: here is the memory problem COSMIC
+            // todo: fetch COSMIC status individually
             // self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
             //   .then(() => {
             //     let cosmicPs = [];
@@ -670,6 +671,8 @@ export default {
               const globalMode = true;
               // Get rid of global loader
               self.displayLoader = false;
+              // todo: here is where we're not returning anything
+              // todo: rename this - it's more like getting variants for individual gene
               self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
                   // todo: silently put this in a list
                   // .then(() => {
