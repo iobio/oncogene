@@ -100,7 +100,6 @@ export class GenomeBuildHelper {
     this.currentBuild = this.buildNameToBuild[buildName];
   }
 
-
   getCurrentSpecies() {
     return this.currentSpecies ? this.currentSpecies : null;
   }

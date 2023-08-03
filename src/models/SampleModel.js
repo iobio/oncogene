@@ -993,7 +993,7 @@ class SampleModel {
                             // Get the sample names from the vcf header
                             me.vcf.promiseGetSampleNames()
                                 .then(sampleNames => {
-                                  me.isMultiSample = sampleNames && sampleNames.length > 1 ? true : false;
+                                  me.isMultiSample = sampleNames && sampleNames.length > 1;
                                     resolve({'fileName': me.vcf.getVcfFile().name, 'sampleNames': sampleNames});
                                 }).catch(error => {
                                     reject(error);
@@ -1753,6 +1753,8 @@ class SampleModel {
     }
 
     // Returns all vcf data in multi-sample vcf, per track
+    // todo: get rid of this, we only ever want to make same call with diff filter param
+    // todo: left off here, want to refactor and slim down this class to only use somatic route
     promiseGetAllVariants(theGene, theTranscript, isMultiSample, bcsqImpactMap) {
         const me = this;
         return new Promise(function (resolve, reject) {
@@ -1768,12 +1770,12 @@ class SampleModel {
                         me._promiseVcfRefName(theGene.chr)
                             .then(function () {
                                 return me.vcf.promiseGetVariants(
-                                    me.getVcfRefName(theGene.chr),
+                                    me.getVcfRefName(theGene.chr),  // todo: left off here, think this is 'chr' naming problem...
                                     theGene,
                                     theTranscript,
                                     isMultiSample, // is multi-sample
                                     me.getCohortModel().selectedSamples,
-                                    false,
+                                    false, // todo: this is diff than global call
                                     bcsqImpactMap
                                 );
                             })
@@ -1781,7 +1783,8 @@ class SampleModel {
                                 resultMap = data[1];
                                 resolve(resultMap);
                             }).catch(error => {
-                            reject(error)
+                                debugger;
+                                reject(error)
                         })
                     }
                 });
@@ -1802,7 +1805,6 @@ class SampleModel {
                 filtData = results[0];
             }
 
-            // todo: no gene prop here
             let theGeneObject = me.getGeneModel().geneObjects[filtData.gene];
             if (theGeneObject) {
 
@@ -1847,7 +1849,7 @@ class SampleModel {
     }
 
     promiseAnnotateVariants(theGene, theTranscript, sampleModels, isMultiSample, isBackground) {
-        let me = this;
+        const me = this;
 
         return new Promise(function (resolve, reject) {
             // First the gene vcf data has been cached, just return

@@ -781,7 +781,9 @@ export default function vcfiobio(theGlobalApp) {
                     reject('No vcf url to pull somatic variants from');
                 }
 
+                // todo: this is incorrect logic - want to do this even if file is local
                 if (sourceType === SOURCE_TYPE_URL) {
+                    debugger;
                     let cmd = self.getEndpoint().annotateSomaticVariants({
                         'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl,
@@ -937,7 +939,9 @@ export default function vcfiobio(theGlobalApp) {
     exports._getAllVariants = function (refName, geneObject, selectedTranscript, isMultiSample, selectedSamples, somaticOnlyMode, bcsqImpactMap, callback) {
         const me = this;
 
-        let regions = somaticOnlyMode ? null : [refName + ':' + geneObject.start + '-' + geneObject.end];
+        // todo: this is incorrect - somaticOnly mode no longer affects search space - only gene list input
+        // todo: this call is only used for non global call though...
+        let regions = somaticOnlyMode ? [] : [refName + ':' + geneObject.start + '-' + geneObject.end];
         let somaticFilterPhrase = '';
         let cmd = me.getEndpoint().annotateSomaticVariants({
             'vcfUrl': vcfURL,

@@ -1,7 +1,6 @@
 // import CacheHelper from './CacheHelper.js'
 // import VariantImporter from './VariantImporter.js'
 import SampleModel from './SampleModel.js'
-import CmmlUrls from '../data/cmml_urls.json'
 import SubcloneModel from './SubcloneModel.js';
 
 /* One per patient - contains sample models for tumor and normal samples. */
@@ -55,7 +54,7 @@ class CohortModel {
         // somatic specific
         this.allSomaticFeaturesLookup = {};     // Contains the IDs corresponding to variants from all tumor tracks classified as somatic
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
-        this.onlySomaticCalls = true;       // SOMATIC ONLY MODE OUT JUL2023 - leaving in for now but todo: cleanup
+        this.onlySomaticCalls = true;       // Controls variant symbol coloring in tumor tracks
         this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
         this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
         this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
@@ -69,11 +68,6 @@ class CohortModel {
 
         this.knownVariantViz = 'variants';     // variants, histo, histoExon
         this.cosmicVariantViz = 'counts';
-        this.demoCmmlFiles = false;             // If true, loads demo CMML data - ONLY FOR LOCAL DEV todo: deprecated - get rid of
-        this.demoVcfs = this.getDemoVcfs();
-        this.demoBams = this.getDemoBams();
-        this.demoModelInfos = this.getDemoModelInfos();
-        this.demoGenes = ['KRAS', 'APC', 'BRCA2', 'TGFB1', 'RB1'];
 
         this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
         this.sampleModelUtil.init(this);
@@ -88,214 +82,6 @@ class CohortModel {
     /*
      * GETTERS
      */
-
-    // todo: this needs to be updated with valid sample data
-    getDemoVcfs() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeriesVcf': CmmlUrls['pt1Vcf'],
-                'timeSeriesTbi': CmmlUrls['pt1Tbi'],
-                'dualVcf': CmmlUrls['pt1Vcf'],
-                'dualTbi': CmmlUrls['pt1Tbi']
-            };
-        } else {
-            return {
-                'timeSeries': "https://s3.amazonaws.com/iobio/gene/wgs_platinum/platinum-trio.vcf.gz",
-                'dual': "https://s3.amazonaws.com/iobio/gene/wgs_platinum/platinum-trio.vcf.gz"
-            };
-        }
-    }
-
-    // todo: this needs to be updated with valid sample data
-    getDemoBams() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeries': {
-                    't0Bam': CmmlUrls['t0Bam'],
-                    't1Bam': CmmlUrls['t1Bam'],
-                    't2Bam': CmmlUrls['t2Bam'],
-                    't3Bam': CmmlUrls['t3Bam'],
-                    't0Bai': CmmlUrls['t0Bai'],
-                    't1Bai': CmmlUrls['t1Bai'],
-                    't2Bai': CmmlUrls['t2Bai'],
-                    't3Bai': CmmlUrls['t3Bai']
-                },
-                'dual': {
-                    'normalBam': CmmlUrls['t0Bam'],
-                    'normalBai': CmmlUrls['t0Bai'],
-                    'tumorBam': CmmlUrls['t3Bam'],
-                    'tumorBai': CmmlUrls['t3Bai']
-                }
-            };
-        } else {
-            return {
-                'timeSeries': {
-                    't0': 'https://s3.amazonaws.com/iobio/samples/bam/NA12878.exome.bam',
-                    't1': 'https://s3.amazonaws.com/iobio/samples/bam/NA12892.exome.bam',
-                    't2': 'https://s3.amazonaws.com/iobio/samples/bam/NA12891.exome.bam',
-                    't3': 'https://s3.amazonaws.com/iobio/samples/bam/NA12891.exome.bam'
-                },
-                'dual': {
-                    'normal': 'https://s3.amazonaws.com/iobio/gene/wgs_platinum/NA12878.bam',
-                    'tumor': 'https://s3.amazonaws.com/iobio/gene/wgs_platinum/NA12892.bam'
-                }
-            };
-        }
-    }
-
-    // todo: this needs to be updated with valid sample data
-    getDemoModelInfos() {
-        let self = this;
-        if (self.demoCmmlFiles) {
-            return {
-                'timeSeries': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'CMML Normal',
-                        'selectedSample': '14063X1',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t0Bam'],
-                        'bai': this.demoBams.timeSeries['t0Bai'],
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'CMML T1',
-                        'selectedSample': '11200X11',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t1Bam'],
-                        'bai': this.demoBams.timeSeries['t1Bai'],
-                        'order': 1
-                    },
-                    {
-                        id: 's2',
-                        isTumor: true,
-                        displayName: 'CMML T2',
-                        'selectedSample': '11200X12',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t2Bam'],
-                        'bai': this.demoBams.timeSeries['t2Bai'],
-                        'order': 2
-                    },
-                    {
-                        id: 's3',
-                        isTumor: true,
-                        displayName: 'CMML T3',
-                        'selectedSample': '11200X9',
-                        'vcf': this.demoVcfs.timeSeriesVcf,
-                        'tbi': this.demoVcfs.timeSeriesTbi,
-                        'bam': this.demoBams.timeSeries['t3Bam'],
-                        'bai': this.demoBams.timeSeries['t3Bai'],
-                        'order': 3
-                    }
-                ],
-                'dual': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'CMML Normal',
-                        'selectedSample': '14063X1',
-                        'vcf': this.demoVcfs.dualVcf,
-                        'tbi': this.demoVcfs.dualTbi,
-                        'bam': this.demoBams.dual['normalBam'],
-                        'bai': this.demoBams.dual['normalBai'],
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'CMML Tumor',
-                        'selectedSample': '11200X9',
-                        'vcf': this.demoVcfs.dualVcf,
-                        'tbi': this.demoVcfs.dualTbi,
-                        'bam': this.demoBams.dual['tumorBam'],
-                        'bai': this.demoBams.dual['tumorBai'],
-                        'order': 1
-                    }
-                ]
-            };
-        } else {
-            return {
-                'timeSeries': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'Normal',
-                        'selectedSample': 'NA12878',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t0'],
-                        'bai': null,
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'T1 Tumor',
-                        'selectedSample': 'NA12892',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t1'],
-                        'bai': null,
-                        'order': 1
-                    },
-                    {
-                        id: 's2',
-                        isTumor: true,
-                        displayName: 'T2 Tumor',
-                        'selectedSample': 'NA12891',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t2'],
-                        'bai': null,
-                        'order': 2
-                    },
-                    {
-                        id: 's3',
-                        isTumor: true,
-                        displayName: 'T3 Tumor',
-                        'selectedSample': 'NA12891',
-                        'vcf': this.demoVcfs.timeSeries,
-                        'tbi': null,
-                        'bam': this.demoBams.timeSeries['t3'],
-                        'bai': null,
-                        'order': 3
-                    }
-                ],
-                'dual': [
-                    {
-                        id: 's0',
-                        isTumor: false,
-                        displayName: 'Normal',
-                        'selectedSample': 'NA12878',
-                        'vcf': this.demoVcfs.dual,
-                        'tbi': null,
-                        'bam': this.demoBams.dual['normal'],
-                        'bai': null,
-                        'order': 0
-                    },
-                    {
-                        id: 's1',
-                        isTumor: true,
-                        displayName: 'Tumor',
-                        'selectedSample': 'NA12892',
-                        'vcf': this.demoVcfs.dual,
-                        'tbi': null,
-                        'bam': this.demoBams.dual['tumor'],
-                        'bai': null,
-                        'order': 1
-                    }
-                ]
-            };
-        }
-    }
     createModelInfo(selectedSample, isTumor, modelInfoIdx) {
         let modelInfo = {};
 
@@ -851,10 +637,11 @@ class CohortModel {
         return Object.keys(theVcfs).length === 1;
     }
 
-    /* If a somatic variant list is not provided, fetches the list of somatic variants based on the current filtering criteria.
-     * Additionally annotates all somatic CNVs at the specified gene regions.
-     * Then groups and ranks the variants and CNVs by gene, and returns a rank object. */
-    promiseAnnotateGlobalSomatics() {
+    /* The main entry point of the application. Retrieves somatic variants from
+     * user-provided vcf, and annotates consequence. Additionally, annotates all
+     * somatic CNVs at the specified gene regions, if CNV files provided.
+     * Then groups and ranks the variants + CNVs by gene, and returns a rank object. */
+    promiseGetRankedGlobalSomatics() {
         const self = this;
         self.somaticVarMap = {};
         self.somaticCnvMap = {};
@@ -876,13 +663,10 @@ class CohortModel {
 
             Promise.all(promises)
                 .then(() => {
-                    let geneP = self.onlySomaticCalls ?
-                        self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {
-                            replace: true,
-                            warnOnDup: false
-                        })
-                        : Promise.resolve();
-                    geneP.then(() => {
+                    self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {
+                        replace: true,
+                        warnOnDup: false
+                    }).then(() => {
                         let cnvP = self.hasCnvData ?
                             self.promiseAnnotateSomaticCnvs() : Promise.resolve();
                         cnvP.then(somaticCnvMap => {
@@ -931,7 +715,6 @@ class CohortModel {
                     tumorCnvModels.push(tumorModel.cnv);
                 }
             });
-            // todo: left off here - removing all references to getNormalModelREPLACE
             let somaticCnvs = self.filterModel.annotateSomaticCnvs(normalCnvModels, tumorCnvModels, genes);
             resolve(somaticCnvs);
         })
@@ -967,8 +750,9 @@ class CohortModel {
     }
 
 
-    /* Loads data for all samples for a single gene */
-    promiseLoadData(theGene, theTranscript, options) {
+    /* Loads variant, coverage (optional), and copy number (optional)
+     * for all samples for a single gene. */
+    promiseGetLocalData(theGene, theTranscript, options) {
         const self = this;
         const transcriptChange = options.transcriptChange;
         let promises = [];
@@ -1182,7 +966,7 @@ class CohortModel {
                     normalSelectedSampleIdxs.push(model.selectedSampleIdx);
                 }
             });
-            const somaticFilterPhrase = self.onlySomaticCalls ? '' : self.filterModel.getSomaticFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
+            const filterPhrase = self.filterModel.getFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
             self.selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
                 self.selectedSamples.push(model.selectedSample);
@@ -1191,7 +975,7 @@ class CohortModel {
             if (!self.onlySomaticCalls) {
                 regions = self.geneModel.getFormattedGeneRegions();
             }
-            self.sampleModelUtil.vcf.promiseAnnotateSomaticVariants(somaticFilterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
+            self.sampleModelUtil.vcf.promiseAnnotateSomaticVariants(filterPhrase, self.selectedSamples, regions, self.onlySomaticCalls, self.translator.bcsqImpactMap)
                 .then((returnArr) => {
                     // Always populate unique variant dictionary
                     let sampleMap = returnArr['sampleMap'];
@@ -1509,12 +1293,14 @@ class CohortModel {
         })
     }
 
+    /* Loads and annotates variants for this cohort, for a given gene. */
     promiseLoadVariants(theGene, theTranscript, options) {
         let self = this;
 
         return new Promise(function (resolve, reject) {
             const isMultiSample = true; // We require a multi-sample vcf for now
             self.promiseAnnotateVariants(theGene, theTranscript, isMultiSample, false, options)
+                // todo: why do we return a result map here that we don't use?
                 .then(function (resultMap) {
                     resolve(resultMap);
                 })
@@ -1924,6 +1710,7 @@ class CohortModel {
             }
             Promise.all(annotatePromises)
                 .then(function () {
+                    // todo: annotate with cosmic individually here - cosmic
                     if (self.cosmicVariantIdHash) {
                         let cosmicPs = [];
                         Object.values(theResultMap).forEach(modelObj => {

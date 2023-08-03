@@ -261,6 +261,7 @@ class FilterModel {
      *  If globalMode is true, returns a map of selectedSampleId: somaticFeatureList.
      *  Otherwise, returns a dictionary of somatic variant IDs from all tumor tracks combined.
      */
+    // todo: look at if somaticOnlyMode is actually determining correct behavior here
     promiseAnnotateVariantInheritance(resultMap, featuresList, globalMode, somaticOnlyMode) {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -909,8 +910,13 @@ class FilterModel {
         return criteria;
     }
 
-    /* Returns final filtering phrase, including depth and quality, for filtering somatic variants. */
-    getSomaticFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
+    /* Returns final filtering phrase, including depth and quality, for filtering variants.
+     * If only tumor samples, or normal sample does not contain any variants, the vcf is assumed
+     * to be pre-filtered for somatic only variants, and the filter phrase only contains quality and
+     * depth requirements. If alternatively, a normal sample with variants is present,
+     * somatic filtering criteria is also included, unless removed by the user.
+     */
+    getFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
         const somaticCriteria = this.getSomaticCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
         const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria);
         const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria);
@@ -920,7 +926,7 @@ class FilterModel {
     }
 
     /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
-     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
+     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes or GATK and incorporate logic. */
     getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria) {
         let normalPhrase = '';
         for (let i = 0; i < normalSelSampleIdxs.length; i++) {
@@ -935,7 +941,7 @@ class FilterModel {
         return normalPhrase;
     }
 
-    /* Returns tumor filtering phrase for normal samples based on current somatic criteria.
+    /* Returns tumor filtering phrase for tumor samples based on current somatic criteria.
      * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
     getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria) {
         let tumorPhrase = '';

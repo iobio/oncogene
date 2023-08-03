@@ -597,7 +597,7 @@ export default {
               self.sampleIds.push(model.id);
               self.selectedSamples.push(model.selectedSample);
             });
-            self.getSomaticVariants(configLastGene);
+            self.getRankedGlobalVariants(configLastGene);
           }).catch(error => {
         console.log('There was a problem initializing cohort model: ' + error);
       });
@@ -605,14 +605,14 @@ export default {
     reloadAnalysis: function (filterSettings) {
       // Set filtering criteria in model
       this.filterModel.loadFilterSettings(filterSettings);
-      this.getSomaticVariants();
+      this.getRankedGlobalVariants();
     },
-    getSomaticVariants: function (configLastGene) {
+    getRankedGlobalVariants: function (configLastGene) {
       const self = this;
       self.selectedVariant = null;
       self.displayLoader = true;
       self.geneModel.clearGeneObjects();
-      self.cohortModel.promiseAnnotateGlobalSomatics()
+      self.cohortModel.promiseGetRankedGlobalSomatics()
           .then(retObj => {
             let rankObj = retObj.rankObj;
             //let groupObj = retObj.groupObj;
@@ -673,7 +673,7 @@ export default {
               self.displayLoader = false;
               // todo: here is where we're not returning anything
               // todo: rename this - it's more like getting variants for individual gene
-              self.promiseLoadData(self.selectedGene, self.selectedTranscript, false, globalMode)
+              self.promiseGetLocalVariants(self.selectedGene, self.selectedTranscript, false, globalMode)
                   // todo: silently put this in a list
                   // .then(() => {
                   //   if (Object.keys(self.unmatchedGenes).length > 0) {
@@ -696,7 +696,7 @@ export default {
             console.log('There was a problem calling global somatics: ' + error);
       });
     },
-    promiseLoadData: function (selectedGene, selectedTranscript, transcriptChange, globalMode) {
+    promiseLoadLocalData: function (selectedGene, selectedTranscript, transcriptChange, globalMode) {
       const self = this;
 
       return new Promise(function (resolve, reject) {
@@ -706,7 +706,7 @@ export default {
         options['globalMode'] = globalMode;
         options['keepHomRefs'] = true;
 
-        self.cohortModel.promiseLoadData(selectedGene,
+        self.cohortModel.promiseGetLocalData(selectedGene,
             selectedTranscript,
             options)
             .then(function () {
@@ -965,7 +965,7 @@ export default {
                   let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
                   self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
                       .then(() => {
-                        self.promiseLoadData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
+                        self.promiseLoadLocalData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
                             .then(function () {
                               self.clearZoom = false;
                               self.showVarViz = true;

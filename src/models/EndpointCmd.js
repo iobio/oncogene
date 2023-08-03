@@ -2,7 +2,7 @@ import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl, chromNameMap) {
-        this.DEV_MODE = false;
+        this.DEV_MODE = true;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;
@@ -53,8 +53,8 @@ export default class EndpointCmd {
      * The somaticCriteria object contains filters for defining 'somaticness'/
      */
     annotateSomaticVariants(vcfSource, selectedSamples, geneRegions, somaticFilterPhrase) {
-        const selectedSamplesStr = selectedSamples.join();
-        const geneRegionsStr = geneRegions.join();
+        const selectedSamplesStr = selectedSamples ? selectedSamples.join() : "";
+        const geneRegionsStr = geneRegions ? geneRegions.join() : "";
         const genomeBuildName = this.genomeBuildHelper.getCurrentBuildName();
 
         if (this.globalApp.useVEP) {
