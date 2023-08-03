@@ -87,7 +87,7 @@
                     :showCoverageCutoffs="showCoverageCutoffs"
                     :annotationComplete="annotationComplete"
                     :applyFilters="applyFilters"
-                    @recall-somatic-variants="getSomaticVariants"
+                    @recall-global-variants="getRankedGlobalVariants"
                     @filter-change="onFilterChange">
                 </filter-panel-menu>
               </v-tab-item>
@@ -648,7 +648,7 @@ export default {
               .then(() => {
                 self.expandedUserList = true;
                 self.expandSnackbar = true;
-                self.getSomaticVariants();
+                self.getRankedGlobalVariants();
               })
             } else if (totalSomaticVarCount === 0 && self.expandedUserList) {
               // Already tried to expand user list, give them warning to manually explore
@@ -671,9 +671,7 @@ export default {
               const globalMode = true;
               // Get rid of global loader
               self.displayLoader = false;
-              // todo: here is where we're not returning anything
-              // todo: rename this - it's more like getting variants for individual gene
-              self.promiseGetLocalVariants(self.selectedGene, self.selectedTranscript, false, globalMode)
+              self.promiseLoadLocalData(self.selectedGene, self.selectedTranscript, false, globalMode)
                   // todo: silently put this in a list
                   // .then(() => {
                   //   if (Object.keys(self.unmatchedGenes).length > 0) {
@@ -700,21 +698,25 @@ export default {
       const self = this;
 
       return new Promise(function (resolve, reject) {
-        let options = {'getKnownVariants': false};
-        options['getCosmicVariants'] = false;
-        options['transcriptChange'] = transcriptChange;
-        options['globalMode'] = globalMode;
-        options['keepHomRefs'] = true;
+        let options = {
+          'getClinvarVariants': false,
+          'getCosmicVariants': false,
+          'transcriptChange': transcriptChange,
+          'globalMode': globalMode,
+          'keepHomRefs': true,
+          'isBackground': false,
+          'multiSampleVcf': true
+        };
 
         self.cohortModel.promiseGetLocalData(selectedGene,
             selectedTranscript,
             options)
             .then(function () {
+              // todo: can I get rid of this? then can just have promiseGetLocalData instead of this wrapper function
               self.cohortModel.promiseMarkCodingRegions(selectedGene, selectedTranscript)
                   .then(function (data) {
                     self.analyzedTranscript = data.transcript;
                     self.coverageDangerRegions = data.dangerRegions;
-                    //self.$refs.genesCardRef.determineFlaggedGenes();    // todo: this won't work
                     console.log(data);
                     resolve();
                   });

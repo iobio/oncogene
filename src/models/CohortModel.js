@@ -648,7 +648,7 @@ class CohortModel {
 
         return new Promise((resolve, reject) => {
             let promises = [];
-            let varP = self.promiseAnnotateSomaticVariants()
+            let varP = self.promiseAnnotateFilteredVariants()
                 .then((somaticVariants) => {
                     if (self.hasCnvData) {
                         self.annotateCnvsOnVariants(somaticVariants);
@@ -774,7 +774,7 @@ class CohortModel {
 
                 self.assignCategoryOrders();
 
-                let p1 = self.promiseLoadVariants(theGene, theTranscript, options)
+                let varP = self.promiseLoadLocalVariants(theGene, theTranscript, options)
                     .then(() => {
                         // Have to wait until each track is processed to add ptCov annotations
                         let geneObj = self.geneModel.geneObjects[theGene.gene_name];
@@ -865,34 +865,34 @@ class CohortModel {
                             });
                         }
                     });
-                promises.push(p1);
+                promises.push(varP);
 
-                let p2 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.COVERAGE_TYPE)
+                let depthP = self.promiseLoadLocalCoverage(theGene, theTranscript, self.globalApp.COVERAGE_TYPE)
                     .then(function () {
                         self.setCoverage(null, null, self.globalApp.COVERAGE_TYPE);
                     });
-                promises.push(p2);
+                promises.push(depthP);
 
                 if (self.hasRnaSeqData) {
                     // Get sampled data across gene
-                    let p3 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.RNASEQ_TYPE)
+                    let rnaP = self.promiseLoadLocalCoverage(theGene, theTranscript, self.globalApp.RNASEQ_TYPE)
                         .then(function () {
                             self.setCoverage(null, null, self.globalApp.RNASEQ_TYPE);
                         }).catch(error => {
                             console.log("Problem loading rnaseq data: " + error);
                         });
-                    promises.push(p3);
+                    promises.push(rnaP);
                 }
 
                 if (self.hasAtacSeqData) {
                     // Get sampled data across gene
-                    let p4 = self.promiseLoadCoverage(theGene, theTranscript, self.globalApp.ATACSEQ_TYPE)
+                    let atacP = self.promiseLoadLocalCoverage(theGene, theTranscript, self.globalApp.ATACSEQ_TYPE)
                         .then(function () {
                             self.setCoverage(null, null, self.globalApp.ATACSEQ_TYPE);
                         }).catch(error => {
                             console.log("Problem loading atacseq data: " + error);
                         });
-                    promises.push(p4);
+                    promises.push(atacP);
                 }
 
                 if (self.hasCnvData) {
@@ -952,9 +952,9 @@ class CohortModel {
         })
     }
 
-    /* Returns all somatic variants for entire genome according to somatic and quality criteria.
+    /* Returns all variants for provided region according to provided filtering criteria.
      * NOTE: Only works for single joint vcf containing a single normal sample & 1+ tumor samples */
-    promiseAnnotateSomaticVariants() {
+    promiseAnnotateFilteredVariants() {
         const self = this;
         return new Promise((resolve, reject) => {
             let normalSelectedSampleIdxs = [];
@@ -966,6 +966,7 @@ class CohortModel {
                     normalSelectedSampleIdxs.push(model.selectedSampleIdx);
                 }
             });
+            // todo: left off here - move filter phrase out of this function and pass in
             const filterPhrase = self.filterModel.getFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
             self.selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
@@ -1294,23 +1295,62 @@ class CohortModel {
     }
 
     /* Loads and annotates variants for this cohort, for a given gene. */
-    promiseLoadVariants(theGene, theTranscript, options) {
-        let self = this;
+    promiseLoadLocalVariants(theGene, theTranscript, options) {
+        const self = this;
 
         return new Promise(function (resolve, reject) {
-            const isMultiSample = true; // We require a multi-sample vcf for now
-            self.promiseAnnotateVariants(theGene, theTranscript, isMultiSample, false, options)
-                // todo: why do we return a result map here that we don't use?
-                .then(function (resultMap) {
-                    resolve(resultMap);
-                })
-                .catch(function (error) {
-                    reject(error);
-                })
+            let annotatePromises = [];
+            let theResultMap = {};
+            const multiSampleVcf = options.multiSampleVcf;
+            const isBackground = options.isBackground;
+
+            // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
+            let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, multiSampleVcf, self.translator.bcsqImpactMap)
+                .then((resultMap) => {
+                    if (resultMap && resultMap.sampleMap) {
+                        resultMap.sampleMap.forEach(resultObj => {
+                            let sampleModel = self.getModelBySelectedSample(resultObj.name);
+                            sampleModel.processVariants([resultObj]);
+                            theResultMap[sampleModel.id] = resultObj;
+                        });
+                        self.annotationComplete = false;
+                    } else {
+                        reject('No sampleMap returned when getting all variants');
+                    }
+                }).catch((error) => {
+                    reject('Problem annotating variants: ' + error);
+                });
+            annotatePromises.push(p);
+
+            Promise.all(annotatePromises)
+                .then(function () {
+                    // todo: annotate with cosmic individually here - cosmic
+                    if (self.cosmicVariantIdHash) {
+                        let cosmicPs = [];
+                        Object.values(theResultMap).forEach(modelObj => {
+                            cosmicPs.push(self.promiseAnnotateWithCosmic(modelObj.features));
+                        });
+                        Promise.all(cosmicPs)
+                            .then(function (updatedResultMap) {
+                                self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
+                                    .then(function (data) {
+                                        self.annotationComplete = true;
+                                        resolve(data)
+                                    });
+                            });
+                    } else {
+                        console.log("Could not annotate with COSMIC b/c hash map not populated");
+                        self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
+                            .then(function (data) {
+                                self.annotationComplete = true;
+                                resolve(data)
+                            });
+                    }
+                });
         })
     }
 
-    promiseLoadCoverage(theGene, theTranscript, bamType) {
+    promiseLoadLocalCoverage(theGene, theTranscript, bamType) {
         let self = this;
         return new Promise(function (resolve, reject) {
 
@@ -1671,70 +1711,71 @@ class CohortModel {
         })
     }
 
-    promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
-        const self = this;
-
-        return new Promise(function (resolve, reject) {
-            let annotatePromises = [];
-            let theResultMap = {};
-
-            // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
-                .then((resultMap) => {
-                    if (resultMap && resultMap.sampleMap) {
-                        resultMap.sampleMap.forEach(resultObj => {
-                            let sampleModel = self.getModelBySelectedSample(resultObj.name);
-                            sampleModel.processVariants([resultObj]);
-                            theResultMap[sampleModel.id] = resultObj;
-                        });
-                        self.annotationComplete = false;
-                    } else {
-                        reject('No sampleMap returned when getting all variants');
-                    }
-                }).catch((error) => {
-                    reject('Problem annotating variants: ' + error);
-                });
-            annotatePromises.push(p);
-
-            // Load clinvar track
-            if (options.getKnownVariants) {
-                let p = self.promiseLoadKnownVariants(theGene, theTranscript)
-                    .then(function (resultMap) {
-                        if (self.knownVariantViz === 'variants') {
-                            for (let id in resultMap) {
-                                theResultMap[id] = resultMap[id];
-                            }
-                        }
-                    });
-                annotatePromises.push(p);
-            }
-            Promise.all(annotatePromises)
-                .then(function () {
-                    // todo: annotate with cosmic individually here - cosmic
-                    if (self.cosmicVariantIdHash) {
-                        let cosmicPs = [];
-                        Object.values(theResultMap).forEach(modelObj => {
-                            cosmicPs.push(self.promiseAnnotateWithCosmic(modelObj.features));
-                        });
-                        Promise.all(cosmicPs)
-                            .then(function (updatedResultMap) {
-                                self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
-                                    .then(function (data) {
-                                        self.annotationComplete = true;
-                                        resolve(data)
-                                    });
-                            });
-                    } else {
-                        console.log("Could not annotate with COSMIC b/c hash map not populated");
-                        self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
-                            .then(function (data) {
-                                self.annotationComplete = true;
-                                resolve(data)
-                            });
-                    }
-                });
-        })
-    }
+    // todo: redundant, get rid of
+    // promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
+    //     const self = this;
+    //
+    //     return new Promise(function (resolve, reject) {
+    //         let annotatePromises = [];
+    //         let theResultMap = {};
+    //
+    //         // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
+    //         let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
+    //             .then((resultMap) => {
+    //                 if (resultMap && resultMap.sampleMap) {
+    //                     resultMap.sampleMap.forEach(resultObj => {
+    //                         let sampleModel = self.getModelBySelectedSample(resultObj.name);
+    //                         sampleModel.processVariants([resultObj]);
+    //                         theResultMap[sampleModel.id] = resultObj;
+    //                     });
+    //                     self.annotationComplete = false;
+    //                 } else {
+    //                     reject('No sampleMap returned when getting all variants');
+    //                 }
+    //             }).catch((error) => {
+    //                 reject('Problem annotating variants: ' + error);
+    //             });
+    //         annotatePromises.push(p);
+    //
+    //         // Load clinvar track
+    //         if (options.getClinvarVariants) {
+    //             let p = self.promiseLoadKnownVariants(theGene, theTranscript)
+    //                 .then(function (resultMap) {
+    //                     if (self.knownVariantViz === 'variants') {
+    //                         for (let id in resultMap) {
+    //                             theResultMap[id] = resultMap[id];
+    //                         }
+    //                     }
+    //                 });
+    //             annotatePromises.push(p);
+    //         }
+    //         Promise.all(annotatePromises)
+    //             .then(function () {
+    //                 // todo: annotate with cosmic individually here - cosmic
+    //                 if (self.cosmicVariantIdHash) {
+    //                     let cosmicPs = [];
+    //                     Object.values(theResultMap).forEach(modelObj => {
+    //                         cosmicPs.push(self.promiseAnnotateWithCosmic(modelObj.features));
+    //                     });
+    //                     Promise.all(cosmicPs)
+    //                         .then(function (updatedResultMap) {
+    //                             self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
+    //                                 .then(function (data) {
+    //                                     self.annotationComplete = true;
+    //                                     resolve(data)
+    //                                 });
+    //                         });
+    //                 } else {
+    //                     console.log("Could not annotate with COSMIC b/c hash map not populated");
+    //                     self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
+    //                         .then(function (data) {
+    //                             self.annotationComplete = true;
+    //                             resolve(data)
+    //                         });
+    //                 }
+    //             });
+    //     })
+    // }
 
     /* Assigns bool to each variant telling if in COSMIC or not */
     promiseAnnotateWithCosmic(featureList) {

@@ -146,7 +146,7 @@ export default {
     recallSomaticVariants: function () {
       this.filterModel.commitStagedChanges();
       this.activeRecallFilters = [];
-      this.$emit('recall-somatic-variants');
+      this.$emit('recall-global-variants');
     },
     clearRecallCriteria: function () {
       this.filterModel.clearAllStagedChanges();

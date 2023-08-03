@@ -406,9 +406,9 @@ export default {
         self.$emit('hide-alerts');
         self.displayLoader = true;
         self.cohortModel.sampleModelUtil.onVcfUrlEntered(vcfUrl, tbiUrl, function (success, sampleNames, hdrBuild) {
-          self.numSamplesInFile = sampleNames.length;
           self.displayLoader = false;
           if (success) {
+            self.numSamplesInFile = sampleNames.length;
             self.promiseUpdateModelInfo(self.URL, vcfUrl, tbiUrl, hdrBuild, uploadedSelectedSamples, sampleNames)
                 .then(() => {
                   resolve();
