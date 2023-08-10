@@ -29,6 +29,7 @@ class CohortModel {
 
         this.sampleModels = [];                 // List of sample models correlated with this cohort
         this.sampleMap = {};                    // Relates IDs to model objects
+        this.hasNormalSample = null;            // True if one of the samples in analysis is normal, aka non-tumor
         this.subsetSamples = false;             // True if the cohort does NOT contain every sample found in the joint-vcf file
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for subclone viz)
@@ -134,6 +135,14 @@ class CohortModel {
             }
         })
         return selectedSamples;
+    }
+
+    getNormalSampleStatus() {
+        if (this.hasNormalSample == null) {
+            console.log("ERROR: normal sample status never set in cohort model");
+        } else {
+            return this.hasNormalSample;
+        }
     }
 
     /*
@@ -249,7 +258,11 @@ class CohortModel {
                 self.geneModel.promiseCopyPasteGenes(userGeneString, null, {replace: true, warnOnDup: false});
             geneP.then(() => {
                     let samplePromises = [];
+                    this.hasNormalSample = false;
                     modelInfos.forEach(modelInfo => {
+                        if (!modelInfo.isTumor) {
+                            this.hasNormalSample = true;
+                        }
                         samplePromises.push(self.promiseAddSample(modelInfo, modelInfo.order));
                     });
                     samplePromises.push(self.promiseAddCosmicSample());
@@ -648,7 +661,21 @@ class CohortModel {
 
         return new Promise((resolve, reject) => {
             let promises = [];
-            let varP = self.promiseAnnotateFilteredVariants()
+
+            // Get filter phrase
+            let normalSelectedSampleIdxs = [];
+            let tumorSelectedSampleIdxs = [];
+            self.getCanonicalModels().forEach(model => {
+                if (model.isTumor) {
+                    tumorSelectedSampleIdxs.push(model.selectedSampleIdx);
+                } else {
+                    normalSelectedSampleIdxs.push(model.selectedSampleIdx);
+                }
+            });
+            const filterPhrase = self.filterModel.getFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
+
+            // Annotate filtered variants
+            let varP = self.promiseAnnotateFilteredVariants(filterPhrase)
                 .then((somaticVariants) => {
                     if (self.hasCnvData) {
                         self.annotateCnvsOnVariants(somaticVariants);
@@ -954,20 +981,9 @@ class CohortModel {
 
     /* Returns all variants for provided region according to provided filtering criteria.
      * NOTE: Only works for single joint vcf containing a single normal sample & 1+ tumor samples */
-    promiseAnnotateFilteredVariants() {
+    promiseAnnotateFilteredVariants(filterPhrase) {
         const self = this;
         return new Promise((resolve, reject) => {
-            let normalSelectedSampleIdxs = [];
-            let tumorSelectedSampleIdxs = [];
-            self.getCanonicalModels().forEach(model => {
-                if (model.isTumor) {
-                    tumorSelectedSampleIdxs.push(model.selectedSampleIdx);
-                } else {
-                    normalSelectedSampleIdxs.push(model.selectedSampleIdx);
-                }
-            });
-            // todo: left off here - move filter phrase out of this function and pass in
-            const filterPhrase = self.filterModel.getFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
             self.selectedSamples = [];
             self.getCanonicalModels().forEach(model => {
                 self.selectedSamples.push(model.selectedSample);

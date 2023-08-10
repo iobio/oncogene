@@ -19,7 +19,7 @@
     <v-layout row wrap>
         <v-flex id="name" xs12 class="mb-3">
             <v-expansion-panels multiple style="background-color: transparent !important">
-                <v-expansion-panel v-for="filter in filterModel.filters[filterName]"
+                <v-expansion-panel v-for="filter in filterModel.getFilters(filterName)"
                                    :ref="filter.name + 'ExpansionRef'"
                                    :key="filter.name"
                                    :value="filter.open"

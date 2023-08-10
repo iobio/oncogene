@@ -15,9 +15,11 @@ class FilterModel {
             tumorAltCount = 'tumorAltCount',
             tumorAltFreq = 'tumorAltFreq';
 
-        let annotation = 'annotation',
-            somatic = 'somatic',
-            quality = 'quality';
+        this.ANNOTATION = 'annotation';
+        this.COUNT = 'count';    // Previously 'somatic'
+        this.NORMAL_COUNT = 'normalCount';
+        this.TUMOR_COUNT = 'tumorCount';
+        this.QUALITY = 'quality';
 
         /* Class constants */
         this.QUAL_CUTOFF = qualCutoff;
@@ -31,12 +33,8 @@ class FilterModel {
         this.TUMOR_COUNT_LOGIC = tumorAltCount + '_LOGIC';
         this.TUMOR_FREQ = tumorAltFreq;
 
-        this.ANNOTATION_FILTER = annotation;
-        this.SOMATIC_FILTER = somatic;
-        this.QUAL_FILTER = quality;
-
         /* Somatic settings */
-        this.DEFAULT_SOMATIC_CUTOFFS = {
+        this.DEFAULT_COUNT_CUTOFFS = {
             normalAltFreq: 0.05,      // Must be between 0-1
             normalAltCount: 10,
             tumorAltFreq: 0.10,       // Must be between 0-1
@@ -53,25 +51,25 @@ class FilterModel {
         this.filterCategories =
             [
                 {
-                    name: annotation,
+                    name: this.ANNOTATION,
                     display: 'Annotation Filters',
                     active: false,
                     custom: false,
                     description: 'Filter by variant effect, impact, or type',
                     icon: 'category',
-                    activeForSomaticOnlyMode: true
+                    activeForSomaticOnlyMode: true // todo: I think I can get rid of this now
                 },
                 {
-                    name: somatic,
-                    display: 'Somatic Filters',
+                    name: this.COUNT,
+                    display: 'Frequency Filters',
                     active: false,
                     custom: false,
-                    description: 'Select a threshold for allele frequencies and observation counts by which to identify somatic variants',
+                    description: 'Select a threshold for allele frequencies and observation counts by which to display variants',
                     icon: 'flash_on',
                     activeForSomaticOnlyMode: false
                 },
                 {
-                    name: quality,
+                    name: this.QUALITY,
                     display: 'Quality Filters',
                     active: false,
                     custom: false,
@@ -84,10 +82,11 @@ class FilterModel {
         // Note: if filter names match variant object field names, don't have to manually add filter to getVarValue in Variant.d3 class
         // The actual filters that can be applied
         this.filters = {
+            // todo: would be awesome to put cosmic and clinvar in annotation filters here
             'annotation': [
                 {name: 'impact', display: 'Impact', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
                 {name: 'type', display: 'Type', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false}],
-            'somatic': [
+            'tumor_count': [
                 {
                     name: tumorAltFreq,
                     display: 'Tumor Allele Frequency',
@@ -99,11 +98,11 @@ class FilterModel {
                     maxValue: 100,
                     labelSuffix: '%',
                     defaultLogic: '>=',
-                    defaultVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltFreq * 100,
+                    defaultVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,
                     currLogic: '>=',
-                    currVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltFreq * 100,
+                    currVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,
                     prevLogic: '>=',        // the logic previously used to recall somatic variants
-                    prevVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltFreq * 100,    // the value ^
+                    prevVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,    // the value ^
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
                     recallFilter: true
@@ -117,16 +116,17 @@ class FilterModel {
                     tumorOnly: true,
                     labelSuffix: '',
                     defaultLogic: '>=',
-                    defaultVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltCount,
+                    defaultVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
                     currLogic: '>=',
-                    currVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltCount,
+                    currVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
                     prevLogic: '>=',
-                    prevVal: this.DEFAULT_SOMATIC_CUTOFFS.tumorAltCount,
+                    prevVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
                     recallFilter: true
-                },
-                {
+                }],
+            'normalCount': [
+                    {
                     name: normalAltFreq,
                     display: 'Normal Allele Frequency',
                     active: true,
@@ -137,11 +137,11 @@ class FilterModel {
                     maxValue: 100,
                     labelSuffix: '%',
                     defaultLogic: '<=',
-                    defaultVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltFreq * 100,
+                    defaultVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
                     currLogic: '<=',
-                    currVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltFreq * 100,
+                    currVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
                     prevLogic: '<=',
-                    prevVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltFreq * 100,
+                    prevVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
                     recallFilter: true
@@ -155,11 +155,11 @@ class FilterModel {
                     tumorOnly: false,
                     labelSuffix: '',
                     defaultLogic: '<=',
-                    defaultVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltCount,
+                    defaultVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
                     currLogic: '<=',
-                    currVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltCount,
+                    currVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
                     prevLogic: '<=',
-                    prevVal: this.DEFAULT_SOMATIC_CUTOFFS.normalAltCount,
+                    prevVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
                     recallFilter: true
@@ -224,6 +224,7 @@ class FilterModel {
             ]
         };
 
+        // todo: change to bcsq vs vep? change known-variants to clinvar...
         this.modelFilters = {
             'known-variants': {
                 'vepImpact': []
@@ -237,6 +238,30 @@ class FilterModel {
 
         this.filterHistory = {};        // Key: unique string composed of filter settings, Value: array of filter settings
         this.currentAnalysisKey = '';   // The current unique analysis string key
+    }
+
+    getNormalSampleStatus() {
+        if (this.cohortModel == null) {
+            console.log("Could not get normal sample status because filter model has no parent cohort model.");
+        } else {
+            return this.cohortModel.getNormalSampleStatus();
+        }
+    }
+
+    /* Returns filter objects associated with the provided category.
+     * This getter is mostly redundant, other than introducing logic when an analysis does
+     * not contain a normal sample. */
+    getFilters(filterCategory) {
+        if (filterCategory === this.COUNT) {
+            const hasNormalSample = this.getNormalSampleStatus();
+            if (hasNormalSample) {
+                return { ...this.filters[this.NORMAL_COUNT], ...this.filters[this.TUMOR_COUNT]};
+            } else {
+                return this.filters[this.TUMOR_COUNT];
+            }
+        } else {
+            return this.filters[filterCategory];
+        }
     }
 
     /* Marks variants as somatic, or non-inherited, if they fulfill the following:
@@ -326,14 +351,14 @@ class FilterModel {
                         if (globalMode) {
                             passesNormalCount = true;
                         } else {
-                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_COUNT, 'currVal'));
+                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currVal'));
                         }
                         let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
                         // let passesNormalAf = false;
                         // if (somaticOnlyMode) {
                         //     passesNormalAf = true;
                         // } else {
-                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
+                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
                         //}
                         if (currFeat.id != null && passesNormalCount && passesNormalAf) {
                             passesNormalFiltersLookup[currFeat.id] = true;
@@ -368,14 +393,14 @@ class FilterModel {
                         if (globalMode || somaticOnlyMode) {
                             passesTumorCount = true;
                         } else {
-                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_COUNT, 'currLogic'), feature.genotypeAltCount, self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_COUNT, 'currVal'));
+                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currLogic'), feature.genotypeAltCount, self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currVal'));
                         }
                         let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;
                         let passesTumorAf = false;
                         if (somaticOnlyMode) {
                             passesTumorAf = true;
                         } else {
-                            passesTumorAf = self.matchAndPassFilter(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_FREQ, 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(self.SOMATIC_FILTER, self.TUMOR_FREQ, 'currVal'), self.TUMOR_FREQ));
+                            passesTumorAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currVal'), self.TUMOR_FREQ));
                         }
 
                         if (passesNormalFiltersLookup[feature.id] && passesTumorAf && passesTumorCount) {
@@ -430,7 +455,7 @@ class FilterModel {
                     .then(coverageMap => {
                         for (var featId in coverageMap) {
                             let depth = coverageMap[featId];    // coverageMap respects order
-                            let depthObj = self.filters[self.QUAL_FILTER].filter(filt => {
+                            let depthObj = self.getFilters(self.QUALITY).filter(filt => {
                                 return filt.name === self.GENOTYPE_DEPTH;
                             });
                             if (depthObj.length <= 0) {
@@ -570,7 +595,7 @@ class FilterModel {
     updateFilterLogic(filterName, newLogic) {
         const self = this;
         for (var filterCatName in self.filters) {
-            let filterCat = self.filters[filterCatName];
+            let filterCat = self.getFilters(filterCatName);
             filterCat.forEach((filter) => {
                 if (filter.name === filterName) {
                     filter.currLogic = newLogic;
@@ -719,7 +744,7 @@ class FilterModel {
     getFilterObject(parentFilterName, filterName) {
         const self = this;
 
-        let filterObj = self.filters[parentFilterName].filter((cat) => {
+        let filterObj = self.getFilters(parentFilterName).filter((cat) => {
             return cat.name === filterName;
         });
         if (filterObj.length > 0) {
@@ -761,56 +786,57 @@ class FilterModel {
         return typesToHide;
     }
 
-    /* Returns filters that should be applied to tumor tracks.
-     * Does NOT include 'somatic' filters because those are used
-     * only for styling variants, not drawing/filtering out. */
-    getTumorCutoffFilters() {
-        const self = this;
-        const tumorFilters = [];
-        for (var filterCatName in self.filters) {
-            if (filterCatName !== this.ANNOTATION_FILTER && filterCatName !== this.SOMATIC_FILTER) {
-                const currFilters = self.filters[filterCatName];
-                currFilters.forEach((currFilter) => {
-                    if (currFilter.active) {
-                        tumorFilters.push(currFilter);
-                    }
-                });
-            }
-        }
-        return tumorFilters;
-    }
+    // todo: can I get rid of these?
+    // /* Returns filters that should be applied to tumor tracks.
+    //  * Does NOT include 'somatic' filters because those are used
+    //  * only for styling variants, not drawing/filtering out. */
+    // getTumorCutoffFilters() {
+    //     const self = this;
+    //     const tumorFilters = [];
+    //     for (var filterCatName in self.filters) {
+    //         if (filterCatName !== this.ANNOTATION && filterCatName !== this.COUNT) {
+    //             const currFilters = self.getFilters(filterCatName);
+    //             currFilters.forEach((currFilter) => {
+    //                 if (currFilter.active) {
+    //                     tumorFilters.push(currFilter);
+    //                 }
+    //             });
+    //         }
+    //     }
+    //     return tumorFilters;
+    // }
+    //
+    // /* Returns filters that should be applied to normal tracks.
+    //  * Does NOT include 'somatic' filters because those are used
+    //  * only for styling variants, not drawing/filtering out. */
+    // getNormalCutoffFilters() {
+    //     const self = this;
+    //     const normalFilters = [];
+    //     for (var filterCatName in self.filters) {
+    //         if (filterCatName !== this.ANNOTATION && filterCatName !== this.COUNT) {
+    //             const currFilters = self.getFilters(filterCatName);
+    //             currFilters.forEach((currFilter) => {
+    //                 if (!currFilter.tumorOnly && currFilter.active) {
+    //                     normalFilters.push(currFilter);
+    //                 }
+    //             });
+    //         }
+    //     }
+    //     return normalFilters;
+    // }
 
-    /* Returns filters that should be applied to normal tracks.
-     * Does NOT include 'somatic' filters because those are used
-     * only for styling variants, not drawing/filtering out. */
-    getNormalCutoffFilters() {
-        const self = this;
-        const normalFilters = [];
-        for (var filterCatName in self.filters) {
-            if (filterCatName !== this.ANNOTATION_FILTER && filterCatName !== this.SOMATIC_FILTER) {
-                const currFilters = self.filters[filterCatName];
-                currFilters.forEach((currFilter) => {
-                    if (!currFilter.tumorOnly && currFilter.active) {
-                        normalFilters.push(currFilter);
-                    }
-                });
-            }
-        }
-        return normalFilters;
-    }
-
-    /* Returns filters involved in recalling somatic.
-     * If activeOnly, returns those currently staged to recall somatic variants. */
+    /* Returns filters involved in recalling variants.
+     * If activeOnly, returns those currently staged to recall variants. */
     getRecallFilters(activeOnly) {
         let recallFilters = [];
-        this.filters[this.SOMATIC_FILTER].forEach(filter => {
+        this.getFilters(this.COUNT).forEach(filter => {
             if (!activeOnly)
                 recallFilters.push(filter);
             else if (filter.stagedLogic && filter.stagedVal >= 0 &&
                 !(filter.stagedLogic === filter.currLogic && filter.stagedVal === filter.stagedLogic))
                 recallFilters.push(filter);
         });
-        this.filters[this.QUAL_FILTER].forEach(filter => {
+        this.getFilters(this.QUALITY).forEach(filter => {
             if (!activeOnly)
                 recallFilters.push(filter);
             else if (filter.stagedLogic && filter.stagedVal >= 0 &&
@@ -822,10 +848,10 @@ class FilterModel {
 
     setActiveRecallFilters(filterSettings) {
         let foundMatch = false;
-        const somaticFilters = this.filters[this.SOMATIC_FILTER];
-        const qualityFilters = this.filters[this.QUAL_FILTER];
-        for (let i = 0; i < somaticFilters.length; i++) {
-            let filter = somaticFilters[i];
+        let countFilters = this.getFilters(this.COUNT);
+        const qualityFilters = this.getFilters(this.QUALITY);
+        for (let i = 0; i < countFilters.length; i++) {
+            let filter = countFilters[i];
             if (filter.name === filterSettings.name) {
                 filter.currLogic = filterSettings.currLogic;
                 filter.currVal = filterSettings.currVal;
@@ -888,21 +914,24 @@ class FilterModel {
         }
     }
 
-    /* Takes in arrays of normal and tumor selected sample idxs (see Sample Model constructor for definitions). */
-    getSomaticCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs) {
+    /* Takes in arrays of normal and tumor selected sample idxs (see Sample Model constructor for definitions).
+     * If no normal samples provided in analysis, does not include in filtering criteria*/
+    getFrequencyCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs) {
         const self = this;
-
         let criteria =  {
-            'normalSampleIdxs': normalSelSampleIdxs,
             'tumorSampleIdxs': tumorSelSampleIdxs,
             'totalSampleNum': normalSelSampleIdxs.length + tumorSelSampleIdxs.length
         };
+        // May not always have normal samples in analysis
+        if (normalSelSampleIdxs.length > 0) {
+           criteria['normalSampleIdxs'] = normalSelSampleIdxs;
+        }
 
-        self.filters[self.SOMATIC_FILTER].forEach(filter => {
+        self.getFilters(self.COUNT).forEach(filter => {
             criteria[filter.name] = filter.currVal;
             criteria[filter.name + '_LOGIC'] = filter.currLogic;
         });
-        self.filters[self.QUAL_FILTER].forEach(filter => {
+        self.getFilters(self.QUALITY).forEach(filter => {
             criteria[filter.name] = filter.currVal;
             criteria[filter.name + '_LOGIC'] = filter.currLogic;
         });
@@ -917,16 +946,24 @@ class FilterModel {
      * somatic filtering criteria is also included, unless removed by the user.
      */
     getFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
-        const somaticCriteria = this.getSomaticCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
-        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria);
-        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria);
+        // todo: left off here - checking to see if this functionality fits with new paradigm of passing filtering in
+        // for both global and local variant calling
+        // todo: may need to incorporate somaticOnly logic here, DEFINITELY that no normal sample possible
+
+        // todo: change this so that normal phrase returns empty if no normal sample
+        // todo: check formatting of combining tumorPhrase w/ empty normalPhrase string
+        // todo: what does freqCriteria look like?
+        const freqCriteria = this.getFrequencyCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
+        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, freqCriteria);
+        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, freqCriteria);
         const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
-        const qualPhrase = '(QUAL' + somaticCriteria[this.QUAL_LOGIC] + somaticCriteria[this.QUAL_CUTOFF] + ')';
+        const qualPhrase = '(QUAL' + freqCriteria[this.QUAL_LOGIC] + freqCriteria[this.QUAL_CUTOFF] + ')';
         return qualPhrase + '&&' + samplePhrase;
     }
 
     /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
      * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes or GATK and incorporate logic. */
+    // todo: left off here - account for possibility of no normal sample and don't hard-code for FB
     getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria) {
         let normalPhrase = '';
         for (let i = 0; i < normalSelSampleIdxs.length; i++) {
@@ -1022,7 +1059,7 @@ class FilterModel {
                 break;
             }
         }
-        let parentFilter = this.filters['annotation'].filter(filt => {
+        let parentFilter = this.getFilters(this.ANNOTATION).filter(filt => {
             return filt.name === parentName;
         });
         if (parentFilter.length > 0) {
