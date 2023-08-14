@@ -450,6 +450,7 @@ export default function vcfiobio(theGlobalApp) {
                         if (rec.indexOf("##contig") === 0) {
                             me._parseHeaderForContigFields(rec)
                         }
+                        // NOTE: not just INFO fields - but any informational field
                         if (rec.indexOf("#") === 0) {
                             me._parseHeaderForInfoFields(rec);
                         }
@@ -526,6 +527,12 @@ export default function vcfiobio(theGlobalApp) {
     exports.setSourceType = function (st) {
         sourceType = st;
     };
+    exports.getVariantCaller = function() {
+        return this.vcfCaller;
+    }
+    exports.setVariantCaller = function(caller) {
+        this.vcfCaller = caller;
+    }
 
     // function endsWith(str, suffix) {
     //   return str.indexOf(suffix, str.length - suffix.length) !== -1;
@@ -1150,6 +1157,9 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
+        // todo: add other caller options here
+        } else if (record.indexOf("INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes")) {
+            me.setVariantCaller('gatk');
         } else if (record.indexOf("subclone") === 2) {
             if (!me.infoFields.SUBCLONES) {
                 me.infoFields.SUBCLONES = [];

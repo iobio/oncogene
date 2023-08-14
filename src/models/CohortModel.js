@@ -145,6 +145,17 @@ class CohortModel {
         }
     }
 
+    /* Returns the variant caller used to generate vcf file.
+     * For example, GATK or Freebayes. */
+    getVarCallerUsed() {
+        let firstModel = this.getFirstSampleModel();
+        if (firstModel && firstModel.vcf) {
+            return firstModel.vcf.getVariantCaller();
+        } else {
+            console.log("Could not get variant caller from sample model.");
+        }
+    }
+
     /*
      * SETTERS
      */

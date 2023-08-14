@@ -249,6 +249,14 @@ class FilterModel {
         }
     }
 
+    getVarCallerUsed() {
+        if (this.cohortModel == null) {
+            console.log("Could not get variant caller because filter model has no parent cohort model.");
+        } else {
+            return this.cohortModel.getVarCallerUsed();
+        }
+    }
+
     /* Returns filter objects associated with the provided category.
      * This getter is mostly redundant, other than introducing logic when an analysis does
      * not contain a normal sample. */
@@ -964,8 +972,7 @@ class FilterModel {
     }
 
     /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
-     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes or GATK and incorporate logic. */
-    // todo: left off here - account for possibility of no normal sample and don't hard-code for FB
+     * If we don't have any normal samples, returns empty string. */
     getNormalFilterPhrase(normalSelSampleIdxs, countCriteria) {
         let normalPhrase = '';
         for (let i = 0; i < normalSelSampleIdxs.length; i++) {
@@ -973,15 +980,17 @@ class FilterModel {
             if (i > 0) {
                 normalPhrase += '||';
             }
-            normalPhrase += '(FORMAT/AO[' + idx + ':0]' + countCriteria[this.NORMAL_COUNT_OPERATOR] + countCriteria[this.NORMAL_COUNT];
+
+            let altNumAcronym = this._getAltNumAcronym();
+            // todo: BIG PROBLEM - how do I know which count to pull - not always 0?
+            normalPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.NORMAL_COUNT_OPERATOR] + countCriteria[this.NORMAL_COUNT];
             normalPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
             normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';
         }
         return normalPhrase;
     }
 
-    /* Returns tumor filtering phrase for tumor samples based on current somatic criteria.
-     * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
+    /* Returns tumor filtering phrase for tumor samples based on current somatic criteria. */
     getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria) {
         let tumorPhrase = '';
         for (let i = 0; i < tumorSelSampleIdxs.length; i++) {
@@ -989,10 +998,28 @@ class FilterModel {
             if (i > 0) {
                 tumorPhrase += '||';
             }
-            tumorPhrase += '(FORMAT/AO[' + idx + ':0]' + countCriteria[this.TUMOR_COUNT_OPERATOR] + countCriteria[this.TUMOR_COUNT];
+            let altNumAcronym = this._getAltNumAcronym();
+            // todo: BIG PROBLEM - how do I know which count to pull - not always 0?
+            tumorPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.TUMOR_COUNT_OPERATOR] + countCriteria[this.TUMOR_COUNT];
             tumorPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
         }
         return tumorPhrase;
+    }
+
+    /* Returns the acronym representing the number of alternate allele counts.
+     * This acronym varies by variant calling programs -
+     * for example, Freebayes uses AO, while GATK uses AC. */
+    // todo: add any others here...
+    _getAltNumAcronym() {
+        const varCallerUsed = this.getVarCallerUsed();
+        switch (varCallerUsed) {
+            case 'freebayes':
+                return 'AO';
+            case 'gatk':
+                return 'AC';
+            default:
+                console.log("ERROR: Could not determine acronym used to report alternate allele counts.");
+        }
     }
 
     /* Used to load in global filters from a previous analysis */
