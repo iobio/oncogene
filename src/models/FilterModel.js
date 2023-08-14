@@ -20,17 +20,18 @@ class FilterModel {
         this.NORMAL_COUNT = 'normalCount';
         this.TUMOR_COUNT = 'tumorCount';
         this.QUALITY = 'quality';
+        this.OPERATOR = '_OPERATOR';
 
         /* Class constants */
         this.QUAL_CUTOFF = qualCutoff;
-        this.QUAL_LOGIC = qualCutoff + '_LOGIC';
+        this.QUAL_OPERATOR = qualCutoff + this.OPERATOR;
         this.GENOTYPE_DEPTH = genotypeDepth;
-        this.DEPTH_LOGIC = genotypeDepth + '_LOGIC';
+        this.DEPTH_OPERATOR = genotypeDepth + this.OPERATOR;
         this.NORMAL_COUNT = normalAltCount;
-        this.NORMAL_COUNT_LOGIC = normalAltCount + '_LOGIC';
+        this.NORMAL_COUNT_OPERATOR = normalAltCount + this.OPERATOR;
         this.NORMAL_FREQ = normalAltFreq;
         this.TUMOR_COUNT = tumorAltCount;
-        this.TUMOR_COUNT_LOGIC = tumorAltCount + '_LOGIC';
+        this.TUMOR_COUNT_OPERATOR = tumorAltCount + this.OPERATOR;
         this.TUMOR_FREQ = tumorAltFreq;
 
         /* Somatic settings */
@@ -916,7 +917,7 @@ class FilterModel {
 
     /* Takes in arrays of normal and tumor selected sample idxs (see Sample Model constructor for definitions).
      * If no normal samples provided in analysis, does not include in filtering criteria*/
-    getFrequencyCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs) {
+    getCountCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs) {
         const self = this;
         let criteria =  {
             'tumorSampleIdxs': tumorSelSampleIdxs,
@@ -929,11 +930,12 @@ class FilterModel {
 
         self.getFilters(self.COUNT).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + '_LOGIC'] = filter.currLogic;
+            criteria[filter.name + this.OPERATOR] = filter.currLogic;
         });
         self.getFilters(self.QUALITY).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + '_LOGIC'] = filter.currLogic;
+            criteria[filter.name + this.OPERATOR] = filter.currLogic;
+            criteria[filter.name + this.OPERATOR] = filter.currLogic;
         });
 
         return criteria;
@@ -953,26 +955,26 @@ class FilterModel {
         // todo: change this so that normal phrase returns empty if no normal sample
         // todo: check formatting of combining tumorPhrase w/ empty normalPhrase string
         // todo: what does freqCriteria look like?
-        const freqCriteria = this.getFrequencyCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
-        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, freqCriteria);
-        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, freqCriteria);
+        const countCriteria = this.getCountCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
+        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, countCriteria);
+        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria);
         const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
-        const qualPhrase = '(QUAL' + freqCriteria[this.QUAL_LOGIC] + freqCriteria[this.QUAL_CUTOFF] + ')';
+        const qualPhrase = '(QUAL' + countCriteria[this.QUAL_OPERATOR] + countCriteria[this.QUAL_CUTOFF] + ')';
         return qualPhrase + '&&' + samplePhrase;
     }
 
     /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
      * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes or GATK and incorporate logic. */
     // todo: left off here - account for possibility of no normal sample and don't hard-code for FB
-    getNormalFilterPhrase(normalSelSampleIdxs, somaticCriteria) {
+    getNormalFilterPhrase(normalSelSampleIdxs, countCriteria) {
         let normalPhrase = '';
         for (let i = 0; i < normalSelSampleIdxs.length; i++) {
             const idx = normalSelSampleIdxs[i];
             if (i > 0) {
                 normalPhrase += '||';
             }
-            normalPhrase += '(FORMAT/AO[' + idx + ':0]' + somaticCriteria[this.NORMAL_COUNT_LOGIC] + somaticCriteria[this.NORMAL_COUNT];
-            normalPhrase += '&FORMAT/DP[' + idx + ':0]' + somaticCriteria[this.DEPTH_LOGIC] + somaticCriteria[this.GENOTYPE_DEPTH] + ')';
+            normalPhrase += '(FORMAT/AO[' + idx + ':0]' + countCriteria[this.NORMAL_COUNT_OPERATOR] + countCriteria[this.NORMAL_COUNT];
+            normalPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
             normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';
         }
         return normalPhrase;
@@ -980,15 +982,15 @@ class FilterModel {
 
     /* Returns tumor filtering phrase for tumor samples based on current somatic criteria.
      * NOTE: hardcoded for Freebayes right now, need to determine if Freebayes of GATK and incorporate logic. */
-    getTumorFilterPhrase(tumorSelSampleIdxs, somaticCriteria) {
+    getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria) {
         let tumorPhrase = '';
         for (let i = 0; i < tumorSelSampleIdxs.length; i++) {
             const idx = tumorSelSampleIdxs[i];
             if (i > 0) {
                 tumorPhrase += '||';
             }
-            tumorPhrase += '(FORMAT/AO[' + idx + ':0]' + somaticCriteria[this.TUMOR_COUNT_LOGIC] + somaticCriteria[this.TUMOR_COUNT];
-            tumorPhrase += '&FORMAT/DP[' + idx + ':0]' + somaticCriteria[this.DEPTH_LOGIC] + somaticCriteria[this.GENOTYPE_DEPTH] + ')';
+            tumorPhrase += '(FORMAT/AO[' + idx + ':0]' + countCriteria[this.TUMOR_COUNT_OPERATOR] + countCriteria[this.TUMOR_COUNT];
+            tumorPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
         }
         return tumorPhrase;
     }
