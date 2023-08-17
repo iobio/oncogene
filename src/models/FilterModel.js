@@ -249,11 +249,11 @@ class FilterModel {
         }
     }
 
-    getVarCallerUsed() {
+    promiseGetVarCallerUsed() {
         if (this.cohortModel == null) {
             console.log("Could not get variant caller because filter model has no parent cohort model.");
         } else {
-            return this.cohortModel.getVarCallerUsed();
+            return this.cohortModel.promiseGetVarCallerUsed();
         }
     }
 
@@ -264,9 +264,7 @@ class FilterModel {
         if (filterCategory === this.COUNT) {
             const hasNormalSample = this.getNormalSampleStatus();
             if (hasNormalSample) {
-                // todo: this syntax is wrong
-                this
-                return { ...this.filters[this.NORMAL_COUNT], ...this.filters[this.TUMOR_COUNT]};
+                return [ ...this.filters[this.NORMAL_COUNT], ...this.filters[this.TUMOR_COUNT]];
             } else {
                 return this.filters[this.TUMOR_COUNT];
             }
@@ -938,15 +936,14 @@ class FilterModel {
            criteria['normalSampleIdxs'] = normalSelSampleIdxs;
         }
 
-        debugger;
         self.getFilters(self.COUNT).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + this.OPERATOR] = filter.currOper;
+            criteria[filter.name + self.OPERATOR] = filter.currOper;
         });
         self.getFilters(self.QUALITY).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + this.OPERATOR] = filter.currOper;
-            criteria[filter.name + this.OPERATOR] = filter.currOper;
+            criteria[filter.name + self.OPERATOR] = filter.currOper;
+            criteria[filter.name + self.OPERATOR] = filter.currOper;
         });
 
         return criteria;
@@ -1006,15 +1003,17 @@ class FilterModel {
      * This acronym varies by variant calling programs -
      * for example, Freebayes uses AO, while GATK uses AC. */
     _getAltNumAcronym() {
-        const varCallerUsed = this.getVarCallerUsed();
-        switch (varCallerUsed) {
-            case 'freebayes':
-                return 'AO';
-            case 'gatk':
-                return 'AC';
-            default:
-                console.log("ERROR: Could not determine acronym used to report alternate allele counts.");
-        }
+        this.promiseGetVarCallerUsed()
+            .then(caller => {
+                switch (caller) {
+                    case 'freebayes':
+                        return 'AO';
+                    case 'gatk':
+                        return 'AC';
+                    default:
+                        console.log("ERROR: Could not determine acronym used to report alternate allele counts.");
+                }
+            })
     }
 
     /* Used to load in global filters from a previous analysis */

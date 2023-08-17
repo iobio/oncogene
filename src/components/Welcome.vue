@@ -1464,21 +1464,23 @@ export default {
       return (!s.optional || (s.optional && s.active)) && !s.complete;
     },
     launch: function (demoMode = false) {
+      const self = this;
       this.cohortModel.setInputDataTypes(this.selectedUserData);
       this.cohortModel.setBuild(this.selectedBuild);
-      //this.cohortModel.setCallType(this.somaticCallsOnly);
 
+      // todo: left off here, then remove demoOnly condition when fix; then back to testing promiseGetCaller
+      debugger; // todo: need to set vcfSampleNames when coming from demo - then can fill in missing selectedSampleIdx fields
       if (!demoMode) {
         let omittedSampleFlags = [];
         for (let i = 0; i < this.vcfSampleNames.length; i++) {
           omittedSampleFlags.push(1);
         }
         this.modelInfoList.forEach(modelInfo => {
-          let idx = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+          let idx = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
           omittedSampleFlags[idx] = 0;
         });
         this.modelInfoList.forEach(modelInfo => {
-          let bound = this.vcfSampleNames.indexOf(modelInfo.selectedSample);
+          let bound = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
           let numSkipBefore = 0;
           for (let i = 0; i < bound; i++) {
             numSkipBefore += omittedSampleFlags[i];
