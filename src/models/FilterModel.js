@@ -27,10 +27,10 @@ class FilterModel {
         this.QUAL_OPERATOR = qualCutoff + this.OPERATOR;
         this.GENOTYPE_DEPTH = genotypeDepth;
         this.DEPTH_OPERATOR = genotypeDepth + this.OPERATOR;
-        this.NORMAL_COUNT = normalAltCount;
+        this.NORMAL_ALT_COUNT = normalAltCount;
         this.NORMAL_COUNT_OPERATOR = normalAltCount + this.OPERATOR;
         this.NORMAL_FREQ = normalAltFreq;
-        this.TUMOR_COUNT = tumorAltCount;
+        this.TUMOR_ALT_COUNT = tumorAltCount;
         this.TUMOR_COUNT_OPERATOR = tumorAltCount + this.OPERATOR;
         this.TUMOR_FREQ = tumorAltFreq;
 
@@ -87,7 +87,7 @@ class FilterModel {
             'annotation': [
                 {name: 'impact', display: 'Impact', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false},
                 {name: 'type', display: 'Type', active: false, open: false, type: 'checkbox', tumorOnly: false, recallFilter: false}],
-            'tumor_count': [
+            'tumorCount': [
                 {
                     name: tumorAltFreq,
                     display: 'Tumor Allele Frequency',
@@ -98,11 +98,11 @@ class FilterModel {
                     minValue: 0,
                     maxValue: 100,
                     labelSuffix: '%',
-                    defaultLogic: '>=',
+                    defaultOper: '>=',
                     defaultVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,
-                    currLogic: '>=',
+                    currOper: '>=',
                     currVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,
-                    prevLogic: '>=',        // the logic previously used to recall somatic variants
+                    prevOper: '>=',        // the logic previously used to recall somatic variants
                     prevVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltFreq * 100,    // the value ^
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -116,11 +116,11 @@ class FilterModel {
                     type: 'slider',
                     tumorOnly: true,
                     labelSuffix: '',
-                    defaultLogic: '>=',
+                    defaultOper: '>=',
                     defaultVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
-                    currLogic: '>=',
+                    currOper: '>=',
                     currVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
-                    prevLogic: '>=',
+                    prevOper: '>=',
                     prevVal: this.DEFAULT_COUNT_CUTOFFS.tumorAltCount,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -137,11 +137,11 @@ class FilterModel {
                     minValue: 0,
                     maxValue: 100,
                     labelSuffix: '%',
-                    defaultLogic: '<=',
+                    defaultOper: '<=',
                     defaultVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
-                    currLogic: '<=',
+                    currOper: '<=',
                     currVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
-                    prevLogic: '<=',
+                    prevOper: '<=',
                     prevVal: this.DEFAULT_COUNT_CUTOFFS.normalAltFreq * 100,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -155,11 +155,11 @@ class FilterModel {
                     type: 'slider',
                     tumorOnly: false,
                     labelSuffix: '',
-                    defaultLogic: '<=',
+                    defaultOper: '<=',
                     defaultVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
-                    currLogic: '<=',
+                    currOper: '<=',
                     currVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
-                    prevLogic: '<=',
+                    prevOper: '<=',
                     prevVal: this.DEFAULT_COUNT_CUTOFFS.normalAltCount,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -176,11 +176,11 @@ class FilterModel {
                     minValue: 0,
                     maxValue: 100,
                     labelSuffix: '',
-                    defaultLogic: '>=',
+                    defaultOper: '>=',
                     defaultVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.genotypeDepth,
-                    currLogic: '>=',
+                    currOper: '>=',
                     currVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.genotypeDepth,
-                    prevLogic: '>=',
+                    prevOper: '>=',
                     prevVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.genotypeDepth,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -196,11 +196,11 @@ class FilterModel {
                     minValue: 0,
                     maxValue: 500,
                     labelSuffix: '',
-                    defaultLogic: '>=',
+                    defaultOper: '>=',
                     defaultVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.qualCutoff,
-                    currLogic: '>=',
+                    currOper: '>=',
                     currVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.qualCutoff,
-                    prevLogic: '>=',
+                    prevOper: '>=',
                     prevVal: this.DEFAULT_QUALITY_FILTERING_CRITERIA.qualCutoff,
                     stagedLogic: null,      // the logic slated to be changed for somatic variant recall
                     stagedVal: null,        // the value ^
@@ -264,6 +264,8 @@ class FilterModel {
         if (filterCategory === this.COUNT) {
             const hasNormalSample = this.getNormalSampleStatus();
             if (hasNormalSample) {
+                // todo: this syntax is wrong
+                this
                 return { ...this.filters[this.NORMAL_COUNT], ...this.filters[this.TUMOR_COUNT]};
             } else {
                 return this.filters[this.TUMOR_COUNT];
@@ -360,14 +362,14 @@ class FilterModel {
                         if (globalMode) {
                             passesNormalCount = true;
                         } else {
-                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currLogic'), currFeat.genotypeAltCount, self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currVal'));
+                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.NORMAL_COUNT, self.NORMAL_ALT_COUNT, 'currOper'), currFeat.genotypeAltCount, self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currVal'));
                         }
                         let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
                         // let passesNormalAf = false;
                         // if (somaticOnlyMode) {
                         //     passesNormalAf = true;
                         // } else {
-                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currLogic'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
+                        let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currOper'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
                         //}
                         if (currFeat.id != null && passesNormalCount && passesNormalAf) {
                             passesNormalFiltersLookup[currFeat.id] = true;
@@ -402,14 +404,14 @@ class FilterModel {
                         if (globalMode || somaticOnlyMode) {
                             passesTumorCount = true;
                         } else {
-                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currLogic'), feature.genotypeAltCount, self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currVal'));
+                            passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currOper'), feature.genotypeAltCount, self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currVal'));
                         }
                         let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;
                         let passesTumorAf = false;
                         if (somaticOnlyMode) {
                             passesTumorAf = true;
                         } else {
-                            passesTumorAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currLogic'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currVal'), self.TUMOR_FREQ));
+                            passesTumorAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currOper'), currAltFreq, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.TUMOR_FREQ, 'currVal'), self.TUMOR_FREQ));
                         }
 
                         if (passesNormalFiltersLookup[feature.id] && passesTumorAf && passesTumorCount) {
@@ -459,7 +461,7 @@ class FilterModel {
             }
             let coverageCheckList = Object.values(coverageCheckFeatures);
             if (coverageCheckList.length > 0) {
-                // Check coverage in normal sample (todo: update for multiple normal samples in the future)
+                // Check coverage in normal sample
                 normalSamples[0].model.promiseGetBamDepthForVariants(coverageCheckList, self.translator.globalApp.COVERAGE_TYPE, self.cohortModel.globalApp.INDIV_QUALITY_CUTOFF)
                     .then(coverageMap => {
                         for (var featId in coverageMap) {
@@ -472,9 +474,9 @@ class FilterModel {
                             } else {
                                 depthObj = depthObj[0];
                             }
-                            if (self.matchAndPassFilter(depthObj.currLogic, depth, depthObj.currVal)) {
+                            if (self.matchAndPassFilter(depthObj.currOper, depth, depthObj.currVal)) {
 
-                                // Have to check to see if all of the tumor samples have this variant`
+                                // Have to check to see if all tumor samples have this variant
                                 tumorSamples.forEach((sample) => {
                                     let tumorModel = sample.model;
                                     let matchingFeature = tumorModel.variantIdHash[featId];
@@ -601,20 +603,20 @@ class FilterModel {
     }
 
     /* Need a special case here because of drop-down menu structure in Vue. */
-    updateFilterLogic(filterName, newLogic) {
+    updateFilterOperator(filterName, newOper) {
         const self = this;
         for (var filterCatName in self.filters) {
             let filterCat = self.getFilters(filterCatName);
             filterCat.forEach((filter) => {
                 if (filter.name === filterName) {
-                    filter.currLogic = newLogic;
+                    filter.currOper = newOper;
                 }
             })
         }
     }
 
     /* Takes in a list of variants, sets passesFilter field on each variant to true,
-     * if it passes all of the current filter criteria within this model.
+     * if it passes all current filter criteria within this model.
      *
      * If we're in somaticOnlyMode, want variants to always pass filters. */
     markFilteredVariants(variants, somaticOnlyMode) {
@@ -678,7 +680,7 @@ class FilterModel {
         Object.values(this.filters).forEach(filterList => {
             filterList.forEach(filter => {
                 if (filter.type === 'slider') {
-                    filter.currLogic = filter.defaultLogic;
+                    filter.currOper = filter.defaultOper;
                     filter.currVal = filter.defaultVal;
                 }
             });
@@ -693,7 +695,7 @@ class FilterModel {
         Object.values(this.filters).forEach(filterList => {
             filterList.forEach(filter => {
                 if (filter.type === 'slider') {
-                    filter.prevLogic = filter.currLogic;
+                    filter.prevOper = filter.currOper;
                     filter.prevVal = filter.currVal;
                 }
             })
@@ -706,7 +708,7 @@ class FilterModel {
                 if (filter.name === filterName) {
                     filter.stagedLogic = null;
                     filter.stagedVal = null;
-                    filter.currLogic = filter.prevLogic;
+                    filter.currOper = filter.prevOper;
                     filter.currVal = filter.prevVal;
                 }
             })
@@ -720,7 +722,7 @@ class FilterModel {
                 if (filter.type === 'slider') {
                     filter.stagedLogic = null;
                     filter.stagedVal = null;
-                    filter.currLogic = filter.prevLogic;
+                    filter.currOper = filter.prevOper;
                     filter.currVal = filter.prevVal;
                 }
             })
@@ -842,14 +844,14 @@ class FilterModel {
             if (!activeOnly)
                 recallFilters.push(filter);
             else if (filter.stagedLogic && filter.stagedVal >= 0 &&
-                !(filter.stagedLogic === filter.currLogic && filter.stagedVal === filter.stagedLogic))
+                !(filter.stagedLogic === filter.currOper && filter.stagedVal === filter.stagedLogic))
                 recallFilters.push(filter);
         });
         this.getFilters(this.QUALITY).forEach(filter => {
             if (!activeOnly)
                 recallFilters.push(filter);
             else if (filter.stagedLogic && filter.stagedVal >= 0 &&
-                !(filter.stagedLogic === filter.currLogic && filter.stagedVal === filter.stagedLogic))
+                !(filter.stagedLogic === filter.currOper && filter.stagedVal === filter.stagedLogic))
                 recallFilters.push(filter);
         });
         return recallFilters;
@@ -862,7 +864,7 @@ class FilterModel {
         for (let i = 0; i < countFilters.length; i++) {
             let filter = countFilters[i];
             if (filter.name === filterSettings.name) {
-                filter.currLogic = filterSettings.currLogic;
+                filter.currOper = filterSettings.currOper;
                 filter.currVal = filterSettings.currVal;
                 foundMatch = true;
                 break;
@@ -872,7 +874,7 @@ class FilterModel {
             for (let i = 0; i < qualityFilters.length; i++) {
                 let filter = qualityFilters[i];
                 if (filter.name === filterSettings.name) {
-                    filter.currLogic = filterSettings.currLogic;
+                    filter.currOper = filterSettings.currOper;
                     filter.currVal = filterSettings.currVal;
                     foundMatch = true;
                     break;
@@ -936,14 +938,15 @@ class FilterModel {
            criteria['normalSampleIdxs'] = normalSelSampleIdxs;
         }
 
+        debugger;
         self.getFilters(self.COUNT).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + this.OPERATOR] = filter.currLogic;
+            criteria[filter.name + this.OPERATOR] = filter.currOper;
         });
         self.getFilters(self.QUALITY).forEach(filter => {
             criteria[filter.name] = filter.currVal;
-            criteria[filter.name + this.OPERATOR] = filter.currLogic;
-            criteria[filter.name + this.OPERATOR] = filter.currLogic;
+            criteria[filter.name + this.OPERATOR] = filter.currOper;
+            criteria[filter.name + this.OPERATOR] = filter.currOper;
         });
 
         return criteria;
@@ -956,13 +959,6 @@ class FilterModel {
      * somatic filtering criteria is also included, unless removed by the user.
      */
     getFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
-        // todo: left off here - checking to see if this functionality fits with new paradigm of passing filtering in
-        // for both global and local variant calling
-        // todo: may need to incorporate somaticOnly logic here, DEFINITELY that no normal sample possible
-
-        // todo: change this so that normal phrase returns empty if no normal sample
-        // todo: check formatting of combining tumorPhrase w/ empty normalPhrase string
-        // todo: what does freqCriteria look like?
         const countCriteria = this.getCountCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
         const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, countCriteria);
         const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria);
@@ -1009,7 +1005,6 @@ class FilterModel {
     /* Returns the acronym representing the number of alternate allele counts.
      * This acronym varies by variant calling programs -
      * for example, Freebayes uses AO, while GATK uses AC. */
-    // todo: add any others here...
     _getAltNumAcronym() {
         const varCallerUsed = this.getVarCallerUsed();
         switch (varCallerUsed) {
@@ -1050,7 +1045,7 @@ class FilterModel {
             let settingsObject = {};
             settingsObject.name = filter.name;
             settingsObject.display = filter.display;
-            settingsObject.currLogic = filter.currLogic;
+            settingsObject.currOper = filter.currOper;
             settingsObject.currVal = filter.currVal;
             filterSettingsList.push(settingsObject);
         });
@@ -1071,7 +1066,7 @@ class FilterModel {
         let analysisKey = '';
         filters.forEach(filter => {
             analysisKey += filter.name;
-            analysisKey += filter.currLogic;
+            analysisKey += filter.currOper;
             analysisKey += filter.currVal;
             analysisKey += "_";
         });

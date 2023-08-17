@@ -113,7 +113,7 @@ export default {
       return analysisObj.somaticVarCount + ' VARIANTS / ' + analysisObj.somaticGeneCount + ' GENES';
     },
     getFilterLine(filterObj) {
-      return filterObj.display + ' ' + filterObj.currLogic + ' ' + filterObj.currVal;
+      return filterObj.display + ' ' + filterObj.currOper + ' ' + filterObj.currVal;
     },
     isCurrentAnalysis(analysis) {
       let currentKey = this.filterModel.getAnalysisKey(analysis.filters);

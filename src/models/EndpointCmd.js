@@ -41,7 +41,13 @@ export default class EndpointCmd {
      * Can be used when determining if a variant exists in two samples across VCF files, for instance.
      * Currently used in Oncogene for COSMIC comparison */
     getVariantIds(vcfSource, regions) {
-        return this.api.streamCommand('getIdColumns', {vcfUrl: vcfSource.vcfUrl, regions});
+        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, regions});
+    }
+
+    /* Returns the first N records from vcfSource, according to lineNumber. */
+    getRecords(vcfSource, lineNumber) {
+        let emptyRegArg = "";
+        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, emptyRegArg, lineNumber});
     }
 
     // Return first non-header/column label line from vcf

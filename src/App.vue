@@ -229,7 +229,7 @@ export default {
       this.activeFilters = [];
       globalData.filters.forEach(filter => {
         if (filter.type === 'slider') {
-          this.activeFilters.push(filter.display + ' ' + filter.currLogic + ' ' + filter.currVal + filter.labelSuffix);
+          this.activeFilters.push(filter.display + ' ' + filter.currOper + ' ' + filter.currVal + filter.labelSuffix);
         } else {
           this.activeFilters.push('No ' + filter.excludeName);
         }

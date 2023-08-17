@@ -72,7 +72,7 @@
                 <v-col sm="6" md="3">
                     <v-select class="slider-select"
                               :items="dropDownOptions"
-                              v-model="currLogic"
+                              v-model="currOperator"
                               single-line
                               color="white"
                               style="margin-top: -15px"
@@ -120,12 +120,12 @@
                     { text: '>' }
                 ],
                 disableLogicDropdown: false,
-                currLogic: null,        // Note: have to use local prop and not model-backed one here because needs to be in dropDownOptions list
+                currOperator: null,        // Note: have to use local prop and not model-backed one here because needs to be in dropDownOptions list
                 firstExpansion: true    // Used to control slider mount preventing filter change
             }
         },
         watch: {
-            currLogic: function(newVal, oldVal) {
+            currOperator: function(newVal, oldVal) {
                 const self = this;
                 if (newVal && oldVal && newVal.text !== oldVal.text) {
                     self.logicObj.active = true;
@@ -142,7 +142,7 @@
                     self.firstExpansion = false;
                 } else {
                     self.logicObj.active = self.logicObj.currVal > 0;
-                    self.logicObj.stagedLogic = self.logicObj.currLogic;
+                    self.logicObj.stagedLogic = self.logicObj.currOper;
                     self.logicObj.stagedVal = self.logicObj.currVal;
                     self.$emit('filter-slider-changed');
                 }
@@ -150,11 +150,11 @@
         },
         mounted: function() {
             const self = this;
-            if (self.logicObj && self.logicObj.defaultLogic) {
+            if (self.logicObj && self.logicObj.defaultOper) {
                 const matchingLogic = self.dropDownOptions.filter((option) => {
-                    return option.text === self.logicObj.defaultLogic;
+                    return option.text === self.logicObj.defaultOper;
                 });
-                self.currLogic = matchingLogic[0];
+                self.logicObj = matchingLogic[0];
             }
         }
     }

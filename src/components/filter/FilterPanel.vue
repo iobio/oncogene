@@ -55,7 +55,7 @@
                                     :logicObj="filter"
                                     :annotationComplete="annotationComplete"
                                     :applyFilters="applyFilters"
-                                    @update-slider-logic="onSliderLogicChange"
+                                    @update-slider-logic="onSliderOperChange"
                                     @filter-slider-changed="onFilterChange(filter.recallFilter)">
                             </filter-panel-slider>
                             <filter-panel-cutoff
@@ -123,9 +123,9 @@
             }
         },
         methods: {
-            onSliderLogicChange: function (filterName, newLogic, recallFilter) {
+            onSliderOperChange: function (filterName, newOper, recallFilter) {
                 const self = this;
-                self.filterModel.updateFilterLogic(filterName, newLogic);
+                self.filterModel.updateFilterOperator(filterName, newOper);
                 self.$emit('filter-change', recallFilter);
             },
             onFilterChange: function (recallFilter) {

@@ -43,6 +43,8 @@ export default function vcfiobio(theGlobalApp) {
     var genomeBuildHelper = null;
     var geneModel = null;
 
+    var vcfCaller = null; // The program used to generate this vcf file e.g. Freebayes or GATK
+
     // Url for offline Clinvar URL
     var OFFLINE_CLINVAR_VCF_BASE_URL = globalApp.isOffline ? ("http://" + globalApp.serverInstance + globalApp.serverCacheDir) : "";
 
@@ -528,10 +530,56 @@ export default function vcfiobio(theGlobalApp) {
         sourceType = st;
     };
     exports.getVariantCaller = function() {
-        return this.vcfCaller;
+        return vcfCaller;
     }
     exports.setVariantCaller = function(caller) {
-        this.vcfCaller = caller;
+        vcfCaller = caller;
+    }
+
+    exports.promiseDetermineVariantCaller = function() {
+        return new Promise(function (resolve, reject) {
+            const recNum = 5;
+            let cmd = this.getEndpoint().getRecords({'vcfUrl': vcfURL, 'tbiUrl': tbiUrl}, recNum);
+            var buffer = '';
+            cmd.on('data', function (data) {
+                if (data == null) {
+                    return;
+                }
+                buffer += data;
+            });
+            cmd.on('end', function () {
+                let recs = buffer.split("\n");
+                let isAc = false;
+                let isAo = false;
+
+                recs.forEach(function (record) {
+
+                    // Parse the vcf record for INFO field
+                    let fields = record.split('\t');
+                    let info = fields[7];
+                    if (info && info !== '') {
+                        let infoFields = info.split(';');
+                        infoFields.forEach((field) => {
+                            if (field.startsWith('AC')) {
+                                isAc = true;
+                            } else if (field.startsWith('AO')) {
+                                isAo = true;
+                            }
+                        })
+                    }
+                });
+                if (isAc && !isAo) {
+                    resolve('gatk');
+                } else if (isAo && !isAc) {
+                    resolve('freebayes');
+                } else {
+                    reject("Could not determine alt allele identifier");
+                }
+            });
+            cmd.on('error', function (err) {
+                reject(err);
+            });
+        })
     }
 
     // function endsWith(str, suffix) {
@@ -744,14 +792,10 @@ export default function vcfiobio(theGlobalApp) {
                             let alt = fields[4];
                             let info = fields[7];
 
-                            //let strand = '';
                             let infoVal = '';
                             if (info && info !== '' && inInfo) {
                                 let infoFields = info.split(';');
                                 infoFields.forEach((field) => {
-                                    // if (field.startsWith('STRAND')) {
-                                    //     strand = field.split('=')[1];
-                                    // }
                                     if (fieldName && field.startsWith(fieldName.toUpperCase())) {
                                         infoVal = field.split('=')[1];
                                     }
@@ -760,7 +804,6 @@ export default function vcfiobio(theGlobalApp) {
                             } else if (fieldName === 'COSMIC_ID') {
                                 infoVal = id;
                             }
-                            //strand = strand === '+' ? 'plus' : (strand === '-' ? 'minus' : '');
                             let chr = refName.indexOf("chr") === 0 ? refName.slice(3) : refName;
 
                             // Parse ids and return as array
@@ -1157,7 +1200,6 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
-        // todo: add other caller options here
         } else if (record.indexOf("INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes")) {
             me.setVariantCaller('gatk');
         } else if (record.indexOf("subclone") === 2) {
