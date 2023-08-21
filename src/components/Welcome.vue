@@ -739,7 +739,7 @@ export default {
         // 'rnaSeq': this.MAX_SAMPLES,
         // 'atacSeq': this.MAX_SAMPLES
       },
-      somaticCallsOnly: true, // todo: get rid of
+      somaticCallsOnly: true, // todo: get rid of - determined automatically?
       selectedBuild: null,
       configLastGene: null, // The last gene analyzed from a previous session; sourced from uploaded config file
       configLocalVcf: false,
@@ -1468,26 +1468,23 @@ export default {
       this.cohortModel.setInputDataTypes(this.selectedUserData);
       this.cohortModel.setBuild(this.selectedBuild);
 
-      // todo: left off here, then remove demoOnly condition when fix; then back to testing promiseGetCaller
-      debugger; // todo: need to set vcfSampleNames when coming from demo - then can fill in missing selectedSampleIdx fields
-      if (!demoMode) {
-        let omittedSampleFlags = [];
-        for (let i = 0; i < this.vcfSampleNames.length; i++) {
-          omittedSampleFlags.push(1);
-        }
-        this.modelInfoList.forEach(modelInfo => {
-          let idx = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
-          omittedSampleFlags[idx] = 0;
-        });
-        this.modelInfoList.forEach(modelInfo => {
-          let bound = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
-          let numSkipBefore = 0;
-          for (let i = 0; i < bound; i++) {
-            numSkipBefore += omittedSampleFlags[i];
-          }
-          modelInfo.selectedSampleIdx = bound - numSkipBefore;
-        });
+      let omittedSampleFlags = [];
+      for (let i = 0; i < this.vcfSampleNames.length; i++) {
+        omittedSampleFlags.push(1);
       }
+      this.modelInfoList.forEach(modelInfo => {
+        let idx = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
+        omittedSampleFlags[idx] = 0;
+      });
+      this.modelInfoList.forEach(modelInfo => {
+        let bound = self.vcfSampleNames.indexOf(modelInfo.selectedSample);
+        let numSkipBefore = 0;
+        for (let i = 0; i < bound; i++) {
+          numSkipBefore += omittedSampleFlags[i];
+        }
+        modelInfo.selectedSampleIdx = bound - numSkipBefore;
+      });
+
       let strippedGeneString = this.listInput === this.STARTING_INPUT ? "" : this.listInput;
       this.$emit('launched', this.modelInfoList, strippedGeneString, this.configLastGene, demoMode);
     },
@@ -1541,6 +1538,7 @@ export default {
           if (success) {
             self.selectedBuild = hdrBuild;
             self.cohortModel.setBuild(self.selectedBuild);
+            self.vcfSampleNames = sampleNames;
             for (let i = 0; i < sampleNames.length; i++) {
               let sampleName = sampleNames[i];
               let matchingModelInfo = self.modelInfoList.filter(function(modelInfo) {
