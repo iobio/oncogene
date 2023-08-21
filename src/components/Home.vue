@@ -612,7 +612,7 @@ export default {
       self.selectedVariant = null;
       self.displayLoader = true;
       self.geneModel.clearGeneObjects();
-      self.cohortModel.promiseGetRankedGlobalSomatics()
+      self.cohortModel.promiseGetRankedGlobalVariants()
           .then(retObj => {
             let rankObj = retObj.rankObj;
             //let groupObj = retObj.groupObj;

@@ -537,9 +537,10 @@ export default function vcfiobio(theGlobalApp) {
     }
 
     exports.promiseDetermineVariantCaller = function() {
+        const self = this;
         return new Promise(function (resolve, reject) {
-            const recNum = 5;
-            let cmd = this.getEndpoint().getRecords({'vcfUrl': vcfURL, 'tbiUrl': tbiUrl}, recNum);
+            const numRecords = 5;
+            let cmd = self.getEndpoint().getRecords({'vcfUrl': vcfURL, 'tbiUrl': tbiUrl}, numRecords);
             var buffer = '';
             cmd.on('data', function (data) {
                 if (data == null) {
@@ -560,18 +561,19 @@ export default function vcfiobio(theGlobalApp) {
                     if (info && info !== '') {
                         let infoFields = info.split(';');
                         infoFields.forEach((field) => {
-                            if (field.startsWith('AC')) {
-                                isAc = true;
-                            } else if (field.startsWith('AO')) {
+                            if (field.startsWith('AO')) {
                                 isAo = true;
+                            } else if (field.startsWith('AC')) {
+                                isAc = true;
                             }
                         })
                     }
                 });
-                if (isAc && !isAo) {
-                    resolve('gatk');
-                } else if (isAo && !isAc) {
+                if (isAo) {
+                    // Freebayes contains both AO and AC fields
                     resolve('freebayes');
+                } else if (!isAo && isAc) {
+                    resolve('gatk');
                 } else {
                     reject("Could not determine alt allele identifier");
                 }
@@ -579,6 +581,7 @@ export default function vcfiobio(theGlobalApp) {
             cmd.on('error', function (err) {
                 reject(err);
             });
+            cmd.run();
         })
     }
 
@@ -833,7 +836,6 @@ export default function vcfiobio(theGlobalApp) {
 
                 // todo: this is incorrect logic - want to do this even if file is local
                 if (sourceType === SOURCE_TYPE_URL) {
-                    debugger;
                     let cmd = self.getEndpoint().annotateSomaticVariants({
                         'vcfUrl': vcfURL,
                         'tbiUrl': tbiUrl,

@@ -250,11 +250,19 @@ class FilterModel {
     }
 
     promiseGetVarCallerUsed() {
-        if (this.cohortModel == null) {
-            console.log("Could not get variant caller because filter model has no parent cohort model.");
-        } else {
-            return this.cohortModel.promiseGetVarCallerUsed();
-        }
+        const self = this;
+        return new Promise((resolve, reject) => {
+            if (self.cohortModel == null) {
+                reject("Could not get variant caller because filter model has no parent cohort model.");
+            } else {
+                self.cohortModel.promiseGetVarCallerUsed()
+                    .then(caller => {
+                        resolve(caller);
+                    }).catch(err => {
+                        reject(err);
+                })
+            }
+        })
     }
 
     /* Returns filter objects associated with the provided category.
@@ -955,28 +963,32 @@ class FilterModel {
      * depth requirements. If alternatively, a normal sample with variants is present,
      * somatic filtering criteria is also included, unless removed by the user.
      */
-    getFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
-        const countCriteria = this.getCountCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
-        const normalPhrase = this.getNormalFilterPhrase(normalSelSampleIdxs, countCriteria);
-        const tumorPhrase = this.getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria);
-        const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
-        const qualPhrase = '(QUAL' + countCriteria[this.QUAL_OPERATOR] + countCriteria[this.QUAL_CUTOFF] + ')';
-        return qualPhrase + '&&' + samplePhrase;
+    promiseGetFilterPhrase(normalSelSampleIdxs, tumorSelSampleIdxs) {
+        const self = this;
+        return new Promise(resolve => {
+            const countCriteria = self.getCountCallingCriteria(normalSelSampleIdxs, tumorSelSampleIdxs);
+            self._promiseGetAltNumAcronym()
+                .then(altNumAcronym => {
+                    const normalPhrase = self.getNormalFilterPhrase(normalSelSampleIdxs, countCriteria, altNumAcronym);
+                    const tumorPhrase = self.getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria, altNumAcronym);
+                    const samplePhrase = '(' + normalPhrase + ')&&(' + tumorPhrase + ')';
+                    const qualPhrase = '(QUAL' + countCriteria[self.QUAL_OPERATOR] + countCriteria[self.QUAL_CUTOFF] + ')';
+                    resolve(qualPhrase + '&&' + samplePhrase);
+                })
+        })
     }
 
     /* Returns normal(non-tumor) filtering phrase for normal samples based on current somatic criteria.
      * If we don't have any normal samples, returns empty string. */
-    getNormalFilterPhrase(normalSelSampleIdxs, countCriteria) {
+    getNormalFilterPhrase(normalSelSampleIdxs, countCriteria, altNumAcronym) {
         let normalPhrase = '';
         for (let i = 0; i < normalSelSampleIdxs.length; i++) {
             const idx = normalSelSampleIdxs[i];
             if (i > 0) {
                 normalPhrase += '||';
             }
-
-            let altNumAcronym = this._getAltNumAcronym();
             // todo: BIG PROBLEM - how do I know which count to pull - not always 0?
-            normalPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.NORMAL_COUNT_OPERATOR] + countCriteria[this.NORMAL_COUNT];
+            normalPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.NORMAL_COUNT_OPERATOR] + countCriteria[this.NORMAL_ALT_COUNT];
             normalPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
             normalPhrase += '||(FORMAT/DP[' + idx + ':0]=\".\")';
         }
@@ -984,16 +996,15 @@ class FilterModel {
     }
 
     /* Returns tumor filtering phrase for tumor samples based on current somatic criteria. */
-    getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria) {
+    getTumorFilterPhrase(tumorSelSampleIdxs, countCriteria, altNumAcronym) {
         let tumorPhrase = '';
         for (let i = 0; i < tumorSelSampleIdxs.length; i++) {
             const idx = tumorSelSampleIdxs[i];
             if (i > 0) {
                 tumorPhrase += '||';
             }
-            let altNumAcronym = this._getAltNumAcronym();
             // todo: BIG PROBLEM - how do I know which count to pull - not always 0?
-            tumorPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.TUMOR_COUNT_OPERATOR] + countCriteria[this.TUMOR_COUNT];
+            tumorPhrase += '(FORMAT/' + altNumAcronym + '[' + idx + ':0]' + countCriteria[this.TUMOR_COUNT_OPERATOR] + countCriteria[this.TUMOR_ALT_COUNT];
             tumorPhrase += '&FORMAT/DP[' + idx + ':0]' + countCriteria[this.DEPTH_OPERATOR] + countCriteria[this.GENOTYPE_DEPTH] + ')';
         }
         return tumorPhrase;
@@ -1002,18 +1013,28 @@ class FilterModel {
     /* Returns the acronym representing the number of alternate allele counts.
      * This acronym varies by variant calling programs -
      * for example, Freebayes uses AO, while GATK uses AC. */
-    _getAltNumAcronym() {
-        this.promiseGetVarCallerUsed()
-            .then(caller => {
-                switch (caller) {
-                    case 'freebayes':
-                        return 'AO';
-                    case 'gatk':
-                        return 'AC';
-                    default:
-                        console.log("ERROR: Could not determine acronym used to report alternate allele counts.");
-                }
-            })
+    _promiseGetAltNumAcronym() {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            let acronym = null;
+            self.promiseGetVarCallerUsed()
+                .then(caller => {
+                    switch (caller) {
+                        case 'freebayes':
+                            acronym = 'AO';
+                            break;
+                        case 'gatk':
+                            acronym = 'AC';
+                            break;
+                        default:
+                            console.log("ERROR: Could not determine acronym used to report alternate allele counts.");
+                            reject();
+                    }
+                    resolve(acronym);
+                }).catch(err => {
+                    reject(err);
+                })
+        })
     }
 
     /* Used to load in global filters from a previous analysis */

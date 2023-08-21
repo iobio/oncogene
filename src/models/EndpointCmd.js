@@ -17,7 +17,7 @@ export default class EndpointCmd {
         if (this.MOSAIC_MODE) {
             backendUrl = 'https://mosaic.chpc.utah.edu/gru/api/v1';
         } else if (this.DEV_MODE) {
-            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9003';
+            backendUrl = 'https://mosaic.chpc.utah.edu/gru-dev-9004';
         }
         this.api = new Client(backendUrl);
     }
@@ -45,9 +45,9 @@ export default class EndpointCmd {
     }
 
     /* Returns the first N records from vcfSource, according to lineNumber. */
-    getRecords(vcfSource, lineNumber) {
+    getRecords(vcfSource, numRecords) {
         let emptyRegArg = "";
-        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, emptyRegArg, lineNumber});
+        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, emptyRegArg, numRecords});
     }
 
     // Return first non-header/column label line from vcf

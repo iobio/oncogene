@@ -55,14 +55,13 @@ class CohortModel {
         // somatic specific
         this.allSomaticFeaturesLookup = {};     // Contains the IDs corresponding to variants from all tumor tracks classified as somatic
         this.allInheritedFeaturesLookup = {};   // Contains the IDs corresponding to variants from all tumor tracks classified as inherited
-        this.onlySomaticCalls = true;       // Controls variant symbol coloring in tumor tracks
-        this.somaticVarMap = {};            // Hash of somatic variants varId: varObj
-        this.somaticCnvMap = {};            // Hash of somatic cnv cnvId: cnvObj
-        this.unmatchedSomaticVarMap = {};   // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
-        this.subcloneModel = null;          // Subclone model; only present if header field from Subclone Seeker detected
+        this.onlySomaticCalls = true;           // Controls variant symbol coloring in tumor tracks
+        this.filteredVarMap = {};               // Hash of somatic variants varId: varObj
+        this.filteredCnvMap = {};               // Hash of somatic cnv cnvId: cnvObj
+        this.unmatchedFilteredVarMap = {};      // Hash of combined symbols (or 'none'): [{ id : VAR_ID, rec : VCF_RECORD}]
+        this.subcloneModel = null;              // Subclone model; only present if header field from Subclone Seeker detected
         this.hasSubcloneAnno = false;
-        // todo: does this need to be renamed?
-        this.composedSomaticGenes = [];     // List of genes with somatic variants pulled from predictor engine annotations b/c somaticOnlyMode does not take in gene list
+        this.composedFilteredGenes = [];        // List of genes with filtered variants pulled from predictor engine annotations b/c somaticOnlyMode does not take in gene list
 
         this.genesInProgress = [];
         this.flaggedVariants = [];
@@ -148,19 +147,22 @@ class CohortModel {
     /* Returns the variant caller used to generate vcf file.
      * For example, GATK or Freebayes. */
     promiseGetVarCallerUsed() {
+        const self = this;
         return new Promise((resolve, reject) => {
-            let firstModel = this.getFirstSampleModel();
+            let firstModel = self.getFirstSampleModel();
             if (firstModel && firstModel.vcf) {
                 let caller = firstModel.vcf.getVariantCaller();
                 if (caller == null) {
                     firstModel.vcf.promiseDetermineVariantCaller()
                         .then(detCaller => {
                             caller = detCaller;
+                            resolve(caller);
                         }).catch(err => {
                         console.log("Could not determine variant caller: " + err);
                     });
+                } else {
+                    resolve(caller);
                 }
-                resolve(caller);
             } else {
                 console.log("Could not get variant caller from sample model.");
                 reject();
@@ -673,18 +675,16 @@ class CohortModel {
         return Object.keys(theVcfs).length === 1;
     }
 
-    /* The main entry point of the application. Retrieves somatic variants from
-     * user-provided vcf, and annotates consequence. Additionally, annotates all
-     * somatic CNVs at the specified gene regions, if CNV files provided.
+    /* The main entry point of the application. Retrieves variants from user-provided vcf, and annotates consequence.
+     * If a normal sample is provided, the variants retrieved are somatic.
+     * Additionally, annotates all CNVs at the specified gene regions, if CNV files provided.
      * Then groups and ranks the variants + CNVs by gene, and returns a rank object. */
-    promiseGetRankedGlobalSomatics() {
+    promiseGetRankedGlobalVariants() {
         const self = this;
-        self.somaticVarMap = {};
-        self.somaticCnvMap = {};
+        self.filteredVarMap = {};
+        self.filteredCnvMap = {};
 
         return new Promise((resolve, reject) => {
-            let promises = [];
-
             // Get filter phrase
             let normalSelectedSampleIdxs = [];
             let tumorSelectedSampleIdxs = [];
@@ -695,54 +695,52 @@ class CohortModel {
                     normalSelectedSampleIdxs.push(model.selectedSampleIdx);
                 }
             });
-            const filterPhrase = self.filterModel.getFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs);
+            self.filterModel.promiseGetFilterPhrase(normalSelectedSampleIdxs, tumorSelectedSampleIdxs)
+                .then(filterPhrase => {
+                    // Annotate filtered variants
+                    self.promiseAnnotateFilteredVariants(filterPhrase)
+                        .then((filteredVariants) => {
+                            if (self.hasCnvData) {
+                                self.annotateCnvsOnVariants(filteredVariants);
+                            }
+                            self.filteredVarMap = self.populateFilteredVarMap(filteredVariants);
 
-            // Annotate filtered variants
-            let varP = self.promiseAnnotateFilteredVariants(filterPhrase)
-                .then((somaticVariants) => {
-                    if (self.hasCnvData) {
-                        self.annotateCnvsOnVariants(somaticVariants);
-                    }
-                    self.somaticVarMap = self.populateSomaticVarMap(somaticVariants);
-                })
-                .catch(error => {
-                    console.log('Problem loading somatic variants: ' + error);
-                    reject('Problem loading somatic variants: ' + error);
-                });
-            promises.push(varP);
-
-            Promise.all(promises)
-                .then(() => {
-                    self.geneModel.promiseCopyPasteGenes('', self.composedSomaticGenes, {
-                        replace: true,
-                        warnOnDup: false
-                    }).then(() => {
-                        let cnvP = self.hasCnvData ?
-                            self.promiseAnnotateSomaticCnvs() : Promise.resolve();
-                        cnvP.then(somaticCnvMap => {
-                            self.somaticCnvMap = self.hasCnvData ? somaticCnvMap : {};
-                            let retObj = {};
-                            self.geneModel.promiseGroupAndAssign(self.somaticVarMap, self.somaticCnvMap, self.unmatchedSomaticVarMap)
-                                .then(groupObj => {
-                                    retObj['groupObj'] = groupObj;
-                                    self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
-                                        .then((rankObj) => {
-                                            retObj['rankObj'] = rankObj;
-                                            resolve(retObj);
-                                        }).catch(err => {
-                                        reject('Fatal error scoring and ranking somatic genes: ' + err);
+                            // Get info for genes containing filtered variants
+                            self.geneModel.promiseCopyPasteGenes('', self.composedFilteredGenes, {
+                                replace: true,
+                                warnOnDup: false
+                            }).then(() => {
+                                let cnvP = self.hasCnvData ?
+                                    self.promiseAnnotateSomaticCnvs() : Promise.resolve();
+                                cnvP.then(filteredCnvMap => {
+                                    self.filteredCnvMap = self.hasCnvData ? filteredCnvMap : {};
+                                    let retObj = {};
+                                    self.geneModel.promiseGroupAndAssign(self.filteredVarMap, self.filteredCnvMap, self.unmatchedFilteredVarMap)
+                                        .then(groupObj => {
+                                            retObj['groupObj'] = groupObj;
+                                            self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
+                                                .then((rankObj) => {
+                                                    retObj['rankObj'] = rankObj;
+                                                    resolve(retObj);
+                                                }).catch(err => {
+                                                reject('Fatal error scoring and ranking somatic genes: ' + err);
+                                            })
+                                        }).catch(error => {
+                                        console.log('Something went wrong grouping and assigning somatic variants ' + error);
+                                        reject('Something went wrong ranking genes by variants ' + error);
                                     })
                                 }).catch(error => {
-                                console.log('Something went wrong grouping and assigning somatic variants ' + error);
-                                reject('Something went wrong ranking genes by variants ' + error);
+                                    reject('Something went wrong annotating global somatic CNVs ' + error);
                                 })
-                        }).catch(error => {
-                            reject('Something went wrong annotating global somatic CNVs ' + error);
+                            }).catch(err => {
+                                console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
+                            });
                         })
-                    }).catch(err => {
-                        console.log('Something went wrong copying and pasting genes after somatic annotation: ' + err);
-                    });
-                });
+                        .catch(error => {
+                            console.log('Problem loading somatic variants: ' + error);
+                            reject('Problem loading somatic variants: ' + error);
+                        });
+                })
         });
     }
 
@@ -775,10 +773,10 @@ class CohortModel {
      * and appends each unique feature to a hash of varId : varObj. Updates feature objects (varObj)
      * added to hash to reflect which samples in cohort contains the variant.
     */
-    populateSomaticVarMap(somaticVarMap) {
+    populateFilteredVarMap(filteredVarMap) {
         const self = this;
         let featureMap = {};
-        Object.values(somaticVarMap).forEach((sampleObj) => {
+        Object.values(filteredVarMap).forEach((sampleObj) => {
             let selectedSample = sampleObj.name;
             sampleObj.features.forEach(feature => {
                 let featObj = featureMap[feature.id];
@@ -1023,7 +1021,7 @@ class CohortModel {
                     let subclonesExist = false;
 
                     // Always see if we have somatic genes to pull out
-                    self.composedSomaticGenes = returnArr['somaticGenes'];
+                    self.composedFilteredGenes = returnArr['somaticGenes'];
 
                     // Pull subclone info out of return object
                     if (returnArr['subcloneStr']) {
@@ -1040,7 +1038,7 @@ class CohortModel {
                     }
                     if (returnArr['unmatchedVars']) {
                         // Pull out unmatched variants
-                        self.unmatchedSomaticVarMap = returnArr['unmatchedVars'];
+                        self.unmatchedFilteredVarMap = returnArr['unmatchedVars'];
                     }
 
                     // Have to mark each individual variant object, even if duplicates across samples
@@ -1052,7 +1050,7 @@ class CohortModel {
                         const globalMode = true;
                         self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
                             .then((somaticVarMap) => {
-                                self.unmatchedSomaticVarMap = self.filterUnmatchedVars(self.allUniqueFeaturesObj, self.unmatchedSomaticVarMap);
+                                self.unmatchedFilteredVarMap = self.filterUnmatchedVars(self.allUniqueFeaturesObj, self.unmatchedFilteredVarMap);
                                 resolve(somaticVarMap);
                             }).catch(error => {
                             reject('Something went wrong annotating inheritance for global somatics:' + error);
