@@ -1620,6 +1620,8 @@ class GeneModel {
                     }).catch(err => {
                     reject("Could not add genes: " + err);
                 });
+            } else {
+                console.log("WARNING: no gene list provided to promiseGroupAndAssign");
             }
         });
     }
