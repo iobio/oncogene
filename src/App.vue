@@ -175,15 +175,6 @@ export default {
     }
   },
   methods: {
-    onLoadDemoData: function (loadAction) {
-      this.$emit("load-demo-data", loadAction);
-    },
-    onFilesLoaded: function () {
-      this.promiseLoadData();
-    },
-    onUpdateSamples: function () {
-      this.$emit('update-samples');
-    },
     onResize: function () {
       const self = this;
       self.mainContentWidth = self.globalApp.$('main.content .container').outerWidth();
