@@ -187,6 +187,29 @@ class GlobalApp {
             }, ms);
         });
     }
+
+    // cosmicVariantIdHash never has 'chr' prefix in keys, even for GRCh38
+    getCosmicHashKey(varObj) {
+        let variant =  varObj;
+        let safeChr = variant.chrom.indexOf('chr') > -1 ? variant.chrom.substring(3) : variant.chrom;
+        return 'var_' + variant.start + '_' + safeChr + '_' + variant.ref + '_' + variant.alt;
+    }
+
+    /* Returns a list of objects suitable for the gru backend to parse into strings
+     * used by bcftools. (Note: this backend code in src/index.js as of 2023.) */
+    getRegionObjsForBackend(featList, forCosmic) {
+        let regionObjList = [];
+        featList.forEach(feat => {
+            let safeChr = forCosmic ? feat.chrom : (feat.chrom.indexOf('chr') > -1 ? feat.chrom.substring(3) : feat.chrom);
+            let currReg = {
+                name: safeChr,
+                start: feat.start,
+                end: feat.end
+            };
+            regionObjList.push(currReg);
+        })
+        return regionObjList;
+    }
 }
 
 export default GlobalApp

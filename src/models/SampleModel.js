@@ -1706,8 +1706,9 @@ class SampleModel {
     // }
 
     /* Takes in a list of regions, calls 5 regions at a time to process.
-     * regions may be an array of variant objects with properties name, start, and end
-     * or an array of strings already preformatted for bcftools */
+     * regions must be an array of variant objects with properties name, start, and end.
+     * (Parsing into single string for bcftools compatible argument done on backend.)
+     */
     promiseGetVariantIds(regions) {
         const self = this;
         const batchCount = 5;

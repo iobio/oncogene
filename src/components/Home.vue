@@ -615,17 +615,19 @@ export default {
       self.cohortModel.promiseGetRankedGlobalVariants()
           .then(retObj => {
             let rankObj = retObj.rankObj;
-            //let groupObj = retObj.groupObj;
+            let groupObj = retObj.groupObj;
+            let regionObjs = self.globalApp.getRegionObjsForBackend(retObj.uniqVarList);
+
+            // todo: left off here - test when backend up
             // Don't want to block on this, do in background
-            // todo: here is the memory problem COSMIC
-            // todo: fetch COSMIC status individually
-            // self.cohortModel.promiseGetCosmicVariantIds(groupObj.formattedGeneObjs, groupObj.somaticGeneNames)
-            //   .then(() => {
-            //     let cosmicPs = [];
-            //     groupObj.fullGeneObjs.forEach(geneObj => {
-            //       cosmicPs.push(self.cohortModel.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
-            //     });
-            //   });
+            self.cohortModel.promiseGetCosmicVariantIds(regionObjs)
+              .then(() => {
+                let cosmicPs = [];
+                groupObj.fullGeneObjs.forEach(geneObj => {
+                  cosmicPs.push(self.cohortModel.promiseAnnotateWithCosmic(geneObj.somaticVariantList));
+                });
+              });
+
             let totalSomaticVarCount = rankObj.count;
             let totalSomaticGenes = rankObj.geneCount;
             let topRankedGene = rankObj.gene;
@@ -964,9 +966,10 @@ export default {
                 }
 
                 if (self.cohortModel.isLoaded) {
-                  let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
-                  self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
-                      .then(() => {
+                  // todo: take this out and fetch variants later
+                  // let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
+                  // self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
+                  //     .then(() => {
                         self.promiseLoadLocalData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
                             .then(function () {
                               self.clearZoom = false;
@@ -984,9 +987,9 @@ export default {
                               console.log(err);
                               reject(err);
                             })
-                      }).catch(error => {
-                    Promise.reject('Problem getting cosmic variant IDS: ' + error);
-                  })
+                  //     }).catch(error => {
+                  //   Promise.reject('Problem getting cosmic variant IDS: ' + error);
+                  // })
 
                 } else {
                   resolve();

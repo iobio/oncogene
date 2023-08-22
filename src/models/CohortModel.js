@@ -34,7 +34,7 @@ class CohortModel {
         this.selectedSamples = [];              // The list of selected samples used in this cohort (matches vcf file column names)
         this.allUniqueFeaturesObj = null;       // A vcf object with all unique features from all sample models in this cohort (used for subclone viz)
         this.cosmicVariantIdHash = {};          // Hash of varKey: cosmicID or varKey: {emptyString} if not corresponding cosmic variant found
-        this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
+        //this.cosmicGenesRetreived = {};         // Map of gene names we've already pulled into cosmicVariantHashId
         this.selectedTranscriptId = null;       // Used by sampleModels when assigning impact
 
         this.mode = 'time';                     // Indicates time-series mode
@@ -718,6 +718,7 @@ class CohortModel {
                                     self.geneModel.promiseGroupAndAssign(self.filteredVarMap, self.filteredCnvMap, self.unmatchedFilteredVarMap)
                                         .then(groupObj => {
                                             retObj['groupObj'] = groupObj;
+                                            retObj['uniqVarList'] = Object.values(self.filteredVarMap);
                                             self.geneModel.promiseScoreAndRank(groupObj.fullGeneObjs, groupObj.somaticCount, groupObj.unmatchedSymbols)
                                                 .then((rankObj) => {
                                                     retObj['rankObj'] = rankObj;
@@ -786,7 +787,6 @@ class CohortModel {
                         feature.sampleMap[model.selectedSample] = false;
                     });
                     featureMap[feature.id] = feature;
-
                 } else {
                     featObj.sampleMap[selectedSample] = true;
                     // Check to see if this variant falls into a CNV for any sample where it exists
@@ -799,7 +799,8 @@ class CohortModel {
 
 
     /* Loads variant, coverage (optional), and copy number (optional)
-     * for all samples for a single gene. */
+     * for all samples for a single gene.
+     * Here, 'local' means 'non-global', or not the entire genome. */
     promiseGetLocalData(theGene, theTranscript, options) {
         const self = this;
         const transcriptChange = options.transcriptChange;
@@ -1214,8 +1215,7 @@ class CohortModel {
             end: variant.end
         };
         // cosmicVariantIdHash never has 'chr' prefix in keys, even for GRCh38
-        let safeChr = variant.chrom.indexOf('chr') > -1 ? variant.chrom.substring(3) : variant.chrom;
-        let varId = 'var_' + variant.start + '_' + safeChr + '_' + variant.ref + '_' + variant.alt;
+        let varId = self.globalApp.getCosmicHashKey(variant);
 
         return new Promise(function (resolve, reject) {
             let cosmicId = self.cosmicVariantIdHash[varId];
@@ -1249,17 +1249,22 @@ class CohortModel {
     /* Takes in a list of genes and regions (STABLY ORDERED), composes a region string of all to send to bcftools view on COSMIC vcf to pull in variants
      * that fall within that region. Populates model level map of cosmic variant IDs.
      * If gene has already been pulled back, will not re-fetch. */
-    promiseGetCosmicVariantIds(regions, geneNames) {
+    promiseGetCosmicVariantIds(regions) {
+        // todo: port to take in list of regions instead of genes
+
         const self = this;
-        if (regions.length !== geneNames.length) {
-            console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');
-        }
+        // todo: get rid of geneNames totally?
+        // if (regions.length !== geneNames.length) {
+        //     console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');
+        // }
+
         // Don't pull back regions for genes we already have
-        for (let i = 0; i < geneNames.length; i++) {
-            if (self.cosmicGenesRetreived[geneNames[i]]) {
-                regions.splice(i, 1);
-            }
-        }
+        // todo: do this for cosmicVariantHashId instead
+        // for (let i = 0; i < geneNames.length; i++) {
+        //     if (self.cosmicGenesRetreived[geneNames[i]]) {
+        //         regions.splice(i, 1);
+        //     }
+        // }
         return new Promise(function (resolve, reject) {
             if (regions.length === 0) {
                 resolve();
@@ -1273,10 +1278,11 @@ class CohortModel {
                         // Note: varKey never contains 'chr' prefix
                         self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
                     }
+                    // todo: get rid of
                     // Add gene names to existing hash
-                    geneNames.forEach(geneName => {
-                        self.cosmicGenesRetreived[geneName] = true;
-                    })
+                    // geneNames.forEach(geneName => {
+                    //     self.cosmicGenesRetreived[geneName] = true;
+                    // })
                     resolve();
                 })
                 .catch((error) => {
@@ -1361,13 +1367,15 @@ class CohortModel {
 
             Promise.all(annotatePromises)
                 .then(function () {
-                    // todo: annotate with cosmic individually here - cosmic
                     if (self.cosmicVariantIdHash) {
-                        let cosmicPs = [];
+                        let featureHash = {};
                         Object.values(theResultMap).forEach(modelObj => {
-                            cosmicPs.push(self.promiseAnnotateWithCosmic(modelObj.features));
+                            modelObj.features.forEach(feat => {
+                                let varId = feat.
+                                featureHash.push(feat);
+                            })
                         });
-                        Promise.all(cosmicPs)
+                        self.promiseAnnotateWithCosmic(featureHash)
                             .then(function (updatedResultMap) {
                                 self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
                                     .then(function (data) {
@@ -1747,72 +1755,6 @@ class CohortModel {
             model.variantHistoCount += histo.total;
         })
     }
-
-    // todo: redundant, get rid of
-    // promiseAnnotateVariants(theGene, theTranscript, isMultiSample, isBackground, options = {}) {
-    //     const self = this;
-    //
-    //     return new Promise(function (resolve, reject) {
-    //         let annotatePromises = [];
-    //         let theResultMap = {};
-    //
-    //         // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-    //         let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, isMultiSample, self.translator.bcsqImpactMap)
-    //             .then((resultMap) => {
-    //                 if (resultMap && resultMap.sampleMap) {
-    //                     resultMap.sampleMap.forEach(resultObj => {
-    //                         let sampleModel = self.getModelBySelectedSample(resultObj.name);
-    //                         sampleModel.processVariants([resultObj]);
-    //                         theResultMap[sampleModel.id] = resultObj;
-    //                     });
-    //                     self.annotationComplete = false;
-    //                 } else {
-    //                     reject('No sampleMap returned when getting all variants');
-    //                 }
-    //             }).catch((error) => {
-    //                 reject('Problem annotating variants: ' + error);
-    //             });
-    //         annotatePromises.push(p);
-    //
-    //         // Load clinvar track
-    //         if (options.getClinvarVariants) {
-    //             let p = self.promiseLoadKnownVariants(theGene, theTranscript)
-    //                 .then(function (resultMap) {
-    //                     if (self.knownVariantViz === 'variants') {
-    //                         for (let id in resultMap) {
-    //                             theResultMap[id] = resultMap[id];
-    //                         }
-    //                     }
-    //                 });
-    //             annotatePromises.push(p);
-    //         }
-    //         Promise.all(annotatePromises)
-    //             .then(function () {
-    //                 // todo: annotate with cosmic individually here - cosmic
-    //                 if (self.cosmicVariantIdHash) {
-    //                     let cosmicPs = [];
-    //                     Object.values(theResultMap).forEach(modelObj => {
-    //                         cosmicPs.push(self.promiseAnnotateWithCosmic(modelObj.features));
-    //                     });
-    //                     Promise.all(cosmicPs)
-    //                         .then(function (updatedResultMap) {
-    //                             self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
-    //                                 .then(function (data) {
-    //                                     self.annotationComplete = true;
-    //                                     resolve(data)
-    //                                 });
-    //                         });
-    //                 } else {
-    //                     console.log("Could not annotate with COSMIC b/c hash map not populated");
-    //                     self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
-    //                         .then(function (data) {
-    //                             self.annotationComplete = true;
-    //                             resolve(data)
-    //                         });
-    //                 }
-    //             });
-    //     })
-    // }
 
     /* Assigns bool to each variant telling if in COSMIC or not */
     promiseAnnotateWithCosmic(featureList) {
