@@ -1711,7 +1711,7 @@ class SampleModel {
      */
     promiseGetVariantIds(regions) {
         const self = this;
-        const batchCount = 5;
+        const batchCount = 50;
 
         return new Promise((resolve, reject) => {
             let resultMap = {};
@@ -1722,13 +1722,6 @@ class SampleModel {
                 let varIdP = self.vcf.promiseGetVariantIds(regionBatch, 'COSMIC_ID')
                     .then(function (data) {
                         if (data) {
-                            if (Object.keys(data).length === 0) {
-                                let regionStr = '';
-                                regionBatch.forEach(region => {
-                                    regionStr += (region.name + ':' + region.start + '-' + region.end + ', ');
-                                })
-                                console.log('Warning: no cosmic variants found for the batch: ' + regionStr);
-                            }
                             let modelKey = self.id + '-ids';
                             if (resultMap[modelKey]) {
                                 let varObj = resultMap[modelKey];

@@ -981,6 +981,7 @@ class CohortModel {
                         self.promiseFilterVariants()
                             .then(() => {
                                 const globalMode = false;
+                                // todo: does this need to change from new launching modes?
                                 self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, null, globalMode, self.onlySomaticCalls)
                                     .then((inheritanceObj) => {
                                         let geneChanged = options.loadFromFlag;
@@ -1226,10 +1227,8 @@ class CohortModel {
             } else if (cosmicId) {
                 resolve(true);
             } else {
-                self.getModel('cosmic-variants').inProgress.loadingVariants = true;
                 self.sampleMap['cosmic-variants'].promiseGetVariantIds([regionObj])
                     .then(function (resultMap) {
-                        self.getModel('cosmic-variants').inProgress.loadingVariants = false;
                         // Add variants to existing hash
                         if (resultMap['cosmic-variants-ids'][varId]) {
                             self.cosmicVariantIdHash[varId] = resultMap['cosmic-variants-ids'][varId];
@@ -1243,51 +1242,6 @@ class CohortModel {
                         reject('Problem loading cosmic variants: ' + error);
                     })
             }
-        })
-    }
-
-    /* Takes in a list of genes and regions (STABLY ORDERED), composes a region string of all to send to bcftools view on COSMIC vcf to pull in variants
-     * that fall within that region. Populates model level map of cosmic variant IDs.
-     * If gene has already been pulled back, will not re-fetch. */
-    promiseGetCosmicVariantIds(regions) {
-        // todo: port to take in list of regions instead of genes
-
-        const self = this;
-        // todo: get rid of geneNames totally?
-        // if (regions.length !== geneNames.length) {
-        //     console.log('WARNING: MUST PROVIDE STABLY ORDERED LISTS OF GENE NAMES TO REGIONS');
-        // }
-
-        // Don't pull back regions for genes we already have
-        // todo: do this for cosmicVariantHashId instead
-        // for (let i = 0; i < geneNames.length; i++) {
-        //     if (self.cosmicGenesRetreived[geneNames[i]]) {
-        //         regions.splice(i, 1);
-        //     }
-        // }
-        return new Promise(function (resolve, reject) {
-            if (regions.length === 0) {
-                resolve();
-            }
-            self.getModel('cosmic-variants').inProgress.loadingVariants = true;
-            self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
-                .then(function (resultMap) {
-                    self.getModel('cosmic-variants').inProgress.loadingVariants = false;
-                    // Add variants to existing hash
-                    for (var varKey in resultMap['cosmic-variants-ids']) {
-                        // Note: varKey never contains 'chr' prefix
-                        self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
-                    }
-                    // todo: get rid of
-                    // Add gene names to existing hash
-                    // geneNames.forEach(geneName => {
-                    //     self.cosmicGenesRetreived[geneName] = true;
-                    // })
-                    resolve();
-                })
-                .catch((error) => {
-                    reject('Problem loading cosmic variants: ' + error);
-                })
         })
     }
 
@@ -1342,13 +1296,12 @@ class CohortModel {
         const self = this;
 
         return new Promise(function (resolve, reject) {
-            let annotatePromises = [];
             let theResultMap = {};
             const multiSampleVcf = options.multiSampleVcf;
             const isBackground = options.isBackground;
 
             // We enforce a single multi-sample vcf, so only need to annotate variants from a single sample model
-            let p = self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, multiSampleVcf, self.translator.bcsqImpactMap)
+            self.getFirstSampleModel().promiseGetAllVariants(theGene, theTranscript, multiSampleVcf, self.translator.bcsqImpactMap)
                 .then((resultMap) => {
                     if (resultMap && resultMap.sampleMap) {
                         resultMap.sampleMap.forEach(resultObj => {
@@ -1357,41 +1310,40 @@ class CohortModel {
                             theResultMap[sampleModel.id] = resultObj;
                         });
                         self.annotationComplete = false;
+
+                        // Annotate variants with functional dbs
+                        if (self.cosmicVariantIdHash) {
+                            let featureHash = {};
+                            Object.values(theResultMap).forEach(modelObj => {
+                                modelObj.features.forEach(feat => {
+                                    let varId = self.globalApp.getCosmicHashKey(feat);
+                                    featureHash[varId] = feat;
+                                })
+                            });
+                            let featList = Object.values(featureHash);
+                            self.promiseAnnotateCosmicStatus(featList)
+                                .then(function (updatedResultMap) {
+                                    self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
+                                        .then(function (data) {
+                                            self.annotationComplete = true;
+                                            resolve(data)
+                                        });
+                                });
+                        } else {
+                            console.log("Could not annotate with COSMIC b/c hash map not populated");
+                            self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
+                                .then(function (data) {
+                                    self.annotationComplete = true;
+                                    resolve(data)
+                                });
+                        }
+
                     } else {
                         reject('No sampleMap returned when getting all variants');
                     }
                 }).catch((error) => {
                     reject('Problem annotating variants: ' + error);
-                });
-            annotatePromises.push(p);
-
-            Promise.all(annotatePromises)
-                .then(function () {
-                    if (self.cosmicVariantIdHash) {
-                        let featureHash = {};
-                        Object.values(theResultMap).forEach(modelObj => {
-                            modelObj.features.forEach(feat => {
-                                let varId = feat.
-                                featureHash.push(feat);
-                            })
-                        });
-                        self.promiseAnnotateWithCosmic(featureHash)
-                            .then(function (updatedResultMap) {
-                                self.promiseAnnotateWithClinvar(updatedResultMap, theGene, theTranscript, isBackground)
-                                    .then(function (data) {
-                                        self.annotationComplete = true;
-                                        resolve(data)
-                                    });
-                            });
-                    } else {
-                        console.log("Could not annotate with COSMIC b/c hash map not populated");
-                        self.promiseAnnotateWithClinvar(theResultMap, theGene, theTranscript, isBackground)
-                            .then(function (data) {
-                                self.annotationComplete = true;
-                                resolve(data)
-                            });
-                    }
-                });
+                })
         })
     }
 
@@ -1583,7 +1535,6 @@ class CohortModel {
                 sampleModel.loadedVariants = null;
                 sampleModel.inProgress.loadingVariants = true;
 
-                // todo: left off here - why is vcfData empty?
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
@@ -1756,23 +1707,77 @@ class CohortModel {
         })
     }
 
-    /* Assigns bool to each variant telling if in COSMIC or not */
-    promiseAnnotateWithCosmic(featureList) {
+    /* Takes in a variant list, and assigns corresponding cosmic IDs to
+     * those that are in the COSMIC database. May require a call
+     * to the backend if we have not yet seen the variant. */
+    promiseAnnotateCosmicStatus(featureList) {
         const self = this;
         return new Promise((resolve, reject) => {
-            let cosmicHash = self.cosmicVariantIdHash;
-            if (!cosmicHash) {
-                reject('Could not annotate cosmic status per variants');
-            } else {
-                featureList.forEach(feat => {
-                    if (cosmicHash[feat.id]) {
-                        feat.inCosmic = true;
-                        feat.cosmicId = cosmicHash[feat.id];
+
+            // Don't fetch IDs for features we've already annotated with COSMIC
+            let unseenFeatList = [];
+            featureList.forEach(feat => {
+                let cosmicKey = self.globalApp.getCosmicHashKey(feat);
+                if (self.cosmicVariantIdHash[cosmicKey] == null) {
+                    unseenFeatList.push(feat);
+                }
+            });
+
+            // Fetch what we need
+            let regions = self.globalApp.getRegionObjsForBackend(unseenFeatList, true);
+            self.promiseGetCosmicVariantIds(regions)
+                .then(resultMap => {
+                    for (var varKey in resultMap['cosmic-variants-ids']) {
+                        // Note: varKey never contains 'chr' prefix
+                        self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
                     }
-                })
+
+                    // Then annotate all features (we may have a scenario where we recall filtered variants,
+                    // and have new variant objects, but have already checked this variant in cosmic
+                    self.assignCosmicBool(featureList);
+
+                }).catch(err => {
+                    reject(err);
+            });
+        });
+    }
+
+    /* Takes in a list of regions, composes a region string of all to send to bcftools
+     * view on COSMIC vcf to pull in variants that fall within that region. Returns map of cosmic variant IDs.
+     * If region has already been pulled back, will not re-fetch. */
+    promiseGetCosmicVariantIds(regions) {
+        const self = this;
+        return new Promise(function (resolve, reject) {
+            if (regions.length === 0) {
                 resolve();
             }
-        });
+            // todo: left off here - this result map is empty
+            // do I need the cosmic specific sample? does it have the cosmic urls baked into a vcf?
+            // if so, why is this coming back empty?
+            self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
+                .then(resultMap => {
+                    resolve(resultMap);
+                }).catch((error) => {
+                reject('Problem loading cosmic variants: ' + error);
+            })
+        })
+    }
+
+    /* Assigns bool to each variant telling if in COSMIC or not */
+    assignCosmicBool(featureList) {
+        const self = this;
+        let cosmicHash = self.cosmicVariantIdHash;
+        if (cosmicHash == null) {
+            console.log("Something wrong: trying to annotate cosmic status and don't have cosmic hash populated.");
+            return;
+        }
+        featureList.forEach(feat => {
+            let hashId = self.globalApp.getCosmicHashKey(feat);
+            if (cosmicHash[hashId] && cosmicHash[hashId] !== "") {
+                feat.inCosmic = true;
+                feat.cosmicId = cosmicHash[feat.id];
+            }
+        })
     }
 
     promiseAnnotateWithClinvar(resultMap, geneObject, transcript, isBackground) {
