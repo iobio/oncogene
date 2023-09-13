@@ -1713,32 +1713,37 @@ class CohortModel {
     promiseAnnotateCosmicStatus(featureList) {
         const self = this;
         return new Promise((resolve, reject) => {
-
-            // Don't fetch IDs for features we've already annotated with COSMIC
-            let unseenFeatList = [];
-            featureList.forEach(feat => {
-                let cosmicKey = self.globalApp.getCosmicHashKey(feat);
-                if (self.cosmicVariantIdHash[cosmicKey] == null) {
-                    unseenFeatList.push(feat);
-                }
-            });
-
-            // Fetch what we need
-            let regions = self.globalApp.getRegionObjsForBackend(unseenFeatList, true);
-            self.promiseGetCosmicVariantIds(regions)
-                .then(resultMap => {
-                    for (var varKey in resultMap['cosmic-variants-ids']) {
-                        // Note: varKey never contains 'chr' prefix
-                        self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
+            if (featureList.length === 0) {
+                console.log("No features provided to promiseAnnotateCosmicStatus");
+                resolve();
+            } else {
+                // Don't fetch IDs for features we've already annotated with COSMIC
+                let unseenFeatList = [];
+                featureList.forEach(feat => {
+                    let cosmicKey = self.globalApp.getCosmicHashKey(feat);
+                    if (self.cosmicVariantIdHash[cosmicKey] == null) {
+                        unseenFeatList.push(feat);
                     }
+                });
 
-                    // Then annotate all features (we may have a scenario where we recall filtered variants,
-                    // and have new variant objects, but have already checked this variant in cosmic
-                    self.assignCosmicBool(featureList);
+                // Fetch what we need
+                let regionObj = self.globalApp.getRegionObjsForBackend(unseenFeatList, true);
+                self.promiseGetCosmicVariantIds(Object.values(regionObj))
+                    .then(resultMap => {
+                        for (var varKey in resultMap['cosmic-variants-ids']) {
+                            // Note: varKey never contains 'chr' prefix
+                            self.cosmicVariantIdHash[varKey] = resultMap['cosmic-variants-ids'][varKey];
+                        }
 
-                }).catch(err => {
+                        // Then annotate all features (we may have a scenario where we recall filtered variants,
+                        // and have new variant objects, but have already checked this variant in cosmic
+                        self.assignCosmicBool(featureList);
+                        resolve();
+
+                    }).catch(err => {
                     reject(err);
-            });
+                });
+            }
         });
     }
 

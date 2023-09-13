@@ -195,10 +195,10 @@ class GlobalApp {
         return 'var_' + variant.start + '_' + safeChr + '_' + variant.ref + '_' + variant.alt;
     }
 
-    /* Returns a list of objects suitable for the gru backend to parse into strings
+    /* Returns an object of objects suitable for the gru backend to parse into strings
      * used by bcftools. (Note: this backend code in src/index.js as of 2023.) */
     getRegionObjsForBackend(featList, forCosmic) {
-        let regionObjList = [];
+        let regions = {};
         featList.forEach(feat => {
             let safeChr = forCosmic ? feat.chrom : (feat.chrom.indexOf('chr') > -1 ? feat.chrom.substring(3) : feat.chrom);
             let currReg = {
@@ -206,9 +206,9 @@ class GlobalApp {
                 start: feat.start,
                 end: feat.end
             };
-            regionObjList.push(currReg);
+            regions['var' + feat.start + '_' + feat.end + '_' + safeChr] = currReg;
         })
-        return regionObjList;
+        return regions;
     }
 }
 

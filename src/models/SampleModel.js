@@ -1724,9 +1724,8 @@ class SampleModel {
                         if (data) {
                             let modelKey = self.id + '-ids';
                             if (resultMap[modelKey]) {
-                                let varObj = resultMap[modelKey];
                                 for (var varId in data) {
-                                    varObj[varId] = data[varId];
+                                    resultMap[modelKey][varId] = data[varId];
                                 }
                             } else {
                                 resultMap[self.id + '-ids'] = data;
