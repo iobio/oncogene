@@ -59,6 +59,7 @@ class SampleModel {
         this.defaultSampleName = null;
         this.isTumor = true;
         this.isCosmic = false;
+        this.isCanonical = true;    // True if this sample model represents a sample that corresponds to a normal or tumor (i.e., it does not represent cosmic/civic, etc)
 
         // functional flags
         this.isBasicMode = null;
@@ -842,7 +843,7 @@ class SampleModel {
         self.entryDataChanged = changedStatus;
     }
 
-    init(cohort) {
+    init(cohort, isCanonical) {
         // init vcf.iobio
         this.cohort = cohort;
         this.vcf = vcfiobio(this.globalApp);
@@ -854,6 +855,7 @@ class SampleModel {
         this.bam = new bamiobio(this.globalApp, this.cohort.endpoint);
         this.cnv = new cnviobio(this.cohort.endpoint, this.cohort.genomeBuildHelper);
         this.cnv.init();
+        this.isCanonical = isCanonical;
     }
 
     // todo: not allowing local file uploads atm
@@ -1705,7 +1707,7 @@ class SampleModel {
     //     });
     // }
 
-    /* Takes in a list of regions, calls 5 regions at a time to process.
+    /* Takes in a list of regions, calls 50 regions at a time to process.
      * regions must be an array of variant objects with properties name, start, and end.
      * (Parsing into single string for bcftools compatible argument done on backend.)
      */

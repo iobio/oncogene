@@ -70,7 +70,7 @@ class CohortModel {
         this.cosmicVariantViz = 'counts';
 
         this.sampleModelUtil = new SampleModel(globalApp);  // Used to do initial file checking in uploader
-        this.sampleModelUtil.init(this);
+        this.sampleModelUtil.init(this, false);
 
         // optional data types
         this.hasCoverageData = false;
@@ -360,7 +360,7 @@ class CohortModel {
         const self = this;
         return new Promise(function (resolve, reject) {
             let vm = new SampleModel(self.globalApp);
-            vm.init(self);
+            vm.init(self, true);
             if (destIndex >= 0) {
                 self.sampleModels[destIndex] = vm;
             } else {
@@ -481,7 +481,7 @@ class CohortModel {
         } else {
             return new Promise(function (resolve, reject) {
                 let vm = new SampleModel(self.globalApp);
-                vm.init(self);
+                vm.init(self, false);
                 vm.setId('known-variants');
                 vm.setDisplayName('ClinVar');
                 let clinvarUrl = self.globalApp.getClinvarUrl(self.genomeBuildHelper.getCurrentBuildName(), true);
@@ -504,7 +504,7 @@ class CohortModel {
         } else {
             return new Promise(function (resolve, reject) {
                 let vm = new SampleModel(self.globalApp);
-                vm.init(self);
+                vm.init(self, false);
                 vm.isCosmic = true;
                 vm.setId('cosmic-variants');
                 vm.setDisplayName('COSMIC');
@@ -555,18 +555,22 @@ class CohortModel {
 
     /* Returns the first sample model. If a normal model exists, will return that. */
     getFirstSampleModel() {
-        if (this.sampleModels && this.sampleModels.length > 0) {
-            return this.sampleModels[0];
-        } else {
-            return null;
+        let firstModel = null;
+        for (let i = 0; i < this.sampleModels.length; i++) {
+            let model = this.sampleModels[i];
+            if (model.isCanonical) {
+                firstModel = model;
+                break;
+            }
         }
+        return firstModel;
     }
 
     /* Returns all normal and tumor models */
     getCanonicalModels() {
         let models = this.sampleModels.filter(function (model) {
             if (model != null)
-                return model.id !== 'known-variants' && model.id !== 'cosmic-variants';
+                return model.isCanonical === true;
             return false;
         });
         return models;
@@ -1227,6 +1231,7 @@ class CohortModel {
             } else if (cosmicId) {
                 resolve(true);
             } else {
+                // todo: cosmic rip
                 self.sampleMap['cosmic-variants'].promiseGetVariantIds([regionObj])
                     .then(function (resultMap) {
                         // Add variants to existing hash
@@ -1508,21 +1513,6 @@ class CohortModel {
                 }
             }
         });
-
-        // TODO: not using feature matrix currently, but may want a ranked variant list in future
-        // Plug combined, unique features into feature matrix model
-        // if (id !== 'known-variants' && id !== 'cosmic-variants' && drawFeatureMatrix) {
-        //     if (self.allUniqueFeaturesObj != null && self.allUniqueFeaturesObj.features
-        //         && self.allUniqueFeaturesObj.features.length > 0
-        //         && loadFromFlag) {
-        //         self.featureMatrixModel.promiseRankVariants(self.allUniqueFeaturesObj, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants())
-        //     } else if (allVariants && allVariants.features.length > 0) {
-        //         self.featureMatrixModel.promiseRankVariants(allVariants, self.allSomaticFeaturesLookup, self.allInheritedFeaturesLookup, self.getAllFilterPassingVariants());
-        //         self.allUniqueFeaturesObj = allVariants;
-        //     }
-        // } else if (!drawFeatureMatrix) {
-        //     self.allUniqueFeaturesObj = allVariants;
-        // }
     }
 
     /* Asks filter model to mark whether a variant meets all filter criteria.
@@ -1756,9 +1746,9 @@ class CohortModel {
             if (regions.length === 0) {
                 resolve();
             }
-            // todo: left off here - this result map is empty
             // do I need the cosmic specific sample? does it have the cosmic urls baked into a vcf?
             // if so, why is this coming back empty?
+            // todo: cosmic rip
             self.sampleMap['cosmic-variants'].promiseGetVariantIds(regions)
                 .then(resultMap => {
                     resolve(resultMap);

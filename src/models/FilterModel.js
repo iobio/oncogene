@@ -58,7 +58,7 @@ class FilterModel {
                     custom: false,
                     description: 'Filter by variant effect, impact, or type',
                     icon: 'category',
-                    activeForSomaticOnlyMode: true // todo: I think I can get rid of this now
+                    activeForSomaticOnlyMode: true
                 },
                 {
                     name: this.COUNT,
@@ -309,7 +309,6 @@ class FilterModel {
         return new Promise((resolve, reject) => {
             let normalSamples = [];
             let tumorSamples = [];
-            let tumorSampleModelIds = [];
             let inheritedVarLookup = {};
             let somaticVarMap = {};
             let somaticVarLookup = {};
@@ -325,7 +324,6 @@ class FilterModel {
                     somaticVarMap[sampleObj.model.selectedSample] = { 'name': sampleObj.model.selectedSample, 'features': [] };
                 } else if (sampleId !== 'known-variants' && sampleId !== 'cosmic-variants') {
                     tumorSamples.push(sampleObj);    // Don't need reference to model for tumor
-                    tumorSampleModelIds.push(sampleId);
                     somaticVarMap[sampleObj.model.selectedSample] = { 'name': sampleObj.model.selectedSample, 'features': [] };
                 }
             }
@@ -368,15 +366,10 @@ class FilterModel {
                         if (globalMode) {
                             passesNormalCount = true;
                         } else {
-                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.NORMAL_COUNT, self.NORMAL_ALT_COUNT, 'currOper'), currFeat.genotypeAltCount, self.getFilterField(self.COUNT, self.NORMAL_COUNT, 'currVal'));
+                            passesNormalCount = self.matchAndPassFilter(self.getFilterField(self.NORMAL_COUNT, self.NORMAL_ALT_COUNT, 'currOper'), currFeat.genotypeAltCount, self.getFilterField(self.NORMAL_COUNT, self.NORMAL_ALT_COUNT, 'currVal'));
                         }
                         let currNormAf = Math.round(currFeat.genotypeAltCount / currFeat.genotypeDepth * 100) / 100;
-                        // let passesNormalAf = false;
-                        // if (somaticOnlyMode) {
-                        //     passesNormalAf = true;
-                        // } else {
                         let passesNormalAf = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currOper'), currNormAf, self.getAdjustedCutoff(self.getFilterField(self.COUNT, self.NORMAL_FREQ, 'currVal'), self.NORMAL_FREQ));
-                        //}
                         if (currFeat.id != null && passesNormalCount && passesNormalAf) {
                             passesNormalFiltersLookup[currFeat.id] = true;
                         }
@@ -786,6 +779,10 @@ class FilterModel {
     getFilterField(parentFilterName, filterName, fieldName) {
         const self = this;
         let filterObj = self.getFilterObject(parentFilterName, filterName);
+        if (filterObj == null) {
+            console.log("ERROR: could not find filterObj for parent " + parentFilterName + " and " + filterName);
+            return;
+        }
         return filterObj[fieldName];
     }
 
@@ -802,45 +799,6 @@ class FilterModel {
         }
         return typesToHide;
     }
-
-    // todo: can I get rid of these?
-    // /* Returns filters that should be applied to tumor tracks.
-    //  * Does NOT include 'somatic' filters because those are used
-    //  * only for styling variants, not drawing/filtering out. */
-    // getTumorCutoffFilters() {
-    //     const self = this;
-    //     const tumorFilters = [];
-    //     for (var filterCatName in self.filters) {
-    //         if (filterCatName !== this.ANNOTATION && filterCatName !== this.COUNT) {
-    //             const currFilters = self.getFilters(filterCatName);
-    //             currFilters.forEach((currFilter) => {
-    //                 if (currFilter.active) {
-    //                     tumorFilters.push(currFilter);
-    //                 }
-    //             });
-    //         }
-    //     }
-    //     return tumorFilters;
-    // }
-    //
-    // /* Returns filters that should be applied to normal tracks.
-    //  * Does NOT include 'somatic' filters because those are used
-    //  * only for styling variants, not drawing/filtering out. */
-    // getNormalCutoffFilters() {
-    //     const self = this;
-    //     const normalFilters = [];
-    //     for (var filterCatName in self.filters) {
-    //         if (filterCatName !== this.ANNOTATION && filterCatName !== this.COUNT) {
-    //             const currFilters = self.getFilters(filterCatName);
-    //             currFilters.forEach((currFilter) => {
-    //                 if (!currFilter.tumorOnly && currFilter.active) {
-    //                     normalFilters.push(currFilter);
-    //                 }
-    //             });
-    //         }
-    //     }
-    //     return normalFilters;
-    // }
 
     /* Returns filters involved in recalling variants.
      * If activeOnly, returns those currently staged to recall variants. */

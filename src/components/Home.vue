@@ -619,15 +619,8 @@ export default {
             //let regionObjs = self.globalApp.getRegionObjsForBackend(retObj.uniqVarList);
 
             // Don't want to block on this, do in background
-            self.cohortModel.promiseAnnotateCosmicStatus(retObj.uniqVarList);
-            // self.cohortModel.promiseGetCosmicVariantIds(regionObjs)
-            //   .then(() => {
-            //     // The somatic var list in the geneObjects should be covered by the
-            //     // unique var list, which is a union of all of the vars in the gene objs
-            //     groupObj.fullGeneObjs.forEach(geneObj => {
-            //       self.cohortModel.promiseAnnotateCosmicStatus(geneObj.somaticVariantList);
-            //     });
-            //   });
+            // todo: this is way too slow for now
+            //self.cohortModel.promiseAnnotateCosmicStatus(retObj.uniqVarList);
 
             let totalSomaticVarCount = rankObj.count;
             let totalSomaticGenes = rankObj.geneCount;
