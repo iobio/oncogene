@@ -590,7 +590,7 @@ class GeneModel {
         const self = this;
         const MAX_GENES = 50;
         let EUTILS_RPS_MAX = 10;
-        let EUTILS_REFRACTORY_MS = 1000;
+        let EUTILS_REFRACTORY_MS = 2000;
 
         return new Promise( function(resolve, reject) {
             let theGeneNames = geneNames.filter(function(geneName) {
@@ -919,53 +919,106 @@ class GeneModel {
     /* Takes in array of genes, does a single call to gene info server. */
     promiseGetGeneObjects(geneNames) {
         const me = this;
+        const chunkSize = 500;
         return new Promise((resolve, reject) => {
-            let url = me.geneInfoServer + 'api/genes?genes=' + geneNames.join();
+            if (geneNames.length > 500) {
+                for (let i = 0; i < geneNames.length; i += chunkSize) {
+                    let nameChunk = geneNames.slice(i, i + chunkSize);
+                    let url = me.geneInfoServer + 'api/genes?genes=' + nameChunk.join();
 
-            let buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
-            me.globalApp.$('#build-link').text(buildName);
+                    let buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
+                    me.globalApp.$('#build-link').text(buildName);
 
-            url += "&source=" + (me.geneSource ? me.geneSource : 'gencode');
-            url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
-            url += "&build=" + buildName;
+                    url += "&source=" + (me.geneSource ? me.geneSource : 'gencode');
+                    url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
+                    url += "&build=" + buildName;
 
-            me.globalApp.$.ajax({
-                url: url,
-                jsonp: "callback",
-                type: "GET",
-                dataType: "json",
-                crossDomain: true,
-                success: function (response) {
-                    let listObj = response[0];
-                    Object.keys(listObj).forEach(geneName => {
-                        let theGeneObject = listObj[geneName];
-                        theGeneObject.somaticVariantList = [];
-                        theGeneObject.score = -1;
-                        theGeneObject.cosmicHighCount = 0;
-                        theGeneObject.cosmicModerCount = 0;
-                        theGeneObject.cosmicLowCount = 0;
-                        theGeneObject.cosmicModifCount = 0;
-                        theGeneObject.highCount = 0;
-                        theGeneObject.moderCount = 0;
-                        theGeneObject.lowCount = 0;
-                        theGeneObject.modifCount = 0;
-                        theGeneObject.cnvCount = 0;
-                        theGeneObject.ncbiSummary = '';
-                        theGeneObject.inCnv = false;
-                        theGeneObject.somaticCnvList = [];
+                    me.globalApp.$.ajax({
+                        url: url,
+                        jsonp: "callback",
+                        type: "GET",
+                        dataType: "json",
+                        crossDomain: true,
+                        success: function (response) {
+                            let listObj = response[0];
+                            Object.keys(listObj).forEach(geneName => {
+                                let theGeneObject = listObj[geneName];
+                                theGeneObject.somaticVariantList = [];
+                                theGeneObject.score = -1;
+                                theGeneObject.cosmicHighCount = 0;
+                                theGeneObject.cosmicModerCount = 0;
+                                theGeneObject.cosmicLowCount = 0;
+                                theGeneObject.cosmicModifCount = 0;
+                                theGeneObject.highCount = 0;
+                                theGeneObject.moderCount = 0;
+                                theGeneObject.lowCount = 0;
+                                theGeneObject.modifCount = 0;
+                                theGeneObject.cnvCount = 0;
+                                theGeneObject.ncbiSummary = '';
+                                theGeneObject.inCnv = false;
+                                theGeneObject.somaticCnvList = [];
 
-                        me.geneObjects[geneName] = theGeneObject;
+                                me.geneObjects[geneName] = theGeneObject;
+                            });
+                        },
+                        error: function (xhr, status, errorThrown) {
+                            console.log("Could not retrieve gene objects for provided list.");
+                            console.log("Error: " + errorThrown);
+                            console.log("Status: " + status);
+                            console.log(xhr);
+                            reject("Error " + errorThrown + " occurred when attempting to get gene models for gene list.");
+                        }
                     });
-                    resolve();
-                },
-                error: function (xhr, status, errorThrown) {
-                    console.log("Could not retrieve gene objects for provided list.");
-                    console.log("Error: " + errorThrown);
-                    console.log("Status: " + status);
-                    console.log(xhr);
-                    reject("Error " + errorThrown + " occurred when attempting to get gene models for gene list.");
                 }
-            });
+                resolve();
+            } else {
+                let url = me.geneInfoServer + 'api/genes?genes=' + geneNames.join();
+
+                let buildName = me.genomeBuildHelper.getCurrentBuildName() ? me.genomeBuildHelper.getCurrentBuildName() : "GRCh37";
+                me.globalApp.$('#build-link').text(buildName);
+
+                url += "&source=" + (me.geneSource ? me.geneSource : 'gencode');
+                url += "&species=" + me.genomeBuildHelper.getCurrentSpeciesLatinName();
+                url += "&build=" + buildName;
+
+                me.globalApp.$.ajax({
+                    url: url,
+                    jsonp: "callback",
+                    type: "GET",
+                    dataType: "json",
+                    crossDomain: true,
+                    success: function (response) {
+                        let listObj = response[0];
+                        Object.keys(listObj).forEach(geneName => {
+                            let theGeneObject = listObj[geneName];
+                            theGeneObject.somaticVariantList = [];
+                            theGeneObject.score = -1;
+                            theGeneObject.cosmicHighCount = 0;
+                            theGeneObject.cosmicModerCount = 0;
+                            theGeneObject.cosmicLowCount = 0;
+                            theGeneObject.cosmicModifCount = 0;
+                            theGeneObject.highCount = 0;
+                            theGeneObject.moderCount = 0;
+                            theGeneObject.lowCount = 0;
+                            theGeneObject.modifCount = 0;
+                            theGeneObject.cnvCount = 0;
+                            theGeneObject.ncbiSummary = '';
+                            theGeneObject.inCnv = false;
+                            theGeneObject.somaticCnvList = [];
+
+                            me.geneObjects[geneName] = theGeneObject;
+                        });
+                        resolve();
+                    },
+                    error: function (xhr, status, errorThrown) {
+                        console.log("Could not retrieve gene objects for provided list.");
+                        console.log("Error: " + errorThrown);
+                        console.log("Status: " + status);
+                        console.log(xhr);
+                        reject("Error " + errorThrown + " occurred when attempting to get gene models for gene list.");
+                    }
+                });
+            }
         })
     }
 
