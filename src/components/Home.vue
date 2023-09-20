@@ -1,5 +1,6 @@
 <template>
-  <v-container fluid fill-height style="width: 100%; height: 100%; background: white; overflow: hidden" class="ma-0 pa-0">
+  <v-container fluid fill-height style="background: white"
+               class="ma-0 pa-0">
     <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
              :d3="d3"
              :cohortModel="cohortModel"
@@ -16,50 +17,54 @@
              @hide-welcome="demoHide"
              @launched="onLaunch">
     </Welcome>
-    <v-row no-gutters>
+    <v-row no-gutters align="stretch">
       <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
-        <v-card flat
-                tile
-                class="nav-card"
-                :height="screenHeight">
-          <v-toolbar style="background-color: transparent" flat>
-            <v-toolbar-items class="justify-center">
-              <v-autocomplete v-model="lookupGene"
-                              @change="onGeneSelected"
-                              @click="showGeneSnackbar = false"
-                              :items="geneList"
-                              item-text="gene_name"
-                              item-value="gene_name"
-                              label="Enter gene..."
-                              prepend-icon="search"
-                              color="white"
-                              style="font-family: Quicksand"
-                              filled
-                              outlined
-                              dense
-                              single-line
-                              dark>
-              </v-autocomplete>
-            </v-toolbar-items>
-          </v-toolbar>
-          <v-tabs show-arrows
-                  dark
-                  optional
-                  centered
-                  icons-and-text
-                  v-model="selectedTab"
-                  style="padding-top: 5px"
-                  background-color="transparent">
-            <v-tabs-slider></v-tabs-slider>
-            <v-tab href="#genes-tab" style="font-size: 10px">
-              <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
-            </v-tab>
-            <v-tab href="#filter-tab" style="font-size: 10px">
-              <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
-            </v-tab>
-<!--            <v-tab href="#history-tab" style="font-size: 10px">-->
-<!--              <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
-<!--            </v-tab>-->
+        <template>
+          <v-card flat
+                  tile
+                  class="nav-card">
+            <v-toolbar style="background-color: transparent; padding-top: 5px" flat>
+              <v-container>
+                <v-autocomplete v-model="lookupGene"
+                                @change="onGeneSelected"
+                                @click="showGeneSnackbar = false"
+                                :items="geneList"
+                                item-text="gene_name"
+                                item-value="gene_name"
+                                label="Enter gene..."
+                                prepend-icon="search"
+                                color="white"
+                                style="font-family: Quicksand"
+                                filled
+                                outlined
+                                dense
+                                single-line
+                                dark>
+                </v-autocomplete>
+              </v-container>
+              <template v-slot:extension>
+                <v-tabs show-arrows
+                        dark
+                        optional
+                        centered
+                        icons-and-text
+                        v-model="selectedTab"
+                        style="padding-top: 5px"
+                        background-color="transparent">
+                  <v-tabs-slider></v-tabs-slider>
+                  <v-tab href="#genes-tab" style="font-size: 10px">
+                    <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
+                  </v-tab>
+                  <v-tab href="#filter-tab" style="font-size: 10px">
+                    <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
+                  </v-tab>
+                  <!--            <v-tab href="#history-tab" style="font-size: 10px">-->
+                  <!--              <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
+                  <!--            </v-tab>-->
+
+                </v-tabs>
+              </template>
+            </v-toolbar>
             <v-tabs-items v-model="selectedTab" style="background-color: transparent">
               <v-tab-item
                   :key="'genesTab'"
@@ -71,6 +76,7 @@
                     :totalSomaticVarCount="totalSomaticVarCount"
                     :noVarsFound="noVarsFound"
                     :useVEP="globalApp.useVEP"
+                    :screenHeight="screenHeight"
                     @variant-hover="onCohortVariantHover"
                     @variant-hover-exit="onCohortVariantHoverEnd"
                     @variant-selected="onCohortVariantClick"
@@ -91,23 +97,24 @@
                     @filter-change="onFilterChange">
                 </filter-panel-menu>
               </v-tab-item>
-<!--              Leaving out as of Oct2022-->
-<!--              <v-tab-item-->
-<!--                  :key="'historyTab'"-->
-<!--                  :id="'history-tab'">-->
-<!--                <history-tab v-if="filterModel"-->
-<!--                             ref="historyTabRef"-->
-<!--                             :filterModel="filterModel"-->
-<!--                             @reload-analysis-history="reloadAnalysis">-->
-<!--                </history-tab>-->
-<!--              </v-tab-item>-->
+              <!--              Leaving out as of Oct2022-->
+              <!--              <v-tab-item-->
+              <!--                  :key="'historyTab'"-->
+              <!--                  :id="'history-tab'">-->
+              <!--                <history-tab v-if="filterModel"-->
+              <!--                             ref="historyTabRef"-->
+              <!--                             :filterModel="filterModel"-->
+              <!--                             @reload-analysis-history="reloadAnalysis">-->
+              <!--                </history-tab>-->
+              <!--              </v-tab-item>-->
             </v-tabs-items>
-          </v-tabs>
-        </v-card>
+          </v-card>
+        </template>
       </v-col>
-      <v-col :sm="9" v-if="dataEntered || debugMode" :height="700" class="pa-1" :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
+      <v-col :sm="9" v-if="dataEntered || debugMode" :height="700" class="pa-1"
+             :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
         <v-row no-gutters v-if="dataEntered || debugMode" :height="700"
-               :class="{ 'blur-content': displayCarousel }" style="overflow-y: hidden">
+               :class="{ 'blur-content': displayCarousel }">
           <gene-card v-if="selectedGene"
                      :selectedGene="selectedGene"
                      :selectedTranscript="selectedTranscript"
@@ -127,46 +134,48 @@
                      @gene-region-zoom-reset="onGeneRegionZoomReset">
           </gene-card>
         </v-row>
-        <v-row no-gutters v-if="dataEntered || debugMode" :height="700"
-               :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
-          <v-col cols="8" id="varCardArea">
-            <variant-card
-                ref="variantCardRef"
-                v-for="model in sampleModelsToDisplay"
-                :key="model.id"
-                v-bind:class="[ { 'full-width': true}, model.id ]"
-                :globalAppProp="globalApp"
-                :sampleModel="model"
-                :canonicalSampleIds="canonicalSampleIds"
-                :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
-                :classifyVariantSymbolFunc="model.classifyByImpact"
-                :hoverTooltip="hoverTooltip"
-                :selectedGene="selectedGene"
-                :selectedTranscript="selectedTranscript"
-                :selectedVariant="selectedVariant"
-                :regionStart="geneRegionStart"
-                :regionEnd="geneRegionEnd"
-                :assemblyVersion="assemblyVersion"
-                :maxTcn="cohortModel.maxTcnForGene"
-                :width="screenWidth"
-                :height="screenHeight"
-                :showGeneViz="true"
-                :geneVizShowXAxis="false"
-                :annotationComplete="annotationComplete"
-                :cnvPalette="cnvPalette"
-                :somaticOnlyMode="somaticOnlyMode"
-                :d3="d3"
-                :$="$"
-                @cohort-variant-click="onCohortVariantClick"
-                @cohort-variant-hover="onCohortVariantHover"
-                @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                @variants-viz-change="onVariantsVizChange"
-                @variants-filter-change="onVariantsFilterChange"
-                @show-coverage-cutoffs="showCoverageCutoffs = true"
-                @toggle-cnv-tooltip="toggleCnvTooltip"
-                @display-cnv-dialog="displayCnvDialog"
-            >
-            </variant-card>
+        <v-row no-gutters v-if="dataEntered || debugMode"
+               :class="{ 'blur-content': displayCarousel }">
+          <v-col cols="8" id="varCardArea" style="overflow-y: scroll">
+            <v-container style="overflow-y: scroll">
+              <variant-card
+                  ref="variantCardRef"
+                  v-for="model in sampleModelsToDisplay"
+                  :key="model.id"
+                  v-bind:class="[ { 'full-width': true}, model.id ]"
+                  :globalAppProp="globalApp"
+                  :sampleModel="model"
+                  :canonicalSampleIds="canonicalSampleIds"
+                  :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
+                  :classifyVariantSymbolFunc="model.classifyByImpact"
+                  :hoverTooltip="hoverTooltip"
+                  :selectedGene="selectedGene"
+                  :selectedTranscript="selectedTranscript"
+                  :selectedVariant="selectedVariant"
+                  :regionStart="geneRegionStart"
+                  :regionEnd="geneRegionEnd"
+                  :assemblyVersion="assemblyVersion"
+                  :maxTcn="cohortModel.maxTcnForGene"
+                  :width="screenWidth"
+                  :height="screenHeight"
+                  :showGeneViz="true"
+                  :geneVizShowXAxis="false"
+                  :annotationComplete="annotationComplete"
+                  :cnvPalette="cnvPalette"
+                  :somaticOnlyMode="somaticOnlyMode"
+                  :d3="d3"
+                  :$="$"
+                  @cohort-variant-click="onCohortVariantClick"
+                  @cohort-variant-hover="onCohortVariantHover"
+                  @cohort-variant-hover-end="onCohortVariantHoverEnd"
+                  @variants-viz-change="onVariantsVizChange"
+                  @variants-filter-change="onVariantsFilterChange"
+                  @show-coverage-cutoffs="showCoverageCutoffs = true"
+                  @toggle-cnv-tooltip="toggleCnvTooltip"
+                  @display-cnv-dialog="displayCnvDialog"
+              >
+              </variant-card>
+            </v-container>
           </v-col>
           <v-col cols="4" class="summary-card">
             <variant-summary-card
@@ -200,12 +209,12 @@
                 :width="screenWidth"
                 @display-subclone-dialog="displaySubcloneDialog">
             </subclone-summary-card>
-<!--            <cnv-summary-card-->
-<!--                v-if="cohortModel.hasCnvData"-->
-<!--                :d3="globalApp.d3"-->
-<!--                :cohortModel="cohortModel"-->
-<!--                :hasCnvData="cohortModel.hasCnvData">-->
-<!--            </cnv-summary-card>-->
+            <!--            <cnv-summary-card-->
+            <!--                v-if="cohortModel.hasCnvData"-->
+            <!--                :d3="globalApp.d3"-->
+            <!--                :cohortModel="cohortModel"-->
+            <!--                :hasCnvData="cohortModel.hasCnvData">-->
+            <!--            </cnv-summary-card>-->
           </v-col>
         </v-row>
       </v-col>
@@ -249,7 +258,8 @@
                   sub-group>
                 <template v-slot:activator>
                   <v-list-item-content style="padding-left: 8px">
-                    <v-list-item-title style="padding-left: 8px">{{ geneObj.gene + ' (' + geneObj.vars.length + ')'}}</v-list-item-title>
+                    <v-list-item-title style="padding-left: 8px">{{ geneObj.gene + ' (' + geneObj.vars.length + ')' }}
+                    </v-list-item-title>
                   </v-list-item-content>
                 </template>
                 <v-list-item
@@ -260,12 +270,12 @@
                     link>
                   <v-list-item-content style="padding-left: 16px; width: 650px">
                     <v-text-field
-                    single-line
-                    readonly
-                    dense
-                    outlined
-                    :value="varObj.rec + ' ' + varObj.cons"
-                    style="overflow-x: scroll; font-family: Courier New">
+                        single-line
+                        readonly
+                        dense
+                        outlined
+                        :value="varObj.rec + ' ' + varObj.cons"
+                        style="overflow-x: scroll; font-family: Courier New">
                     </v-text-field>
                   </v-list-item-content>
                 </v-list-item>
@@ -451,7 +461,6 @@ export default {
     return {
       screenWidth: (window.innerWidth * 0.5),
       screenHeight: window.innerHeight,
-
       // view state
       globalMode: false,
       dataEntered: false,
@@ -531,7 +540,7 @@ export default {
       selectedSamples: null,      // NOTE: must be in same order as sampleIds
       sampleModels: null,
       analysisHistoryList: [],    // List of different calling criteria used in current session
-      rankedGeneList: [],
+      rankedGeneList: null,
       expandedUserList: false,    // True if we have automatically expanded the user supplied list to include UCSC500 (b/c no targets from their list returned)
       noVarsFound: false,
 
@@ -564,7 +573,7 @@ export default {
     }
   },
   methods: {
-    demoHide: function() {
+    demoHide: function () {
       const self = this;
       self.dataEntered = true;
       self.displayCarousel = false;
@@ -641,11 +650,11 @@ export default {
               // Automatically expand user list to include more genes (UCSC500)
               let ucscList = geneListsByCancerType['General (UCSF500)'];
               self.geneModel.promiseCopyPasteGenes('', ucscList, {replace: true, warnOnDup: false})
-              .then(() => {
-                self.expandedUserList = true;
-                self.expandSnackbar = true;
-                self.getRankedGlobalVariants();
-              })
+                  .then(() => {
+                    self.expandedUserList = true;
+                    self.expandSnackbar = true;
+                    self.getRankedGlobalVariants();
+                  })
             } else if (totalSomaticVarCount === 0 && self.expandedUserList) {
               // Already tried to expand user list, give them warning to manually explore
               self.noVarsDialog = true;
@@ -687,7 +696,7 @@ export default {
               }
             }
           }).catch(error => {
-            console.log('There was a problem calling global somatics: ' + error);
+        console.log('There was a problem calling global somatics: ' + error);
       });
     },
     promiseLoadLocalData: function (selectedGene, selectedTranscript, transcriptChange, globalMode) {
@@ -738,7 +747,7 @@ export default {
             .then(inCosmic => {
               variant.inCosmic = inCosmic;
             }).catch(err => {
-              console.log("Problem getting cosmic status for variant: " + err);
+          console.log("Problem getting cosmic status for variant: " + err);
         });
 
         self.lastClickCard = sampleModelId;
@@ -964,23 +973,23 @@ export default {
                   // let region = self.selectedGene.chr + ':' + self.selectedGene.start + '-' + self.selectedGene.end;
                   // self.cohortModel.promiseGetCosmicVariantIds([region], [self.selectedGene.gene_name])
                   //     .then(() => {
-                        self.promiseLoadLocalData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
-                            .then(function () {
-                              self.clearZoom = false;
-                              self.showVarViz = true;
-                              self.applyFilters = true;
-                              showTracks = true;
-                              if (self.$refs.variantCardRef) {
-                                self.$refs.variantCardRef.forEach(function (variantCard) {
-                                  variantCard.toggleTracks(showTracks);
-                                })
-                              }
-                              resolve();
-                            })
-                            .catch(function (err) {
-                              console.log(err);
-                              reject(err);
-                            })
+                  self.promiseLoadLocalData(self.selectedGene, self.selectedTranscript, transcriptChange, false)
+                      .then(function () {
+                        self.clearZoom = false;
+                        self.showVarViz = true;
+                        self.applyFilters = true;
+                        showTracks = true;
+                        if (self.$refs.variantCardRef) {
+                          self.$refs.variantCardRef.forEach(function (variantCard) {
+                            variantCard.toggleTracks(showTracks);
+                          })
+                        }
+                        resolve();
+                      })
+                      .catch(function (err) {
+                        console.log(err);
+                        reject(err);
+                      })
                   //     }).catch(error => {
                   //   Promise.reject('Problem getting cosmic variant IDS: ' + error);
                   // })
@@ -1072,7 +1081,7 @@ export default {
     toggleCarousel: function (display) {
       this.displayCarousel = display;
     },
-    displayAbout: function() {
+    displayAbout: function () {
       this.aboutDialog = true;
     },
     onTranscriptIdSelected: function (transcriptId) {
@@ -1213,7 +1222,7 @@ export default {
             .style('opacity', 0);
       }
     },
-    displayCnvDialog: function(cnvObj, width, selectedSample) {
+    displayCnvDialog: function (cnvObj, width, selectedSample) {
       this.cnvDialogWidth = width;
       this.selectedCnv = {
         cnvObj: cnvObj,
@@ -1221,7 +1230,7 @@ export default {
       };
       this.cnvDialog = true;
     },
-    displaySubcloneDialog: function(subcloneId) {
+    displaySubcloneDialog: function (subcloneId) {
       this.selectedSubclone = subcloneId;
       this.selectedSubcloneVariants = [];
       this.selectedSubcloneVariants = this.cohortModel.subcloneModel.getVariants(subcloneId);
@@ -1246,7 +1255,7 @@ export default {
             .style('opacity', 0);
       }
     },
-    openAbout: function() {
+    openAbout: function () {
       this.$gtag.pageview("/about");
       this.aboutDialog = true;
     },
@@ -1330,7 +1339,7 @@ export default {
         return '';
       }
     },
-    noVarsText: function() {
+    noVarsText: function () {
       if (!this.cohortModel.onlySomaticCalls) {
         return "No somatic variants found within the supplied gene list and the UCSC500 gene panel.\n" +
             "It's possible the provided VCF file only contains somatic variants: please re-launch the application \n" +
@@ -1350,8 +1359,8 @@ export default {
       let sortedGenes = Object.keys(this.unmatchedGenes).sort();
       sortedGenes.forEach(gene => {
         let geneObj = {
-          'gene' : gene,
-          'vars' : self.unmatchedGenes[gene]
+          'gene': gene,
+          'vars': self.unmatchedGenes[gene]
         };
         list.push(geneObj);
       });
@@ -1363,14 +1372,13 @@ export default {
       let buildObj = this.genomeBuildHelper ? this.genomeBuildHelper.getCurrentBuild() : null;
       return buildObj ? buildObj.name : null;
     }
-  },
+  }
 }
 </script>
 
 <style lang="sass">
 .nav-card
-  background: linear-gradient(rgba(127,16,16,1) 16%, rgba(156,31,31,1) 38%, rgba(150,87,87,1) 80%)
-  overflow-y: scroll
+  background: linear-gradient(rgba(127, 16, 16, 1) 16%, rgba(156, 31, 31, 1) 38%, rgba(150, 87, 87, 1) 80%)
 
 .blur-content
   filter: blur(1px) !important

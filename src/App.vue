@@ -57,7 +57,7 @@
         <span class="mr-2 ml-2">an iobio project</span>
       </v-btn>
     </v-app-bar>
-    <v-main style="background-color: #7f1010">
+    <v-main style="background-color: #7f1010; height: 100vh">
       <Home v-if="filterModel && demoParamsReady"
             ref="homePanel"
             :d3="globalApp.d3"
