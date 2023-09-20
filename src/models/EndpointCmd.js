@@ -46,8 +46,8 @@ export default class EndpointCmd {
 
     /* Returns the first N records from vcfSource, according to lineNumber. */
     getRecords(vcfSource, numRecords) {
-        let emptyRegionArg = [];
-        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, emptyRegionArg, numRecords});
+        let emptyRegionArg = null;
+        return this.api.streamCommand('bcftoolsView', {vcfUrl: vcfSource.vcfUrl, regions: emptyRegionArg, numRecords});
     }
 
     // Return first non-header/column label line from vcf

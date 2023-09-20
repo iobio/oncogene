@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid fill-height style="background: white"
+  <v-container fluid fill-height style="background: white;"
                class="ma-0 pa-0">
     <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
              :d3="d3"
@@ -23,7 +23,7 @@
           <v-card flat
                   tile
                   class="nav-card">
-            <v-toolbar style="background-color: transparent; padding-top: 5px" flat>
+            <v-toolbar style="background-color: transparent; padding-top: 5px;" flat>
               <v-container>
                 <v-autocomplete v-model="lookupGene"
                                 @change="onGeneSelected"
@@ -87,6 +87,7 @@
                   :key="'filterTab'"
                   :id="'filter-tab'">
                 <filter-panel-menu
+                    style="overflow-y: scroll"
                     v-if="filterModel"
                     ref="filterSettingsMenuRef"
                     :filterModel="filterModel"
