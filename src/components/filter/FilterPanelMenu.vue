@@ -43,7 +43,7 @@
 </style>
 
 <template class="pa-0">
-  <v-card flat tile dark class="filter-settings-form mx-1">
+  <v-card style="overflow-y: scroll" flat tile dark class="filter-settings-form mx-1">
     <v-card-text>
       <v-card v-if="activeRecallFilters.length > 0" class="px-2">
         <div class="mt-5 staged-filters">

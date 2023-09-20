@@ -50,7 +50,7 @@
                        @click="loadGene(item)">
             <v-list-item-content>
               <div style="font-size: 15px">
-                {{ getGeneText(item) }}
+                {{ (rankedGeneList.indexOf(item) + 1) + ". " + getGeneText(item) }}
               </div>
             </v-list-item-content>
             <v-list-item-avatar style="margin-left: 0" v-if="getHighCount(item)>0">
