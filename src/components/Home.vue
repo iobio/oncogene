@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid fill-height style="width: 100%; height: 100%; background: white" class="ma-0 pa-0">
+  <v-container fluid fill-height style="width: 100%; height: 100%; background: white; overflow: hidden" class="ma-0 pa-0">
     <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
              :d3="d3"
              :cohortModel="cohortModel"
@@ -107,7 +107,7 @@
       </v-col>
       <v-col :sm="9" v-if="dataEntered || debugMode" :height="700" class="pa-1" :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
         <v-row no-gutters v-if="dataEntered || debugMode" :height="700"
-               :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
+               :class="{ 'blur-content': displayCarousel }" style="overflow-y: hidden">
           <gene-card v-if="selectedGene"
                      :selectedGene="selectedGene"
                      :selectedTranscript="selectedTranscript"
