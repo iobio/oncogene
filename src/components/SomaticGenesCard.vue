@@ -46,7 +46,7 @@
           v-bind:height="scrollHeight">
         <template v-slot:default="{ item }">
 
-          <v-list-item :style="[isSelectedGene(item) ? {'background-color': 'rgb(82, 104, 125, 0.75)',} : {'background-color': 'transparent'}]"
+          <v-list-item :style="[isSelectedGene(item) ? {'background-color': 'rgb(82, 104, 125, 0.75)'} : {'background-color': 'transparent'}]"
                        @click="loadGene(item)">
             <v-list-item-content>
               <div style="font-size: 15px">

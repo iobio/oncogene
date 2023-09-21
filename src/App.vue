@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app style="overflow-y: clip">
     <v-app-bar flat app dark color=appColor>
       <v-toolbar-title style="width: 300px" class="headline text-uppercase">
         <span id="title">Oncogene.iobio</span>
@@ -57,7 +57,7 @@
         <span class="mr-2 ml-2">an iobio project</span>
       </v-btn>
     </v-app-bar>
-    <v-main style="background-color: #7f1010; height: 100vh">
+    <v-main style="background-color: #7f1010; height: 100vh; padding: 0">
       <Home v-if="filterModel && demoParamsReady"
             ref="homePanel"
             :d3="globalApp.d3"

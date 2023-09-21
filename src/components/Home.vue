@@ -1,6 +1,5 @@
 <template>
-  <v-container fluid fill-height style="background: white; overflow-y: clip"
-               class="ma-0 pa-0">
+  <v-content>
     <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
              :d3="d3"
              :cohortModel="cohortModel"
@@ -17,205 +16,191 @@
              @hide-welcome="demoHide"
              @launched="onLaunch">
     </Welcome>
-    <v-row no-gutters align="stretch">
-      <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
-        <template>
-          <v-card v-if="rankedGeneList"
-                  flat
-                  tile
-                  class="nav-card">
-            <v-toolbar style="background-color: transparent; padding-top: 5px;" flat>
-              <v-container>
-                <v-autocomplete v-model="lookupGene"
-                                @change="onGeneSelected"
-                                @click="showGeneSnackbar = false"
-                                :items="geneList"
-                                item-text="gene_name"
-                                item-value="gene_name"
-                                label="Enter gene..."
-                                prepend-icon="search"
-                                color="white"
-                                style="font-family: Quicksand"
-                                filled
-                                outlined
-                                dense
-                                single-line
-                                dark>
-                </v-autocomplete>
-              </v-container>
-              <template v-slot:extension>
-                <v-tabs show-arrows
-                        dark
-                        optional
-                        centered
-                        icons-and-text
-                        v-model="selectedTab"
-                        style="padding-top: 5px"
-                        background-color="transparent">
-                  <v-tabs-slider></v-tabs-slider>
-                  <v-tab href="#genes-tab" style="font-size: 10px">
-                    <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
-                  </v-tab>
-                  <v-tab href="#filter-tab" style="font-size: 10px">
-                    <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
-                  </v-tab>
-                </v-tabs>
-              </template>
-            </v-toolbar>
-            <v-tabs-items v-model="selectedTab" style="background-color: transparent">
-              <v-tab-item
-                  :key="'genesTab'"
-                  :id="'genes-tab'">
-                <somatic-genes-card
-                    ref="somaticGenesCard"
-                    :rankedGeneList="rankedGeneList"
-                    :selectedGeneName="selectedGeneName"
-                    :totalSomaticVarCount="totalSomaticVarCount"
-                    :noVarsFound="noVarsFound"
-                    :useVEP="globalApp.useVEP"
-                    :screenHeight="screenHeight"
-                    @variant-hover="onCohortVariantHover"
-                    @variant-hover-exit="onCohortVariantHoverEnd"
-                    @variant-selected="onCohortVariantClick"
-                    @gene-selected-from-list="onGeneSelected">
-                </somatic-genes-card>
-              </v-tab-item>
-              <v-tab-item
-                  :key="'filterTab'"
-                  :id="'filter-tab'">
-                  <filter-panel-menu
-                      v-if="filterModel"
-                      ref="filterSettingsMenuRef"
-                      :filterModel="filterModel"
-                      :showCoverageCutoffs="showCoverageCutoffs"
-                      :annotationComplete="annotationComplete"
-                      :applyFilters="applyFilters"
-                      @recall-global-variants="getRankedGlobalVariants"
-                      @filter-change="onFilterChange">
-                  </filter-panel-menu>
-              </v-tab-item>
-              <!--              Leaving out as of Oct2022-->
-              <!--              <v-tab-item-->
-              <!--                  :key="'historyTab'"-->
-              <!--                  :id="'history-tab'">-->
-              <!--                <history-tab v-if="filterModel"-->
-              <!--                             ref="historyTabRef"-->
-              <!--                             :filterModel="filterModel"-->
-              <!--                             @reload-analysis-history="reloadAnalysis">-->
-              <!--                </history-tab>-->
-              <!--              </v-tab-item>-->
-            </v-tabs-items>
-          </v-card>
-        </template>
-      </v-col>
-      <v-col :sm="9" v-if="dataEntered || debugMode" :height="700" class="pa-1"
-             :class="{ 'blur-content': displayCarousel }" style="overflow-y: scroll">
-        <v-row no-gutters v-if="dataEntered || debugMode" :height="700"
-               :class="{ 'blur-content': displayCarousel }">
-          <gene-card v-if="selectedGene"
-                     :selectedGene="selectedGene"
-                     :selectedTranscript="selectedTranscript"
-                     :geneRegionStart="geneRegionStart"
-                     :geneRegionEnd="geneRegionEnd"
-                     :geneModel="geneModel"
-                     :assemblyVersion="assemblyVersion"
-                     :width="screenWidth"
-                     :cnvPalette="cnvPalette"
-                     :d3="d3"
-                     :$="$"
-                     :hasCnvData="cohortModel.hasCnvData"
-                     @transcript-selected="onTranscriptSelected"
-                     @gene-source-selected="onGeneSourceSelected"
-                     @gene-region-buffer-change="onGeneRegionBufferChange"
-                     @gene-region-zoom="onGeneRegionZoom"
-                     @gene-region-zoom-reset="onGeneRegionZoomReset">
-          </gene-card>
-        </v-row>
-        <v-row no-gutters v-if="dataEntered || debugMode"
-               :class="{ 'blur-content': displayCarousel }">
-          <v-col cols="8" id="varCardArea">
+    <v-navigation-drawer
+        :stateless="true"
+        absolute
+        permanent
+        :style="[{ 'background-color': 'transparent', 'width': leftPanelWidth + 'vw'} ]">
+      <template v-slot:prepend>
+        <v-card style="overflow-y: scroll"
+                flat
+                tile
+                class="nav-card">
+          <v-toolbar style="background-color: transparent; padding-top: 5px;" flat>
             <v-container>
-              <variant-card
-                  ref="variantCardRef"
-                  v-for="model in sampleModelsToDisplay"
-                  :key="model.id"
-                  v-bind:class="[ { 'full-width': true}, model.id ]"
-                  :globalAppProp="globalApp"
-                  :sampleModel="model"
-                  :canonicalSampleIds="canonicalSampleIds"
-                  :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
-                  :classifyVariantSymbolFunc="model.classifyByImpact"
-                  :hoverTooltip="hoverTooltip"
-                  :selectedGene="selectedGene"
-                  :selectedTranscript="selectedTranscript"
-                  :selectedVariant="selectedVariant"
-                  :regionStart="geneRegionStart"
-                  :regionEnd="geneRegionEnd"
-                  :assemblyVersion="assemblyVersion"
-                  :maxTcn="cohortModel.maxTcnForGene"
-                  :width="screenWidth"
-                  :height="screenHeight"
-                  :showGeneViz="true"
-                  :geneVizShowXAxis="false"
-                  :annotationComplete="annotationComplete"
-                  :cnvPalette="cnvPalette"
-                  :somaticOnlyMode="somaticOnlyMode"
-                  :d3="d3"
-                  :$="$"
-                  @cohort-variant-click="onCohortVariantClick"
-                  @cohort-variant-hover="onCohortVariantHover"
-                  @cohort-variant-hover-end="onCohortVariantHoverEnd"
-                  @variants-viz-change="onVariantsVizChange"
-                  @variants-filter-change="onVariantsFilterChange"
-                  @show-coverage-cutoffs="showCoverageCutoffs = true"
-                  @toggle-cnv-tooltip="toggleCnvTooltip"
-                  @display-cnv-dialog="displayCnvDialog"
-              >
-              </variant-card>
+              <v-autocomplete v-model="lookupGene"
+                              @change="onGeneSelected"
+                              @click="showGeneSnackbar = false"
+                              :items="geneList"
+                              item-text="gene_name"
+                              item-value="gene_name"
+                              label="Enter gene..."
+                              prepend-icon="search"
+                              color="white"
+                              style="font-family: Quicksand"
+                              filled
+                              outlined
+                              dense
+                              single-line
+                              dark>
+              </v-autocomplete>
             </v-container>
-          </v-col>
-          <v-col cols="4" class="summary-card">
-            <variant-summary-card
-                v-if="selectedSamples"
-                ref="variantSummaryCardRef"
-                :sampleIds="sampleIds"
-                :selectedSamples="selectedSamples"
-                :selectedGene="selectedGeneName"
-                :selectedTranscript="selectedTranscript"
-                :variant="selectedVariant"
-                :variantInfo="selectedVariantInfo"
-                :$="globalApp.$"
-                :d3="globalApp.d3"
-                :cohortModel="cohortModel"
-                :hasCoverageData="cohortModel.hasCoverageData"
-                :hasRnaSeq="cohortModel.hasRnaSeqData"
-                :hasAtacSeq="cohortModel.hasAtacSeqData"
-                :useVEP="globalApp.useVEP"
-                @fetch-reads="fetchSeqReads"
-                @clear-and-fetch-reads="clearFetchSeqReads"
-                @summary-mounted="onSummaryMounted"
-                @summaryCardVariantDeselect="deselectVariant"
-                @show-pileup="onShowPileupForVariant">
-            </variant-summary-card>
-            <subclone-summary-card
-                v-if="cohortModel && cohortModel.hasSubcloneAnno"
-                ref="subcloneSummaryCardRef"
-                :subcloneModel="cohortModel.subcloneModel"
-                :d3="globalApp.d3"
-                :$="globalApp.$"
-                :width="screenWidth"
-                @display-subclone-dialog="displaySubcloneDialog">
-            </subclone-summary-card>
-            <!--            <cnv-summary-card-->
-            <!--                v-if="cohortModel.hasCnvData"-->
-            <!--                :d3="globalApp.d3"-->
-            <!--                :cohortModel="cohortModel"-->
-            <!--                :hasCnvData="cohortModel.hasCnvData">-->
-            <!--            </cnv-summary-card>-->
-          </v-col>
-        </v-row>
-      </v-col>
-    </v-row>
+            <template v-slot:extension>
+              <v-tabs show-arrows
+                      dark
+                      optional
+                      centered
+                      icons-and-text
+                      v-model="selectedTab"
+                      style="padding-top: 5px"
+                      background-color="transparent">
+                <v-tabs-slider></v-tabs-slider>
+                <v-tab href="#genes-tab" style="font-size: 10px">
+                  <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
+                </v-tab>
+                <v-tab href="#filter-tab" style="font-size: 10px">
+                  <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
+                </v-tab>
+              </v-tabs>
+            </template>
+          </v-toolbar>
+          <v-tabs-items v-model="selectedTab" style="background-color: transparent">
+            <v-tab-item
+                :key="'genesTab'"
+                :id="'genes-tab'">
+              <somatic-genes-card
+                  ref="somaticGenesCard"
+                  :rankedGeneList="rankedGeneList"
+                  :selectedGeneName="selectedGeneName"
+                  :totalSomaticVarCount="totalSomaticVarCount"
+                  :noVarsFound="noVarsFound"
+                  :useVEP="globalApp.useVEP"
+                  :screenHeight="screenHeight"
+                  @variant-hover="onCohortVariantHover"
+                  @variant-hover-exit="onCohortVariantHoverEnd"
+                  @variant-selected="onCohortVariantClick"
+                  @gene-selected-from-list="onGeneSelected">
+              </somatic-genes-card>
+            </v-tab-item>
+            <v-tab-item
+                :key="'filterTab'"
+                :id="'filter-tab'">
+              <filter-panel-menu
+                  v-if="filterModel"
+                  ref="filterSettingsMenuRef"
+                  :filterModel="filterModel"
+                  :showCoverageCutoffs="showCoverageCutoffs"
+                  :annotationComplete="annotationComplete"
+                  :applyFilters="applyFilters"
+                  @recall-global-variants="getRankedGlobalVariants"
+                  @filter-change="onFilterChange">
+              </filter-panel-menu>
+            </v-tab-item>
+          </v-tabs-items>
+        </v-card>
+      </template>
+    </v-navigation-drawer>
+    <v-container :class="{ 'blur-content': displayCarousel}"
+                 :style="{'width': centerLeftWidth + 'vw', 'overflow-y': 'scroll',
+                  'background-color': 'white', 'z-index': 1, 'position': 'relative', 'padding-left': leftPanelWidth + 'vw'}">
+      <gene-card v-if="selectedGene"
+                 v-bind:class="[{ 'full-width': true}]"
+                 :selectedGene="selectedGene"
+                 :selectedTranscript="selectedTranscript"
+                 :geneRegionStart="geneRegionStart"
+                 :geneRegionEnd="geneRegionEnd"
+                 :geneModel="geneModel"
+                 :assemblyVersion="assemblyVersion"
+                 :width="screenWidth"
+                 :cnvPalette="cnvPalette"
+                 :d3="d3"
+                 :$="$"
+                 :hasCnvData="cohortModel.hasCnvData"
+                 @transcript-selected="onTranscriptSelected"
+                 @gene-source-selected="onGeneSourceSelected"
+                 @gene-region-buffer-change="onGeneRegionBufferChange"
+                 @gene-region-zoom="onGeneRegionZoom"
+                 @gene-region-zoom-reset="onGeneRegionZoomReset">
+      </gene-card>
+    </v-container>
+    <v-container :class="{ 'blur-content': displayCarousel}"
+                 :style="{'width': centerPanelWidth + 'vw', 'overflow-y': 'scroll', 'background-color': 'white'}">
+      <variant-card
+          ref="variantCardRef"
+          v-for="model in sampleModelsToDisplay"
+          :key="model.id"
+          v-bind:class="[{'full-width': true}, model.id ]"
+          :globalAppProp="globalApp"
+          :sampleModel="model"
+          :canonicalSampleIds="canonicalSampleIds"
+          :annotationScheme="globalApp.useVEP ? 'vep' : 'bcsq'"
+          :classifyVariantSymbolFunc="model.classifyByImpact"
+          :hoverTooltip="hoverTooltip"
+          :selectedGene="selectedGene"
+          :selectedTranscript="selectedTranscript"
+          :selectedVariant="selectedVariant"
+          :regionStart="geneRegionStart"
+          :regionEnd="geneRegionEnd"
+          :assemblyVersion="assemblyVersion"
+          :maxTcn="cohortModel.maxTcnForGene"
+          :width="screenWidth"
+          :height="screenHeight"
+          :showGeneViz="true"
+          :geneVizShowXAxis="false"
+          :annotationComplete="annotationComplete"
+          :cnvPalette="cnvPalette"
+          :somaticOnlyMode="somaticOnlyMode"
+          :d3="d3"
+          :$="$"
+          @cohort-variant-click="onCohortVariantClick"
+          @cohort-variant-hover="onCohortVariantHover"
+          @cohort-variant-hover-end="onCohortVariantHoverEnd"
+          @variants-viz-change="onVariantsVizChange"
+          @variants-filter-change="onVariantsFilterChange"
+          @show-coverage-cutoffs="showCoverageCutoffs = true"
+          @toggle-cnv-tooltip="toggleCnvTooltip"
+          @display-cnv-dialog="displayCnvDialog"
+      >
+      </variant-card>
+    </v-container>
+    <v-navigation-drawer
+        absolute
+        permanent
+        right
+        :stateless="true"
+        :style="[{'width': (rightPanelWidth + 'vw'), 'padding-top': '180px', 'z-index': 0}]">
+      <variant-summary-card
+          v-if="selectedSamples"
+          ref="variantSummaryCardRef"
+          :sampleIds="sampleIds"
+          :selectedSamples="selectedSamples"
+          :selectedGene="selectedGeneName"
+          :selectedTranscript="selectedTranscript"
+          :variant="selectedVariant"
+          :variantInfo="selectedVariantInfo"
+          :$="globalApp.$"
+          :d3="globalApp.d3"
+          :cohortModel="cohortModel"
+          :hasCoverageData="cohortModel.hasCoverageData"
+          :hasRnaSeq="cohortModel.hasRnaSeqData"
+          :hasAtacSeq="cohortModel.hasAtacSeqData"
+          :useVEP="globalApp.useVEP"
+          @fetch-reads="fetchSeqReads"
+          @clear-and-fetch-reads="clearFetchSeqReads"
+          @summary-mounted="onSummaryMounted"
+          @summaryCardVariantDeselect="deselectVariant"
+          @show-pileup="onShowPileupForVariant">
+      </variant-summary-card>
+      <subclone-summary-card
+          v-if="cohortModel && cohortModel.hasSubcloneAnno"
+          ref="subcloneSummaryCardRef"
+          :subcloneModel="cohortModel.subcloneModel"
+          :d3="globalApp.d3"
+          :$="globalApp.$"
+          :width="screenWidth"
+          @display-subclone-dialog="displaySubcloneDialog">
+      </subclone-summary-card>
+    </v-navigation-drawer>
     <v-dialog id="pileup-modal"
               v-model="displayPileup"
               width="75%"
@@ -365,7 +350,8 @@
     <v-overlay :value="displayLoader">
       <v-progress-circular indeterminate size="64"></v-progress-circular>
     </v-overlay>
-  </v-container>
+    <!--  </v-container>-->
+  </v-content>
 </template>
 
 <script>
@@ -384,6 +370,7 @@ import About from './partials/About.vue'
 
 import '@/assets/css/v-tooltip.css'
 import geneListsByCancerType from "@/data/genes_by_cancer_type_ncgv6.json";
+import {left} from "core-js/internals/array-reduce";
 
 export default {
   name: "Home.vue",
@@ -458,6 +445,8 @@ export default {
     return {
       screenWidth: (window.innerWidth * 0.5),
       screenHeight: window.innerHeight,
+      leftPanelWidth: 25,
+      rightPanelWidth: 25,
       // view state
       globalMode: false,
       dataEntered: false,
@@ -570,6 +559,7 @@ export default {
     }
   },
   methods: {
+    left,
     demoHide: function () {
       const self = this;
       self.dataEntered = true;
@@ -1282,8 +1272,11 @@ export default {
     }
   },
   computed: {
-    overlayWidth: function () {
-      return this.screenWidth * 0.8;
+    centerLeftWidth: function() {
+      return 100 - this.rightPanelWidth;
+    },
+    centerPanelWidth: function () {
+      return 100 - this.leftPanelWidth - this.rightPanelWidth;
     },
     canonicalSampleIds: function () {
       if (this.cohortModel) {
