@@ -18,7 +18,7 @@
     </Welcome>
     <v-navigation-drawer
         :stateless="true"
-        absolute
+        app
         permanent
         :style="[{ 'background-color': 'transparent', 'width': leftPanelWidth + 'vw'} ]">
       <template v-slot:prepend>
@@ -101,8 +101,8 @@
       </template>
     </v-navigation-drawer>
     <v-container :class="{ 'blur-content': displayCarousel}"
-                 :style="{'width': centerLeftWidth + 'vw', 'overflow-y': 'scroll',
-                  'background-color': 'white', 'z-index': 1, 'position': 'relative', 'padding-left': leftPanelWidth + 'vw'}">
+                 :style="{'width': centerLeftWidth + 'vw', 'background-color': 'white',
+                  'z-index': 1, 'position': 'relative', 'padding-left': leftPanelWidth + 'vw'}">
       <gene-card v-if="selectedGene"
                  v-bind:class="[{ 'full-width': true}]"
                  :selectedGene="selectedGene"
@@ -164,7 +164,7 @@
       </variant-card>
     </v-container>
     <v-navigation-drawer
-        absolute
+        app
         permanent
         right
         :stateless="true"

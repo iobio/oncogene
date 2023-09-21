@@ -1,5 +1,5 @@
 <template>
-  <v-app style="overflow-y: clip">
+  <v-app>
     <v-app-bar flat app dark color=appColor>
       <v-toolbar-title style="width: 300px" class="headline text-uppercase">
         <span id="title">Oncogene.iobio</span>
