@@ -2,7 +2,7 @@ import {Client} from 'iobio-api-client';
 
 export default class EndpointCmd {
     constructor(globalApp, genomeBuildHelper, getHumanRefNamesFunc, backendUrl, chromNameMap) {
-        this.DEV_MODE = true;
+        this.DEV_MODE = false;
         this.MOSAIC_MODE = false;
 
         this.globalApp = globalApp;

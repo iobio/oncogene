@@ -52,14 +52,12 @@
 
 .gene-pseudo-ideo
   position: absolute
-  bottom: -8%
+  bottom: -2%
   left: 25.5%
   z-index: 3
 
   .chrLabel
-    font-family: Quicksand
-    font-size: 12px
-    color: #888
+    display: none
 
   .bands
     display: none !important
@@ -72,7 +70,7 @@
 
 .gene-ideo
   position: absolute
-  bottom: -8%
+  bottom: -2%
   left: 25.5%
   z-index: 4
 
@@ -89,8 +87,8 @@
     fill: #AAA !important
 
 .gene-ideo-label
-  padding-left: 35%
-  padding-bottom: 7px
+  padding-left: 37%
+  margin-top: -18px
   font-size: 12px
 
 </style>
