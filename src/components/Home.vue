@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid fill-height style="background: white;"
+  <v-container fluid fill-height style="background: white; overflow-y: clip"
                class="ma-0 pa-0">
     <Welcome v-show="!dataEntered && !debugMode || displayCarousel"
              :d3="d3"
@@ -20,7 +20,8 @@
     <v-row no-gutters align="stretch">
       <v-col :sm="3" v-if="dataEntered || debugMode" :class="{ 'blur-content': displayCarousel }">
         <template>
-          <v-card flat
+          <v-card v-if="rankedGeneList"
+                  flat
                   tile
                   class="nav-card">
             <v-toolbar style="background-color: transparent; padding-top: 5px;" flat>
@@ -58,10 +59,6 @@
                   <v-tab href="#filter-tab" style="font-size: 10px">
                     <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
                   </v-tab>
-                  <!--            <v-tab href="#history-tab" style="font-size: 10px">-->
-                  <!--              <v-icon style="margin-bottom: 0; padding-left: 5px">history</v-icon>-->
-                  <!--            </v-tab>-->
-
                 </v-tabs>
               </template>
             </v-toolbar>
@@ -86,17 +83,16 @@
               <v-tab-item
                   :key="'filterTab'"
                   :id="'filter-tab'">
-                <filter-panel-menu
-                    style="overflow-y: scroll"
-                    v-if="filterModel"
-                    ref="filterSettingsMenuRef"
-                    :filterModel="filterModel"
-                    :showCoverageCutoffs="showCoverageCutoffs"
-                    :annotationComplete="annotationComplete"
-                    :applyFilters="applyFilters"
-                    @recall-global-variants="getRankedGlobalVariants"
-                    @filter-change="onFilterChange">
-                </filter-panel-menu>
+                  <filter-panel-menu
+                      v-if="filterModel"
+                      ref="filterSettingsMenuRef"
+                      :filterModel="filterModel"
+                      :showCoverageCutoffs="showCoverageCutoffs"
+                      :annotationComplete="annotationComplete"
+                      :applyFilters="applyFilters"
+                      @recall-global-variants="getRankedGlobalVariants"
+                      @filter-change="onFilterChange">
+                  </filter-panel-menu>
               </v-tab-item>
               <!--              Leaving out as of Oct2022-->
               <!--              <v-tab-item-->
@@ -137,8 +133,8 @@
         </v-row>
         <v-row no-gutters v-if="dataEntered || debugMode"
                :class="{ 'blur-content': displayCarousel }">
-          <v-col cols="8" id="varCardArea" style="overflow-y: scroll">
-            <v-container style="overflow-y: scroll">
+          <v-col cols="8" id="varCardArea">
+            <v-container>
               <variant-card
                   ref="variantCardRef"
                   v-for="model in sampleModelsToDisplay"

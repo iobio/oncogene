@@ -23,7 +23,6 @@
       <g :transform="translation"></g>
     </svg>
     <v-overlay
-        :absolute="absolute"
         :value="true"
         :opacity="opacity"
     >
@@ -227,19 +226,6 @@
                             @change="populateListInput('cancer')"
                         ></v-select>
                       </v-col>
-                      <!--                                          todo: Leaving out as of Mar2021...-->
-                      <!--                                          <v-col sm="6" class="pl-1">-->
-                      <!--                                            <v-select-->
-                      <!--                                                :items="tissueListNames"-->
-                      <!--                                                color="appColor"-->
-                      <!--                                                background-color="white"-->
-                      <!--                                                label="Tissue Type"-->
-                      <!--                                                outlined-->
-                      <!--                                                dense-->
-                      <!--                                                v-model="selectedTissueList"-->
-                      <!--                                                @change="populateListInput('tissue')"-->
-                      <!--                                            ></v-select>-->
-                      <!--                                          </v-col>-->
                     </v-row>
                     <v-textarea
                         color="appColor"
@@ -475,7 +461,6 @@ export default {
       divId: 'variantRainDiv',
       cycle: false,
       continuous: false,
-      absolute: false,
       opacity: 0.3,
       overlay: true,
       slideBackground: 'white',
