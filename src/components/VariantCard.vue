@@ -10,9 +10,6 @@
   padding-bottom: 2px
 
 #variant-card
-  .sample
-    font-size: 24px !important
-
   .variant-chip
     font-size: 12px
     margin-top: 0
@@ -26,16 +23,16 @@
   #card-viz
     padding: 5px
 
-  #sample-label
-    max-width: 200px
-    color: $text-color
-    font-size: 22px
-    padding-top: 5px
-    font-family: 'Quicksand'
-
     &.known-variants
       min-width: 100px
       max-width: 100px
+
+.var-sample-label
+  max-width: 200px
+  color: $text-color
+  font-size: 22px
+  padding-top: 5px
+  font-family: 'Quicksand' !important
 
   #gene-viz, #gene-viz-zoom
     padding-top: 0
@@ -69,8 +66,8 @@
           transform: translateY(-20px)
           display: none
 
-  .chart-label
-    font-size: 11px
+.chart-label
+  font-size: 11px
 
   #gene-viz-zoom
     .current
@@ -215,7 +212,7 @@
                 <span class="white--text" style="font-size: 18px">N</span>
               </v-avatar>
             </div>
-            <div id="sample-label" class="d-inline">
+            <div class="var-sample-label d-inline">
               {{ sampleLabel }}
             </div>
             <div class="text-center d-inline">

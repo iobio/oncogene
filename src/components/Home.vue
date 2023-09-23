@@ -1349,8 +1349,6 @@ export default {
         };
         list.push(geneObj);
       });
-
-
       return list;
     },
     assemblyVersion: function () {
