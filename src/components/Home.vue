@@ -21,77 +21,79 @@
         absolute
         permanent
         class="nav-card">
-      <v-toolbar style="background-color: transparent; padding-top: 10px;" flat>
-        <div>
-          <v-autocomplete v-model="lookupGene"
-                          @change="onGeneSelected"
-                          @click="showGeneSnackbar = false"
-                          :items="geneList"
-                          item-text="gene_name"
-                          item-value="gene_name"
-                          label="Enter gene..."
-                          prepend-icon="search"
-                          color="white"
-                          style="font-family: Quicksand"
-                          filled
-                          outlined
-                          dense
-                          single-line
-                          dark>
-          </v-autocomplete>
-        </div>
-      </v-toolbar>
-      <v-tabs show-arrows
-              dark
-              optional
-              centered
-              icons-and-text
-              v-model="selectedTab"
-              style="padding-top: 5px"
-              background-color="transparent">
-        <v-tabs-slider></v-tabs-slider>
-        <v-tab href="#genes-tab" style="font-size: 10px">
-          <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
-        </v-tab>
-        <v-tab href="#filter-tab" style="font-size: 10px">
-          <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
-        </v-tab>
-        <v-tabs-items v-model="selectedTab" style="background-color: transparent">
-          <v-tab-item
-              :key="'genesTab'"
-              :id="'genes-tab'">
-            <div class="tab-scroll-wrapper">
-              <somatic-genes-card
-                  ref="somaticGenesCard"
-                  :rankedGeneList="rankedGeneList"
-                  :selectedGeneName="selectedGeneName"
-                  :totalSomaticVarCount="totalSomaticVarCount"
-                  :noVarsFound="noVarsFound"
-                  :useVEP="globalApp.useVEP"
-                  :screenHeight="screenHeight"
-                  @variant-hover="onCohortVariantHover"
-                  @variant-hover-exit="onCohortVariantHoverEnd"
-                  @variant-selected="onCohortVariantClick"
-                  @gene-selected-from-list="onGeneSelected">
-              </somatic-genes-card>
-            </div>
-          </v-tab-item>
-          <v-tab-item
-              :key="'filterTab'"
-              :id="'filter-tab'">
-            <filter-panel-menu
-                v-if="filterModel"
-                ref="filterSettingsMenuRef"
-                :filterModel="filterModel"
-                :showCoverageCutoffs="showCoverageCutoffs"
-                :annotationComplete="annotationComplete"
-                :applyFilters="applyFilters"
-                @recall-global-variants="getRankedGlobalVariants"
-                @filter-change="onFilterChange">
-            </filter-panel-menu>
-          </v-tab-item>
-        </v-tabs-items>
-      </v-tabs>
+      <div style="padding-top: 80px">
+        <v-toolbar style="background-color: transparent; padding-top: 10px;" flat>
+          <div>
+            <v-autocomplete v-model="lookupGene"
+                            @change="onGeneSelected"
+                            @click="showGeneSnackbar = false"
+                            :items="geneList"
+                            item-text="gene_name"
+                            item-value="gene_name"
+                            label="Enter gene..."
+                            prepend-icon="search"
+                            color="white"
+                            style="font-family: Quicksand"
+                            filled
+                            outlined
+                            dense
+                            single-line
+                            dark>
+            </v-autocomplete>
+          </div>
+        </v-toolbar>
+        <v-tabs show-arrows
+                dark
+                optional
+                centered
+                icons-and-text
+                v-model="selectedTab"
+                style="padding-top: 5px"
+                background-color="transparent">
+          <v-tabs-slider></v-tabs-slider>
+          <v-tab href="#genes-tab" style="font-size: 10px">
+            <v-icon style="margin-bottom: 0; padding-left: 5px">line_weight</v-icon>
+          </v-tab>
+          <v-tab href="#filter-tab" style="font-size: 10px">
+            <v-icon style="margin-bottom: 0; padding-left: 5px">filter_alt</v-icon>
+          </v-tab>
+          <v-tabs-items v-model="selectedTab" style="background-color: transparent">
+            <v-tab-item
+                :key="'genesTab'"
+                :id="'genes-tab'">
+              <div class="tab-scroll-wrapper">
+                <somatic-genes-card
+                    ref="somaticGenesCard"
+                    :rankedGeneList="rankedGeneList"
+                    :selectedGeneName="selectedGeneName"
+                    :totalSomaticVarCount="totalSomaticVarCount"
+                    :noVarsFound="noVarsFound"
+                    :useVEP="globalApp.useVEP"
+                    :screenHeight="screenHeight"
+                    @variant-hover="onCohortVariantHover"
+                    @variant-hover-exit="onCohortVariantHoverEnd"
+                    @variant-selected="onCohortVariantClick"
+                    @gene-selected-from-list="onGeneSelected">
+                </somatic-genes-card>
+              </div>
+            </v-tab-item>
+            <v-tab-item
+                :key="'filterTab'"
+                :id="'filter-tab'">
+              <filter-panel-menu
+                  v-if="filterModel"
+                  ref="filterSettingsMenuRef"
+                  :filterModel="filterModel"
+                  :showCoverageCutoffs="showCoverageCutoffs"
+                  :annotationComplete="annotationComplete"
+                  :applyFilters="applyFilters"
+                  @recall-global-variants="getRankedGlobalVariants"
+                  @filter-change="onFilterChange">
+              </filter-panel-menu>
+            </v-tab-item>
+          </v-tabs-items>
+        </v-tabs>
+      </div>
     </v-navigation-drawer>
     <v-content>
       <v-container :class="{ 'blur-content': displayCarousel}"
@@ -1371,7 +1373,7 @@ export default {
 
 .nav-card
   background: linear-gradient(rgba(127, 16, 16, 1) 16%, rgba(156, 31, 31, 1) 38%, rgba(150, 87, 87, 1) 80%)
-  width: leftPanelWidth + 'vw'
+  width: 25vw !important
 
 .blur-content
   filter: blur(1px) !important
