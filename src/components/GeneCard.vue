@@ -2,6 +2,7 @@
 @import ../assets/sass/variables
 #gene-card
   font-family: Quicksand, sans-serif
+  background-color: blue
 
   .header
     font-size: 22px
@@ -60,7 +61,7 @@
 </style>
 
 <template>
-  <v-card width="100%" id="gene-card" class="pa-1">
+  <v-card id="gene-card" class="pa-1">
     <v-row no-gutters class="pt-1" style="height: 45px">
       <v-col cols="12" sm="9">
                     <span class="header">

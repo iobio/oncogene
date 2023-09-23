@@ -16,12 +16,13 @@
              @hide-welcome="demoHide"
              @launched="onLaunch">
     </Welcome>
-    <v-navigation-drawer
+    <v-navigation-drawer v-if="dataEntered"
         :stateless="true"
         absolute
         permanent
-        class="nav-card">
-      <div style="padding-top: 80px">
+        class="left-nav-card"
+        :width="leftPanelWidth + 'vw'">
+      <div class="padded-nav-container">
         <v-toolbar style="background-color: transparent; padding-top: 10px;" flat>
           <div>
             <v-autocomplete v-model="lookupGene"
@@ -61,7 +62,7 @@
             <v-tab-item
                 :key="'genesTab'"
                 :id="'genes-tab'">
-              <div class="tab-scroll-wrapper">
+              <div class="scroll-wrapper">
                 <somatic-genes-card
                     ref="somaticGenesCard"
                     :rankedGeneList="rankedGeneList"
@@ -97,7 +98,7 @@
     </v-navigation-drawer>
     <v-content>
       <v-container :class="{ 'blur-content': displayCarousel}"
-                   :style="{'width': centerLeftWidth + 'vw', 'background-color': 'transparent',
+                   :style="{'width': centerLeftWidth + 'vw',
                   'z-index': 1, 'position': 'relative', 'padding-left': leftPanelWidth + 'vw'}">
         <gene-card :selectedGene="selectedGene"
                    :selectedTranscript="selectedTranscript"
@@ -117,8 +118,8 @@
                    @gene-region-zoom-reset="onGeneRegionZoomReset">
         </gene-card>
       </v-container>
-      <v-container :class="{ 'blur-content': displayCarousel}"
-                   :style="{'width': centerPanelWidth + 'vw', 'overflow-y': 'scroll', 'background-color': 'white'}">
+      <div :class="{ 'blur-content': displayCarousel}"
+           :style="{'width': centerPanelWidth + 'vw', 'overflow-y': 'scroll', 'background-color': 'white'}">
         <variant-card
             ref="variantCardRef"
             v-for="model in sampleModelsToDisplay"
@@ -156,44 +157,46 @@
             @display-cnv-dialog="displayCnvDialog"
         >
         </variant-card>
-      </v-container>
-      <v-navigation-drawer
+      </div>
+      <v-navigation-drawer v-if="selectedSamples"
           absolute
           permanent
           right
           :stateless="true"
-          :style="[{'width': (rightPanelWidth + 'vw'), 'padding-top': '180px', 'z-index': 0}]">
-        <variant-summary-card
-            v-if="selectedSamples"
-            ref="variantSummaryCardRef"
-            :sampleIds="sampleIds"
-            :selectedSamples="selectedSamples"
-            :selectedGene="selectedGeneName"
-            :selectedTranscript="selectedTranscript"
-            :variant="selectedVariant"
-            :variantInfo="selectedVariantInfo"
-            :$="globalApp.$"
-            :d3="globalApp.d3"
-            :cohortModel="cohortModel"
-            :hasCoverageData="cohortModel.hasCoverageData"
-            :hasRnaSeq="cohortModel.hasRnaSeqData"
-            :hasAtacSeq="cohortModel.hasAtacSeqData"
-            :useVEP="globalApp.useVEP"
-            @fetch-reads="fetchSeqReads"
-            @clear-and-fetch-reads="clearFetchSeqReads"
-            @summary-mounted="onSummaryMounted"
-            @summaryCardVariantDeselect="deselectVariant"
-            @show-pileup="onShowPileupForVariant">
-        </variant-summary-card>
-        <subclone-summary-card
-            v-if="cohortModel && cohortModel.hasSubcloneAnno"
-            ref="subcloneSummaryCardRef"
-            :subcloneModel="cohortModel.subcloneModel"
-            :d3="globalApp.d3"
-            :$="globalApp.$"
-            :width="screenWidth"
-            @display-subclone-dialog="displaySubcloneDialog">
-        </subclone-summary-card>
+          class="right-nav-card"
+          :width="rightPanelWidth + 'vw'">
+        <div class="scroll-wrapper">
+          <variant-summary-card
+              ref="variantSummaryCardRef"
+              :sampleIds="sampleIds"
+              :selectedSamples="selectedSamples"
+              :selectedGene="selectedGeneName"
+              :selectedTranscript="selectedTranscript"
+              :variant="selectedVariant"
+              :variantInfo="selectedVariantInfo"
+              :$="globalApp.$"
+              :d3="globalApp.d3"
+              :cohortModel="cohortModel"
+              :hasCoverageData="cohortModel.hasCoverageData"
+              :hasRnaSeq="cohortModel.hasRnaSeqData"
+              :hasAtacSeq="cohortModel.hasAtacSeqData"
+              :useVEP="globalApp.useVEP"
+              @fetch-reads="fetchSeqReads"
+              @clear-and-fetch-reads="clearFetchSeqReads"
+              @summary-mounted="onSummaryMounted"
+              @summaryCardVariantDeselect="deselectVariant"
+              @show-pileup="onShowPileupForVariant">
+          </variant-summary-card>
+          <subclone-summary-card
+              v-if="cohortModel && cohortModel.hasSubcloneAnno"
+              ref="subcloneSummaryCardRef"
+              :subcloneModel="cohortModel.subcloneModel"
+              :d3="globalApp.d3"
+              :$="globalApp.$"
+              :width="screenWidth"
+              @display-subclone-dialog="displaySubcloneDialog">
+          </subclone-summary-card>
+        </div>
       </v-navigation-drawer>
       <v-dialog id="pileup-modal"
                 v-model="displayPileup"
@@ -525,17 +528,10 @@ export default {
       noVarsFound: false,
 
       lookupGene: null,
-      debugMode: false,
+      debugMode: true,
     };
   },
   watch: {
-    displayEvidenceDrawer: function () {
-      if (this.displayEvidenceDrawer) {
-        this.displayDrawerWidth = window.innerWidth * 0.75;
-      } else {
-        this.displayDrawerWidth = 0;
-      }
-    },
     'cohortModel.annotationComplete': function () {
       if (this.cohortModel && this.cohortModel.getFirstSampleModel()) {
         this.annotationComplete = !this.cohortModel.getFirstSampleModel().inProgress.loadingVariants;
@@ -897,7 +893,6 @@ export default {
       const self = this;
       const geneModel = self.cohortModel.geneModel;
 
-      self.showWelcome = false;
       self.clearZoom = true;
       self.applyFilters = false;
       let showTracks = false;
@@ -1361,7 +1356,10 @@ export default {
 </script>
 
 <style lang="sass">
-.tab-scroll-wrapper
+.padded-nav-container
+  padding-top: 80px
+
+.scroll-wrapper
   display: flex
   flex-flow: column
   flex: 1 1 auto
@@ -1370,10 +1368,13 @@ export default {
   padding-bottom: 55px
   height: fit-content
   overflow-y: scroll
+  background-color: transparent
 
-.nav-card
+.left-nav-card
   background: linear-gradient(rgba(127, 16, 16, 1) 16%, rgba(156, 31, 31, 1) 38%, rgba(150, 87, 87, 1) 80%)
-  width: 25vw !important
+
+.right-nav-card
+  background-color: transparent
 
 .blur-content
   filter: blur(1px) !important
