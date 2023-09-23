@@ -224,7 +224,7 @@
 <template>
   <v-card class="px-0 mx-1 my-1" outlined>
     <v-expansion-panels v-model="openState" style="width: 100%" multiple>
-      <v-expansion-panel class="app-card" id="variant-card" :key="0">
+      <v-expansion-panel id="variant-card" :key="0">
         <v-expansion-panel-header class="pt-2 pb-1 pl-2 pr-2" style="min-height: 50px">
           <v-container class="summary-card">
             <v-row no-gutters flat style="font-family: Quicksand">

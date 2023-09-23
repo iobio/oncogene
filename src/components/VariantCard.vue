@@ -199,9 +199,9 @@
 </style>
 
 <template>
-  <v-card outlined class="my-1">
+  <v-card outlined class="my-1 variant-card">
     <v-expansion-panels v-model="openState" style="width: 100%" multiple>
-      <v-expansion-panel class="app-card" id="variant-card" :key="0">
+      <v-expansion-panel :key="0">
         <v-expansion-panel-header class="pt-2 pb-1 pl-2 pr-2" style="min-height: 50px">
           <div>
             <div class="text-center d-inline">

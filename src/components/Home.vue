@@ -97,10 +97,11 @@
       </div>
     </v-navigation-drawer>
     <v-content>
-      <v-container :class="{ 'blur-content': displayCarousel}"
-                   :style="{'width': centerLeftWidth + 'vw',
-                  'z-index': 1, 'position': 'relative', 'padding-left': leftPanelWidth + 'vw'}">
-        <gene-card :selectedGene="selectedGene"
+      <v-card :width="(centerPanelWidth + rightPanelWidth) + 'vw'"
+              :style="{'background-color': 'white', 'margin-left': (leftPanelWidth + 'vw')}">
+        <gene-card v-if=selectedGene
+                   id="gene-card"
+                   :selectedGene="selectedGene"
                    :selectedTranscript="selectedTranscript"
                    :geneRegionStart="geneRegionStart"
                    :geneRegionEnd="geneRegionEnd"
@@ -115,11 +116,11 @@
                    @gene-source-selected="onGeneSourceSelected"
                    @gene-region-buffer-change="onGeneRegionBufferChange"
                    @gene-region-zoom="onGeneRegionZoom"
-                   @gene-region-zoom-reset="onGeneRegionZoomReset">
+                   @gene-region-zoom-reset="onGeneRegionZoomReset"
+                   @gene-card-rendered="onGeneCardRendered">
         </gene-card>
-      </v-container>
-      <div :class="{ 'blur-content': displayCarousel}"
-           :style="{'width': centerPanelWidth + 'vw', 'overflow-y': 'scroll', 'background-color': 'white'}">
+      </v-card>
+      <div v-if="geneCardRendered" class="scroll-wrapper" :style="{'margin-left': leftPanelWidth + 'vw', 'background-color': 'white', 'width': centerPanelWidth + 'vw', 'height': varBlockHeight + 'px'}">
         <variant-card
             ref="variantCardRef"
             v-for="model in sampleModelsToDisplay"
@@ -165,7 +166,7 @@
           :stateless="true"
           class="right-nav-card"
           :width="rightPanelWidth + 'vw'">
-        <div class="scroll-wrapper">
+        <div class="scroll-wrapper" style="height: fit-content">
           <variant-summary-card
               ref="variantSummaryCardRef"
               :sampleIds="sampleIds"
@@ -443,8 +444,9 @@ export default {
       screenWidth: (window.innerWidth * 0.5),
       screenHeight: window.innerHeight,
       leftPanelWidth: 25,
-      rightPanelWidth: 25,
+      rightPanelWidth: 23,
       // view state
+      geneCardRendered: false,
       globalMode: false,
       dataEntered: false,
       somaticOnlyMode: true, // todo: need to add this back in to welcome or get rid of
@@ -528,7 +530,7 @@ export default {
       noVarsFound: false,
 
       lookupGene: null,
-      debugMode: true,
+      debugMode: false,
     };
   },
   watch: {
@@ -1111,6 +1113,9 @@ export default {
       self.cohortModel.setCoverage(self.geneRegionStart, self.geneRegionEnd);
 
     },
+    onGeneCardRendered: function() {
+      this.geneCardRendered = true;
+    },
     onGeneRegionZoomReset: function (updateTrack = true) {
       const self = this;
 
@@ -1261,8 +1266,9 @@ export default {
     }
   },
   computed: {
-    centerLeftWidth: function () {
-      return 100 - this.rightPanelWidth;
+    varBlockHeight: function() {
+      return window.innerHeight - this.navBarHeight
+          - this.d3.select("#gene-card").node().getBoundingClientRect().height;
     },
     centerPanelWidth: function () {
       return 100 - this.leftPanelWidth - this.rightPanelWidth;
@@ -1363,10 +1369,9 @@ export default {
   display: flex
   flex-flow: column
   flex: 1 1 auto
+  padding-bottom: 55px
   justify-content: space-between
   margin-bottom: 0
-  padding-bottom: 55px
-  height: fit-content
   overflow-y: scroll
   background-color: transparent
 

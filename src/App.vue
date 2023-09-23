@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar flat app dark color=appColor>
+    <v-app-bar id="app-bar" flat app dark color=appColor>
       <v-toolbar-title style="width: 300px" class="headline text-uppercase">
         <span id="title">Oncogene.iobio</span>
       </v-toolbar-title>
@@ -57,7 +57,7 @@
         <span class="mr-2 ml-2">an iobio project</span>
       </v-btn>
     </v-app-bar>
-    <v-main style="background-color: #7f1010; height: 100vh; padding: 0">
+    <v-main class="main-panel">
       <Home v-if="filterModel && demoParamsReady"
             ref="homePanel"
             :d3="globalApp.d3"
@@ -67,7 +67,7 @@
             :geneModel="geneModel"
             :genomeBuildHelper="genomeBuildHelper"
             :hoverTooltip="hoverTooltip"
-            :navbarHeight="navBarHeight"
+            :navBarHeight="navBarHeight"
             :geneList="allGenes"
             :launchParams="launchParams"
             :launchSource="launchSource"
@@ -134,7 +134,6 @@ export default {
 
       // view props
       mainContentWidth: 0,
-      navBarHeight: 0,
       dataLoaded: false,
       enteredGene: null,
       numSomaticVars: null,
@@ -171,7 +170,12 @@ export default {
       },
 
       // static data
-      allGenes: allGenesData
+      allGenes: allGenesData,
+    }
+  },
+  computed: {
+    navBarHeight: function() {
+      return this.globalApp.d3.select("#app-bar").node().getBoundingClientRect().height;
     }
   },
   methods: {
@@ -359,6 +363,11 @@ export default {
 </script>
 <style scoped lang="sass">
 @import ./assets/sass/_tooltip.sass
+
+.main-panel
+  background-color: #7f1010
+  padding: 0 !important
+  overflow-y: clip
 
 .app-toolbar-chip
   font-size: 14px

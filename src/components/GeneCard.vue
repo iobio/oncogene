@@ -2,7 +2,10 @@
 @import ../assets/sass/variables
 #gene-card
   font-family: Quicksand, sans-serif
-  background-color: blue
+  background-color: white
+  display: flex
+  width: fit-content
+  flex-flow: row
 
   .header
     font-size: 22px
@@ -141,20 +144,6 @@
         </div>
       </v-col>
     </v-row>
-<!--    <v-row no-gutters style="height: 17px" class="pt-0" justify="end">-->
-<!--      <v-col cols="12" sm="1" offset-sm="7" class="float-right">-->
-<!--        <v-switch-->
-<!--            v-on:click.self.stop.prevent="toggleZoom"-->
-<!--            label="Zoom"-->
-<!--            class="zoom-switch"-->
-<!--            v-model="showZoom"-->
-<!--        >-->
-<!--        </v-switch>-->
-<!--      </v-col>-->
-<!--      <v-col cols="12" sm="4">-->
-<!--        &lt;!&ndash;Spacing&ndash;&gt;-->
-<!--      </v-col>-->
-<!--    </v-row>-->
   </v-card>
 </template>
 
@@ -376,5 +365,10 @@ export default {
     this.geneSource = this.geneModel.geneSource;
     this.initSummaryInfo();
   },
+  updated: function () {
+    this.$nextTick(function () {
+      this.$emit('gene-card-rendered');
+    })
+  }
 }
 </script>
