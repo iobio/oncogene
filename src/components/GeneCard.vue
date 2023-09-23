@@ -3,9 +3,6 @@
 #gene-card
   font-family: Quicksand, sans-serif
   background-color: white
-  display: flex
-  width: fit-content
-  flex-flow: row
 
   .header
     font-size: 22px
@@ -64,7 +61,7 @@
 </style>
 
 <template>
-  <v-card id="gene-card" class="pa-1">
+  <v-card id="gene-card" class="pa-1" :width="width + 'vw'">
     <v-row no-gutters class="pt-1" style="height: 45px">
       <v-col cols="12" sm="9">
                     <span class="header">

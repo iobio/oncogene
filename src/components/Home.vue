@@ -101,13 +101,13 @@
               :style="{'background-color': 'white', 'margin-left': (leftPanelWidth + 'vw')}">
         <gene-card v-if=selectedGene
                    id="gene-card"
+                   :width="centerPanelWidth + rightPanelWidth"
                    :selectedGene="selectedGene"
                    :selectedTranscript="selectedTranscript"
                    :geneRegionStart="geneRegionStart"
                    :geneRegionEnd="geneRegionEnd"
                    :geneModel="geneModel"
                    :assemblyVersion="assemblyVersion"
-                   :width="screenWidth"
                    :cnvPalette="cnvPalette"
                    :d3="d3"
                    :$="$"
@@ -159,7 +159,7 @@
         >
         </variant-card>
       </div>
-      <v-navigation-drawer v-if="selectedSamples"
+      <v-navigation-drawer v-if="geneCardRendered"
           absolute
           permanent
           right
@@ -168,6 +168,7 @@
           :width="rightPanelWidth + 'vw'">
         <div class="scroll-wrapper" style="height: fit-content">
           <variant-summary-card
+              :style="{ 'margin-top': geneCardHeight }"
               ref="variantSummaryCardRef"
               :sampleIds="sampleIds"
               :selectedSamples="selectedSamples"
@@ -1266,9 +1267,12 @@ export default {
     }
   },
   computed: {
+    geneCardHeight: function() {
+      return this.d3.select("#gene-card").node().getBoundingClientRect().height;
+    },
     varBlockHeight: function() {
       return window.innerHeight - this.navBarHeight
-          - this.d3.select("#gene-card").node().getBoundingClientRect().height;
+          - this.geneCardHeight;
     },
     centerPanelWidth: function () {
       return 100 - this.leftPanelWidth - this.rightPanelWidth;
