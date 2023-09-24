@@ -218,54 +218,30 @@
               <v-tab-item
                   :key="'subcloneTab'"
                   :id="'subclone-tab'">
-                <subclone-summary-card
-                    v-if="cohortModel && cohortModel.hasSubcloneAnno"
-                    ref="subcloneSummaryCardRef"
-                    :subcloneModel="cohortModel.subcloneModel"
-                    :d3="globalApp.d3"
-                    :$="globalApp.$"
-                    :width="screenWidth"
-                    @display-subclone-dialog="displaySubcloneDialog">
-                </subclone-summary-card>
+                <div v-if="cohortModel && cohortModel.hasSubcloneAnno"
+                     class="scroll-wrapper"
+                     :style="{'height': rightTabBlockHeight + 'px'}">
+                  <subclone-summary-card
+                      ref="subcloneSummaryCardRef"
+                      :subcloneModel="cohortModel.subcloneModel"
+                      :d3="globalApp.d3"
+                      :$="globalApp.$"
+                      :width="screenWidth"
+                      @display-subclone-dialog="displaySubcloneDialog">
+                  </subclone-summary-card>
+                </div>
+                <div class="pa-5 subclone-text" v-else>
+                  <span>
+                  oncogene.iobio can visualize subclone structures annotated to your vcf file
+                  from Subclone Seeker. For more details see
+                  </span>
+                  <a href="https://github.com/yiq/SubcloneSeeker" target="_blank">here</a>
+                  <span>.</span>
+                </div>
               </v-tab-item>
             </v-tabs-items>
           </v-tabs>
         </div>
-
-
-
-<!--        <div :style="{'height': 'fit-content', 'margin-top': geneCardHeight + 'px', 'z-index': 2, 'overflow-y': 'scroll'}">-->
-<!--          <variant-summary-card-->
-<!--              ref="variantSummaryCardRef"-->
-<!--              :sampleIds="sampleIds"-->
-<!--              :selectedSamples="selectedSamples"-->
-<!--              :selectedGene="selectedGeneName"-->
-<!--              :selectedTranscript="selectedTranscript"-->
-<!--              :variant="selectedVariant"-->
-<!--              :variantInfo="selectedVariantInfo"-->
-<!--              :$="globalApp.$"-->
-<!--              :d3="globalApp.d3"-->
-<!--              :cohortModel="cohortModel"-->
-<!--              :hasCoverageData="cohortModel.hasCoverageData"-->
-<!--              :hasRnaSeq="cohortModel.hasRnaSeqData"-->
-<!--              :hasAtacSeq="cohortModel.hasAtacSeqData"-->
-<!--              :useVEP="globalApp.useVEP"-->
-<!--              @fetch-reads="fetchSeqReads"-->
-<!--              @clear-and-fetch-reads="clearFetchSeqReads"-->
-<!--              @summary-mounted="onSummaryMounted"-->
-<!--              @summaryCardVariantDeselect="deselectVariant"-->
-<!--              @show-pileup="onShowPileupForVariant">-->
-<!--          </variant-summary-card>-->
-<!--          <subclone-summary-card-->
-<!--              v-if="cohortModel && cohortModel.hasSubcloneAnno"-->
-<!--              ref="subcloneSummaryCardRef"-->
-<!--              :subcloneModel="cohortModel.subcloneModel"-->
-<!--              :d3="globalApp.d3"-->
-<!--              :$="globalApp.$"-->
-<!--              :width="screenWidth"-->
-<!--              @display-subclone-dialog="displaySubcloneDialog">-->
-<!--          </subclone-summary-card>-->
-<!--        </div>-->
       </v-navigation-drawer>
       <v-dialog id="pileup-modal"
                 v-model="displayPileup"
@@ -1344,7 +1320,6 @@ export default {
           - this.geneCardHeight;
     },
     rightTabBlockHeight: function() {
-      // const tabBarHeight = 50;
       return window.innerHeight - this.navBarHeight
           - this.geneCardHeight;
     },
@@ -1494,4 +1469,9 @@ export default {
       font-size: 18px
       background-color: #7f1010
       color: white
+
+.subclone-text
+  font-family: Raleway, sans-serif
+  font-size: 16px
+  font-style: italic
 </style>

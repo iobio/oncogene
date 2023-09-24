@@ -834,80 +834,75 @@ export default function vcfiobio(theGlobalApp) {
                     reject('No vcf url to pull somatic variants from');
                 }
 
-                // todo: this is incorrect logic - want to do this even if file is local
-                if (sourceType === SOURCE_TYPE_URL) {
-                    let cmd = self.getEndpoint().annotateSomaticVariants({
-                        'vcfUrl': vcfURL,
-                        'tbiUrl': tbiUrl,
-                    }, selectedSamples, regions, somaticFilterPhrase);
+                let cmd = self.getEndpoint().annotateSomaticVariants({
+                    'vcfUrl': vcfURL,
+                    'tbiUrl': tbiUrl,
+                }, selectedSamples, regions, somaticFilterPhrase);
 
-                    let annotatedData = '';
-                    cmd.on('data', function (data) {
-                        if (data == null) {
-                            return;
-                        }
-                        annotatedData += data;
-                    });
-                    cmd.on('end', function () {
-                        let annotatedRecs = annotatedData.split("\n");
+                let annotatedData = '';
+                cmd.on('data', function (data) {
+                    if (data == null) {
+                        return;
+                    }
+                    annotatedData += data;
+                });
+                cmd.on('end', function () {
+                    let annotatedRecs = annotatedData.split("\n");
 
-                        // trim off last empty line
-                        annotatedRecs.pop();
+                    // trim off last empty line
+                    annotatedRecs.pop();
 
-                        let vcfObjects = [];
-                        annotatedRecs.forEach(function (record) {
-                            if (record.charAt(0) === "#") {
-                                self._parseHeaderForInfoFields(record);
-                            } else {
-                                // Parse the vcf record into its fields
-                                let fields = record.split('\t');
-                                let chrom = fields[0];
-                                let pos = fields[1];
-                                let ref = fields[3];
-                                let alt = fields[4];
-                                let qual = fields[5];
-                                let filter = fields[6];
-                                let info = fields[7];
-                                let format = fields[8];
-                                let genotypes = [];
-                                for (let i = 9; i < fields.length; i++) {
-                                    genotypes.push(fields[i]);
-                                }
-
-                                // Turn vcf record into a JSON object and add it to an array
-                                let vcfObject = {
-                                    'chrom': chrom,
-                                    'pos': pos,
-                                    'id': 'id',
-                                    'ref': ref,
-                                    'alt': alt,
-                                    'qual': qual,
-                                    'filter': filter,
-                                    'info': info,
-                                    'format': format,
-                                    'genotypes': genotypes,
-                                    'rawRecord': record
-                                };
-                                vcfObjects.push(vcfObject);
+                    let vcfObjects = [];
+                    annotatedRecs.forEach(function (record) {
+                        if (record.charAt(0) === "#") {
+                            self._parseHeaderForInfoFields(record);
+                        } else {
+                            // Parse the vcf record into its fields
+                            let fields = record.split('\t');
+                            let chrom = fields[0];
+                            let pos = fields[1];
+                            let ref = fields[3];
+                            let alt = fields[4];
+                            let qual = fields[5];
+                            let filter = fields[6];
+                            let info = fields[7];
+                            let format = fields[8];
+                            let genotypes = [];
+                            for (let i = 9; i < fields.length; i++) {
+                                genotypes.push(fields[i]);
                             }
-                        });
-                        if (vcfObjects.length === 0) {
-                            console.log('WARNING: no results returned for somatic variants');
+
+                            // Turn vcf record into a JSON object and add it to an array
+                            let vcfObject = {
+                                'chrom': chrom,
+                                'pos': pos,
+                                'id': 'id',
+                                'ref': ref,
+                                'alt': alt,
+                                'qual': qual,
+                                'filter': filter,
+                                'info': info,
+                                'format': format,
+                                'genotypes': genotypes,
+                                'rawRecord': record
+                            };
+                            vcfObjects.push(vcfObject);
                         }
-
-                        let vepAf = true;
-                        let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap);
-                        resolve(results);
                     });
+                    if (vcfObjects.length === 0) {
+                        console.log('WARNING: no results returned for somatic variants');
+                    }
 
-                    cmd.on('error', function (error) {
-                        console.log('Problem getting somatic variants: ' + error);
-                    });
+                    let vepAf = true;
+                    let results = self._parseSomaticVcfRecords(vcfObjects, selectedSamples, vepAf, somaticOnlyMode, bcsqImpactMap);
+                    resolve(results);
+                });
 
-                    cmd.run();
-                } else {
-                    reject('Retrieving somatic variants from local file not yet supported.');
-                }
+                cmd.on('error', function (error) {
+                    console.log('Problem getting somatic variants: ' + error);
+                });
+
+                cmd.run();
             }
         );
     };
@@ -1202,7 +1197,7 @@ export default function vcfiobio(theGlobalApp) {
         } else if (record.indexOf("INFO=<ID=AVIA3") > 0 && !me.infoFields.AVIA3) {
             fieldMap = me._parseInfoHeaderRecord(record);
             me.infoFields.AVIA3 = fieldMap;
-        } else if (record.indexOf("INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes")) {
+        } else if (record.indexOf("INFO=<ID=AC,Number=A,Type=Integer,Description=\"Allele count in genotypes") > 0) {
             me.setVariantCaller('gatk');
         } else if (record.indexOf("subclone") === 2) {
             if (!me.infoFields.SUBCLONES) {

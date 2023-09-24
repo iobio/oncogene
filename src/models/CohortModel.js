@@ -558,6 +558,9 @@ class CohortModel {
         let firstModel = null;
         for (let i = 0; i < this.sampleModels.length; i++) {
             let model = this.sampleModels[i];
+            if (!model) {
+                debugger;
+            }
             if (model.isCanonical) {
                 firstModel = model;
                 break;

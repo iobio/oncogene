@@ -9,6 +9,8 @@
   padding-bottom: 15px
   margin-bottom: 0
   overflow-y: scroll
+  padding-left: 0
+  padding-right: 0
 
 #raw-bam-dialog
   font-family: Quicksand
