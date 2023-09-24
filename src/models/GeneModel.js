@@ -679,7 +679,9 @@ class GeneModel {
             Promise.all(promises)
                 .then(() => {
                     allResolve(fetchData);
-                })
+                }).catch(err => {
+                    console.log("Error retrieving eutils search result: " + err);
+            })
         })
     }
 
