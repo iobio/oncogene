@@ -10,6 +10,7 @@
   padding-bottom: 2px
 
 #variant-card
+
   .variant-chip
     font-size: 12px
     margin-top: 0

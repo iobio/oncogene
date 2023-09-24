@@ -164,7 +164,10 @@
         >
         </variant-card>
       </div>
+
+
       <v-navigation-drawer v-if="geneCardRendered"
+          id="right-nav-drawer"
           absolute
           permanent
           right
@@ -172,38 +175,97 @@
           class="right-nav-card"
           :width="rightPanelWidth + 'vw'"
           style="z-index: 0">
-        <div class="scroll-wrapper" :style="{'height': 'fit-content', 'margin-top': geneCardHeight + 'px', 'z-index': 2}">
-          <variant-summary-card
-              ref="variantSummaryCardRef"
-              :sampleIds="sampleIds"
-              :selectedSamples="selectedSamples"
-              :selectedGene="selectedGeneName"
-              :selectedTranscript="selectedTranscript"
-              :variant="selectedVariant"
-              :variantInfo="selectedVariantInfo"
-              :$="globalApp.$"
-              :d3="globalApp.d3"
-              :cohortModel="cohortModel"
-              :hasCoverageData="cohortModel.hasCoverageData"
-              :hasRnaSeq="cohortModel.hasRnaSeqData"
-              :hasAtacSeq="cohortModel.hasAtacSeqData"
-              :useVEP="globalApp.useVEP"
-              @fetch-reads="fetchSeqReads"
-              @clear-and-fetch-reads="clearFetchSeqReads"
-              @summary-mounted="onSummaryMounted"
-              @summaryCardVariantDeselect="deselectVariant"
-              @show-pileup="onShowPileupForVariant">
-          </variant-summary-card>
-          <subclone-summary-card
-              v-if="cohortModel && cohortModel.hasSubcloneAnno"
-              ref="subcloneSummaryCardRef"
-              :subcloneModel="cohortModel.subcloneModel"
-              :d3="globalApp.d3"
-              :$="globalApp.$"
-              :width="screenWidth"
-              @display-subclone-dialog="displaySubcloneDialog">
-          </subclone-summary-card>
+        <div :style="{'height': 'fit-content', 'margin-top': geneCardHeight + 'px', 'z-index': 2, 'overflow-y': 'clip'}">
+          <v-tabs id="right-tabs"
+                  optional
+                  v-model="rightSelectedTab"
+                  background-color="transparent">
+            <v-tabs-slider></v-tabs-slider>
+            <v-tab href="#summary-tab" style="font-size: 10px">
+              <v-icon style="margin-bottom: 0; padding-left: 5px">troubleshoot</v-icon>
+            </v-tab>
+            <v-tab href="#subclone-tab" style="font-size: 10px">
+              <span class="material-symbols-outlined">network_node</span>
+            </v-tab>
+            <v-tabs-items v-model="rightSelectedTab" style="background-color: transparent">
+              <v-tab-item
+                  :key="'summaryTab'"
+                  :id="'summary-tab'">
+                <div class="scroll-wrapper" :style="{'height': rightTabBlockHeight + 'px'}">
+                  <variant-summary-card
+                      ref="variantSummaryCardRef"
+                      :sampleIds="sampleIds"
+                      :selectedSamples="selectedSamples"
+                      :selectedGene="selectedGeneName"
+                      :selectedTranscript="selectedTranscript"
+                      :variant="selectedVariant"
+                      :variantInfo="selectedVariantInfo"
+                      :$="globalApp.$"
+                      :d3="globalApp.d3"
+                      :cohortModel="cohortModel"
+                      :hasCoverageData="cohortModel.hasCoverageData"
+                      :hasRnaSeq="cohortModel.hasRnaSeqData"
+                      :hasAtacSeq="cohortModel.hasAtacSeqData"
+                      :useVEP="globalApp.useVEP"
+                      @fetch-reads="fetchSeqReads"
+                      @clear-and-fetch-reads="clearFetchSeqReads"
+                      @summary-mounted="onSummaryMounted"
+                      @summaryCardVariantDeselect="deselectVariant"
+                      @show-pileup="onShowPileupForVariant">
+                  </variant-summary-card>
+                </div>
+              </v-tab-item>
+              <v-tab-item
+                  :key="'subcloneTab'"
+                  :id="'subclone-tab'">
+                <subclone-summary-card
+                    v-if="cohortModel && cohortModel.hasSubcloneAnno"
+                    ref="subcloneSummaryCardRef"
+                    :subcloneModel="cohortModel.subcloneModel"
+                    :d3="globalApp.d3"
+                    :$="globalApp.$"
+                    :width="screenWidth"
+                    @display-subclone-dialog="displaySubcloneDialog">
+                </subclone-summary-card>
+              </v-tab-item>
+            </v-tabs-items>
+          </v-tabs>
         </div>
+
+
+
+<!--        <div :style="{'height': 'fit-content', 'margin-top': geneCardHeight + 'px', 'z-index': 2, 'overflow-y': 'scroll'}">-->
+<!--          <variant-summary-card-->
+<!--              ref="variantSummaryCardRef"-->
+<!--              :sampleIds="sampleIds"-->
+<!--              :selectedSamples="selectedSamples"-->
+<!--              :selectedGene="selectedGeneName"-->
+<!--              :selectedTranscript="selectedTranscript"-->
+<!--              :variant="selectedVariant"-->
+<!--              :variantInfo="selectedVariantInfo"-->
+<!--              :$="globalApp.$"-->
+<!--              :d3="globalApp.d3"-->
+<!--              :cohortModel="cohortModel"-->
+<!--              :hasCoverageData="cohortModel.hasCoverageData"-->
+<!--              :hasRnaSeq="cohortModel.hasRnaSeqData"-->
+<!--              :hasAtacSeq="cohortModel.hasAtacSeqData"-->
+<!--              :useVEP="globalApp.useVEP"-->
+<!--              @fetch-reads="fetchSeqReads"-->
+<!--              @clear-and-fetch-reads="clearFetchSeqReads"-->
+<!--              @summary-mounted="onSummaryMounted"-->
+<!--              @summaryCardVariantDeselect="deselectVariant"-->
+<!--              @show-pileup="onShowPileupForVariant">-->
+<!--          </variant-summary-card>-->
+<!--          <subclone-summary-card-->
+<!--              v-if="cohortModel && cohortModel.hasSubcloneAnno"-->
+<!--              ref="subcloneSummaryCardRef"-->
+<!--              :subcloneModel="cohortModel.subcloneModel"-->
+<!--              :d3="globalApp.d3"-->
+<!--              :$="globalApp.$"-->
+<!--              :width="screenWidth"-->
+<!--              @display-subclone-dialog="displaySubcloneDialog">-->
+<!--          </subclone-summary-card>-->
+<!--        </div>-->
       </v-navigation-drawer>
       <v-dialog id="pileup-modal"
                 v-model="displayPileup"
@@ -492,6 +554,7 @@ export default {
       geneRegionEnd: null,
       lastClickCard: null,
       selectedTab: '',
+      rightSelectedTab: '',
       totalSomaticVarCount: -1,
       pileupInfo: {
         // This controls how many base pairs are displayed on either side of
@@ -554,6 +617,7 @@ export default {
       }
       this.$emit('gene-changed', selectedGeneDisplay);
       this.selectedTab = 'genes-tab';
+      this.rightSelectedTab='summary-tab';
     }
   },
   methods: {
@@ -1279,6 +1343,11 @@ export default {
       return window.innerHeight - this.navBarHeight
           - this.geneCardHeight;
     },
+    rightTabBlockHeight: function() {
+      // const tabBarHeight = 50;
+      return window.innerHeight - this.navBarHeight
+          - this.geneCardHeight;
+    },
     centerPanelWidth: function () {
       return 100 - this.leftPanelWidth - this.rightPanelWidth;
     },
@@ -1369,6 +1438,10 @@ export default {
 </script>
 
 <style lang="sass">
+#right-tabs
+  .v-tabs-bar
+    height: 55px !important
+
 .padded-nav-container
   padding-top: 80px
 
@@ -1385,8 +1458,13 @@ export default {
 .left-nav-card
   background: linear-gradient(rgba(127, 16, 16, 1) 16%, rgba(156, 31, 31, 1) 38%, rgba(150, 87, 87, 1) 80%)
 
+#right-nav-drawer
+  .v-navigation-drawer__content
+    overflow-y: hidden !important
+
 .right-nav-card
   background-color: transparent
+  overflow-y: clip
 
 .blur-content
   filter: blur(1px) !important
