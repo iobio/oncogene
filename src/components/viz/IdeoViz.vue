@@ -53,7 +53,7 @@
 .gene-pseudo-ideo
   position: absolute
   bottom: -2%
-  left: 25.5%
+  left: 30%
   z-index: 3
 
   .chrLabel
@@ -71,7 +71,7 @@
 .gene-ideo
   position: absolute
   bottom: -2%
-  left: 25.5%
+  left: 30%
   z-index: 4
 
   .chrLabel
@@ -87,8 +87,8 @@
     fill: #AAA !important
 
 .gene-ideo-label
-  padding-left: 37%
-  margin-top: -18px
+  padding-left: 42%
+  margin-top: -15px
   font-size: 12px
 
 </style>

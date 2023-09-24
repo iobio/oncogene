@@ -222,7 +222,7 @@
 </style>
 
 <template>
-  <v-card class="px-0 mx-1 my-1" outlined>
+  <v-card class="px-0 mx-1 my-1" flat>
     <v-expansion-panels v-model="openState" style="width: 100%" multiple>
       <v-expansion-panel id="variant-card" :key="0">
         <v-expansion-panel-header class="pt-2 pb-1 pl-2 pr-2" style="min-height: 50px">

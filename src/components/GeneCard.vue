@@ -3,6 +3,9 @@
 #gene-card
   font-family: Quicksand, sans-serif
   background-color: white
+  padding-left: 2px
+  padding-top: 2px
+  padding-bottom: 2px
 
   .header
     font-size: 22px
@@ -61,87 +64,89 @@
 </style>
 
 <template>
-  <v-card id="gene-card" class="pa-1" :width="width + 'vw'">
-    <v-row no-gutters class="pt-1" style="height: 45px">
-      <v-col cols="12" sm="9">
+  <div style="background-color: white">
+    <v-card id="gene-card" :width="width + 'vw'">
+      <v-row no-gutters class="pt-1" style="height: 45px">
+        <v-col cols="12" sm="9">
                     <span class="header">
                         Gene Details
                     </span>
-        <span v-if="selectedGene" class="ml-1 gene-name">
+          <span v-if="selectedGene" class="ml-1 gene-name">
                         {{ selectedGene.gene_name }}
                     </span>
-        <span class="sub-header">
+          <span class="sub-header">
                         {{ selectedGene.chr }}
                     </span>
-        <span class="sub-header">
+          <span class="sub-header">
                         {{ formatRegion(geneRegionStart) }} - {{ formatRegion(geneRegionEnd) }}
                     </span>
-        <v-text-field dense class="d-inline-flex region"
-                      prefix="+-"
-                      suffix="bp"
-                      label="Region Buffer"
-                      v-model="regionBuffer"
-                      v-on:change="onGeneRegionBufferChange">
-        </v-text-field>
-        <transcripts-menu
-            class="transcripts"
-            :selectedGene="selectedGene"
-            :selectedTranscript="selectedTranscript"
-            :geneSources="geneSources"
-            :geneModel="geneModel"
-            :d3="d3"
-            @transcriptSelected="onTranscriptSelected"
-            @gene-source-selected="onGeneSourceSelected">
-        </transcripts-menu>
-      </v-col>
-    </v-row>
-    <v-row no-gutters class="pt-0">
-      <v-col cols="12" sm="8">
-        <div id="gene-track" :style="geneTrackHeight">
-          <div :id="geneVizName" v-if="showGene" style="height:100px">
-            <gene-viz id="gene-viz"
-                      ref="transcriptGeneVizRef"
-                      :data="[selectedTranscript]"
-                      :height="100"
-                      :width="width"
-                      :margin="margin"
-                      :trackHeight="trackHeight"
-                      :cdsHeight="cdsHeight"
-                      :regionStart="geneRegionStart"
-                      :regionEnd="geneRegionEnd"
-                      :geneName="selectedGene ? selectedGene.gene_name : null"
-                      :chr="selectedGene ? selectedGene.chr : ''"
-                      :isZoomTrack="true"
-                      :zoomSwitchOn="showZoom"
-                      :d3="d3"
-                      :$="$"
-                      :displayOnly="true"
-                      @region-zoom="onRegionZoom"
-                      @region-zoom-reset="onRegionZoomReset">
-            </gene-viz>
-            <br/>
-            <ideo-viz ref="geneIdeoVizRef"
-                      v-if="hasCnvData"
-                      :selectedGene="selectedGene"
-                      :cnvPalette="cnvPalette"
-                      :width="width"
-                      :margin="margin"
-                      :inGeneCard="inGeneCard"
-                      :assemblyVersion="assemblyVersion"
-                      :d3="d3"
-            ></ideo-viz>
+          <v-text-field dense class="d-inline-flex region"
+                        prefix="+-"
+                        suffix="bp"
+                        label="Region Buffer"
+                        v-model="regionBuffer"
+                        v-on:change="onGeneRegionBufferChange">
+          </v-text-field>
+          <transcripts-menu
+              class="transcripts"
+              :selectedGene="selectedGene"
+              :selectedTranscript="selectedTranscript"
+              :geneSources="geneSources"
+              :geneModel="geneModel"
+              :d3="d3"
+              @transcriptSelected="onTranscriptSelected"
+              @gene-source-selected="onGeneSourceSelected">
+          </transcripts-menu>
+        </v-col>
+      </v-row>
+      <v-row no-gutters class="pt-0">
+        <v-col cols="12" sm="8">
+          <div id="gene-track" :style="geneTrackHeight">
+            <div :id="geneVizName" v-if="showGene" style="height:100px">
+              <gene-viz id="gene-viz"
+                        ref="transcriptGeneVizRef"
+                        :data="[selectedTranscript]"
+                        :height="100"
+                        :width="width"
+                        :margin="margin"
+                        :trackHeight="trackHeight"
+                        :cdsHeight="cdsHeight"
+                        :regionStart="geneRegionStart"
+                        :regionEnd="geneRegionEnd"
+                        :geneName="selectedGene ? selectedGene.gene_name : null"
+                        :chr="selectedGene ? selectedGene.chr : ''"
+                        :isZoomTrack="true"
+                        :zoomSwitchOn="showZoom"
+                        :d3="d3"
+                        :$="$"
+                        :displayOnly="true"
+                        @region-zoom="onRegionZoom"
+                        @region-zoom-reset="onRegionZoomReset">
+              </gene-viz>
+              <br/>
+              <ideo-viz ref="geneIdeoVizRef"
+                        v-if="hasCnvData"
+                        :selectedGene="selectedGene"
+                        :cnvPalette="cnvPalette"
+                        :width="screenWidth"
+                        :margin="margin"
+                        :inGeneCard="inGeneCard"
+                        :assemblyVersion="assemblyVersion"
+                        :d3="d3"
+              ></ideo-viz>
+            </div>
           </div>
-        </div>
-      </v-col>
-      <v-col cols="12" sm="4">
-        <div class="gene-summary">
-          {{
-            ncbiSummary ? (ncbiSummary.summary === '' ? '(No NCBI summary available for this gene)' : ncbiSummary.summary) : 'Loading gene summary...'
-          }}
-        </div>
-      </v-col>
-    </v-row>
-  </v-card>
+        </v-col>
+        <v-col cols="12" sm="4">
+          <div class="gene-summary">
+            {{
+              ncbiSummary ? (ncbiSummary.summary === '' ? '(No NCBI summary available for this gene)' : ncbiSummary.summary) : 'Loading gene summary...'
+            }}
+          </div>
+        </v-col>
+      </v-row>
+    </v-card>
+  </div>
 </template>
 
 <script>
@@ -168,6 +173,10 @@ export default {
       default: null
     },
     width: {
+      default: 0,
+      type: Number
+    },
+    screenWidth: {
       default: 0,
       type: Number
     },
@@ -318,7 +327,7 @@ export default {
     },
     geneTrackHeight: function() {
       if (this.hasCnvData) {
-        return "height:125px";
+        return "height:150px";
       } else {
         return "height:100px";
       }

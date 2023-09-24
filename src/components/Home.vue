@@ -98,10 +98,11 @@
     </v-navigation-drawer>
     <v-content>
       <v-card :width="(centerPanelWidth + rightPanelWidth) + 'vw'"
-              :style="{'background-color': 'white', 'margin-left': (leftPanelWidth + 'vw')}">
+              :style="{'background-color': 'white', 'margin-left': (leftPanelWidth + 'vw'), 'z-index': 1}">
         <gene-card v-if=selectedGene
                    id="gene-card"
                    :width="centerPanelWidth + rightPanelWidth"
+                   :screenWidth="screenWidth"
                    :selectedGene="selectedGene"
                    :selectedTranscript="selectedTranscript"
                    :geneRegionStart="geneRegionStart"
@@ -120,7 +121,11 @@
                    @gene-card-rendered="onGeneCardRendered">
         </gene-card>
       </v-card>
-      <div v-if="geneCardRendered" class="scroll-wrapper" :style="{'margin-left': leftPanelWidth + 'vw', 'background-color': 'white', 'width': centerPanelWidth + 'vw', 'height': varBlockHeight + 'px'}">
+      <div v-if="geneCardRendered" class="scroll-wrapper"
+           :style="{'margin-left': leftPanelWidth + 'vw',
+            'background-color': 'white',
+            'width': centerPanelWidth + 'vw',
+            'height': varBlockHeight + 'px'}">
         <variant-card
             ref="variantCardRef"
             v-for="model in sampleModelsToDisplay"
@@ -165,10 +170,10 @@
           right
           :stateless="true"
           class="right-nav-card"
-          :width="rightPanelWidth + 'vw'">
-        <div class="scroll-wrapper" style="height: fit-content">
+          :width="rightPanelWidth + 'vw'"
+          style="z-index: 0">
+        <div class="scroll-wrapper" :style="{'height': 'fit-content', 'margin-top': geneCardHeight + 'px', 'z-index': 2}">
           <variant-summary-card
-              :style="{ 'margin-top': geneCardHeight }"
               ref="variantSummaryCardRef"
               :sampleIds="sampleIds"
               :selectedSamples="selectedSamples"
