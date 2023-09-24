@@ -89,6 +89,7 @@ class GlobalApp {
     // Fields
     this.impactFieldToFilter         = 'highestImpactVep';
     this.impactFieldToColor          = 'vepImpact';
+    this.bcsqImpactFieldToColor      = 'highestImpactBcsq';
 
     this.COVERAGE_TYPE = 'coverage';
     this.RNASEQ_TYPE = 'rnaSeq';

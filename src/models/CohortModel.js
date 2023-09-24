@@ -1052,7 +1052,7 @@ class CohortModel {
 
                     // Have to mark each individual variant object, even if duplicates across samples
                     for (var objKey in sampleMap) {
-                        self.filterModel.markFilteredVariants(sampleMap[objKey].features, self.onlySomaticCalls);
+                        self.filterModel.markFilteredVariants(sampleMap[objKey].features);
                     }
                     let subcloneP = subclonesExist ? self.subcloneModel.promiseParseSubcloneTrees() : Promise.resolve();
                     subcloneP.then(() => {
@@ -1531,7 +1531,7 @@ class CohortModel {
                 if (!sampleModel.vcfData) {
                     reject('No vcf data to fetch variants from for filtering');
                 }
-                self.filterModel.markFilteredVariants(sampleModel.vcfData.features, self.onlySomaticCalls);
+                self.filterModel.markFilteredVariants(sampleModel.vcfData.features);
                 resolve();
             });
         });

@@ -3109,7 +3109,7 @@ class SampleModel {
             effectList[type] = type;
         }
         for (var key in effectList) {
-            if (annotationScheme.toLowerCase() === 'vep' && key.indexOf("&") > 0) {
+            if (key.indexOf("&") > 0) {
                 var tokens = key.split("&");
                 tokens.forEach(function (token) {
                     effects += " " + token;

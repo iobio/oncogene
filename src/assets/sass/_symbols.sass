@@ -210,19 +210,19 @@
   fill: $homref-color
   stroke: rgba(0, 0, 0, 0.26)
 
-.impact, .vepImpact, .highestImpactVep, .effect, .vepConsequence, .type, .zygosity, .recfilter
+.impact, .bcsqImpact, .vepImpact, .highestImpactVep, .effect, .vepConsequence, .type, .zygosity, .recfilter
 
   text
     fill: $text-color
 
-.impact.nocolor rect, .vepImpact.nocolor rect, .highestImpactVep.nocolor rect, .effect.nocolor rect, .vepConsequence.nocolor rect, .zygosity.nocolor rect, .regulatory.nocolor rect, .polyphen.nocolor rect, .sift.nocolor rect
+.impact.nocolor rect, .bcsqImpact.nocolor.rect, .vepImpact.nocolor rect, .highestImpactVep.nocolor rect, .effect.nocolor rect, .vepConsequence.nocolor rect, .zygosity.nocolor rect, .regulatory.nocolor rect, .polyphen.nocolor rect, .sift.nocolor rect
   fill: lightgrey !important
   stroke: grey
 
 .afexaclevels.nocolor, .af1000glevels.nocolor
   display: none !important
 
-.impact:hover, .vepImpact:hover, .highestImpactVep:hover, .effect:hover, .vepConsequence:hover, .regulatory:hover, .polyphen:hover, .sift:hover, .regulatory:hover, .tooltip-zygosity:hover, .type:hover, .afexaclevels:hover, .af1000glevels:hover, .inheritance:hover, .clinvar:hover, .uasibs:hover, .recfilter:hover
+.impact:hover, bcsqImpact:hover, .vepImpact:hover, .highestImpactVep:hover, .effect:hover, .vepConsequence:hover, .regulatory:hover, .polyphen:hover, .sift:hover, .regulatory:hover, .tooltip-zygosity:hover, .type:hover, .afexaclevels:hover, .af1000glevels:hover, .inheritance:hover, .clinvar:hover, .uasibs:hover, .recfilter:hover
   cursor: pointer
   font-weight: bold
   fill: $current-color
@@ -232,7 +232,7 @@
 .tooltip-zygosity:hover
   outline: solid 2px $current-frame-color
 
-.impact.current:hover, .vepImpact.current:hover, .highestImpactVep.current:hover,  .effect.current:hover, .vepConsequence.current:hover, .tooltip-zygosity.current:hover, .regulatory.current:hover, .polyphen.current:hover, .sift.current:hover, .type.current:hover, .afexaclevels.current:hover, .af1000glevels.current:hover, .inheritance.current:hover, .clinvar.current:hover, .uasibs.current:hover, .recfilter.current:hover
+.impact.current:hover, bcsqImpact.current:hover .vepImpact.current:hover, .highestImpactVep.current:hover,  .effect.current:hover, .vepConsequence.current:hover, .tooltip-zygosity.current:hover, .regulatory.current:hover, .polyphen.current:hover, .sift.current:hover, .type.current:hover, .afexaclevels.current:hover, .af1000glevels.current:hover, .inheritance.current:hover, .clinvar.current:hover, .uasibs.current:hover, .recfilter.current:hover
   font-weight: bold
   cursor: pointer
   outline: solid 2px $current-color
@@ -275,7 +275,7 @@
 #type-scheme, #zygosity-scheme, #inheritance-scheme, #af-scheme, #clinvar-scheme, #regulatory-scheme, #uasibs-scheme
   padding-top: 2px
 
-.impact.inactive, .vepImpact.inactive, .highestImpactVep.inactive, .zygosity.inactive, .afexaclevels.inactive, .af1000glevels.inactive, .inheritance.inactive, .polyphen.inactive, .sift.inactive, .regulatory.inactive, .clinvar.inactive, .uasibs.inactive
+.impact.inactive, .bcsqImpact.inactive, .vepImpact.inactive, .highestImpactVep.inactive, .zygosity.inactive, .afexaclevels.inactive, .af1000glevels.inactive, .inheritance.inactive, .polyphen.inactive, .sift.inactive, .regulatory.inactive, .clinvar.inactive, .uasibs.inactive
   pointer-events: none
   opacity: .4
 

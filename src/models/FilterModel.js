@@ -5,6 +5,7 @@ class FilterModel {
     constructor(translator, cohortModel, $) {
         this.$ = $;
         this.cohortModel = cohortModel;
+        this.impactDb = cohortModel.globalApp.useVEP ? 'vep' : 'bcsq';
 
         // todo: add allAltCount and allAltFrequency here if no normal sample selected
         /* Initializers */
@@ -618,7 +619,7 @@ class FilterModel {
      * if it passes all current filter criteria within this model.
      *
      * If we're in somaticOnlyMode, want variants to always pass filters. */
-    markFilteredVariants(variants, somaticOnlyMode) {
+    markFilteredVariants(variants) {
         const self = this;
 
         // Get active filters
@@ -629,16 +630,14 @@ class FilterModel {
             variant.passesFilters = true;
 
             // Checkbox filters
-            if (!somaticOnlyMode) {
-                for (let i = 0; i < checkboxFilters.length; i++) {
-                    let filter = checkboxFilters[i];
-                    let field = filter[0];
-                    let value = filter[1];
+            for (let i = 0; i < checkboxFilters.length; i++) {
+                let filter = checkboxFilters[i];
+                let field = filter[0];
+                let value = filter[1];
 
-                    if (self.getVarField(variant, field) === value) {
-                        variant.passesFilters = false;
-                        break;
-                    }
+                if (self.getVarField(variant, field) === value) {
+                    variant.passesFilters = false;
+                    break;
                 }
             }
         });
@@ -878,9 +877,8 @@ class FilterModel {
             console.log('Could not retrieve field from variant');
         } else {
             if (fieldName === 'impact') {
-                let impactObj = variant['highestImpactVep'];
-                let keys = Object.keys(impactObj);
-                return (impactObj && keys.length > 0) ? keys[0] : null;
+                let impactObj = this.impactDb === 'vep' ? variant['highestImpactVep'] : variant['highestImpactBcsq'];
+                return impactObj;
             } else if (variant[fieldName] == null) {
                 console.log('Could not retrieve field from variant');
             } else {
