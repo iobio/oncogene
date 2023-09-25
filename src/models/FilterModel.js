@@ -404,6 +404,8 @@ class FilterModel {
                         if (globalMode || somaticOnlyMode) {
                             passesTumorCount = true;
                         } else {
+                            // todo: left off here - this is triggering when it should not b/c of global/somatic modes... take that out
+                            // then work on recalling filter fxnality
                             passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currOper'), feature.genotypeAltCount, self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currVal'));
                         }
                         let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;
