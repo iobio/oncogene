@@ -96,7 +96,7 @@
         </v-tabs>
       </div>
     </v-navigation-drawer>
-    <v-content>
+    <v-main>
       <v-card :width="(centerPanelWidth + rightPanelWidth) + 'vw'"
               :style="{'background-color': 'white', 'margin-left': (leftPanelWidth + 'vw'), 'z-index': 1}">
         <gene-card v-if=selectedGene
@@ -392,7 +392,7 @@
       <v-overlay :value="displayLoader">
         <v-progress-circular indeterminate size="64"></v-progress-circular>
       </v-overlay>
-    </v-content>
+    </v-main>
   </div>
 </template>
 
