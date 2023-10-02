@@ -303,8 +303,11 @@ class FilterModel {
      *
      *  If globalMode is true, returns a map of selectedSampleId: somaticFeatureList.
      *  Otherwise, returns a dictionary of somatic variant IDs from all tumor tracks combined.
+     *  todo: left off here - can we do all of the filtering on the front end? only have four integer values per variant that we filter on
+     *  todo: what would be the most efficient way of doing this?
      */
-    // todo: look at if somaticOnlyMode is actually determining correct behavior here
+    // NOTE: as of Oct2023, leaving out b/c no longer determining if variant is somatic or inherited
+    // Application no longer has 'somatic only' mode and may not have normal sample
     promiseAnnotateVariantInheritance(resultMap, featuresList, globalMode, somaticOnlyMode) {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -404,8 +407,6 @@ class FilterModel {
                         if (globalMode || somaticOnlyMode) {
                             passesTumorCount = true;
                         } else {
-                            // todo: left off here - this is triggering when it should not b/c of global/somatic modes... take that out
-                            // then work on recalling filter fxnality
                             passesTumorCount = self.matchAndPassFilter(self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currOper'), feature.genotypeAltCount, self.getFilterField(self.COUNT, self.TUMOR_COUNT, 'currVal'));
                         }
                         let currAltFreq = Math.round(feature.genotypeAltCount / feature.genotypeDepth * 100) / 100;

@@ -1043,6 +1043,7 @@ export default {
       // Only annotate once we are guaranteed that our DOM update is done for all tracks
       self.cohortModel.promiseFilterVariants()
           .then(() => {
+            // todo: left off here - take this call out but need to present correct data structure to next call
             self.filterModel.promiseAnnotateVariantInheritance(self.cohortModel.sampleMap)
                 .then((inheritanceObj) => {
                   self.cohortModel.setLoadedVariants(self.selectedGene);

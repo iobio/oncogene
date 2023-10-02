@@ -988,7 +988,7 @@ class CohortModel {
                         self.promiseFilterVariants()
                             .then(() => {
                                 const globalMode = false;
-                                // todo: does this need to change from new launching modes?
+                                // todo: left off here - take this call out but need to present correct data structure to next call
                                 self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, null, globalMode, self.onlySomaticCalls)
                                     .then((inheritanceObj) => {
                                         let geneChanged = options.loadFromFlag;
@@ -1057,6 +1057,7 @@ class CohortModel {
                     let subcloneP = subclonesExist ? self.subcloneModel.promiseParseSubcloneTrees() : Promise.resolve();
                     subcloneP.then(() => {
                         const globalMode = true;
+                        // todo: left off here - take this call out but need to present correct data structure to next call
                         self.filterModel.promiseAnnotateVariantInheritance(self.sampleMap, sampleMap, globalMode, self.onlySomaticCalls)
                             .then((somaticVarMap) => {
                                 self.unmatchedFilteredVarMap = self.filterUnmatchedVars(self.allUniqueFeaturesObj, self.unmatchedFilteredVarMap);
