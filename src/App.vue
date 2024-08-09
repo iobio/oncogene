@@ -258,7 +258,10 @@ export default {
             self.demoParams = demoParams;
             self.demoParamsReady = true;
           }).catch(err => {
-        console.log("Could not load demo params: " + err);
+            debugger;
+            self.demoParams = null;
+            self.demoParamsReady = true;
+            console.log("Could not load demo params: " + err);
       });
     });
   },

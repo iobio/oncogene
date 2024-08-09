@@ -66,12 +66,10 @@ class Integration {
                     .then(sampleMap => {
                         resolve(sampleMap);
                     }).catch(error => {
-                    reject("Problem getting file info for sample: " + error);
+                        reject("Problem getting file info for sample: " + error);
                 })
             } else {
                 reject("No access token detected for Mosaic integration");
-                // todo: what package does this come from?
-                //window.location.href = buildOauthLink();
             }
         });
     }
@@ -116,7 +114,7 @@ class Integration {
                         };
                         resolve(demoParams);
                     }).catch(err => {
-                    reject("There was a problem getting demo data from Frameshift Mosaic: " + err);
+                        reject("There was a problem getting demo data from Frameshift Mosaic: " + err);
                 });
             } else {
                 reject('Could not find necessary query arguments for Mosaic launch');
@@ -431,7 +429,7 @@ export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $)
                     let vcfName = vcf.name;
                     let tbiName = tbi.name;
 
-                    let p = new Promise(resolve => {
+                    let p = new Promise((resolve, reject) => {
                         getSignedUrlForFile(project_id, vcf, api, token, $).done(vcfUrlData => {
                             const vcfUrl = vcfUrlData.url;
                             getSignedUrlForFile(project_id, tbi, api, token, $).done(tbiUrlData => {
@@ -443,6 +441,8 @@ export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $)
                                 tbiFileNames.push(tbiName);
                                 resolve();
                             })
+                        }).fail(err => {
+                            reject(err);
                         })
                     });
                     urlPs.push(p);
@@ -515,7 +515,9 @@ export function promiseGetSingleSampleUrls(api, token, project_id, sample_id, $)
                                 resolve(urlObj);
                             }
                         }
-                    })
+                    }).catch(err => {
+                        reject(err);
+                });
             }
         })
     });
@@ -546,6 +548,8 @@ export function getSignedUrlForFile(project_id, file, api, token, $) {
         headers: {
             'Authorization': token
         }
+    }).fail(function () {
+        console.log("Could not get signed url for file " + file.name);
     });
 }
 
